@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "orchestration"
+version = "0.1.0"
+description = ""
+authors = ["Szymon Szyszkowski <ss60@mib117351s.internal.sanger.ac.uk>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10, <3.11"
+apache-airflow = "^2.9.2"
+apache-airflow-providers-google = "^10.19.0"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.4.9"
+pytest = "^8.2.2"
+mypy = "^1.10.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[virtualenvs]
+in-project = true
+prefer-active-python = true
+
