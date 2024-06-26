@@ -7,19 +7,81 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10, <3.11"
-apache-airflow = "^2.9.2"
+apache-airflow = {extras = ["apache-beam", "async", "celery", "google", "kubernetes", "openlineage", "postgress", "sftp"], version = "^2.9.2"}
 apache-airflow-providers-google = "^10.19.0"
+loguru = "^0.7.2"
+psycopg2-binary = "^2.9.9"
+returns = "^0.23.0"
+pydantic = "^2.7.4"
+polars = "^0.20.31"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.4.9"
 pytest = "^8.2.2"
 mypy = "^1.10.0"
+pre-commit = "^3.7.1"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-[virtualenvs]
-in-project = true
-prefer-active-python = true
+# Semi-strict mode for mypy
+[tool.mypy]
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_incomplete_defs = true
+no_implicit_optional = true
+no_implicit_reexport = true
+strict_equality = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
 
+[[tool.mypy.overrides]]
+module = [
+  "google.cloud",
+  "yaml",
+  "hail",
+  "pyliftover",
+  "dbldatagen",
+  "scipy",
+  "scipy.stats",
+  "chardet",
+  "omegaconf",
+  "xgboost",
+  "sklearn",
+]
+ignore_missing_imports = true
+
+
+[tool.ruff.lint]
+ignore = [
+  "E501", # line too long
+  "E731", # do not assign a lambda expression, use a def
+
+  # Ignore ignored, as the rule is now back in preview/nursery, which cannot
+  # be ignored anymore without warnings.
+  # https://github.com/astral-sh/ruff/issues/7491
+  # "PLC1901", # Lots of false positives
+
+  # False positives https://github.com/astral-sh/ruff/issues/5386
+  "PLC0208", # Use a sequence type instead of a `set` when iterating over values
+  "PLR0911", # Too many return statements ({returns} > {max_returns})
+  "PLR0912", # Too many branches ({branches} > {max_branches})
+  "PLR0913", # Too many arguments to function call ({c_args} > {max_args})
+  "PLR0915", # Too many statements ({statements} > {max_statements})
+  "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
+  "PLW2901", # Outer {outer_kind} variable {name} overwritten by inner {inner_kind} target
+  "UP006",   # keep type annotation style as is
+  "UP007",   # keep type annotation style as is
+  # Ignored due to performance: https://github.com/charliermarsh/ruff/issues/2923
+  "UP038", # Use `X | Y` in `isinstance` call instead of `(X, Y)`
+
+]
+
+
+[tool.ruff.flake8-quotes]
+docstring-quotes = "double"
+
+[tool.ruff.pydocstyle]
+convention = "google"

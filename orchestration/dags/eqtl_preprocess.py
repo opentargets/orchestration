@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import common_airflow as common
+from orchestration import common_airflow as common
 from airflow.models.dag import DAG
 from airflow.providers.google.cloud.operators.dataflow import (
-    DataflowTemplatedJobStartOperator,
+    DataflowTemplatedJobStartOperator
 )
 from airflow.providers.google.cloud.operators.gcs import GCSDeleteObjectsOperator
 

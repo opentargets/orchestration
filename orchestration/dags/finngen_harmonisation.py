@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-import common_airflow as common
+from orchestration import common_airflow as common
 from airflow.decorators import task
 from airflow.models.dag import DAG
 from airflow.providers.google.cloud.operators.gcs import GCSListObjectsOperator

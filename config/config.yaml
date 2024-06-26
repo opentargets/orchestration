@@ -1,0 +1,38 @@
+tags: 
+- GWAS_catalog  
+providers: 
+  - name: dataproc
+    params: 
+      spark_uri: "yarn"
+      write_mode: "errorifexists"
+  - name: googlebatch
+    params:
+DAGS:
+  - name: "Gentropy"
+    description: "Gentropy pipeline"
+    params:
+      # extracted from "https://docs.google.com/spreadsheets/d/1Ik0jOU8d7eAOhsOmQPY10foockqZKcmT0EzwH6uvDQk/edit?gid=862230136#gid=862230136"
+      manual_curation_manifest_gsheet_id: 1Ik0jOU8d7eAOhsOmQPY10foockqZKcmT0EzwH6uvDQk
+      manual_curation_manifest_gh: https://raw.githubusercontent.com/opentargets/curation/master/genetics/GWAS_Catalog_study_curation.tsv
+      gwas_catalog_release_stats: https://www.ebi.ac.uk/gwas/api/search/stats
+      gwas_catalog_release_ftp: ftp://ftp.ebi/ac.uk/pub/databases/gwas/releases/latest/
+      gwas_catalog_manifest_files_ftp: 
+      - gwas-catalog-associations_ontology-annotated.tsv
+      - gwas-catalog-download-studies-v1.0.3.1.txt
+      - gwas-catalog-unpublished-studies-v1.0.3.1.tsv
+      - gwas-catalog-download-ancestries-v1.0.3.1.txt
+      - gwas-catalog-unpublished-ancestries-v1.0.3.1.tsv
+      gwas_catalog_manifest_files_gcs:
+      - manifests/gwas-catalog-associations_ontology-annotated.tsv
+      - manifests/gwas-catalog-download-studies.txt
+      - manifests/gwas-catalog-unpublished-studies.tsv
+      - manifests/gwas-catalog-download-ancestries.txt
+      - manifests/gwas-catalog-unpublished-ancestries.tsv
+      gwas_catalog_data_bucket: gs://gwas_catalog_data
+      gwas_catalog_data_curated_inputs: gs://gwas_catalog_data/curated_inputs
+      harmonisation:
+        cluster_name: otg-gwascatalog-harmonisation
+        autoscaling: gwascatalog-harmonisation
+        summary_statistics_bucket: gwas_catalog_data
+        raw_summary_statistics_prefix: raw_summary_statistics
+        harmonized_summary_statistics_prefix: harmonised_summary_statistics

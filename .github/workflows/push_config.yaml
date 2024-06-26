@@ -1,0 +1,16 @@
+# push config file to the google cloud storage
+name: Push Config
+on :
+  push:
+    branches:
+      - main
+jobs:
+  push_config:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Push Config
+        run: gsutil cp config.yaml gs://my-bucket/config.yaml
+      - name: Push Config
+        run: gsutil cp config.yaml gs://my-bucket/config.yaml

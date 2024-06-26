@@ -1,4 +1,4 @@
-FROM apache/airflow:slim-2.7.3-python3.10
+FROM apache/airflow:slim-latest-python3.10
 ARG ORCHESTRATION_PACKAGE
 COPY ${ORCHESTRATION_PACKAGE} ${ORCHESTRATION_PACKAGE}
 RUN pip install ${ORCHESTRATION_PACKAGE}
