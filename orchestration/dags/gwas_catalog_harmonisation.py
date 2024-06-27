@@ -12,8 +12,8 @@ from airflow.decorators import task
 from airflow.models.dag import DAG
 from airflow.providers.google.cloud.operators.gcs import GCSListObjectsOperator
 
-CLUSTER_NAME = 
-AUTOSCALING = 
+CLUSTER_NAME =
+AUTOSCALING =
 
 
 
@@ -24,7 +24,7 @@ with DAG(
     **common.shared_dag_kwargs,
 ):
     # List raw harmonised files from GWAS Catalog
-  
+
     # Create list of pending jobs
     @task(task_id="create_to_do_list")
     def create_to_do_list(**kwargs: Any) -> Any:

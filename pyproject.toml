@@ -11,7 +11,7 @@ apache-airflow = {extras = ["apache-beam", "async", "celery", "google", "kuberne
 apache-airflow-providers-google = "^10.19.0"
 loguru = "^0.7.2"
 psycopg2-binary = "^2.9.9"
-returns = "^0.23.0"
+returns = {extras = ["compatible-mypy"], version = "^0.23.0"}
 pydantic = "^2.7.4"
 polars = "^0.20.31"
 
@@ -36,6 +36,8 @@ strict_equality = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 disallow_untyped_defs = true
+plugins = ["returns.contrib.mypy.returns_plugin"]
+
 
 [[tool.mypy.overrides]]
 module = [

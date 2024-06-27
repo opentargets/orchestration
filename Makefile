@@ -34,7 +34,7 @@ build-orchestration-local: ## build orchestration package locally
 
 get-orchestration-local-dist: build-orchestration-local
 	@ls $(DIST_DIR) | grep $(VERSION)
-	
+
 .ONESHELL:
 build-airflow-image:  ## build local airflow image for the infrastructure
 	# get the orchestration package distribution wheel path after package is build

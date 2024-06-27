@@ -6196,6 +6196,7 @@ files = [
 ]
 
 [package.dependencies]
+mypy = {version = ">=1.10,<1.11", optional = true, markers = "extra == \"compatible-mypy\""}
 typing-extensions = ">=4.0,<5.0"
 
 [package.extras]
@@ -7439,4 +7440,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10, <3.11"
-content-hash = "6a9a365e7e9f54d8274e646ad2088624c256216447c87b310d62d1c8d5ef8bdd"
+content-hash = "b0edaff8cfbe7867408586ab508dd5cdc9d6404bac47b8eaf2883a5f7c154602"

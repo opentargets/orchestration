@@ -1,6 +1,6 @@
 # push config file to the google cloud storage
 name: Push Config
-on :
+on:
   push:
     branches:
       - main

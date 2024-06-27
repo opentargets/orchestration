@@ -23,7 +23,7 @@ local gwas_catalog_release_ftp ="ftp://ftp.ebi/ac.uk/pub/databases/gwas/releases
             inputs: {
               gwas_catalog_release_ftp: gwas_catalog_release_ftp,
               gwas_catalog_manifest_files: [
-                std.format("%s/%s", [gwas_catalog_release_ftp, file]) for file in 
+                std.format("%s/%s", [gwas_catalog_release_ftp, file]) for file in
                 [
                   "gwas-catalog-associations_ontology-annotated.tsv",
                   "gwas-catalog-download-studies-v1.0.3.1.txt",
@@ -32,10 +32,10 @@ local gwas_catalog_release_ftp ="ftp://ftp.ebi/ac.uk/pub/databases/gwas/releases
                   "gwas-catalog-unpublished-ancestries-v1.0.3.1.tsv"
                 ]
               ],
-              
+
             } // inputs end
 
-            
+
           }
         }
       }
