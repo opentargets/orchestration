@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Push Config
-        run: gsutil cp config.yaml gs://my-bucket/config.yaml
-      - name: Push Config
-        run: gsutil cp config.yaml gs://my-bucket/config.yaml
+      # - name: Push Config
+      #   run: gsutil cp config.yaml gs://my-bucket/config.yaml
+      # - name: Push Config
+      #   run: gsutil cp config.yaml gs://my-bucket/config.yaml

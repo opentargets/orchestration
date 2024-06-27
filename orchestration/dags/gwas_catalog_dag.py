@@ -6,17 +6,19 @@ from airflow.utils.helpers import chain
 from orchestration import QRCP
 from airflow.operators.python import get_current_context
 from airflow.providers.google.cloud.transfers.sftp_to_gcs import SFTPToGCSOperator
-from airflow.providers.google.cloud.operators.gcs import GCSListObjectsOperator
-from airflow.providers.sftp.hooks.sftp import SFTPHook
-from returns.result import Success, Failure, safe, Result
+from returns.result import Success, Failure, Result
 import logging
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 from typing import TypedDict
+from airflow.exceptions import AirflowException
+
+
 
 if TYPE_CHECKING:
     from typing import Any
     from airflow.models.xcom_arg import XComArg
     from orchestration import Dag_Params
+
     Config_Error = str
 
 
@@ -27,28 +29,30 @@ gwas_catalog_config_dag_id = "gwas_catalog"
 
 
 # type definitions
-SFTP_Transfer_Object = TypedDict("SFTP_Transfer_Object", {'source_path': str, 'destination_path': str, "destination_bucket": str})
+SFTP_Transfer_Object = TypedDict(
+    "SFTP_Transfer_Object",
+    {"source_path": str, "destination_path": str, "destination_bucket": str},
+)
+
 
 def get_gwas_catalog_dag_config() -> Result[Dag_Params, Config_Error]:
     """Process initial base config from path to QRCP."""
-    dag_params = get_current_context().get("params")
-    if dag_params is None:
-        logging.error("Missing DAG parameters")
-        return Failure("Did not provide params")
-    config_file_path = dag_params.get("config_file_path")
-    if config_file_path is None:
-        return Failure("Did not provide config_file_path")
-    if not isinstance(config_file_path, str):
-        return Failure("config_file_path parameter should be string")
-    logger.info("Running Gentropy pipeline with %s", config_file_path)
-    # match to the gwas catalog config DAG
-    return QRCP.from_file(config_file_path).get_dag_params(gwas_catalog_config_dag_id)
+    dag_run_params = get_current_context().get("params")
+    if dag_run_params is None or not dag_run_params:
+        return Failure("No params provided to the DAG run, ensure that you are triggering gwas_catalog_dag with config.json content")
+    # the kwargs comes from the @dag function parameters
+    airflow_config = dag_run_params.get("kwargs")
+    if airflow_config is None or not airflow_config:
+        return Failure("Empty or none configuration provided, ensure that you are triggering gwas_catalog_dag with config.json content")
+    # match to the gwas catalog config DAG from the full config
+    return QRCP(conf = airflow_config).get_dag_params(gwas_catalog_config_dag_id)
+
 
 def create_sftp_to_gcs_transfer_object(
     *,
-    input_file: str, 
+    input_file: str,
     output_file: str,
-    gcs_directory: str, 
+    gcs_directory: str,
     ftp_directory: str,
 ) -> SFTP_Transfer_Object:
     """Method to generate transfer object that can be consumed with SFTPToGCSOperator."""
@@ -56,27 +60,29 @@ def create_sftp_to_gcs_transfer_object(
     transfer_object: SFTP_Transfer_Object = {
         "source_path": urljoin(ftp_directory, input_file),
         "destination_bucket": "gs://gwas-catalog-data",
-        "destination_path": f"{destination_prefix}/{output_file}"
+        "destination_path": f"{destination_prefix}/{output_file}",
     }
     logger.info("transfer_object: %s", transfer_object)
     return transfer_object
 
 
-@dag(start_date=RUN_DATE, dag_id=gwas_catalog_config_dag_id, params = {"config_file_path": config_file_path})
-def gwas_catalog_dag() -> None:
+@dag(
+    start_date=RUN_DATE,
+    dag_id=gwas_catalog_config_dag_id,
+)
+def gwas_catalog_dag(**kwargs: Dag_Params) -> None:
     # dag_params = get_current_context()["params"]["config_file_path"]
     # first match the result of parsing config with QRCP
 
-    @task(task_id = "read_gwas_catalog_params", multiple_outputs=True)
+    @task(task_id="read_gwas_catalog_params", multiple_outputs=True)
     def read_gwas_catalog_params() -> Dag_Params:
-        match get_gwas_catalog_dag_config():
+         match get_gwas_catalog_dag_config():
             case Success(cfg):
                 return cfg
             case Failure(msg):
-                raise ValueError(msg)
+                raise AirflowException(msg)
             case _:
-                raise ValueError("Unexpected")
-
+                raise AirflowException("Unexpected execution path")
 
     # [START PREPARE CURATION MANIFEST]
     @task_group(group_id="curation")
@@ -85,25 +91,34 @@ def gwas_catalog_dag() -> None:
         curation_config = gwas_catalog_params["curation"]
 
         @task(task_id="prepare_gwas_catalog_manifest_paths")
-        def prepare_gwas_catalog_manifest_paths(curation_config : dict[str, Any] = curation_config) -> list[SFTP_Transfer_Object]:
+        def prepare_gwas_catalog_manifest_paths(
+            curation_config: dict[str, Any] = curation_config,
+        ) -> list[SFTP_Transfer_Object]:
             transfer_objects = []
-            for in_file, out_file in zip(curation_config["gwas_catalog_manifest_files_ftp"], curation_config["gwas_catalog_manifest_files_gcs"]):
+            for in_file, out_file in zip(
+                curation_config["gwas_catalog_manifest_files_ftp"],
+                curation_config["gwas_catalog_manifest_files_gcs"],
+            ):
                 transfer_object = create_sftp_to_gcs_transfer_object(
-                    input_file = in_file,
-                    output_file = out_file,
-                    gcs_directory= curation_config["gwas_catalog_manifests_endpoint_gcs"],
-                    ftp_directory=curation_config["gwas_catalog_release_ftp"]
+                    input_file=in_file,
+                    output_file=out_file,
+                    gcs_directory=curation_config[
+                        "gwas_catalog_manifests_endpoint_gcs"
+                    ],
+                    ftp_directory=curation_config["gwas_catalog_release_ftp"],
                 )
                 transfer_objects.append(transfer_object)
-            return  transfer_objects
+            return transfer_objects
 
         @task_group(group_id="sync_gwas_catalog_manifests")
         def sync_gwas_catalog_manifests(manifest_transfer_objects: XComArg) -> None:
             """Move all required manifests from GWAS Catalog FTP server to the GCS.
             https://airflow.apache.org/docs/apache-airflow/stable/authoring-and-scheduling/dynamic-task-mapping"html
             """
-            
-            SFTPToGCSOperator.partial(task_id="transfer_manifest_objects", sftp_conn_id = "ebi_ftp").expand_kwargs(manifest_transfer_objects)
+
+            SFTPToGCSOperator.partial(
+                task_id="transfer_manifest_objects", sftp_conn_id="ebi_ftp"
+            ).expand_kwargs(manifest_transfer_objects)
 
         # @task(task_id="sync_curation_manifest")
         # def consume_manifest_file(gentropy_params: dict[str, str]) -> pl.DataFrame:
@@ -122,6 +137,7 @@ def gwas_catalog_dag() -> None:
         manifest_transfer_objects = prepare_gwas_catalog_manifest_paths(curation_config)
         process_manifests = sync_gwas_catalog_manifests(manifest_transfer_objects)
         chain(manifest_transfer_objects, process_manifests)
+
     # [END PREPARE MANIFESTS]
 
     # @task_group(group_id="gwas_catalog_harmonisation")
@@ -144,7 +160,7 @@ def gwas_catalog_dag() -> None:
 
     #     @task(task_id = "Sanity_check_curation")
     #     def calculate_harmonisation_todo_list(
-    #         raw_list: list[str], 
+    #         raw_list: list[str],
     #         harmonised_list: list[str],
     #         harmonised_prefix: str,
     #         raw_prefix: str
@@ -169,7 +185,7 @@ def gwas_catalog_dag() -> None:
     #         if len(todo_list) != len(raw_list) - len(harmonised_list):
     #             raise ValueError("Incorrect number of studies inferred to harmonise")
     #         return todo_list
-                  
+
     #     calculate_harmonisation_todo_list(
     #         raw_summary_statistics, # type: ignore
     #         harmonised_summary_statistics, # type: ignore
@@ -179,7 +195,7 @@ def gwas_catalog_dag() -> None:
     gwas_catalog_params = read_gwas_catalog_params()
     chain(
         gwas_catalog_params,
-        prepare_manifest(gwas_catalog_params), # type: ignore
+        prepare_manifest(gwas_catalog_params),  # type: ignore
         # gwas_catalog_harmonisation(gwas_catalog_params) # type: ignore
     )
 

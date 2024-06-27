@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "orchestration"
-version = "0.1.0"
+version = "0.1.0dev"
 description = ""
 authors = ["Szymon Szyszkowski <ss60@mib117351s.internal.sanger.ac.uk>"]
 readme = "README.md"

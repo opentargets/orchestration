@@ -15,11 +15,11 @@ Data_Source = Literal["GWAS_Catalog", "eQTL_Catalogque", "finngen", "UK_Biobank_
 ConfigFieldNotFound = str
 Base_Type = str | int | float | bool | list[str]
 Dag_Params = dict[str, dict[str, Base_Type | list[Base_Type]]]
-ConfigParsingFailure = str 
+ConfigParsingFailure = str
 GentropyConfigNotFound = str
 if TYPE_CHECKING:
     from pathlib import Path
-    
+
 
 class DagModel(BaseModel):
     name: Dag_Name | str
@@ -76,7 +76,7 @@ class QRCP:
     def __init__(
         self, conf: Any, parser: Config_Parser = default_config_parser
     ) -> None:
-        """ "Initialize Quick and Robust Configuration Parser."""
+        """Initialize Quick and Robust Configuration Parser."""
         result = parser(conf)
         match result:
             case Success(config):

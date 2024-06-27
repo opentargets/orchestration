@@ -12,10 +12,12 @@ from airflow.decorators import task
 from airflow.models.dag import DAG
 from airflow.providers.google.cloud.operators.gcs import GCSListObjectsOperator
 
-CLUSTER_NAME =
-AUTOSCALING =
+CLUSTER_NAME = "otg-gwascatalog-harmonisation"
+AUTOSCALING = "gwascatalog-harmonisation"
 
-
+SUMMARY_STATS_BUCKET_NAME = "gwas_catalog_data"
+RAW_SUMMARY_STATISTICS_PREFIX = "raw_summary_statistics"
+HARMONISED_SUMMARY_STATISTICS_PREFIX = "harmonised_summary_statistics"
 
 with DAG(
     dag_id=Path(__file__).stem,
@@ -24,6 +26,19 @@ with DAG(
     **common.shared_dag_kwargs,
 ):
     # List raw harmonised files from GWAS Catalog
+    list_inputs = GCSListObjectsOperator(
+        task_id="list_raw_harmonised",
+        bucket=SUMMARY_STATS_BUCKET_NAME,
+        prefix=RAW_SUMMARY_STATISTICS_PREFIX,
+        match_glob="**/*.h.tsv.gz",
+    )
+    # List parquet files that have been previously processed
+    list_outputs = GCSListObjectsOperator(
+        task_id="list_harmonised_parquet",
+        bucket=SUMMARY_STATS_BUCKET_NAME,
+        prefix=HARMONISED_SUMMARY_STATISTICS_PREFIX,
+        match_glob="**/_SUCCESS",
+    )
 
     # Create list of pending jobs
     @task(task_id="create_to_do_list")
