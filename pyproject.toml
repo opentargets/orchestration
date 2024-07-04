@@ -21,6 +21,12 @@ pytest = "^8.2.2"
 mypy = "^1.10.0"
 pre-commit = "^3.7.1"
 
+
+[tool.poetry.group.test.dependencies]
+pytest-cov = "^5.0.0"
+pytest-sugar = "^1.0.0"
+pytest-xdist = "^3.6.1"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
