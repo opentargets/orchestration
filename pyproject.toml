@@ -26,6 +26,7 @@ pre-commit = "^3.7.1"
 pytest-cov = "^5.0.0"
 pytest-sugar = "^1.0.0"
 pytest-xdist = "^3.6.1"
+deptry = "^0.16.1"
 
 [build-system]
 requires = ["poetry-core"]
