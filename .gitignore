@@ -145,6 +145,15 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
+# ruff
+.ruff_cache
+
+# vscode
+.vscode
+
+# npm
+node_modules
+
 # Pyre type checker
 .pyre/
 
@@ -162,3 +171,11 @@ cython_debug/
 #.idea/
 
 .DS_Store
+
+# package
+orchestration-*.py3-none-any.whl
+
+
+# airflow 
+plugins/*
+logs/*
