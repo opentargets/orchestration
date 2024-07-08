@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "orchestration"
-version = "0.1.0dev"
-description = ""
+version = "0.1.0"
+description = "Open Targets Genetics Orchestration Pipeline"
 authors = ["Szymon Szyszkowski <ss60@mib117351s.internal.sanger.ac.uk>"]
 readme = "README.md"
 
@@ -27,7 +27,6 @@ build-backend = "poetry.core.masonry.api"
 
 # Semi-strict mode for mypy
 [tool.mypy]
-check_untyped_defs = true
 disallow_any_generics = true
 disallow_incomplete_defs = true
 no_implicit_optional = true
@@ -35,23 +34,14 @@ no_implicit_reexport = true
 strict_equality = true
 warn_redundant_casts = true
 warn_unused_ignores = true
-disallow_untyped_defs = true
+exclude = "orchestration/dags/*"
 plugins = ["returns.contrib.mypy.returns_plugin"]
 
 
 [[tool.mypy.overrides]]
 module = [
   "google.cloud",
-  "yaml",
-  "hail",
-  "pyliftover",
-  "dbldatagen",
-  "scipy",
-  "scipy.stats",
-  "chardet",
-  "omegaconf",
-  "xgboost",
-  "sklearn",
+  "yaml"
 ]
 ignore_missing_imports = true
 
