@@ -1,25 +1,38 @@
 [tool.poetry]
-name = "orchestration"
+name = "ot_orchestration"
 version = "0.1.0"
 description = "Open Targets Genetics Orchestration Pipeline"
 authors = ["Szymon Szyszkowski <ss60@mib117351s.internal.sanger.ac.uk>"]
 readme = "README.md"
+packages = [{include = "ot-orchestration", from = "src"}]
+
 
 [tool.poetry.dependencies]
 python = "^3.10, <3.11"
 apache-airflow = {extras = ["apache-beam", "async", "celery", "google", "kubernetes", "openlineage", "postgress", "sftp"], version = "^2.9.2"}
 apache-airflow-providers-google = "^10.19.0"
-loguru = "^0.7.2"
 psycopg2-binary = "^2.9.9"
 returns = {extras = ["compatible-mypy"], version = "^0.23.0"}
 pydantic = "^2.7.4"
-polars = "^0.20.31"
+click = "^8.1.7"
+pyyaml = "^6.0.1"
+google = "^3.0.0"
+pendulum = "^3.0.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.4.9"
 pytest = "^8.2.2"
 mypy = "^1.10.0"
 pre-commit = "^3.7.1"
+
+
+[tool.poetry.group.test.dependencies]
+pytest-cov = "^5.0.0"
+pytest-sugar = "^1.0.0"
+pytest-xdist = "^3.6.1"
+deptry = "^0.16.1"
+[tool.poetry.scripts]
+generate-dotenv = "ot-orchestration.scripts:ot"
 
 [build-system]
 requires = ["poetry-core"]
@@ -34,13 +47,12 @@ no_implicit_reexport = true
 strict_equality = true
 warn_redundant_casts = true
 warn_unused_ignores = true
-exclude = "orchestration/dags/*"
+exclude = "src/ot_orchestration/dags/*"
 plugins = ["returns.contrib.mypy.returns_plugin"]
-
 
 [[tool.mypy.overrides]]
 module = [
-  "google.cloud",
+  "google.cloud.storage",
   "yaml"
 ]
 ignore_missing_imports = true
@@ -72,8 +84,8 @@ ignore = [
 ]
 
 
-[tool.ruff.flake8-quotes]
+[tool.ruff.lint.flake8-quotes]
 docstring-quotes = "double"
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "google"

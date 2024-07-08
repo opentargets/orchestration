@@ -11,6 +11,9 @@ DOCKER_IMAGE := "Orchestration-Airflow"
 dev: # setup dev environment
 	./setup-dev.sh
 
+app:
+	echo src/$(APP_NAME)
+
 help: ## This is help
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
@@ -21,7 +24,7 @@ check-types: ## run mypy and check types
 	@. .venv/bin/activate && python -m mypy --install-types --non-interactive src/$(APP_NAME)
 
 format: ## run formatting
-	@. .venv/bin/activate && python -m black src/$(APP_NAME) tests && python -m ruff check --fix src/$(APP_NAME) tests
+	@. .venv/bin/activate && python -m ruff check --fix src/$(APP_NAME) tests
 
 test: ## run unit tests
 	@. .venv/bin/activate && python -m pytest tests/*.py
@@ -36,4 +39,3 @@ build-airflow-image: generate-requirements  ## build local airflow image for the
 		--tag extending_airflow:latest \
 		-f Dockerfile \
 		--no-cache
-

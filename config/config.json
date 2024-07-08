@@ -1,55 +1,63 @@
 {
-    "tags": [
-      "GWAS_catalog"
-    ],
-    "providers": [
-      {
-        "name": "dataproc",
-        "params": {
-          "spark_uri": "yarn",
-          "write_mode": "errorifexists"
-        }
-      },
-      {
-        "name": "googlebatch",
-        "params": null
+  "tags": ["GWAS_catalog"],
+  "providers": [
+    {
+      "name": "dataproc",
+      "params": {
+        "spark_uri": "yarn",
+        "write_mode": "errorifexists"
       }
-    ],
-    "DAGS": [
-      {
-        "name": "gwas_catalog",
-        "description": "Gentropy pipeline",
-        "params": {
-          "curation": {
-            "manual_curation_manifest_gsheet_id": "1Ik0jOU8d7eAOhsOmQPY10foockqZKcmT0EzwH6uvDQk",
-            "manual_curation_manifest_gh": "https://raw.githubusercontent.com/opentargets/curation/master/genetics/GWAS_Catalog_study_curation.tsv",
-            "gwas_catalog_release_stats": "https://www.ebi.ac.uk/gwas/api/search/stats",
-            "gwas_catalog_release_ftp": "ftp://ftp.ebi/ac.uk/pub/databases/gwas/releases/latest/",
-            "gwas_catalog_manifest_files_ftp": [
-              "gwas-catalog-associations_ontology-annotated.tsv",
-              "gwas-catalog-download-studies-v1.0.3.1.txt",
-              "gwas-catalog-unpublished-studies-v1.0.3.1.tsv",
-              "gwas-catalog-download-ancestries-v1.0.3.1.txt",
-              "gwas-catalog-unpublished-ancestries-v1.0.3.1.tsv"
-            ],
-            "gwas_catalog_manifest_files_gcs": [
-              "gwas-catalog-associations_ontology-annotated.tsv",
-              "gwas-catalog-download-studies.txt",
-              "gwas-catalog-unpublished-studies.tsv",
-              "gwas-catalog-download-ancestries.txt",
-              "gwas-catalog-unpublished-ancestries.tsv"
-            ],
-            "gwas_catalog_manifests_endpoint_gcs": "gs://gwas_catalog_data/manifests",
-            "gwas_catalog_data_curated_inputs": "gs://gwas_catalog_data/curated_inputs"
-          },
-          "harmonisation": {
-            "cluster_name": "otg-gwascatalog-harmonisation",
-            "autoscaling": "gwascatalog-harmonisation",
-            "summary_statistics_bucket": "gwas_catalog_data",
-            "raw_summary_statistics_prefix": "raw_summary_statistics",
-            "harmonized_summary_statistics_prefix": "harmonised_summary_statistics"
-          }
+    },
+    {
+      "name": "googlebatch",
+      "params": {
+        "release_bucket": "gs://genetics_etl_python_playground/output/python_etl/parquet/XX.XX",
+        "gwas_catalog_study_prefix": "GCST"
+      }
+    }
+  ],
+  "DAGS": [
+    {
+      "name": "gwas_catalog",
+      "description": "Gentropy pipeline",
+      "params": {
+        "curation": {
+          "manual_curation_manifest_gsheet_id": "1Ik0jOU8d7eAOhsOmQPY10foockqZKcmT0EzwH6uvDQk",
+          "manual_curation_manifest_gh": "https://raw.githubusercontent.com/opentargets/curation/master/genetics/GWAS_Catalog_study_curation.tsv",
+          "gwas_catalog_release_stats": "https://www.ebi.ac.uk/gwas/api/search/stats",
+          "gwas_catalog_release_ftp": "ftp://ftp.ebi/ac.uk/pub/databases/gwas/releases/latest/",
+          "gwas_catalog_manifest_files_ftp": [
+            "gwas-catalog-associations_ontology-annotated.tsv",
+            "gwas-catalog-download-studies-v1.0.3.1.txt",
+            "gwas-catalog-unpublished-studies-v1.0.3.1.tsv",
+            "gwas-catalog-download-ancestries-v1.0.3.1.txt",
+            "gwas-catalog-unpublished-ancestries-v1.0.3.1.tsv"
+          ],
+          "gwas_catalog_manifest_files_gcs": [
+            "gwas-catalog-associations_ontology-annotated.tsv",
+            "gwas-catalog-download-studies.txt",
+            "gwas-catalog-unpublished-studies.tsv",
+            "gwas-catalog-download-ancestries.txt",
+            "gwas-catalog-unpublished-ancestries.tsv"
+          ],
+          "gwas_catalog_manifests_endpoint_gcs": "gs://gwas_catalog_data/manifests",
+          "gwas_catalog_data_curated_inputs": "gs://gwas_catalog_data/curated_inputs",
+          "cluster_name": "otg-gwascatalog-curation",
+          "step_id": "gwas_catalog_study_curation",
+          "gwas_catalog_study_curation_out": ""
+        },
+        "harmonisation": {
+          "cluster_name": "otg-gwascatalog-harmonisation",
+          "autoscaling": "gwascatalog-harmonisation",
+          "summary_statistics_bucket": "gwas_catalog_data",
+          "raw_summary_statistics_prefix": "raw_summary_statistics",
+          "harmonized_summary_statistics_prefix": "harmonised_summary_statistics",
+          "master_machine_type": "n1-highmem-64",
+          "worker_machine_type": "n1-standard-2",
+          "num_workers": 8,
+          "num_preemptible_workers": 8
         }
       }
-    ]
-  }
+    }
+  ]
+}

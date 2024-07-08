@@ -1,7 +1,10 @@
 FROM apache/airflow:slim-latest-python3.10
-ARG ORCHESTRATION_PACKAGE
-COPY ${ORCHESTRATION_PACKAGE} ${ORCHESTRATION_PACKAGE}
-RUN pip install ${ORCHESTRATION_PACKAGE}
+# install only orchestration requirements, package itself will be mounted as a volume
+COPY requirements.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install psycopg2-binary
+
+
 SHELL ["/bin/bash", "-o", "pipefail", "-e", "-u", "-x", "-c"]
 
 USER 0

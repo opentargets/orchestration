@@ -2,24 +2,23 @@
 
 ## Requirements:
 
--[x] poetry
--[x] python3.10
--[x] docker 
--[x] docker-compose
+-[x] poetry -[x] python3.10 -[x] docker -[x] docker-compose -[x] poetry-plugin-export
 
 initialize the project with:
 
 ```
-poetry init
+poetry install
 ```
 
 The orchestration uses the Airflow that is set up by the `docker-compose`. To build the image
-run 
+run
 
 ```
 make build-airflow-image
 ```
+
 The requirements for setting up google cloud project are the same as for the gentropy
+
 - [x] set up google service account
 - [x] change the user to match your `id -u` in the `.env` file
 
@@ -27,9 +26,11 @@ The airflow DAGs sit in the `orchestration` package inside the `dags` directory.
 The configuration for the DAGs is located in the `orchestration` package inside the `configs` directory.
 
 In order to run the airflow rin the
+
 ```
 docker-compose up
 ```
+
 and open `localhost:8080` on your local machine.
 
 Currently the dag(s) are under heavy development, so there can be issues while airflow tries to parse them.

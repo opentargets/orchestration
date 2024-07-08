@@ -75,11 +75,11 @@ x-airflow-common: &airflow-common
     GCP_PROJECT_ID: ${GCP_PROJECT_ID:-}
     GCP_GCS_BUCKET: ${GCP_GCS_BUCKET:-}
   volumes:
-    - ${AIRFLOW_PROJ_DIR:-.}/orchestration/dags:/opt/airflow/dags
+    # mount entire package - https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/modules_management.html#typical-structure-of-packages
+    - ${AIRFLOW_PROJ_DIR:-.}/ot-orchestration:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
-    - ./config:/config
     - ${GOOGLE_LOCAL_CREDENTIALS_PATH}:/${GOOGLE_DOCKER_CREDENTIALS_PATH}:ro
   user: "${AIRFLOW_UID:-50000///}:0"
   depends_on: &airflow-common-depends-on
