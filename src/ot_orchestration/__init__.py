@@ -1,29 +1,28 @@
 """Quick and Robust Configuration Parser."""
 
 from __future__ import annotations
-from returns.result import Result, Failure, Success
-from typing import TYPE_CHECKING
+
+from typing import TYPE_CHECKING, Any, Callable, Literal
+
 import yaml
 from pydantic import BaseModel
-from typing import Literal, Callable, Any
+from returns.result import Failure, Result, Success
 
-Dag_Name = Literal["Gentropy"]
 Provider_Name = Literal["dataproc", "googlebatch"]
-Config_Field_Name = Literal["datasources", "common_params", "providers", "DAGS"]
-Config_Dag_Type = Literal["task"]
+Config_Field_Name = Literal["tags", "providers", "DAGS"]
 Data_Source = Literal["GWAS_Catalog", "eQTL_Catalogque", "finngen", "UK_Biobank_PPP"]
 ConfigFieldNotFound = str
 Base_Type = str | int | float | bool | list[str]
 Dag_Params = dict[str, dict[str, Base_Type | list[Base_Type]]]
 ConfigParsingFailure = str
-GentropyConfigNotFound = str
+
 if TYPE_CHECKING:
     from pathlib import Path
 
 
 class DagModel(BaseModel):
     """DAG subconfig structure."""
-    name: Dag_Name | str
+    name: Data_Source
     description: str
     params: Dag_Params | None
 
@@ -65,7 +64,7 @@ def default_config_parser(
             return Success(ConfigModel(tags=tags, providers=providers, DAGS=dags))
         case _:
             return Failure(
-                "Could not parse config structure {conf} with default config parser."
+               f"Could not parse config structure {conf} with default config parser."
             )
 
 
@@ -99,11 +98,11 @@ class QRCP:
 
     def get_dag_params(
         self: QRCP, dag: Data_Source | str
-    ) -> Result[Dag_Params, GentropyConfigNotFound]:
+    ) -> Result[Dag_Params, ConfigFieldNotFound]:
         """Get gentropy dag parameters from existing configuration.
 
         Returns:
-            Result[Dag_Params], GentropyConfigNotFound]: Result of Gentropy dag params lookup.
+            Result[Dag_Params], ConfigFieldNotFound]: Result of Gentropy dag params lookup.
         """
         for d in self.config.DAGS:
             if d.name == dag and d.params:
@@ -127,5 +126,5 @@ class QRCP:
 
     def to_file(self, path: Path | str) -> None:
         """Write to file."""
-        with open(path) as cfg:
+        with open(path, "w") as cfg:
             yaml.safe_dump(self.serialize(), cfg)

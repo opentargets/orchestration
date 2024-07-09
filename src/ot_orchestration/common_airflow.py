@@ -7,16 +7,12 @@ from typing import TYPE_CHECKING, Any, Optional
 import pendulum
 import yaml
 from airflow.providers.google.cloud.operators.dataproc import (
-    ClusterGenerator,
-    DataprocCreateClusterOperator,
-    DataprocDeleteClusterOperator,
-    DataprocSubmitJobOperator,
-)
+    ClusterGenerator, DataprocCreateClusterOperator,
+    DataprocDeleteClusterOperator, DataprocSubmitJobOperator)
 from airflow.utils.trigger_rule import TriggerRule
 from google.cloud import dataproc_v1
-from google.cloud.storage import Client
-
 from google.cloud.dataproc_v1 import Job
+from google.cloud.storage import Client
 
 if TYPE_CHECKING:
     from pathlib import Path

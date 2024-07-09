@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ot_orchestration import common_airflow as common
 from airflow.models.dag import DAG
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
+
+from ot_orchestration import common_airflow as common
 
 CLUSTER_NAME = "otg-preprocess-finngen"
 AUTOSCALING = "finngen-preprocess"

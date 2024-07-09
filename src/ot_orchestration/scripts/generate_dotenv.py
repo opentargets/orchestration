@@ -1,9 +1,10 @@
 """Generate dotenv file for airflow configuration."""
 import logging
-import sys
-import click
 import os
+import sys
 from pathlib import Path
+
+import click
 
 logging.basicConfig(level=logging.INFO)
 __version__ = "1.0.0"

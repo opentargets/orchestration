@@ -8,7 +8,7 @@ providers:
   - name: googlebatch
     params:
 DAGS:
-  - name: "gwas_catalog"
+  - name: "GWAS_Catalog"
     description: "Gentropy pipeline"
     params:
       curation:

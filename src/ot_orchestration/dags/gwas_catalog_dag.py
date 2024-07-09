@@ -1,22 +1,26 @@
 """Gwas catalog DAG."""
 from __future__ import annotations
-from airflow.decorators import dag, task, task_group
-from datetime import datetime
-from typing import TYPE_CHECKING
-from airflow.utils.helpers import chain
-from ot_orchestration import QRCP
-from airflow.operators.python import get_current_context
-from airflow.providers.google.cloud.transfers.sftp_to_gcs import SFTPToGCSOperator
-from returns.result import Success, Failure, Result
-import logging
-from urllib.parse import urljoin
-from typing import TypedDict
-from airflow.exceptions import AirflowException
 
+import logging
+from datetime import datetime
+from typing import TYPE_CHECKING, TypedDict
+from urllib.parse import urljoin
+
+from airflow.decorators import dag, task, task_group
+from airflow.exceptions import AirflowException
+from airflow.operators.python import get_current_context
+from airflow.providers.google.cloud.transfers.sftp_to_gcs import \
+    SFTPToGCSOperator
+from airflow.utils.helpers import chain
+from returns.result import Failure, Result, Success
+
+from ot_orchestration import QRCP
 
 if TYPE_CHECKING:
     from typing import Any
+
     from airflow.models.xcom_arg import XComArg
+
     from ot_orchestration import Dag_Params
 
     Config_Error = str

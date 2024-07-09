@@ -4,12 +4,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ot_orchestration import common_airflow as common
 from airflow.models.dag import DAG
-from airflow.providers.google.cloud.operators.dataflow import (
-    DataflowTemplatedJobStartOperator,
-)
-from airflow.providers.google.cloud.operators.gcs import GCSDeleteObjectsOperator
+from airflow.providers.google.cloud.operators.dataflow import \
+    DataflowTemplatedJobStartOperator
+from airflow.providers.google.cloud.operators.gcs import \
+    GCSDeleteObjectsOperator
+
+from ot_orchestration import common_airflow as common
 
 CLUSTER_NAME = "otg-preprocess-eqtl"
 AUTOSCALING = "eqtl-preprocess"

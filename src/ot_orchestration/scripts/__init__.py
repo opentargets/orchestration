@@ -1,7 +1,8 @@
 """Utility scripts."""
+import click
+
 from ot_orchestration.scripts import generate_dotenv
 
-import click
 
 @click.group()
 def ot():
