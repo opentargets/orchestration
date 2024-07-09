@@ -2461,20 +2461,20 @@ tests = ["nox (>=2020.12.31,<2022.6)"]
 
 [[package]]
 name = "google-analytics-admin"
-version = "0.22.7"
+version = "0.22.8"
 description = "Google Analytics Admin API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-analytics-admin-0.22.7.tar.gz", hash = "sha256:9546afaddf7ee275ec4729de6da8b15f27d4d245ee8896f80800e22572fc7987"},
-    {file = "google_analytics_admin-0.22.7-py2.py3-none-any.whl", hash = "sha256:09463653ecb42306c34fb07c9ff27193737aae8e63c52b8f695bf705e8589b46"},
+    {file = "google-analytics-admin-0.22.8.tar.gz", hash = "sha256:1ce2e6550dc4dbad890545869e25d1e38c1caa75ea95f539725f669a3c3b10a4"},
+    {file = "google_analytics_admin-0.22.8-py2.py3-none-any.whl", hash = "sha256:fb68d6b084ad28ec6090464fae3f2e0210489d4a787a9ad9a253ff5336bb0b93"},
 ]
 
 [package.dependencies]
 google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-api-core"
@@ -2521,13 +2521,13 @@ uritemplate = ">=3.0.1,<5"
 
 [[package]]
 name = "google-auth"
-version = "2.31.0"
+version = "2.32.0"
 description = "Google Authentication Library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-auth-2.31.0.tar.gz", hash = "sha256:87805c36970047247c8afe614d4e3af8eceafc1ebba0c679fe75ddd1d575e871"},
-    {file = "google_auth-2.31.0-py2.py3-none-any.whl", hash = "sha256:042c4702efa9f7d3c48d3a69341c209381b125faa6dbf3ebe56bc7e40ae05c23"},
+    {file = "google_auth-2.32.0-py2.py3-none-any.whl", hash = "sha256:53326ea2ebec768070a94bee4e1b9194c9646ea0c2bd72422785bd0f9abfad7b"},
+    {file = "google_auth-2.32.0.tar.gz", hash = "sha256:49315be72c55a6a37d62819e3573f6b416aca00721f7e3e31a008d928bf64022"},
 ]
 
 [package.dependencies]
@@ -2559,13 +2559,13 @@ httplib2 = ">=0.19.0"
 
 [[package]]
 name = "google-auth-oauthlib"
-version = "1.2.0"
+version = "1.2.1"
 description = "Google Authentication Library"
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "google-auth-oauthlib-1.2.0.tar.gz", hash = "sha256:292d2d3783349f2b0734a0a0207b1e1e322ac193c2c09d8f7c613fb7cc501ea8"},
-    {file = "google_auth_oauthlib-1.2.0-py2.py3-none-any.whl", hash = "sha256:297c1ce4cb13a99b5834c74a1fe03252e1e499716718b190f56bcb9c4abc4faf"},
+    {file = "google_auth_oauthlib-1.2.1-py2.py3-none-any.whl", hash = "sha256:2d58a27262d55aa1b87678c3ba7142a080098cbc2024f903c62355deb235d91f"},
+    {file = "google_auth_oauthlib-1.2.1.tar.gz", hash = "sha256:afd0cad092a2eaa53cd8e8298557d6de1034c6cb4a740500b5357b648af97263"},
 ]
 
 [package.dependencies]
@@ -2625,20 +2625,20 @@ xai = ["tensorflow (>=2.3.0,<3.0.0dev)"]
 
 [[package]]
 name = "google-cloud-appengine-logging"
-version = "1.4.3"
+version = "1.4.4"
 description = "Google Cloud Appengine Logging API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-appengine-logging-1.4.3.tar.gz", hash = "sha256:fb504e6199fe8de85baa9d31cecf6776877851fe58867de603317ec7cc739987"},
-    {file = "google_cloud_appengine_logging-1.4.3-py2.py3-none-any.whl", hash = "sha256:8e30af51d853f219caf29e8b8b342b9ce8214b29f334dafae38d39aaaff7d372"},
+    {file = "google-cloud-appengine-logging-1.4.4.tar.gz", hash = "sha256:8b4427f06fba669a959fd54c8da63560ff4cf2f8e2c158c20d5479b088904795"},
+    {file = "google_cloud_appengine_logging-1.4.4-py2.py3-none-any.whl", hash = "sha256:bb1f776211d7902213fec2ed6e9080166ac9966494eb61c6543b681084530230"},
 ]
 
 [package.dependencies]
 google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-audit-log"
@@ -2657,20 +2657,20 @@ protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.1 || >4.21.1,<4
 
 [[package]]
 name = "google-cloud-automl"
-version = "2.13.3"
+version = "2.13.4"
 description = "Google Cloud Automl API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-automl-2.13.3.tar.gz", hash = "sha256:891a9082eaedeb17bc5bb724fc150b7702c684d7420f9f22ae3f7c5fc611c71a"},
-    {file = "google_cloud_automl-2.13.3-py2.py3-none-any.whl", hash = "sha256:8117943ad1534f1d11d40e0937ade7965c56a6d7fd2c2314e56942361727a6a2"},
+    {file = "google-cloud-automl-2.13.4.tar.gz", hash = "sha256:371028a1bd3024aa1bb5c110353807f9fca59d3b4974bf7c876dc854d7cb85ec"},
+    {file = "google_cloud_automl-2.13.4-py2.py3-none-any.whl", hash = "sha256:27b55e0925546d4638985b73bcb1f0942da128da9fd9aecdc86812f96cbbd120"},
 ]
 
 [package.dependencies]
 google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [package.extras]
 libcst = ["libcst (>=0.2.5)"]
@@ -2679,20 +2679,20 @@ storage = ["google-cloud-storage (>=1.18.0,<3.0.0dev)"]
 
 [[package]]
 name = "google-cloud-batch"
-version = "0.17.21"
+version = "0.17.22"
 description = "Google Cloud Batch API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-batch-0.17.21.tar.gz", hash = "sha256:ead5fd10553280a2fa9a05d892ff0446198ba381ad2895c88a80803e34e38a0a"},
-    {file = "google_cloud_batch-0.17.21-py2.py3-none-any.whl", hash = "sha256:a202defeb82ed30479c80d13e6ef2d3952cc6f47d28bdf8376d12fa36ad407ac"},
+    {file = "google-cloud-batch-0.17.22.tar.gz", hash = "sha256:af0eaff380093a92f1c57d83b286ce6bd1d82b00c1517bba173daff1b19be35f"},
+    {file = "google_cloud_batch-0.17.22-py2.py3-none-any.whl", hash = "sha256:e5d7c6cbc2bf9f73e066b5ecf255044ba04f8d2aea5a786d20cfc609334aa9b3"},
 ]
 
 [package.dependencies]
 google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-bigquery"
@@ -2727,20 +2727,20 @@ tqdm = ["tqdm (>=4.7.4,<5.0.0dev)"]
 
 [[package]]
 name = "google-cloud-bigquery-datatransfer"
-version = "3.15.3"
+version = "3.15.4"
 description = "Google Cloud Bigquery Datatransfer API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-bigquery-datatransfer-3.15.3.tar.gz", hash = "sha256:e4c84eed31209c43b43f08dda7307eec0666a2431d8c087acf4a682ad41f3ab1"},
-    {file = "google_cloud_bigquery_datatransfer-3.15.3-py2.py3-none-any.whl", hash = "sha256:cb8a0bf980d7d9386af638c42c006093f948147fc4bca3f11f724969517651dd"},
+    {file = "google-cloud-bigquery-datatransfer-3.15.4.tar.gz", hash = "sha256:ae35539eb24850c26c9e1fef7698a22fd7b88348993fd7ed624b1541de9c1b83"},
+    {file = "google_cloud_bigquery_datatransfer-3.15.4-py2.py3-none-any.whl", hash = "sha256:2978016575465514809e9e58d34c569a55be162ab881e135810386281a7f0bf0"},
 ]
 
 [package.dependencies]
 google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-bigtable"
@@ -2765,13 +2765,13 @@ libcst = ["libcst (>=0.2.5)"]
 
 [[package]]
 name = "google-cloud-build"
-version = "3.24.0"
+version = "3.24.1"
 description = "Google Cloud Build API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-build-3.24.0.tar.gz", hash = "sha256:dbaf1c0df4bd8579a16b985332412847a3fd6f58bd2b72b38fbd791b80d0a900"},
-    {file = "google_cloud_build-3.24.0-py2.py3-none-any.whl", hash = "sha256:1ba689730b5e27b8e226f3c7ba38e5af006321dcfbae211f995f26f9294fb19a"},
+    {file = "google-cloud-build-3.24.1.tar.gz", hash = "sha256:94df5557a397ba4f42f56a4107f2045de284dbc219cd46423a5267f6382480cb"},
+    {file = "google_cloud_build-3.24.1-py2.py3-none-any.whl", hash = "sha256:0f88ff3f29a251f359f45f1a0bfdedeecd4a1da514f131adfa7dd4728ed2fae7"},
 ]
 
 [package.dependencies]
@@ -2779,41 +2779,41 @@ google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extr
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 grpc-google-iam-v1 = ">=0.12.4,<1.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-compute"
-version = "1.19.0"
+version = "1.19.1"
 description = "Google Cloud Compute API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-compute-1.19.0.tar.gz", hash = "sha256:a07b3408b3f77786dcb196669ff3767bc51080718a7c2d3fd779defc8d817b4d"},
-    {file = "google_cloud_compute-1.19.0-py2.py3-none-any.whl", hash = "sha256:48d5582dd257fc817113556ab40990ec7a50fb6b2e341bc8a55ef90e2e66501d"},
+    {file = "google-cloud-compute-1.19.1.tar.gz", hash = "sha256:6b4a5b86c2cbbcda5dd90f4e338c5103f3e84604ecfb002d4ecb3a0c5d41531b"},
+    {file = "google_cloud_compute-1.19.1-py2.py3-none-any.whl", hash = "sha256:9744c6b393a8b41d972e163d2f780a6c24c8bc706d091dfc60a7b6013de49e87"},
 ]
 
 [package.dependencies]
 google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-container"
-version = "2.47.0"
+version = "2.47.1"
 description = "Google Cloud Container API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-container-2.47.0.tar.gz", hash = "sha256:b6fcce293bb69f96fd243a3d109c38f0152b26e3b0391f492ba3d0ca2e381df2"},
-    {file = "google_cloud_container-2.47.0-py2.py3-none-any.whl", hash = "sha256:327e7b3ff68dbaca367c1840e8c2b0fc8a3d922264faf96dd0233c98785ee42a"},
+    {file = "google-cloud-container-2.47.1.tar.gz", hash = "sha256:d9d2fe5e3dfbbc545243ec844ad551348a7f09e65d40ae9538fa5cc466001251"},
+    {file = "google_cloud_container-2.47.1-py2.py3-none-any.whl", hash = "sha256:18a258cc51c28451911181d403db1373cb0bd9708032738c0873a0fe0da400ad"},
 ]
 
 [package.dependencies]
 google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-core"
@@ -2835,13 +2835,13 @@ grpc = ["grpcio (>=1.38.0,<2.0dev)", "grpcio-status (>=1.38.0,<2.0.dev0)"]
 
 [[package]]
 name = "google-cloud-datacatalog"
-version = "3.19.0"
+version = "3.19.1"
 description = "Google Cloud Datacatalog API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-datacatalog-3.19.0.tar.gz", hash = "sha256:3a8d0ef787f0edd4703e7e27c91a1b5f85bdbe04d61609132ec77269f7d52692"},
-    {file = "google_cloud_datacatalog-3.19.0-py2.py3-none-any.whl", hash = "sha256:c76ccf0d98d150c2feb1552518f6efde441c820664742ccbe4daf749e009f58d"},
+    {file = "google-cloud-datacatalog-3.19.1.tar.gz", hash = "sha256:06a0fc56f387ac9c38d9ab4ac51c9a5b1680d5a7f34e5a39d8b3e4b8493bfbc1"},
+    {file = "google_cloud_datacatalog-3.19.1-py2.py3-none-any.whl", hash = "sha256:d2f1b0cc37a3a7b66109b4280b4f2073d776daf7b34ec1f0151262a559ff1f10"},
 ]
 
 [package.dependencies]
@@ -2849,34 +2849,34 @@ google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extr
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 grpc-google-iam-v1 = ">=0.12.4,<1.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-dataflow-client"
-version = "0.8.10"
+version = "0.8.11"
 description = "Google Cloud Dataflow Client API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-dataflow-client-0.8.10.tar.gz", hash = "sha256:6aa8178743bce4b6c9142b492e649db84f55db70a88ec29a3d889054c4752144"},
-    {file = "google_cloud_dataflow_client-0.8.10-py2.py3-none-any.whl", hash = "sha256:4b0dce886ec65fbf3195f87e956d559f6d4bd88a03b527aa8498c303e2d4d39a"},
+    {file = "google-cloud-dataflow-client-0.8.11.tar.gz", hash = "sha256:ae813634762d1dd78c457272b6d1dd5f8da0540a3b68d50118fbc50ae05e8e67"},
+    {file = "google_cloud_dataflow_client-0.8.11-py2.py3-none-any.whl", hash = "sha256:4482d149bf96e5e09c09c5d88080409838154758b31a599f3f135f5a00b16839"},
 ]
 
 [package.dependencies]
 google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-dataform"
-version = "0.5.9"
+version = "0.5.10"
 description = "Google Cloud Dataform API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-dataform-0.5.9.tar.gz", hash = "sha256:2733c3fbda4f0134629e2d6554db93e1840683567043906268718b1a874eb9ac"},
-    {file = "google_cloud_dataform-0.5.9-py2.py3-none-any.whl", hash = "sha256:c94e61358a68de389803bb06b936f815108211b3324e1f143db9a8bd2bb6a081"},
+    {file = "google-cloud-dataform-0.5.10.tar.gz", hash = "sha256:da9279f42ddd21a581a021883970a95a08f8678f9ba8fa04c37220112fa01ba4"},
+    {file = "google_cloud_dataform-0.5.10-py2.py3-none-any.whl", hash = "sha256:3777a99fca312c8d77fcc15a5cc813e804923744a4f5d457b28ded48c510ab08"},
 ]
 
 [package.dependencies]
@@ -2884,17 +2884,17 @@ google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extr
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 grpc-google-iam-v1 = ">=0.12.4,<1.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-dataplex"
-version = "2.2.0"
+version = "2.2.1"
 description = "Google Cloud Dataplex API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-dataplex-2.2.0.tar.gz", hash = "sha256:7cc4b7f9cf57c8b64c96031328364849a6849227afbfcd0d6eb7f63e7a5452c2"},
-    {file = "google_cloud_dataplex-2.2.0-py2.py3-none-any.whl", hash = "sha256:cdefef1b63754264764c671fc79ba60eb4f40472deab5d21b5e157dd048299b0"},
+    {file = "google-cloud-dataplex-2.2.1.tar.gz", hash = "sha256:5b6164b3f33ddead0753c861ff7e0cff4583d746eafc928a05e565b627f223fd"},
+    {file = "google_cloud_dataplex-2.2.1-py2.py3-none-any.whl", hash = "sha256:9b4394098b512c06a0d92c13dd929e6b9770581ab16962726fc2ce70d5e65f2b"},
 ]
 
 [package.dependencies]
@@ -2902,17 +2902,17 @@ google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extr
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 grpc-google-iam-v1 = ">=0.12.4,<1.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-dataproc"
-version = "5.10.0"
+version = "5.10.1"
 description = "Google Cloud Dataproc API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-dataproc-5.10.0.tar.gz", hash = "sha256:1e322fe83ba372f9d43d881dafdcfded50daaa9a197ba45e380d6f23ba504960"},
-    {file = "google_cloud_dataproc-5.10.0-py2.py3-none-any.whl", hash = "sha256:174080c38235caa8d712ffe7566a5c8ac8871f4dfbd69c8b39e986a592ee6877"},
+    {file = "google-cloud-dataproc-5.10.1.tar.gz", hash = "sha256:f3f0f0f3933328e80273774540368432550e296c255928657069a31a2de01c39"},
+    {file = "google_cloud_dataproc-5.10.1-py2.py3-none-any.whl", hash = "sha256:28b763c9b019ca7d7c3e917ade04647c00494e77d4e682ca221d53e8d36f70af"},
 ]
 
 [package.dependencies]
@@ -2920,17 +2920,17 @@ google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extr
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 grpc-google-iam-v1 = ">=0.12.4,<1.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-dataproc-metastore"
-version = "1.15.3"
+version = "1.15.4"
 description = "Google Cloud Dataproc Metastore API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-dataproc-metastore-1.15.3.tar.gz", hash = "sha256:1f8a5a66e43a4d1c119e9be225ba66b041f432d046b5c4da6717fbd56fcfb4f5"},
-    {file = "google_cloud_dataproc_metastore-1.15.3-py2.py3-none-any.whl", hash = "sha256:871dcea73ae2ab2ecfb6da1fe1bc82206eee817b744755f7b24aaef554b8d896"},
+    {file = "google-cloud-dataproc-metastore-1.15.4.tar.gz", hash = "sha256:fa0da4fa17ca2dd5a3b3af554e1094fef5cc9ac3fdd60e286a5e3516b75e3cfd"},
+    {file = "google_cloud_dataproc_metastore-1.15.4-py2.py3-none-any.whl", hash = "sha256:bb68691b377329c53c007c72e134845bc46429036f86f14811b45f1b698e7b58"},
 ]
 
 [package.dependencies]
@@ -2938,34 +2938,34 @@ google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extr
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 grpc-google-iam-v1 = ">=0.12.4,<1.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-dlp"
-version = "3.18.0"
+version = "3.18.1"
 description = "Google Cloud Dlp API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-dlp-3.18.0.tar.gz", hash = "sha256:47408cc75e8398c7dce93c3f62a3ed8582b20f125cc8e0dd331015ae3eb62f7e"},
-    {file = "google_cloud_dlp-3.18.0-py2.py3-none-any.whl", hash = "sha256:68c5c3767b9d96597b6c51c97fe4d824439ca71622048b3d44b89ed7d6eecf0d"},
+    {file = "google-cloud-dlp-3.18.1.tar.gz", hash = "sha256:298aa1c126bd67ed6ce3555ef8619b9d1d017d2644e54c00aa09aa1167f1382d"},
+    {file = "google_cloud_dlp-3.18.1-py2.py3-none-any.whl", hash = "sha256:8c2e11e8f807e3cb44ff9f292818e419febbfe27ece3138f72128e6bf0a43d5f"},
 ]
 
 [package.dependencies]
 google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-kms"
-version = "2.24.0"
+version = "2.24.1"
 description = "Google Cloud Kms API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-kms-2.24.0.tar.gz", hash = "sha256:d7a1fd5ab2a4f9553051d5fa1cb0d17048b2714593da5a159151cce6813859bd"},
-    {file = "google_cloud_kms-2.24.0-py2.py3-none-any.whl", hash = "sha256:7161c4904167a715afe85eba3a0ef4c6e1badc4b6add7740c5e88b5d00db232f"},
+    {file = "google-cloud-kms-2.24.1.tar.gz", hash = "sha256:b66490a71372c51f4e1c6b02465426e95ddab7030c4b1a6e91ff3e6bf35bab23"},
+    {file = "google_cloud_kms-2.24.1-py2.py3-none-any.whl", hash = "sha256:465e14ab999064f161dac82f122ac02785336bd55333868ef793ee9d278c9b5b"},
 ]
 
 [package.dependencies]
@@ -2973,24 +2973,24 @@ google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extr
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 grpc-google-iam-v1 = ">=0.12.4,<1.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-language"
-version = "2.13.3"
+version = "2.13.4"
 description = "Google Cloud Language API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-language-2.13.3.tar.gz", hash = "sha256:569d35260af906de25b8e2a76b6364e05809b8453afd89da738d4a4fcb90846f"},
-    {file = "google_cloud_language-2.13.3-py2.py3-none-any.whl", hash = "sha256:b060de20d8ed2b20b7b7ebd8a46ae240df36c9977db383db5155276d2b1f6b9a"},
+    {file = "google-cloud-language-2.13.4.tar.gz", hash = "sha256:8fc660331a13c640db76a48bac13f9e802012631af9badd356269ea7f677c592"},
+    {file = "google_cloud_language-2.13.4-py2.py3-none-any.whl", hash = "sha256:8f79c753ae64a0a382a53b6d7877ef739fd6b0be34b3c020e39512a064609842"},
 ]
 
 [package.dependencies]
 google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-logging"
@@ -3015,74 +3015,74 @@ protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4
 
 [[package]]
 name = "google-cloud-memcache"
-version = "1.9.3"
+version = "1.9.4"
 description = "Google Cloud Memcache API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-memcache-1.9.3.tar.gz", hash = "sha256:ee5ff95afe47efc1a0746ba13b2f56996bc018f158f6b0cad69d835b0447d6e8"},
-    {file = "google_cloud_memcache-1.9.3-py2.py3-none-any.whl", hash = "sha256:d1574670dcdb861cc772e2b797f7e5fb83b9dd7ef2ce34fbe4ff54d454a816d3"},
+    {file = "google-cloud-memcache-1.9.4.tar.gz", hash = "sha256:7604c4cea55ae6a019387a785f59adb3240072241b6aced06955ced8a9a5d1b0"},
+    {file = "google_cloud_memcache-1.9.4-py2.py3-none-any.whl", hash = "sha256:50fbf896bf29c95d8f8011d967c0363098dc14e93fb2da83f9f5827cbcada509"},
 ]
 
 [package.dependencies]
 google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-monitoring"
-version = "2.22.0"
+version = "2.22.1"
 description = "Google Cloud Monitoring API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-monitoring-2.22.0.tar.gz", hash = "sha256:494696e1788c55ef5b2fad464813fdd9f59117fc28819b7d9d27a1873d7b7fad"},
-    {file = "google_cloud_monitoring-2.22.0-py2.py3-none-any.whl", hash = "sha256:ae22c2e0f0229e99705a80f9682b1a30a89c13c934212850d7c621b44e2b7c90"},
+    {file = "google-cloud-monitoring-2.22.1.tar.gz", hash = "sha256:db17b15af8d47da0cf8fb0e365faafbcd11f9aa62781ce048c29988808b3dc7d"},
+    {file = "google_cloud_monitoring-2.22.1-py2.py3-none-any.whl", hash = "sha256:cae904d5fd2fc4af02014a10866061faba5848efddc173d853e5343dc054fa47"},
 ]
 
 [package.dependencies]
 google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [package.extras]
 pandas = ["pandas (>=0.23.2)"]
 
 [[package]]
 name = "google-cloud-orchestration-airflow"
-version = "1.12.1"
+version = "1.12.2"
 description = "Google Cloud Orchestration Airflow API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-orchestration-airflow-1.12.1.tar.gz", hash = "sha256:659a72f506a9441f1938664e98cdced9a4a852dc5d8c533a5c2f822cefe72eb1"},
-    {file = "google_cloud_orchestration_airflow-1.12.1-py2.py3-none-any.whl", hash = "sha256:9dab139528860c3d10b9affe6a7e34848f10e15f5800554792c1bab37f713e3d"},
+    {file = "google-cloud-orchestration-airflow-1.12.2.tar.gz", hash = "sha256:739cf84c14f97069211c1cba55e050933017189c555e05a7ee7a77cdcd2f2955"},
+    {file = "google_cloud_orchestration_airflow-1.12.2-py2.py3-none-any.whl", hash = "sha256:b7454559748c731e9cb88fbc9c2e423b11c876a865dbffbb0bd500579812f515"},
 ]
 
 [package.dependencies]
 google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-os-login"
-version = "2.14.4"
+version = "2.14.5"
 description = "Google Cloud Os Login API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-os-login-2.14.4.tar.gz", hash = "sha256:824e9f3525c4e8f0ee4cd5c783c624d02d9e863741be84c00ea018480ea2da99"},
-    {file = "google_cloud_os_login-2.14.4-py2.py3-none-any.whl", hash = "sha256:5a925f554c76b397ebb3c83bb8f919e65ff017e0b65cc4af3d3986ff744a22ed"},
+    {file = "google-cloud-os-login-2.14.5.tar.gz", hash = "sha256:17e8e504fc5980278445366f505c62ed1b87d3a53940734d4602a325b93f738a"},
+    {file = "google_cloud_os_login-2.14.5-py2.py3-none-any.whl", hash = "sha256:20fdae5572a1d07570351d47e774bd609a5c0b0a6f4f427170f5afb1107e512a"},
 ]
 
 [package.dependencies]
 google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-pubsub"
@@ -3109,30 +3109,30 @@ libcst = ["libcst (>=0.3.10)"]
 
 [[package]]
 name = "google-cloud-redis"
-version = "2.15.3"
+version = "2.15.4"
 description = "Google Cloud Redis API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-redis-2.15.3.tar.gz", hash = "sha256:e6a231e45107038cfe498dfad1f6dad2ca7bdca3a931323730be03ab7a000a8f"},
-    {file = "google_cloud_redis-2.15.3-py2.py3-none-any.whl", hash = "sha256:df79f6f8a81f948d2d5343a76e7c9108ab56eab9279be0763da6968f497b2bdb"},
+    {file = "google-cloud-redis-2.15.4.tar.gz", hash = "sha256:bc6f3e98bd40e63f42bb0ce6cfe6986e39985d69460b3ae20cdb50a0b6f09a85"},
+    {file = "google_cloud_redis-2.15.4-py2.py3-none-any.whl", hash = "sha256:bf401eb0b5037113b5505551a5714a8051d4b83f025ceaa0f72c809cb21f48f5"},
 ]
 
 [package.dependencies]
 google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-resource-manager"
-version = "1.12.3"
+version = "1.12.4"
 description = "Google Cloud Resource Manager API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-resource-manager-1.12.3.tar.gz", hash = "sha256:809851824119834e4f2310b2c4f38621c1d16b2bb14d5b9f132e69c79d355e7f"},
-    {file = "google_cloud_resource_manager-1.12.3-py2.py3-none-any.whl", hash = "sha256:92be7d6959927b76d90eafc4028985c37975a46ded5466a018f02e8649e113d4"},
+    {file = "google-cloud-resource-manager-1.12.4.tar.gz", hash = "sha256:3eda914a925e92465ef80faaab7e0f7a9312d486dd4e123d2c76e04bac688ff0"},
+    {file = "google_cloud_resource_manager-1.12.4-py2.py3-none-any.whl", hash = "sha256:0b6663585f7f862166c0fb4c55fdda721fce4dc2dc1d5b52d03ee4bf2653a85f"},
 ]
 
 [package.dependencies]
@@ -3140,17 +3140,17 @@ google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extr
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 grpc-google-iam-v1 = ">=0.12.4,<1.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-run"
-version = "0.10.5"
+version = "0.10.6"
 description = "Google Cloud Run API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-run-0.10.5.tar.gz", hash = "sha256:d6c546693ad1232794b75c617871f2e46283c0cd0c4cc3886b85b8f0a3ba575f"},
-    {file = "google_cloud_run-0.10.5-py2.py3-none-any.whl", hash = "sha256:0f68125f13d1a87f74e1e78c37fa6afb4b094d76dad2b9f951d5526648e8939c"},
+    {file = "google-cloud-run-0.10.6.tar.gz", hash = "sha256:02d201c60b386c077183dfb4a26ce4b46f41067fddc153e0156746b72f3bacf3"},
+    {file = "google_cloud_run-0.10.6-py2.py3-none-any.whl", hash = "sha256:4b98782a9255314933db1abcd92ce0f53aa024f6b06fe54e440f51ce81b97ed6"},
 ]
 
 [package.dependencies]
@@ -3158,17 +3158,17 @@ google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extr
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 grpc-google-iam-v1 = ">=0.12.4,<1.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-secret-manager"
-version = "2.20.0"
+version = "2.20.1"
 description = "Google Cloud Secret Manager API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-secret-manager-2.20.0.tar.gz", hash = "sha256:a086a7413aaf4fffbd1c4fe9229ef0ce9bcf48f5a8df5b449c4a32deb5a2cfde"},
-    {file = "google_cloud_secret_manager-2.20.0-py2.py3-none-any.whl", hash = "sha256:c20bf22e59d220c51aa84a1db3411b14b83aa71f788fae8d273c03a4bf3e77ed"},
+    {file = "google-cloud-secret-manager-2.20.1.tar.gz", hash = "sha256:91ca4f5424d80ce4f5e78deca82996ee387b8c8e060d16981690e31e3a42138b"},
+    {file = "google_cloud_secret_manager-2.20.1-py2.py3-none-any.whl", hash = "sha256:56ed896d9dfc981a9c7188bbb49c17c621ef9c49fcb5aa922ee0f5969cc3a490"},
 ]
 
 [package.dependencies]
@@ -3176,7 +3176,7 @@ google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extr
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 grpc-google-iam-v1 = ">=0.12.4,<1.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-spanner"
@@ -3203,20 +3203,20 @@ tracing = ["opentelemetry-api (>=1.1.0)", "opentelemetry-instrumentation (>=0.20
 
 [[package]]
 name = "google-cloud-speech"
-version = "2.26.0"
+version = "2.26.1"
 description = "Google Cloud Speech API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-speech-2.26.0.tar.gz", hash = "sha256:d3156a78496aeacff403429408a1b13efe996da6f0544a25567904ad801671d5"},
-    {file = "google_cloud_speech-2.26.0-py2.py3-none-any.whl", hash = "sha256:8b61aebcbcc9bd5450933c94c431584a07667e022d12834f9037bb2c0e673c87"},
+    {file = "google-cloud-speech-2.26.1.tar.gz", hash = "sha256:12aceb02e34c14ed49eea3102ae7e776dfd8722babdd1466de4db0de8c1f91a9"},
+    {file = "google_cloud_speech-2.26.1-py2.py3-none-any.whl", hash = "sha256:51566c55f74288767afa91fd25c9563cfcf61ed417eb3301d4cb58c5ee4abe77"},
 ]
 
 [package.dependencies]
 google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-storage"
@@ -3242,30 +3242,30 @@ protobuf = ["protobuf (<5.0.0dev)"]
 
 [[package]]
 name = "google-cloud-storage-transfer"
-version = "1.11.3"
+version = "1.11.4"
 description = "Google Cloud Storage Transfer API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-storage-transfer-1.11.3.tar.gz", hash = "sha256:c4564749492f41957f44c41b76f61f72c12b519424b841895bfe2d932c6f1490"},
-    {file = "google_cloud_storage_transfer-1.11.3-py2.py3-none-any.whl", hash = "sha256:698e1b21c9dc710f543b2e6dc3c70334b872d4a80fafc0b2718fc91b6f45858e"},
+    {file = "google-cloud-storage-transfer-1.11.4.tar.gz", hash = "sha256:bea1199590c2401a549a70eb5dc19da37cb36693ec36ffb4611c10246d09f546"},
+    {file = "google_cloud_storage_transfer-1.11.4-py2.py3-none-any.whl", hash = "sha256:7081e6283128a0916a965f06fc6be298792216f8fa47c5a07dfcf6ccabee6c6a"},
 ]
 
 [package.dependencies]
 google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-tasks"
-version = "2.16.3"
+version = "2.16.4"
 description = "Google Cloud Tasks API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-tasks-2.16.3.tar.gz", hash = "sha256:d891fe7006db4d6122838aa6de4aca6e0077bab224edcae684666ae3e303c45f"},
-    {file = "google_cloud_tasks-2.16.3-py2.py3-none-any.whl", hash = "sha256:a1a8473f5c76907525b51ae4c20182a42333b5c3e1dc5782d7af6c2f58241a0c"},
+    {file = "google-cloud-tasks-2.16.4.tar.gz", hash = "sha256:61033c1edd7dc5aa3b9fbe5c8deb64be0c50e0baee9d9465f3f8b75b2cda55b9"},
+    {file = "google_cloud_tasks-2.16.4-py2.py3-none-any.whl", hash = "sha256:7db2b364ded9c2e0143b2794d1ae53ef7461a99567698e3e4ba9e02b614e1adb"},
 ]
 
 [package.dependencies]
@@ -3273,34 +3273,34 @@ google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extr
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 grpc-google-iam-v1 = ">=0.12.4,<1.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-texttospeech"
-version = "2.16.3"
+version = "2.16.4"
 description = "Google Cloud Texttospeech API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-texttospeech-2.16.3.tar.gz", hash = "sha256:fabc315032d137da0710bb4c268734d336212d8fa8316b23b277dd3a84ce721c"},
-    {file = "google_cloud_texttospeech-2.16.3-py2.py3-none-any.whl", hash = "sha256:5d1e23f9270908a5d7ecf2af04105fbd3a7ddde60fe48506e397bd18c1ece499"},
+    {file = "google-cloud-texttospeech-2.16.4.tar.gz", hash = "sha256:07b7e2a126e29219d2024dd69e40cb31ff0805bdae4957dcba452c6ad4862405"},
+    {file = "google_cloud_texttospeech-2.16.4-py2.py3-none-any.whl", hash = "sha256:431f3b937f6c6150b6ca559ac906f0a6796ca72fe13f8e460755d8318cc9564a"},
 ]
 
 [package.dependencies]
 google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-translate"
-version = "3.15.3"
+version = "3.15.4"
 description = "Google Cloud Translate API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-translate-3.15.3.tar.gz", hash = "sha256:ed587a1e60cf847c3b1add6b28256e2d1722fa73a4285334f5ec5ca933e616f2"},
-    {file = "google_cloud_translate-3.15.3-py2.py3-none-any.whl", hash = "sha256:2e92cd286fb25d5cf9fc0e8710f524fdf80656b6b64947d244e91696e69346ad"},
+    {file = "google-cloud-translate-3.15.4.tar.gz", hash = "sha256:9d9dd8cf225ef9fb0675a86f92e79cac3295a28d09a4479e123ef0cbe547496b"},
+    {file = "google_cloud_translate-3.15.4-py2.py3-none-any.whl", hash = "sha256:9019327f58f2e1a07ede72912787b15274ede46455deb84e44d9b7880dcc41a3"},
 ]
 
 [package.dependencies]
@@ -3308,58 +3308,58 @@ google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extr
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 google-cloud-core = ">=1.4.4,<3.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-videointelligence"
-version = "2.13.3"
+version = "2.13.4"
 description = "Google Cloud Videointelligence API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-videointelligence-2.13.3.tar.gz", hash = "sha256:1460721d8120661c477c01af0edd3db03845857f52146a4a39f16b4acfb36f6d"},
-    {file = "google_cloud_videointelligence-2.13.3-py2.py3-none-any.whl", hash = "sha256:2eddfc42c4ef60378b638a5f4dfe466fadefae5cd6b1134eee377b5937be2c9e"},
+    {file = "google-cloud-videointelligence-2.13.4.tar.gz", hash = "sha256:6f0298a8d9edb59097b5ee753de5dd71f37a9266c9a4c5eae3fb4d0d240b10c0"},
+    {file = "google_cloud_videointelligence-2.13.4-py2.py3-none-any.whl", hash = "sha256:c025e08100751fbb7626e52d0ccaa7f354e0d0321378496bb5a500af824b7dc1"},
 ]
 
 [package.dependencies]
 google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-vision"
-version = "3.7.2"
+version = "3.7.3"
 description = "Google Cloud Vision API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-vision-3.7.2.tar.gz", hash = "sha256:044330ad618c810333ff2296cd27ffd145f249638d1b35b270de6b460b00e8d2"},
-    {file = "google_cloud_vision-3.7.2-py2.py3-none-any.whl", hash = "sha256:a313088fcd9c016af0427c2447eea1ad01bc192ca4cc33babaace1be587bbf75"},
+    {file = "google-cloud-vision-3.7.3.tar.gz", hash = "sha256:ee48c48e820c7e09932663986970fef456dc0f45c7af729d46f1f3dd97c1dfb6"},
+    {file = "google_cloud_vision-3.7.3-py2.py3-none-any.whl", hash = "sha256:d989b7e91880f7bd11d65530c3140fc130bbe29513aebb80f3d3e107764265d1"},
 ]
 
 [package.dependencies]
 google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-cloud-workflows"
-version = "1.14.3"
+version = "1.14.4"
 description = "Google Cloud Workflows API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-workflows-1.14.3.tar.gz", hash = "sha256:2140b97f78037b967d4185576886772fe17be77d2ae9996d207a334ed5a77ffe"},
-    {file = "google_cloud_workflows-1.14.3-py2.py3-none-any.whl", hash = "sha256:8e700e1e6e9e9ca6375d16cad6230c52cd123beca4597c86a956940bcce996d1"},
+    {file = "google-cloud-workflows-1.14.4.tar.gz", hash = "sha256:ab29414c9db2009199b7ec6ff6147262f3f8ce54e26e12081d5245f49ebb77d7"},
+    {file = "google_cloud_workflows-1.14.4-py2.py3-none-any.whl", hash = "sha256:d3c394654c29842f97595a389a846868da3f53315ba8350786ff92cc735e83d4"},
 ]
 
 [package.dependencies]
 google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
 google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
 proto-plus = ">=1.22.3,<2.0.0dev"
-protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<5.0.0dev"
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
 
 [[package]]
 name = "google-crc32c"
@@ -4018,13 +4018,13 @@ testing = ["bson", "ecdsa", "feedparser", "gmpy2", "numpy", "pandas", "pymongo",
 
 [[package]]
 name = "jsonschema"
-version = "4.22.0"
+version = "4.23.0"
 description = "An implementation of JSON Schema validation for Python"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "jsonschema-4.22.0-py3-none-any.whl", hash = "sha256:ff4cfd6b1367a40e7bc6411caec72effadd3db0bbe5017de188f2d6108335802"},
-    {file = "jsonschema-4.22.0.tar.gz", hash = "sha256:5b22d434a45935119af990552c862e5d6d564e8f6601206b305a61fdf661a2b7"},
+    {file = "jsonschema-4.23.0-py3-none-any.whl", hash = "sha256:fbadb6f8b144a8f8cf9f0b89ba94501d143e50411a1278633f56a7acf7fd5566"},
+    {file = "jsonschema-4.23.0.tar.gz", hash = "sha256:d71497fef26351a33265337fa77ffeb82423f3ea21283cd9467bb03999266bc4"},
 ]
 
 [package.dependencies]
@@ -4035,7 +4035,7 @@ rpds-py = ">=0.7.1"
 
 [package.extras]
 format = ["fqdn", "idna", "isoduration", "jsonpointer (>1.13)", "rfc3339-validator", "rfc3987", "uri-template", "webcolors (>=1.11)"]
-format-nongpl = ["fqdn", "idna", "isoduration", "jsonpointer (>1.13)", "rfc3339-validator", "rfc3986-validator (>0.1.0)", "uri-template", "webcolors (>=1.11)"]
+format-nongpl = ["fqdn", "idna", "isoduration", "jsonpointer (>1.13)", "rfc3339-validator", "rfc3986-validator (>0.1.0)", "uri-template", "webcolors (>=24.6.0)"]
 
 [[package]]
 name = "jsonschema-specifications"

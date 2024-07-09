@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Open Targets Genetics Orchestration Pipeline"
 authors = ["Szymon Szyszkowski <ss60@mib117351s.internal.sanger.ac.uk>"]
 readme = "README.md"
-packages = [{include = "ot-orchestration", from = "src"}]
+packages = [{include = "ot_orchestration", from = "src"}]
 
 
 [tool.poetry.dependencies]
