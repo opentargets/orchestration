@@ -2,26 +2,30 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Literal
+from typing import Any, Callable
 
+import json
 import yaml
 from pydantic import BaseModel
 from returns.result import Failure, Result, Success
+from ot_orchestration.types import (
+    Dag_Params,
+    Data_Source,
+    Provider_Name,
+    Base_Type,
+    ConfigParsingFailure,
+    ConfigFieldNotFound,
+    Config_Field_Name,
+)
+from pathlib import Path
 
-Provider_Name = Literal["dataproc", "googlebatch"]
-Config_Field_Name = Literal["tags", "providers", "DAGS"]
-Data_Source = Literal["GWAS_Catalog", "eQTL_Catalogque", "finngen", "UK_Biobank_PPP"]
-ConfigFieldNotFound = str
-Base_Type = str | int | float | bool | list[str]
-Dag_Params = dict[str, dict[str, Base_Type | list[Base_Type]]]
-ConfigParsingFailure = str
-
-if TYPE_CHECKING:
-    from pathlib import Path
+CONFIG_FILE_PATH = "/config/config.yaml"
+GWAS_CATALOG_CONFIG_DAG_ID = "GWAS_Catalog"
 
 
 class DagModel(BaseModel):
     """DAG subconfig structure."""
+
     name: Data_Source
     description: str
     params: Dag_Params | None
@@ -29,12 +33,14 @@ class DagModel(BaseModel):
 
 class ProviderModel(BaseModel):
     """Provider subconfig structure."""
+
     name: Provider_Name | str
     params: dict[str, Base_Type] | None
 
 
 class ConfigModel(BaseModel):
     """Top level config structure."""
+
     tags: list[Data_Source | str]
     providers: list[ProviderModel]
     DAGS: list[DagModel]
@@ -64,7 +70,7 @@ def default_config_parser(
             return Success(ConfigModel(tags=tags, providers=providers, DAGS=dags))
         case _:
             return Failure(
-               f"Could not parse config structure {conf} with default config parser."
+                f"Could not parse config structure {conf} with default config parser."
             )
 
 
@@ -127,4 +133,8 @@ class QRCP:
     def to_file(self, path: Path | str) -> None:
         """Write to file."""
         with open(path, "w") as cfg:
-            yaml.safe_dump(self.serialize(), cfg)
+            match Path(path).suffix:
+                case "yaml" | "yml":
+                    yaml.safe_dump(self.serialize(), cfg)
+                case "json":
+                    json.dump(self.serialize(), cfg)
