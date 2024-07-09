@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from airflow.models.xcom_arg import XComArg
 
     from ot_orchestration import Dag_Params
+    import pandas as pd
 
     Config_Error = str
 
@@ -29,7 +30,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 RUN_DATE = datetime.today()
 config_file_path = "/config/config.yaml"
-gwas_catalog_config_dag_id = "gwas_catalog"
+gwas_catalog_config_dag_id = "GWAS_Catalog"
 
 
 # type definitions
@@ -85,6 +86,7 @@ def gwas_catalog_dag(**kwargs: Dag_Params) -> None:
 
     @task(task_id="read_gwas_catalog_params", multiple_outputs=True)
     def read_gwas_catalog_params() -> Dag_Params:
+        """Read gwas catalog prams from pipeline config."""
         match get_gwas_catalog_dag_config():
             case Success(cfg):
                 return cfg
@@ -103,6 +105,7 @@ def gwas_catalog_dag(**kwargs: Dag_Params) -> None:
         def prepare_gwas_catalog_manifest_paths(
             curation_config: dict[str, Any] = curation_config,
         ) -> list[SFTP_Transfer_Object]:
+            """Prepare transfer objects for the gwas catalog manifests from ftp to gcs."""
             transfer_objects = []
             for in_file, out_file in zip(
                 curation_config["gwas_catalog_manifest_files_ftp"],
@@ -131,10 +134,19 @@ def gwas_catalog_dag(**kwargs: Dag_Params) -> None:
 
         # types are ignored, as the XArgs - result from airflow task(s) are inferred at runtime -
         # check typing in https://github.com/apache/airflow/blob/main/airflow/example_dags/tutorial_taskflow_api.py
-        manifest_transfer_objects = prepare_gwas_catalog_manifest_paths(curation_config)
-        sync_gwas_catalog_manifests(manifest_transfer_objects)
+        prepare_gwas_catalog_manifest_paths(curation_config)
+        # sync_gwas_catalog_manifests(manifest_transfer_objects)
+
+    @task(task_id = "gwas_catalog_manifest")
+    def get_manifest(gwas_catalog_params: dict[str, Any]) -> pd.DataFrame:
+        """Get original manifest for gwas catalog."""
+        manifest_path = gwas_catalog_params["curation"]["manual_curation_manifest_gh"]
+        import pandas as pd
+        return pd.read_csv(manifest_path, sep="\t")
 
     # [END PREPARE MANIFESTS]
+
+
 
     # @task_group(group_id="gwas_catalog_harmonisation")
     # def gwas_catalog_harmonisation(gwas_catalog_params: dict[str, Any]) -> None:
@@ -192,6 +204,7 @@ def gwas_catalog_dag(**kwargs: Dag_Params) -> None:
     chain(
         gwas_catalog_params,
         gwas_catalog_curation(gwas_catalog_params),  # type: ignore
+        get_manifest(gwas_catalog_params) # type: ignore
         # gwas_catalog_harmonisation(gwas_catalog_params) # type: ignore
     )
 
