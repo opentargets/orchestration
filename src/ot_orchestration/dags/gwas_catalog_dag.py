@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from airflow.models.xcom_arg import XComArg
 
     from ot_orchestration import Dag_Params
+    import polars as pl
 
     Config_Error = str
 
@@ -85,6 +86,7 @@ def gwas_catalog_dag(**kwargs: Dag_Params) -> None:
 
     @task(task_id="read_gwas_catalog_params", multiple_outputs=True)
     def read_gwas_catalog_params() -> Dag_Params:
+        """Read gwas catalog prams from pipeline config."""
         match get_gwas_catalog_dag_config():
             case Success(cfg):
                 return cfg
@@ -103,6 +105,7 @@ def gwas_catalog_dag(**kwargs: Dag_Params) -> None:
         def prepare_gwas_catalog_manifest_paths(
             curation_config: dict[str, Any] = curation_config,
         ) -> list[SFTP_Transfer_Object]:
+            """Prepare transfer objects for the gwas catalog manifests from ftp to gcs."""
             transfer_objects = []
             for in_file, out_file in zip(
                 curation_config["gwas_catalog_manifest_files_ftp"],
@@ -134,7 +137,16 @@ def gwas_catalog_dag(**kwargs: Dag_Params) -> None:
         manifest_transfer_objects = prepare_gwas_catalog_manifest_paths(curation_config)
         sync_gwas_catalog_manifests(manifest_transfer_objects)
 
+    @task(task_id = "gwas_catalog_manifest")
+    def get_manifest(gwas_catalog_params: dict[str, Any]) -> pl.DataFrame:
+        """Get original manifest for gwas catalog."""
+        manifest_path = gwas_catalog_params["curation"]["manual_curation_manifest_gh"]
+        import polars as pl
+        return pl.read_csv(manifest_path, separator="\t")
+
     # [END PREPARE MANIFESTS]
+
+
 
     # @task_group(group_id="gwas_catalog_harmonisation")
     # def gwas_catalog_harmonisation(gwas_catalog_params: dict[str, Any]) -> None:
@@ -192,6 +204,7 @@ def gwas_catalog_dag(**kwargs: Dag_Params) -> None:
     chain(
         gwas_catalog_params,
         gwas_catalog_curation(gwas_catalog_params),  # type: ignore
+        get_manifest(gwas_catalog_params) # type: ignore
         # gwas_catalog_harmonisation(gwas_catalog_params) # type: ignore
     )
 

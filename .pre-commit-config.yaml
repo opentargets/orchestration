@@ -75,7 +75,7 @@ repos:
     rev: 1.7.0
     hooks:
       - id: interrogate
-        args: [--verbose]
+        args: [-vv]
 
   - repo: https://github.com/pycqa/pydocstyle
     rev: 6.3.0
