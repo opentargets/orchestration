@@ -91,7 +91,12 @@ def finemapping_batch_job(
 
     # Define task environments: individual configuration for each of the tasks.
     task_environments = [
-        Environment(variables={"INPUTPATH": input_path, "OUTPUTPATH": output_path})
+        Environment(
+            variables={
+                "INPUTPATH": '"' + input_path + '"',
+                "OUTPUTPATH": '"' + output_path + '"',
+            }
+        )
         for input_path, output_path in zip(study_locus_paths, output_paths)
     ]
 
