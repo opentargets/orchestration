@@ -9,6 +9,7 @@ import yaml
 if TYPE_CHECKING:
     from pathlib import Path
 
+
 def check_gcp_folder_exists(bucket_name: str, folder_path: str) -> bool:
     """Check if a folder exists in a Google Cloud bucket.
 
@@ -23,6 +24,7 @@ def check_gcp_folder_exists(bucket_name: str, folder_path: str) -> bool:
     bucket = client.get_bucket(bucket_name)
     blobs = bucket.list_blobs(prefix=folder_path)
     return any(blobs)
+
 
 def read_yaml_config(config_path: Path) -> Any:
     """Parse a YAMl config file and do all necessary checks.

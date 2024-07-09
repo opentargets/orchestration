@@ -5,13 +5,31 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from airflow.providers.google.cloud.operators.dataproc import (
-    ClusterGenerator, DataprocCreateClusterOperator,
-    DataprocDeleteClusterOperator, DataprocSubmitJobOperator)
+    ClusterGenerator,
+    DataprocCreateClusterOperator,
+    DataprocDeleteClusterOperator,
+    DataprocSubmitJobOperator,
+)
 from airflow.utils.trigger_rule import TriggerRule
 from google.cloud import dataproc_v1
 from google.cloud.dataproc_v1 import Job
 
-from src.ot_orchestration.common_airflow import GENTROPY_VERSION, GCP_PROJECT, GCP_REGION, GCP_ZONE, GCP_DATAPROC_IMAGE, GCP_AUTOSCALING_POLICY, INITIALISATION_EXECUTABLE_FILE, CONFIG_TAG, PACKAGE_WHEEL, INITIALISATION_BASE_PATH, PYTHON_CLI, CONFIG_NAME, CLUSTER_CONFIG_DIR
+from src.ot_orchestration.common_airflow import (
+    GENTROPY_VERSION,
+    GCP_PROJECT,
+    GCP_REGION,
+    GCP_ZONE,
+    GCP_DATAPROC_IMAGE,
+    GCP_AUTOSCALING_POLICY,
+    INITIALISATION_EXECUTABLE_FILE,
+    CONFIG_TAG,
+    PACKAGE_WHEEL,
+    INITIALISATION_BASE_PATH,
+    PYTHON_CLI,
+    CONFIG_NAME,
+    CLUSTER_CONFIG_DIR,
+)
+
 
 def create_cluster(
     cluster_name: str,
@@ -79,6 +97,7 @@ def create_cluster(
         trigger_rule=TriggerRule.ALL_SUCCESS,
     )
 
+
 def submit_job(
     cluster_name: str,
     task_id: str,
@@ -110,6 +129,7 @@ def submit_job(
         },
         trigger_rule=trigger_rule,
     )
+
 
 def submit_pyspark_job(
     cluster_name: str,
@@ -148,6 +168,7 @@ def submit_pyspark_job(
         },
     )
 
+
 def submit_step(
     cluster_name: str,
     step_id: str,
@@ -182,6 +203,7 @@ def submit_step(
         ],
     )
 
+
 def install_dependencies(cluster_name: str) -> DataprocSubmitJobOperator:
     """Install dependencies on a Dataproc cluster.
 
@@ -208,6 +230,7 @@ def install_dependencies(cluster_name: str) -> DataprocSubmitJobOperator:
         },
     )
 
+
 def delete_cluster(cluster_name: str) -> DataprocDeleteClusterOperator:
     """Generate an Airflow task to delete a Dataproc cluster.
 
@@ -224,6 +247,7 @@ def delete_cluster(cluster_name: str) -> DataprocDeleteClusterOperator:
         region=GCP_REGION,
         trigger_rule=TriggerRule.ALL_DONE,
     )
+
 
 def generate_dag(cluster_name: str, tasks: list[DataprocSubmitJobOperator]) -> Any:
     """For a list of tasks, generate a complete DAG.
