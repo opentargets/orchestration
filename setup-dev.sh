@@ -36,5 +36,5 @@ poetry run pre-commit install --hook-type commit-msg
 echo "Generating requirements for the docker image"
 make generate-requirements
 
-# echo "Building airflow image"
-# make build-airflow-image
+echo "Building airflow image"
+make build-airflow-image

@@ -2,15 +2,17 @@
 
 ## Requirements:
 
--[x] poetry -[x] python3.10 -[x] docker -[x] docker-compose -[x] poetry-plugin-export
+-[x] pyenv -[x] poetry -[x] python3.10 -[x] docker -[x] docker-compose -[x] poetry-plugin-export
 
 initialize the project with:
 
 ```
-poetry install
+make dev
 ```
+The above command checks if correct python is available through `pyenv`. Checks if poetry is present,
+sets up poetry project and builds the airflow container.
 
-The orchestration uses the Airflow that is set up by the `docker-compose`. To build the image
+The orchestration uses the Airflow container that is set up by the `docker-compose`. To build the image standalone
 run
 
 ```
