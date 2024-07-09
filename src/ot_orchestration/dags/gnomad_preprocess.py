@@ -6,7 +6,8 @@ from pathlib import Path
 
 from airflow.models.dag import DAG
 
-from ot_orchestration import common_airflow as common
+from ot_orchestration.common_airflow import shared_dag_args, shared_dag_kwargs
+from ot_orchestration.utils.dataproc import submit_step, generate_dag
 
 CLUSTER_NAME = "gnomad-preprocess"
 
@@ -19,11 +20,11 @@ ALL_STEPS = [
 with DAG(
     dag_id=Path(__file__).stem,
     description="Open Targets Genetics — Preprocess",
-    default_args=common.shared_dag_args,
-    **common.shared_dag_kwargs,
+    default_args=shared_dag_args,
+    **shared_dag_kwargs,
 ):
     all_tasks = [
-        common.submit_step(cluster_name=CLUSTER_NAME, step_id=step, task_id=step)
+        submit_step(cluster_name=CLUSTER_NAME, step_id=step, task_id=step)
         for step in ALL_STEPS
     ]
-    dag = common.generate_dag(cluster_name=CLUSTER_NAME, tasks=all_tasks)
+    dag = generate_dag(cluster_name=CLUSTER_NAME, tasks=all_tasks)

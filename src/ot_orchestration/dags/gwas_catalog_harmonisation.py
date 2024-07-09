@@ -11,7 +11,12 @@ from airflow.decorators import task
 from airflow.models.dag import DAG
 from airflow.providers.google.cloud.operators.gcs import GCSListObjectsOperator
 
-from ot_orchestration import common_airflow as common
+from ot_orchestration.common_airflow import shared_dag_args, shared_dag_kwargs
+from ot_orchestration.utils.dataproc import (
+    submit_pyspark_job_no_operator,
+    install_dependencies,
+    create_cluster,
+)
 
 CLUSTER_NAME = "otg-gwascatalog-harmonisation"
 AUTOSCALING = "gwascatalog-harmonisation"
@@ -23,8 +28,8 @@ HARMONISED_SUMMARY_STATISTICS_PREFIX = "harmonised_summary_statistics"
 with DAG(
     dag_id=Path(__file__).stem,
     description="Open Targets Genetics — GWAS Catalog harmonisation",
-    default_args=common.shared_dag_args,
-    **common.shared_dag_kwargs,
+    default_args=shared_dag_args,
+    **shared_dag_kwargs,
 ):
     # List raw harmonised files from GWAS Catalog
     list_inputs = GCSListObjectsOperator(
@@ -99,7 +104,7 @@ with DAG(
             if match_result:
                 study_id = match_result.group(2)
             print("Submitting job for study: ", study_id)  # noqa: T201
-            common.submit_pyspark_job_no_operator(
+            submit_pyspark_job_no_operator(
                 cluster_name=CLUSTER_NAME,
                 step_id="gwas_catalog_sumstat_preprocess",
                 other_args=[
@@ -111,7 +116,7 @@ with DAG(
     (
         [list_inputs, list_outputs]
         >> create_to_do_list()
-        >> common.create_cluster(
+        >> create_cluster(
             CLUSTER_NAME,
             autoscaling_policy=AUTOSCALING,
             num_workers=8,
@@ -119,7 +124,6 @@ with DAG(
             master_machine_type="n1-highmem-64",
             worker_machine_type="n1-standard-2",
         )
-        >> common.install_dependencies(CLUSTER_NAME)
+        >> install_dependencies(CLUSTER_NAME)
         >> submit_jobs()
-        # >> common.delete_cluster(CLUSTER_NAME)
     )

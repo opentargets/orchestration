@@ -8,7 +8,13 @@ from airflow.models.dag import DAG
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 
-from ot_orchestration import common_airflow as common
+from ot_orchestration.common_airflow import shared_dag_args, shared_dag_kwargs
+from ot_orchestration.utils.dataproc import (
+    submit_step,
+    create_cluster,
+    install_dependencies,
+    delete_cluster,
+)
 
 CLUSTER_NAME = "otg-preprocess-finngen"
 AUTOSCALING = "finngen-preprocess"
@@ -33,10 +39,10 @@ FINNGEN_FM_OUT = f"{FINNGEN_BUCKET}/credible_set_datasets/finngen_susie"
 with DAG(
     dag_id=Path(__file__).stem,
     description="Open Targets Genetics — Finngen preprocess",
-    default_args=common.shared_dag_args,
-    **common.shared_dag_kwargs,
+    default_args=shared_dag_args,
+    **shared_dag_kwargs,
 ):
-    finngen_finemapping_ingestion = common.submit_step(
+    finngen_finemapping_ingestion = submit_step(
         cluster_name=CLUSTER_NAME,
         step_id="ot_finngen_finemapping_ingestion",
         task_id="finngen_finemapping_ingestion",
@@ -52,7 +58,7 @@ with DAG(
     with TaskGroup(
         group_id="finngen_summary_stats_preprocess"
     ) as finngen_summary_stats_preprocess:
-        study_index = common.submit_step(
+        study_index = submit_step(
             cluster_name=CLUSTER_NAME,
             step_id="finngen_studies",
             task_id="finngen_studies",
@@ -64,13 +70,13 @@ with DAG(
         # Define order of steps:
         (study_index)
     (
-        common.create_cluster(
+        create_cluster(
             CLUSTER_NAME,
             autoscaling_policy=AUTOSCALING,
             master_disk_size=2000,
             num_workers=6,
         )
-        >> common.install_dependencies(CLUSTER_NAME)
+        >> install_dependencies(CLUSTER_NAME)
         >> [finngen_summary_stats_preprocess, finngen_finemapping_ingestion]
-        >> common.delete_cluster(CLUSTER_NAME)
+        >> delete_cluster(CLUSTER_NAME)
     )

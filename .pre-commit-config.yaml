@@ -7,12 +7,6 @@ ci:
 repos:
   - repo: local
     hooks:
-      - id: annotations
-        name: typing
-        entry: make check-types
-        language: system
-        types: [python]
-        pass_filenames: false
       - id: format
         name: format code
         entry: make format

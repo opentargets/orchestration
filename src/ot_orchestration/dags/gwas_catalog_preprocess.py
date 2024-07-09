@@ -10,7 +10,13 @@ from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.providers.google.cloud.operators.gcs import GCSListObjectsOperator
 from airflow.utils.task_group import TaskGroup
 
-from ot_orchestration import common_airflow as common
+from ot_orchestration.common_airflow import shared_dag_args, shared_dag_kwargs
+from ot_orchestration.utils.dataproc import (
+    submit_step,
+    install_dependencies,
+    create_cluster,
+    delete_cluster,
+)
 
 CLUSTER_NAME = "otg-preprocess-gwascatalog"
 AUTOSCALING = "otg-preprocess-gwascatalog"
@@ -73,8 +79,8 @@ def upload_harmonized_study_list(
 with DAG(
     dag_id=Path(__file__).stem,
     description="Open Targets Genetics — GWAS Catalog preprocess",
-    default_args=common.shared_dag_args,
-    **common.shared_dag_kwargs,
+    default_args=shared_dag_args,
+    **shared_dag_kwargs,
 ):
     # Getting list of folders (each a gwas study with summary statistics)
     list_harmonised_sumstats = GCSListObjectsOperator(
@@ -98,7 +104,7 @@ with DAG(
     # Processing curated GWAS Catalog top-bottom:
     with TaskGroup(group_id="curation_processing") as curation_processing:
         # Generate inclusion list:
-        curation_calculate_inclusion_list = common.submit_step(
+        curation_calculate_inclusion_list = submit_step(
             cluster_name=CLUSTER_NAME,
             step_id="ot_gwas_catalog_study_inclusion",
             task_id="catalog_curation_inclusion_list",
@@ -111,7 +117,7 @@ with DAG(
         )
 
         # Ingest curated associations from GWAS Catalog:
-        curation_ingest_data = common.submit_step(
+        curation_ingest_data = submit_step(
             cluster_name=CLUSTER_NAME,
             step_id="ot_gwas_catalog_ingestion",
             task_id="ingest_curated_gwas_catalog_data",
@@ -119,7 +125,7 @@ with DAG(
         )
 
         # Run LD-annotation and clumping on curated data:
-        curation_ld_clumping = common.submit_step(
+        curation_ld_clumping = submit_step(
             cluster_name=CLUSTER_NAME,
             step_id="ot_ld_based_clumping",
             task_id="catalog_curation_ld_clumping",
@@ -131,7 +137,7 @@ with DAG(
         )
 
         # Do PICS based finemapping:
-        curation_pics = common.submit_step(
+        curation_pics = submit_step(
             cluster_name=CLUSTER_NAME,
             step_id="pics",
             task_id="catalog_curation_pics",
@@ -154,7 +160,7 @@ with DAG(
         group_id="summary_statistics_processing"
     ) as summary_statistics_processing:
         # Generate inclusion study lists:
-        summary_stats_calculate_inclusion_list = common.submit_step(
+        summary_stats_calculate_inclusion_list = submit_step(
             cluster_name=CLUSTER_NAME,
             step_id="ot_gwas_catalog_study_inclusion",
             task_id="catalog_sumstats_inclusion_list",
@@ -167,7 +173,7 @@ with DAG(
         )
 
         # Run window-based clumping:
-        summary_stats_window_based_clumping = common.submit_step(
+        summary_stats_window_based_clumping = submit_step(
             cluster_name=CLUSTER_NAME,
             step_id="window_based_clumping",
             task_id="catalog_sumstats_window_clumping",
@@ -179,7 +185,7 @@ with DAG(
         )
 
         # Run LD based clumping:
-        summary_stats_ld_clumping = common.submit_step(
+        summary_stats_ld_clumping = submit_step(
             cluster_name=CLUSTER_NAME,
             step_id="ot_ld_based_clumping",
             task_id="catalog_sumstats_ld_clumping",
@@ -191,7 +197,7 @@ with DAG(
         )
 
         # Run PICS finemapping:
-        summary_stats_pics = common.submit_step(
+        summary_stats_pics = submit_step(
             cluster_name=CLUSTER_NAME,
             step_id="pics",
             task_id="catalog_sumstats_pics",
@@ -211,13 +217,11 @@ with DAG(
 
     # DAG description:
     (
-        common.create_cluster(
-            CLUSTER_NAME, autoscaling_policy=AUTOSCALING, num_workers=5
-        )
-        >> common.install_dependencies(CLUSTER_NAME)
+        create_cluster(CLUSTER_NAME, autoscaling_policy=AUTOSCALING, num_workers=5)
+        >> install_dependencies(CLUSTER_NAME)
         >> list_harmonised_sumstats
         >> upload_task
         >> curation_processing
         >> summary_statistics_processing
-        >> common.delete_cluster(CLUSTER_NAME)
+        >> delete_cluster(CLUSTER_NAME)
     )
