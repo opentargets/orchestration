@@ -32,7 +32,7 @@ test: ## run unit tests
 check: format check-types test ## run all checks
 
 generate-requirements: ## generate requirements.txt from poetry dependencies to install in the docker image
-	poetry export --without-hashes --format=requirements.txt > requirements.txt
+	poetry export --without-hashes --with dev --format=requirements.txt > requirements.txt
 
 build-airflow-image: generate-requirements  ## build local airflow image for the infrastructure
 	docker build . \

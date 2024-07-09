@@ -23,6 +23,7 @@ The requirements for setting up google cloud project are the same as for the gen
 
 - [x] set up google service account
 - [x] change the user to match your `id -u` in the `.env` file
+Follow the steps in the [original gentropy documentation](https://opentargets.github.io/gentropy/development/airflow/#configure-airflow-access-to-google-cloud-platform) in case of an issue.
 
 The airflow DAGs sit in the `orchestration` package inside the `dags` directory.
 The configuration for the DAGs is located in the `orchestration` package inside the `configs` directory.

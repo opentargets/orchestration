@@ -1,7 +1,9 @@
 FROM apache/airflow:slim-latest-python3.10
 # install only orchestration requirements, package itself will be mounted as a volume
 COPY requirements.txt requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --quiet --no-cache-dir --upgrade pip setuptools && \
+    pip install --quiet --no-cache-dir -r requirements.txt
+
 
 
 SHELL ["/bin/bash", "-o", "pipefail", "-e", "-u", "-x", "-c"]
