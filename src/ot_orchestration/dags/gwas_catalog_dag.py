@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 RUN_DATE = datetime.today()
 config_file_path = "/config/config.yaml"
-gwas_catalog_config_dag_id = "gwas_catalog"
+gwas_catalog_config_dag_id = "GWAS_Catalog"
 
 
 # type definitions
@@ -134,8 +134,8 @@ def gwas_catalog_dag(**kwargs: Dag_Params) -> None:
 
         # types are ignored, as the XArgs - result from airflow task(s) are inferred at runtime -
         # check typing in https://github.com/apache/airflow/blob/main/airflow/example_dags/tutorial_taskflow_api.py
-        manifest_transfer_objects = prepare_gwas_catalog_manifest_paths(curation_config)
-        sync_gwas_catalog_manifests(manifest_transfer_objects)
+        prepare_gwas_catalog_manifest_paths(curation_config)
+        # sync_gwas_catalog_manifests(manifest_transfer_objects)
 
     @task(task_id = "gwas_catalog_manifest")
     def get_manifest(gwas_catalog_params: dict[str, Any]) -> pl.DataFrame:
