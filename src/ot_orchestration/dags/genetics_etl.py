@@ -6,11 +6,13 @@ from pathlib import Path
 
 from airflow.models.dag import DAG
 from airflow.operators.python import ShortCircuitOperator
-from airflow.providers.google.cloud.transfers.gcs_to_gcs import \
-    GCSToGCSOperator
+from airflow.providers.google.cloud.transfers.gcs_to_gcs import GCSToGCSOperator
 from airflow.utils.task_group import TaskGroup
 
-from ot_orchestration import common_airflow as common
+from ot_orchestration.common_airflow import shared_dag_args, shared_dag_kwargs
+from ot_orchestration.utils.dataproc import submit_step, generate_dag
+from ot_orchestration.utils.utils import check_gcp_folder_exists, read_yaml_config
+
 
 CLUSTER_NAME = "otg-etl"
 SOURCE_CONFIG_FILE_PATH = Path(__file__).parent / "configs" / "dag.yaml"
@@ -96,9 +98,7 @@ DATA_TO_MOVE = {
 # This operator meant to fail the DAG if the release folder exists:
 ensure_release_folder_not_exists = ShortCircuitOperator(
     task_id="test_release_folder_exists",
-    python_callable=lambda bucket, path: not common.check_gcp_folder_exists(
-        bucket, path
-    ),
+    python_callable=lambda bucket, path: not check_gcp_folder_exists(bucket, path),
     op_kwargs={
         "bucket": RELEASE_BUCKET_NAME,
         "path": f"releases/{RELEASE_VERSION}",
@@ -108,8 +108,8 @@ ensure_release_folder_not_exists = ShortCircuitOperator(
 with DAG(
     dag_id=Path(__file__).stem,
     description="Open Targets Genetics ETL workflow",
-    default_args=common.shared_dag_args,
-    **common.shared_dag_kwargs,
+    default_args=shared_dag_args,
+    **shared_dag_kwargs,
 ):
     # Compiling tasks for moving data to the right place:
     with TaskGroup(group_id="data_transfer") as data_transfer:
@@ -128,11 +128,11 @@ with DAG(
     with TaskGroup(group_id="genetics_etl") as genetics_etl:
         # Parse and define all steps and their prerequisites.
         tasks = {}
-        steps = common.read_yaml_config(SOURCE_CONFIG_FILE_PATH)
+        steps = read_yaml_config(SOURCE_CONFIG_FILE_PATH)
         for step in steps:
             # Define task for the current step.
             step_id = step["id"]
-            this_task = common.submit_step(
+            this_task = submit_step(
                 cluster_name=CLUSTER_NAME,
                 step_id=step_id,
                 task_id=step_id,
@@ -142,7 +142,7 @@ with DAG(
             for prerequisite in step.get("prerequisites", []):
                 this_task.set_upstream(tasks[prerequisite])
 
-        common.generate_dag(cluster_name=CLUSTER_NAME, tasks=list(tasks.values()))
+        generate_dag(cluster_name=CLUSTER_NAME, tasks=list(tasks.values()))
 
     # DAG description:
     (

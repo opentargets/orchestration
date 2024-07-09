@@ -14,7 +14,7 @@ from airflow.utils.trigger_rule import TriggerRule
 from google.cloud import dataproc_v1
 from google.cloud.dataproc_v1 import Job
 
-from src.ot_orchestration.common_airflow import (
+from ot_orchestration.common_airflow import (
     GENTROPY_VERSION,
     GCP_PROJECT,
     GCP_REGION,

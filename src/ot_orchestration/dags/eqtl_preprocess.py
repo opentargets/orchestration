@@ -5,12 +5,18 @@ from __future__ import annotations
 from pathlib import Path
 
 from airflow.models.dag import DAG
-from airflow.providers.google.cloud.operators.dataflow import \
-    DataflowTemplatedJobStartOperator
-from airflow.providers.google.cloud.operators.gcs import \
-    GCSDeleteObjectsOperator
+from airflow.providers.google.cloud.operators.dataflow import (
+    DataflowTemplatedJobStartOperator,
+)
+from airflow.providers.google.cloud.operators.gcs import GCSDeleteObjectsOperator
 
-from ot_orchestration import common_airflow as common
+from ot_orchestration.common_airflow import shared_dag_args, shared_dag_kwargs
+from ot_orchestration.utils.dataproc import (
+    submit_step,
+    create_cluster,
+    delete_cluster,
+    install_dependencies,
+)
 
 CLUSTER_NAME = "otg-preprocess-eqtl"
 AUTOSCALING = "eqtl-preprocess"
@@ -25,8 +31,8 @@ CREDIBLE_SET_PATH = "gs://eqtl_catalogue_data/credible_set_datasets/susie"
 with DAG(
     dag_id=Path(__file__).stem,
     description="Open Targets Genetics — eQTL preprocess",
-    default_args=common.shared_dag_args,
-    **common.shared_dag_kwargs,
+    default_args=shared_dag_args,
+    **shared_dag_kwargs,
 ):
     # SuSIE fine mapping results are stored as gzipped files in a GCS bucket.
     # To improve processing performance, we decompress the files before processing to a temporary location in GCS.
@@ -42,7 +48,7 @@ with DAG(
         },
     )
 
-    ingestion_job = common.submit_step(
+    ingestion_job = submit_step(
         cluster_name=CLUSTER_NAME,
         step_id="ot_eqtl_catalogue",
         task_id="ot_eqtl_ingestion",
@@ -61,13 +67,13 @@ with DAG(
 
     (
         decompression_job
-        >> common.create_cluster(
+        >> create_cluster(
             CLUSTER_NAME,
             autoscaling_policy=AUTOSCALING,
             num_workers=4,
             worker_machine_type="n1-highmem-8",
         )
-        >> common.install_dependencies(CLUSTER_NAME)
+        >> install_dependencies(CLUSTER_NAME)
         >> ingestion_job
-        >> [delete_decompressed_job, common.delete_cluster(CLUSTER_NAME)]
+        >> [delete_decompressed_job, delete_cluster(CLUSTER_NAME)]
     )

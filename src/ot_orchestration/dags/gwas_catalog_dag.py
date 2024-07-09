@@ -1,4 +1,5 @@
 """Gwas catalog DAG."""
+
 from __future__ import annotations
 
 import logging
@@ -9,8 +10,7 @@ from urllib.parse import urljoin
 from airflow.decorators import dag, task, task_group
 from airflow.exceptions import AirflowException
 from airflow.operators.python import get_current_context
-from airflow.providers.google.cloud.transfers.sftp_to_gcs import \
-    SFTPToGCSOperator
+from airflow.providers.google.cloud.transfers.sftp_to_gcs import SFTPToGCSOperator
 from airflow.utils.helpers import chain
 from returns.result import Failure, Result, Success
 
