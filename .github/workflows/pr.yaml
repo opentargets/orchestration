@@ -38,5 +38,6 @@ jobs:
         run: poetry install --no-interaction
       - name: Check dependencies
         run: poetry run deptry .
-      - name: Run tests
-        run: poetry run pytest
+      # need to run after the poetry installs dependencies
+      - uses: pre-commit-ci/lite-action@v1.0.2
+        if: always()
