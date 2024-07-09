@@ -1,3 +1,5 @@
+SHELL := /bin/bash
+
 PROJECT_ID ?= open-targets-genetics-dev
 REGION ?= europe-west1
 APP_NAME ?= $$(cat pyproject.toml| grep -m 1 "name" | cut -d" " -f3 | sed  's/"//g')
@@ -9,7 +11,7 @@ DOCKER_IMAGE := "Orchestration-Airflow"
 .DEFAULT_GOAL := help
 
 dev: # setup dev environment
-	./setup-dev.sh
+	source setup-dev.sh
 
 app:
 	echo src/$(APP_NAME)
