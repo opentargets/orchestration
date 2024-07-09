@@ -36,8 +36,6 @@ jobs:
         run: poetry install --no-interaction --no-root
       - name: Install library
         run: poetry install --no-interaction
-      - name: Check dependencies
-        run: poetry run deptry .
       # need to run after the poetry installs dependencies
       - uses: pre-commit-ci/lite-action@v1.0.2
         if: always()

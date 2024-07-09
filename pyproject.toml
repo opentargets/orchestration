@@ -11,7 +11,6 @@ packages = [{include = "ot_orchestration", from = "src"}]
 python = "^3.10, <3.11"
 apache-airflow = {extras = ["apache-beam", "async", "celery", "google", "kubernetes", "openlineage", "postgress", "sftp"], version = "^2.9.2"}
 apache-airflow-providers-google = "^10.19.0"
-psycopg2-binary = "^2.9.9"
 returns = {extras = ["compatible-mypy"], version = "^0.23.0"}
 pydantic = "^2.7.4"
 click = "^8.1.7"

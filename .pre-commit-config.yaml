@@ -99,3 +99,8 @@ repos:
       - id: poetry-check
       - id: poetry-lock
         args: ["--no-update"]
+  - repo: https://github.com/fpgmaas/deptry.git
+    rev: "0.16.2"
+    hooks:
+      - id: deptry
+        args: ["--known-first-party", "ot_orchestration"]
