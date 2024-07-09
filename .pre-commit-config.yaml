@@ -1,0 +1,107 @@
+default_language_version:
+  python: python3.10
+ci:
+  autoupdate_commit_msg: "chore: pre-commit autoupdate"
+  autofix_commit_msg: "chore: pre-commit auto fixes [...]"
+  skip: [poetry-lock]
+repos:
+  - repo: local
+    hooks:
+      - id: annotations
+        name: typing
+        entry: make check-types
+        language: system
+        types: [python]
+        pass_filenames: false
+      - id: format
+        name: format code
+        entry: make format
+        language: system
+        types: [python]
+        pass_filenames: false
+      - id: test
+        name: unit testing
+        entry: make test
+        language: system
+        types: [python]
+        pass_filenames: false
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+        exclude: "CHANGELOG.md"
+      - id: debug-statements
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-json
+        exclude: (.vscode|.devcontainer)
+      - id: no-commit-to-branch
+        args:
+          - --branch=dev
+          - --branch=main
+      - id: check-toml
+      - id: check-yaml
+      - id: check-ast
+      - id: debug-statements
+      - id: check-docstring-first
+  - repo: https://github.com/adrienverge/yamllint.git
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        args: ["-d", "{rules: {line-length: {max: 200}}}"]
+
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.10.0
+    hooks:
+      - id: python-check-mock-methods
+      - id: python-check-blanket-noqa
+
+  - repo: https://github.com/hadialqattan/pycln
+    rev: v2.4.0
+    hooks:
+      - id: pycln
+        args: [--all]
+
+  - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
+    rev: v9.16.0
+    hooks:
+      - id: commitlint
+        additional_dependencies: ["@commitlint/config-conventional@18.6.3"]
+        stages: [commit-msg]
+
+  - repo: https://github.com/econchick/interrogate
+    rev: 1.7.0
+    hooks:
+      - id: interrogate
+        args: [--verbose]
+
+  - repo: https://github.com/pycqa/pydocstyle
+    rev: 6.3.0
+    hooks:
+      - id: pydocstyle
+        args: [--convention=google, --add-ignore=D107]
+
+  - repo: https://github.com/lovesegfault/beautysh
+    rev: v6.2.1
+    hooks:
+      - id: beautysh
+
+  - repo: https://github.com/jsh9/pydoclint
+    rev: 0.4.1
+    hooks:
+      - id: pydoclint
+
+  - repo: https://github.com/python-poetry/poetry
+    rev: "1.8.0"
+    hooks:
+      - id: poetry-check
+      - id: poetry-lock
+        args: ["--no-update"]
+
+  - repo: https://github.com/fpgmaas/deptry.git
+    rev: "0.16.2"
+    hooks:
+      - id: deptry
+        args: ["--known-first-party", "ot_orchestration"]
