@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from airflow.models.xcom_arg import XComArg
 
     from ot_orchestration import Dag_Params
-    import polars as pl
+    import pandas as pd
 
     Config_Error = str
 
@@ -138,11 +138,11 @@ def gwas_catalog_dag(**kwargs: Dag_Params) -> None:
         # sync_gwas_catalog_manifests(manifest_transfer_objects)
 
     @task(task_id = "gwas_catalog_manifest")
-    def get_manifest(gwas_catalog_params: dict[str, Any]) -> pl.DataFrame:
+    def get_manifest(gwas_catalog_params: dict[str, Any]) -> pd.DataFrame:
         """Get original manifest for gwas catalog."""
         manifest_path = gwas_catalog_params["curation"]["manual_curation_manifest_gh"]
-        import polars as pl
-        return pl.read_csv(manifest_path, separator="\t")
+        import pandas as pd
+        return pd.read_csv(manifest_path, sep="\t")
 
     # [END PREPARE MANIFESTS]
 
