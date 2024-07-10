@@ -23,13 +23,13 @@ version: ## display version and exit
 	@echo $(VERSION)
 
 check-types: ## run mypy and check types
-	@. .venv/bin/activate && python -m mypy --install-types --non-interactive src/$(APP_NAME)
+	@poetry run python -m mypy --install-types --non-interactive src/$(APP_NAME)
 
 format: ## run formatting
-	@. .venv/bin/activate && python -m ruff check --fix src/$(APP_NAME) tests
+	@poetry run python -m ruff check --fix src/$(APP_NAME) tests
 
 test: ## run unit tests
-	@. .venv/bin/activate && python -m pytest tests/*.py
+	@poetry run python -m pytest tests/*.py
 
 check: format check-types test ## run all checks
 
