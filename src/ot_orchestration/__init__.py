@@ -9,7 +9,6 @@ import yaml
 from pydantic import BaseModel
 from returns.result import Failure, Result, Success
 from ot_orchestration.types import (
-    Dag_Params,
     Data_Source,
     Provider_Name,
     Base_Type,
@@ -23,27 +22,11 @@ CONFIG_FILE_PATH = "/config/config.yaml"
 GWAS_CATALOG_CONFIG_DAG_ID = "GWAS_Catalog"
 
 
-class DagModel(BaseModel):
-    """DAG subconfig structure."""
-
-    name: Data_Source
-    description: str
-    params: Dag_Params | None
-
-
-class ProviderModel(BaseModel):
-    """Provider subconfig structure."""
-
-    name: Provider_Name | str
-    params: dict[str, Base_Type] | None
-
-
 class ConfigModel(BaseModel):
     """Top level config structure."""
 
-    tags: list[Data_Source | str]
-    providers: list[ProviderModel]
-    DAGS: list[DagModel]
+    providers: dict[Provider_Name, dict[str, Base_Type]]
+    DAGS: dict[Data_Source, dict[str, Base_Type]]
 
 
 Config_Parser = Callable[[Any], Result[ConfigModel, ConfigParsingFailure]]
@@ -66,8 +49,8 @@ def default_config_parser(
         or Failure(ConfigParsingFailure)
     """
     match conf:
-        case {"tags": tags, "providers": providers, "DAGS": dags}:
-            return Success(ConfigModel(tags=tags, providers=providers, DAGS=dags))
+        case {"providers": providers, "DAGS": dags}:
+            return Success(ConfigModel(providers=providers, DAGS=dags))
         case _:
             return Failure(
                 f"Could not parse config structure {conf} with default config parser."
@@ -81,7 +64,11 @@ class QRCP:
     def from_file(cls, path: Path | str, **kwargs: Any) -> QRCP:
         """Read from a file."""
         with open(path) as cfg:
-            cfg = yaml.safe_load(cfg)
+            match Path(path).suffix:
+                case "yaml" | "yml":
+                    cfg = yaml.safe_load(cfg)
+                case _:
+                    cfg = json.load(cfg)
             return cls(cfg, **kwargs)
 
     def __init__(
@@ -104,15 +91,15 @@ class QRCP:
 
     def get_dag_params(
         self: QRCP, dag: Data_Source | str
-    ) -> Result[Dag_Params, ConfigFieldNotFound]:
+    ) -> Result[dict[str, Base_Type], ConfigFieldNotFound]:
         """Get gentropy dag parameters from existing configuration.
 
         Returns:
             Result[Dag_Params], ConfigFieldNotFound]: Result of Gentropy dag params lookup.
         """
         for d in self.config.DAGS:
-            if d.name == dag and d.params:
-                return Success(d.params)
+            if d == dag:
+                return Success(self.config.DAGS[d])
         return Failure(f"{dag} Config was not found")
 
     def serialize(self) -> dict[str, Any]:
