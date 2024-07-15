@@ -41,3 +41,18 @@ build-airflow-image: generate-requirements  ## build local airflow image for the
 		--tag extending_airflow:latest \
 		-f Dockerfile \
 		--no-cache
+
+build-genetics-etl-image: ## build local genetics-etl image for the infrastructure
+	docker build . \
+		--tag genetics_etl:latest \
+		-f images/genetics_etl/Dockerfile \
+		--no-cache
+
+test-harmonisation-step: build-genetics-etl-image ## test harmonisation task
+	mkdir -p test_batch
+	gsutil -m rsync -r gs://genetics_etl_python_playground/test_data/test_batch test_batch
+	docker run \
+		-v $(PWD)/test_batch/:/test_batch/:rw \
+		genetics_etl:latest \
+	./tasks/harmonise.sh
+	rm -r test_batch
