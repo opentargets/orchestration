@@ -181,3 +181,8 @@ plugins/*
 logs/*
 !logs
 requirements.txt
+
+test_batch
+airflow.cfg
+
+.vscode
