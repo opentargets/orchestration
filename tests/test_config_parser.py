@@ -2,7 +2,8 @@
 
 import pytest
 from pathlib import Path
-from src.ot_orchestration import QRCP, ConfigModel, default_config_parser
+from ot_orchestration import QRCP
+from ot_orchestration.utils.qrcp import ConfigModel, default_config_parser
 from returns.result import Success, Failure
 
 

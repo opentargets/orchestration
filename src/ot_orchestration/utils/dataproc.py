@@ -11,10 +11,11 @@ from airflow.providers.google.cloud.operators.dataproc import (
     DataprocSubmitJobOperator,
 )
 from airflow.utils.trigger_rule import TriggerRule
+from airflow.utils.helpers import chain
 from google.cloud import dataproc_v1
 from google.cloud.dataproc_v1 import Job
 
-from ot_orchestration.common_airflow import (
+from ot_orchestration.utils.common import (
     GENTROPY_VERSION,
     GCP_PROJECT,
     GCP_REGION,
@@ -83,9 +84,9 @@ def create_cluster(
             # Create a disk config section if it does not exist.
             cluster_config[worker_section].setdefault("disk_config", {})
             # Specify the number of local SSDs.
-            cluster_config[worker_section]["disk_config"][
-                "num_local_ssds"
-            ] = num_local_ssds
+            cluster_config[worker_section]["disk_config"]["num_local_ssds"] = (
+                num_local_ssds
+            )
 
     # Return the cluster creation operator.
     return DataprocCreateClusterOperator(
@@ -259,11 +260,11 @@ def generate_dag(cluster_name: str, tasks: list[DataprocSubmitJobOperator]) -> A
     Returns:
         Any: Airflow DAG.
     """
-    return (
-        create_cluster(cluster_name)
-        >> install_dependencies(cluster_name)
-        >> tasks
-        >> delete_cluster(cluster_name)
+    return chain(
+        create_cluster(cluster_name),
+        install_dependencies(cluster_name),
+        tasks,
+        delete_cluster(cluster_name),
     )
 
 

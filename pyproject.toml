@@ -4,14 +4,23 @@ version = "0.1.0"
 description = "Open Targets Genetics Orchestration Pipeline"
 authors = ["Szymon Szyszkowski <ss60@mib117351s.internal.sanger.ac.uk>"]
 readme = "README.md"
-packages = [{include = "ot_orchestration", from = "src"}]
+packages = [{ include = "ot_orchestration", from = "src" }]
 
 
 [tool.poetry.dependencies]
 python = "^3.10, <3.11"
-apache-airflow = {extras = ["apache-beam", "async", "celery", "google", "kubernetes", "openlineage", "postgress", "sftp"], version = "^2.9.2"}
+apache-airflow = { extras = [
+  "apache-beam",
+  "async",
+  "celery",
+  "google",
+  "kubernetes",
+  "openlineage",
+  "postgress",
+  "sftp",
+], version = "^2.9.2" }
 apache-airflow-providers-google = "^10.19.0"
-returns = {extras = ["compatible-mypy"], version = "^0.23.0"}
+returns = { extras = ["compatible-mypy"], version = "^0.23.0" }
 pydantic = "^2.7.4"
 click = "^8.1.7"
 pyyaml = "^6.0.1"
@@ -19,6 +28,7 @@ google = "^3.0.0"
 pendulum = "^3.0.0"
 apache-airflow-providers-apache-beam = "^5.7.1"
 pandas = "<2.2"
+typing-extensions = "^4.12.2"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.4.9"
@@ -54,10 +64,7 @@ exclude = "src/ot_orchestration/dags/*"
 plugins = ["returns.contrib.mypy.returns_plugin"]
 
 [[tool.mypy.overrides]]
-module = [
-  "google.cloud.storage",
-  "yaml"
-]
+module = ["google.cloud.storage", "yaml"]
 ignore_missing_imports = true
 
 
@@ -92,3 +99,7 @@ docstring-quotes = "double"
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+
+[tool.pytest]
+pytonpath = "src/"

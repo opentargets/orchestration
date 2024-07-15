@@ -1,11 +1,26 @@
 {
   "providers": {
-      "dataproc": {
-        "spark_uri": "yarn",
-        "write_mode": "errorifexists"
-      },
-      "googlebatch": {}
+    "dataproc": {
+      "spark_uri": "yarn",
+      "write_mode": "errorifexists"
     },
+    "googlebatch": {
+      "harmonisation": {
+        "resource_specs": {
+          "cpu_milli": 2000,
+          "memory_mib": 2000,
+          "boot_disk_mib": 10000
+        },
+        "task_specs": {
+          "max_retry_count": 3,
+          "max_run_duration": "32400s"
+        },
+        "policy_specs": {
+          "machine_type": "n1-standard-2"
+        }
+      }
+    }
+  },
   "DAGS": {
     "GWAS_Catalog": {
       "raw_sumstats_bucket": "gwas_catalog_data",
@@ -28,13 +43,19 @@
         "gwas-catalog-download-ancestries.txt",
         "gwas-catalog-unpublished-ancestries.tsv"
       ],
+      "staging_bucket": "gentropy-tmp",
+      "harmonised_prefix": "harmonised",
+      "qc_prefix": "qc",
       "gwas_catalog_manifests_endpoint_gcs": "gs://gwas_catalog_data/manifests",
       "gwas_catalog_data_curated_inputs": "gs://gwas_catalog_data/curated_inputs",
       "cluster_name": "otg-gwascatalog-harmonisation",
       "autoscaling": "gwascatalog-harmonisation",
       "summary_statistics_bucket": "gwas_catalog_data",
       "raw_summary_statistics_prefix": "raw_summary_statistics",
-      "harmonized_summary_statistics_prefix": "harmonised_summary_statistics"
+      "harmonized_summary_statistics_prefix": "harmonised_summary_statistics",
+      "gentropy_image_tag": "europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:v1.5.0",
+      "gcp_project" : "open-targets-genetics-dev",
+      "gcp_region": "europe-west1"
     }
   }
 }

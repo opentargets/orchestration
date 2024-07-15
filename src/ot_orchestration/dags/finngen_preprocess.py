@@ -8,7 +8,7 @@ from airflow.models.dag import DAG
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 
-from ot_orchestration.common_airflow import shared_dag_args, shared_dag_kwargs
+from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 from ot_orchestration.utils.dataproc import (
     submit_step,
     create_cluster,
