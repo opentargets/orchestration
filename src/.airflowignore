@@ -1,3 +1,6 @@
-ot-orchestration/common_airflow.py
+ot-orchestration/operators
+ot-orchestration/scripts
+ot-orchestration/task_groups
+ot-orchestration/utils
+ot-orchestration/types.py
 ot-orchestration/__init__.py
-ot-orchestration/scripts/*

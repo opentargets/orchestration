@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any, Callable
+from airflow.operators.python import get_current_context
 
 import json
 import yaml
@@ -12,10 +13,12 @@ from ot_orchestration.types import (
     Data_Source,
     Base_Type,
     ConfigParsingFailure,
-    ConfigFieldNotFound,
+    DagConfigNotFound,
     Config_Field_Name,
     Dataproc_Specs,
     Batch_Specs,
+    Step_Name,
+    ConfigFieldNotFound,
 )
 from pathlib import Path
 
@@ -102,16 +105,15 @@ class QRCP:
 
     def get_dag_params(
         self: QRCP, dag: Data_Source | str
-    ) -> Result[dict[str, Base_Type], ConfigFieldNotFound]:
+    ) -> Result[dict[str, Base_Type], DagConfigNotFound]:
         """Get gentropy dag parameters from existing configuration.
 
         Returns:
-            Result[Dag_Params], ConfigFieldNotFound]: Result of Gentropy dag params lookup.
+            Result[Dag_Params], DagConfigNotFound]: Result of Gentropy dag params lookup.
         """
-        for d in self.config.DAGS:
-            if d == dag:
-                return Success(self.config.DAGS[d])
-        return Failure(f"{dag} Config was not found")
+        if dag not in self.config.DAGS:
+            return Failure(f"field {dag} not present under the DAG configuration")
+        return Success(self.config.DAGS[dag])
 
     def serialize(self) -> dict[str, Any]:
         """Serialize QRCP object.
@@ -137,5 +139,37 @@ class QRCP:
                 case "json":
                     json.dump(self.serialize(), cfg)
 
+    def get_dataproc_params(self) -> Dataproc_Specs:
+        """Get dataproc specification from the DAG config."""
+        return self.config.providers.dataproc
 
-__all__ = ["QRCP", "ConfigModel"]
+    def get_googlebatch_params(self, step_name: Step_Name) -> Batch_Specs:
+        """Get googlebatch specification from the DAG config."""
+        googlebatch_cfg = self.config.providers.googlebatch
+        step_cfg: Batch_Specs = getattr(googlebatch_cfg, step_name)
+        return step_cfg
+
+
+def get_config_from_dag_params() -> QRCP:
+    """Process initial params passed to the DAG and validate with QRCP config."""
+    config = get_current_context().get("params")
+    return QRCP(conf=config)
+
+
+def get_gwas_catalog_dag_params() -> dict[str, Base_Type]:
+    """Get GWAS_Catalog DAG params."""
+    cfg = get_config_from_dag_params()
+    result = cfg.get_dag_params(dag="GWAS_Catalog")
+    match result:
+        case Success(cfg):
+            return cfg
+        case Failure(msg):
+            raise ValueError(msg)
+
+
+__all__ = [
+    "QRCP",
+    "ConfigModel",
+    "get_config_from_dag_params",
+    "get_gwas_catalog_dag_params",
+]

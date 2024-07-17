@@ -44,6 +44,7 @@
         "gwas-catalog-unpublished-ancestries.tsv"
       ],
       "staging_bucket": "gentropy-tmp",
+      "staging_prefix": "gwas_catalog_data",
       "harmonised_prefix": "harmonised",
       "qc_prefix": "qc",
       "gwas_catalog_manifests_endpoint_gcs": "gs://gwas_catalog_data/manifests",
@@ -55,7 +56,8 @@
       "harmonized_summary_statistics_prefix": "harmonised_summary_statistics",
       "gentropy_image_tag": "europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:v1.5.0",
       "gcp_project" : "open-targets-genetics-dev",
-      "gcp_region": "europe-west1"
+      "gcp_region": "europe-west1",
+      "genetics_etl_image": "genetics_etl_latest"
     }
   }
 }

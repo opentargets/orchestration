@@ -1,17 +1,8 @@
 """Curation tasks and task groups."""
 
-from airflow.operators.python import get_current_context
-from ot_orchestration import QRCP
 import logging
 from urllib.parse import urljoin
 from ot_orchestration.types import FTP_Transfer_Object
-from typing import Any
-
-
-def get_config() -> dict[str, Any]:
-    """Process initial base config from path to QRCP."""
-    config = get_current_context().get("params").get("kwargs")
-    return QRCP(conf=config).serialize()
 
 
 def create_sftp_to_gcs_transfer_object(

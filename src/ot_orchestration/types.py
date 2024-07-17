@@ -33,6 +33,7 @@ Manifest_Object = TypedDict(
 
 Config_Field_Name = Literal["tags", "providers", "DAGS"]
 Data_Source = Literal["GWAS_Catalog", "eQTL_Catalogque", "finngen", "UK_Biobank_PPP"]
+DagConfigNotFound = str
 ConfigFieldNotFound = str
 Base_Type = str | list[str]
 ConfigParsingFailure = str
@@ -40,7 +41,11 @@ JSON_blob = str
 GCS_Mount_Object = TypedDict(
     "GCS_Mount_Object", {"remote_path": Required[str], "mount_point": Required[str]}
 )
+GCS_Bucket_Name = str
+GCS_Path_Suffix = str
 
+Provider_Name = Literal["googlebatch", "dataproc"]
+Step_Name = Literal["harmonisation"]
 Batch_Task_Specs = TypedDict(
     "Batch_Task_Specs",
     {
@@ -99,4 +104,9 @@ __all__ = [
     "Batch_Resource_Specs",
     "Dataproc_Specs",
     "Batch_Specs",
+    "Provider_Name",
+    "Step_Name",
+    "DagConfigNotFound",
+    "GCS_Bucket_Name",
+    "GCS_Path_Suffix",
 ]

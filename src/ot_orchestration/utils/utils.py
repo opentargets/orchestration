@@ -3,14 +3,12 @@
 from __future__ import annotations
 
 from configparser import ParsingError
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from google.cloud.storage import Client
 import subprocess
 import yaml
 import re
-
-if TYPE_CHECKING:
-    from pathlib import Path
+from pathlib import Path
 
 
 def check_gcp_folder_exists(bucket_name: str, folder_path: str) -> bool:
