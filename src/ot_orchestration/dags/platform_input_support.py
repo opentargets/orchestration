@@ -6,14 +6,16 @@ be run in parallel. Each step runs in a Cloud Run job. The steps are defined in 
 `pis.yaml` configuration file, and the DAG is created dynamically from that file.
 """
 
+import hashlib
 import re
 from pathlib import Path
 
+from airflow.decorators import task
 from airflow.models.dag import DAG
+from airflow.models.taskinstance import TaskInstance
 from airflow.providers.google.cloud.operators.cloud_run import (
     CloudRunCreateJobOperator,
     CloudRunDeleteJobOperator,
-    CloudRunExecuteJobOperator,
 )
 from airflow.utils.task_group import TaskGroup
 from google.cloud import run_v2
@@ -22,6 +24,9 @@ from ot_orchestration.common_airflow import (
     GCP_REGION,
     platform_dag_kwargs,
     shared_dag_args,
+)
+from ot_orchestration.operators.cloud_run_fetch_logs_operator import (
+    CloudRunExecuteJobWithLogsOperator,
 )
 from ot_orchestration.utils.utils import read_yaml_config
 
@@ -37,10 +42,15 @@ def get_steps() -> list[str]:
     return yaml_config["steps"].keys()
 
 
-def clean_job_name(step_name: str) -> str:
-    """Create a clean job name from the step name."""
+def clean_name(step_name: str) -> str:
+    """Clean the PIS step name."""
     clean_step_name = re.sub(r"[^a-z0-9-]", "-", step_name.lower())
     return f"platform-input-support-{clean_step_name}"
+
+
+def hash(run_id: str) -> str:
+    """Create a hash from the run ID."""
+    return hashlib.sha256(run_id.encode()).hexdigest()[:5]
 
 
 def create_job_instance(step_name: str) -> run_v2.Job:
@@ -64,33 +74,54 @@ with DAG(
     **platform_dag_kwargs,
 ) as dag:
     for step_name in get_steps():
-        job_name = clean_job_name(step_name)
+        name = clean_name(step_name)
 
-        with TaskGroup(group_id=job_name):
-            create_job = CloudRunCreateJobOperator(
-                task_id=f"create_cloudrun_job_{step_name}",
-                project_id=PIS_GCP_PROJECT,
-                region=GCP_REGION,
-                job_name=job_name,
-                job=create_job_instance(step_name),
-                dag=dag,
-            )
+        with TaskGroup(group_id=name):
+            task_id = f"create_cloudrun_job_{step_name}"
 
-            execute_job = CloudRunExecuteJobOperator(
-                task_id=f"execute_cloudrun_job_{step_name}",
-                project_id=PIS_GCP_PROJECT,
-                region=GCP_REGION,
-                job_name=job_name,
-                dag=dag,
-            )
+            @task(task_id=task_id)
+            def create_job(task_instance: TaskInstance | None = None):
+                """Create a Cloud Run job."""
+                job_name = f"{name}-{hash(task_instance.run_id)}"
+                c = CloudRunCreateJobOperator(
+                    task_id=task_id,
+                    project_id=PIS_GCP_PROJECT,
+                    region=GCP_REGION,
+                    job_name=job_name,
+                    job=create_job_instance(step_name),
+                    dag=dag,
+                )
+                c.execute(context=task_instance.get_template_context())
 
-            delete_job = CloudRunDeleteJobOperator(
-                task_id=f"delete_cloudrun_job_{step_name}",
-                project_id=PIS_GCP_PROJECT,
-                region=GCP_REGION,
-                job_name=job_name,
-                trigger_rule="all_done",
-                dag=dag,
-            )
+            task_id = f"execute_cloudrun_job_{step_name}"
 
-            create_job >> execute_job >> delete_job
+            @task(task_id=task_id)
+            def execute_job(task_instance: TaskInstance | None = None):
+                """Execute a Cloud Run job."""
+                job_name = f"{name}-{hash(task_instance.run_id)}"
+                e = CloudRunExecuteJobWithLogsOperator(
+                    task_id=task_id,
+                    project_id=PIS_GCP_PROJECT,
+                    region=GCP_REGION,
+                    job_name=job_name,
+                    dag=dag,
+                )
+                e.execute(context=task_instance.get_template_context())
+
+            task_id = f"delete_cloudrun_job_{step_name}"
+
+            @task(task_id=task_id)
+            def delete_job(task_instance: TaskInstance | None = None):
+                """Delete a Cloud Run job."""
+                job_name = f"{name}-{hash(task_instance.run_id)}"
+                d = CloudRunDeleteJobOperator(
+                    task_id=task_id,
+                    project_id=PIS_GCP_PROJECT,
+                    region=GCP_REGION,
+                    job_name=job_name,
+                    trigger_rule="all_done",
+                    dag=dag,
+                )
+                d.execute(context=task_instance.get_template_context())
+
+            create_job() >> execute_job() >> delete_job()
