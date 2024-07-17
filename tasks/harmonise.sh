@@ -37,7 +37,7 @@ if [ $IS_HARMONISED = true ]; then
 fi
 echo "Harmonising $RAW_PATH to $HARMONISED_PATH"
 
-poetry run gentropy step=gwas_catalog_sumstat_preprocess step.raw_sumstats_path=$RAW_PATH step.out_sumstats_path=$HARMONISED_PATH;
+echo "poetry run gentropy step=gwas_catalog_sumstat_preprocess step.raw_sumstats_path=$RAW_PATH step.out_sumstats_path=$HARMONISED_PATH;"
 
 LAST_COMMAND_OUTPUT=$?
 if [[ $LAST_COMMAND_OUTPUT -eq 0 ]]; then
