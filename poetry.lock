@@ -211,6 +211,7 @@ apache-airflow-providers-google = {version = "*", optional = true, markers = "ex
 apache-airflow-providers-http = "*"
 apache-airflow-providers-imap = "*"
 apache-airflow-providers-openlineage = {version = "*", optional = true, markers = "extra == \"openlineage\""}
+apache-airflow-providers-postgres = {version = "*", optional = true, markers = "extra == \"postgres\""}
 apache-airflow-providers-sftp = {version = "*", optional = true, markers = "extra == \"sftp\""}
 apache-airflow-providers-smtp = "*"
 apache-airflow-providers-sqlite = "*"
@@ -690,6 +691,27 @@ openlineage-python = ">=1.16.0"
 
 [package.extras]
 common-sql = ["apache-airflow-providers-common-sql"]
+
+[[package]]
+name = "apache-airflow-providers-postgres"
+version = "5.11.2"
+description = "Provider package apache-airflow-providers-postgres for Apache Airflow"
+optional = false
+python-versions = "~=3.8"
+files = [
+    {file = "apache_airflow_providers_postgres-5.11.2-py3-none-any.whl", hash = "sha256:7f1dce7abaf36f9fdb3a5153bdfbc6e325202c4b573e58041815d32fac431549"},
+    {file = "apache_airflow_providers_postgres-5.11.2.tar.gz", hash = "sha256:07698b96b1de2e9dee26de9296c404e6c8b5f86c7c32dcbb3c8107b8e218fdb2"},
+]
+
+[package.dependencies]
+apache-airflow = ">=2.7.0"
+apache-airflow-providers-common-sql = ">=1.3.1"
+psycopg2-binary = ">=2.9.4"
+
+[package.extras]
+amazon = ["apache-airflow-providers-amazon (>=2.6.0)"]
+common-sql = ["apache-airflow-providers-common-sql"]
+openlineage = ["apache-airflow-providers-openlineage"]
 
 [[package]]
 name = "apache-airflow-providers-sftp"
@@ -7524,4 +7546,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10, <3.11"
-content-hash = "cdaea3f606819e1c089fb0beeda74099d22eb4af58db5dfdddccef1bfddafa80"
+content-hash = "e265039be8deb1d7f10b2f938937637a8aeefd4146996005ab508c0424ff5229"
