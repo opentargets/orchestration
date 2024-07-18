@@ -62,17 +62,22 @@ class GCSIOManager:
         if not gcs_paths:
             return []
         n_threads = len(gcs_paths)
+        print(f"LOADING {len(gcs_paths)} MANIFESTS.")
         with concurrent.futures.ThreadPoolExecutor(max_workers=n_threads) as executor:
             futures: list[concurrent.futures.Future] = []
             for gcs_path in gcs_paths:
                 gcs_path = GCSPath(gcs_path)
                 bucket_name, file_name = gcs_path.split()
-                print(f"{bucket_name=}")
-                print(f"{file_name=}")
-                print(f"{gcs_path}")
                 bucket = Bucket(name=bucket_name, client=self.client)
                 blob = Blob(name=file_name, bucket=bucket)
-                method = lambda: json.loads(blob.download_as_text(client=self.client))
+
+                def load_manifest(blob: Blob) -> Manifest_Object:
+                    """Load manifest with blob."""
+                    with blob.open("r") as fp:
+                        manifest: Manifest_Object = json.load(fp)
+                        return manifest
+
+                method = lambda: load_manifest(blob)
                 futures.append(executor.submit(method))
         results: list[Manifest_Object] = []
         concurrent.futures.wait(futures)
@@ -100,6 +105,7 @@ class GCSIOManager:
             raise ValueError("Empty gcs_paths or unequal number of file_blobs")
         if not gcs_paths:
             return None
+        print(f"DUMPING {len(gcs_paths)} MANIFESTS.")
         n_threads = len(gcs_paths)
         chunk_size = 1024 * 256
         with concurrent.futures.ThreadPoolExecutor(max_workers=n_threads) as executor:
@@ -110,9 +116,14 @@ class GCSIOManager:
                 gcs_path = GCSPath(gcs_path)
                 bucket_name, file_name = gcs_path.split()
                 bucket = Bucket(client=self.client, name=bucket_name)
-                file_blob = json.dumps(manifest_object)
                 blob = Blob(name=file_name, bucket=bucket, chunk_size=chunk_size)
-                method = lambda: blob.upload_from_string(file_blob, client=self.client)
+
+                def dump_manifest(blob: Blob, manifest: Manifest_Object) -> None:
+                    """Dump manifest to blob."""
+                    with blob.open("w") as fp:
+                        json.dump(manifest, fp, indent=2)
+
+                method = lambda: dump_manifest(blob, manifest_object)
                 futures.append(executor.submit(method))
         results = []
         concurrent.futures.wait(futures)

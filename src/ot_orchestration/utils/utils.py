@@ -87,15 +87,15 @@ def time_to_seconds(time_str: str) -> int:
     result = re.match(time_pattern, time_str)
     if not result:
         raise ValueError("Cound not parse %s time string", time_str)
-    match time_str:
+    match list(time_str):
         case [*days, "d"]:
-            return int(days) * 24 * 60 * 60
+            return int("".join(days)) * 24 * 60 * 60
         case [*hours, "h"]:
-            return int(hours) * 60 * 60
+            return int("".join(hours)) * 60 * 60
         case [*minutes, "m"]:
-            return int(minutes) * 60
+            return int("".join(minutes)) * 60
         case [*seconds, "s"]:
-            return int(seconds)
+            return int("".join(seconds))
         case _:
             return 0
 

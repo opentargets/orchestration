@@ -1,4 +1,4 @@
-FROM gentropy:latest
+FROM europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:dev
 
 ARG CLOUD_SDK_VERSION=452.0.0
 ENV GCLOUD_HOME=/home/google-cloud-sdk

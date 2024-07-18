@@ -14,6 +14,7 @@ from airflow.providers.google.cloud.operators.cloud_batch import (
 from airflow.operators.python import get_current_context
 from airflow.utils.helpers import chain
 from ot_orchestration.utils import create_batch_job, create_task_spec
+from ot_orchestration.utils.common import GCP_REGION, GCP_PROJECT
 
 
 @task_group(group_id="gwas_catalog_harmonisation")
@@ -26,19 +27,17 @@ def gwas_catalog_harmonisation() -> None:
     )
 
     @task(task_id="create_harmonisation_job")
-    def harmonisation_job(manifest_paths):
+    def harmonisation_job(manifest_paths: list[str]) -> CloudBatchSubmitJobOperator:
         """Create a harmonisation batch job."""
         cfg = get_config_from_dag_params()
-        staging_bucket = get_gwas_catalog_dag_params("staging_bucket")
+        staging_bucket = get_gwas_catalog_dag_params()["staging_bucket"]
         google_batch_params = cfg.get_googlebatch_params("harmonisation")
         resource_specs = google_batch_params["resource_specs"]
         task_specs = google_batch_params["task_specs"]
         policy_specs = google_batch_params["policy_specs"]
         dag_params = get_gwas_catalog_dag_params()
         image = dag_params["genetics_etl_image"]
-        commands = ["tasks/harmonise.sh"]
-        project_id = dag_params["gcp_project"]
-        region = dag_params["gcp_region"]
+        commands = ["echo", "$MANIFEST_PATH"]
         task_env = [
             Environment(variables={"MANIFEST_PATH": f"gs://{staging_bucket}/{mp}"})
             for mp in manifest_paths
@@ -53,8 +52,8 @@ def gwas_catalog_harmonisation() -> None:
         print(job)
         CloudBatchSubmitJobOperator(
             task_id="harmonisation_batch_job",
-            project_id=project_id,
-            region=region,
+            project_id=GCP_PROJECT,
+            region=GCP_REGION,
             job_name=f"harmonisation-job-{time.strftime('%Y%m%d-%H%M%S')}",
             job=job,
             deferrable=False,

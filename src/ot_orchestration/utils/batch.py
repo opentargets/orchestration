@@ -39,10 +39,11 @@ def create_container_runnable(
 
 
     """
-    container = Runnable.Container(
-        image_uri=image, entrypoint="/bin/sh", commands=commands, **kwargs
+    runnable = Runnable()
+    runnable.container = Runnable.Container(
+        image_uri=image, commands=commands, **kwargs
     )
-    return Runnable(container=container)
+    return runnable
 
 
 def create_task_spec(

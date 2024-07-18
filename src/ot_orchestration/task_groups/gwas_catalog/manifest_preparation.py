@@ -6,7 +6,8 @@ from ot_orchestration.types import Manifest_Object
 from ot_orchestration.utils import get_gwas_catalog_dag_params, GCSIOManager, GCSPath
 from airflow.utils.helpers import chain
 import pandas as pd
-import json
+
+FILTER_FILE = "/opt/airflow/config/filter.csv"
 
 
 @task_group(group_id="manifest_preparation")
@@ -29,7 +30,7 @@ def gwas_catalog_manifest_preparation():
             f"gs://{raw_sumstat_bucket}/{manifest_path}"
             for manifest_path in manifest_paths
         ]
-        return GCSIOManager().load_many(manifest_paths[1:10])
+        return GCSIOManager().load_many(manifest_paths)
 
     existing_manifests = read_existing_manifests(existing_manifest_paths.output)  # type: ignore
 
@@ -40,8 +41,10 @@ def gwas_catalog_manifest_preparation():
         match_glob="**/*.h.tsv.gz",
     )
 
+    # @task(task_id="run-on-test-batch")
+
     @task(task_id="generate_new_manifests")
-    def generate_manifests(
+    def generate_new_manifests(
         raw_sumstats_paths: list[str], existing_manifests: list[Manifest_Object]
     ) -> list[Manifest_Object]:
         """Task to generate manifest files for the new studies.
@@ -75,8 +78,8 @@ def gwas_catalog_manifest_preparation():
                     "studyId": study_id,
                     "rawPath": f"gs://{raw_sumstat_bucket}/{raw_sumstat_prefix}",
                     "manifestPath": f"gs://{staging_path}/manifest.json",
-                    "harmonisedPath": f"gs://{staging_path}/{harmonised_prefix}/result.parquet",
-                    "QCPath": f"gs://{staging_path}/{qc_prefix}/result.parquet",
+                    "harmonisedPath": f"gs://{staging_path}/{harmonised_prefix}",
+                    "qcPath": f"gs://{staging_path}/{qc_prefix}",
                     "passHarmonisation": None,
                     "passQC": None,
                     # fields from the curation file
@@ -86,12 +89,15 @@ def gwas_catalog_manifest_preparation():
                     "pubmedId": None,
                 }
                 manifests.append(partial_manifest)
-        manifests.extend(existing_manifests)
+                print(partial_manifest)
         return manifests
 
     @task(task_id="amend_curation_metadata")
-    def amend_curation_metadata(partial_manifests: list[Manifest_Object]):
+    def amend_curation_metadata(
+        new_manifests: list[Manifest_Object], existing_manifests: list[Manifest_Object]
+    ):
         """Read curation file and add it to the partial manifests."""
+        all_manifests = new_manifests + existing_manifests
         params = get_gwas_catalog_dag_params()
         curation_path: str = params["manual_curation_manifest_gh"]
         # the curation_df should have fields that match the manifest file
@@ -99,30 +105,37 @@ def gwas_catalog_manifest_preparation():
         curation_df = pd.read_csv(curation_path, sep="\t").drop(
             columns=["publicationTitle", "traitFromSource", "qualityControl"]
         )
-        manifest_df = pd.DataFrame.from_records(partial_manifests)
+        manifest_df = pd.DataFrame.from_records(all_manifests)
         # overwrite old curation columns with the data that comes from the curation_manifest
         # this means that we need to update the None values that were generated from scratch
         manifest_df = manifest_df.drop(
             columns=["studyType", "analysisFlag", "isCurated", "pubmedId"]
         )
         curated_manifest = manifest_df.merge(curation_df, how="left", on="studyId")
+        if params["perform_test_on_curated_batch"]:
+            filter_df = pd.read_csv(FILTER_FILE, sep=",")[["studyId"]]
+            print(filter_df)
+            curated_manifest = filter_df.merge(
+                curated_manifest, how="left", on="studyId"
+            )
         curated_manifests = curated_manifest.replace({float("nan"): None}).to_dict(
             "records"
         )
-        return curated_manifests
+        return curated_manifests[0:10]
 
     @task(task_id="save_manifests")
     def save_manifests(manifests: list[Manifest_Object]) -> None:
         """Write manifests to persistant storage."""
         manifest_paths = [manifest["manifestPath"] for manifest in manifests]
-        manifest_blobs = [json.dumps(manifest) for manifest in manifests]
-        GCSIOManager().dump_many(manifest_blobs, manifest_paths)
+        GCSIOManager().dump_many(manifests, manifest_paths)
 
-    manifests = generate_manifests(raw_sumstats_paths.output, existing_manifests)  # type: ignore
-    manifests_with_curation = amend_curation_metadata(manifests)  # type: ignore
+    new_manifests = generate_new_manifests(
+        raw_sumstats_paths.output, existing_manifests
+    )  # type: ignore
+    manifests_with_curation = amend_curation_metadata(new_manifests, existing_manifests)  # type: ignore
     chain(
         existing_manifests,
-        manifests,
+        new_manifests,
         manifests_with_curation,
         save_manifests(manifests_with_curation),
     )
