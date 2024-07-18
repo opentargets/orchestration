@@ -29,7 +29,6 @@ RUN_DATE = datetime.today()
 @dag(start_date=RUN_DATE, dag_id=GWAS_CATALOG_CONFIG_DAG_ID)
 def gwas_catalog_dag(**kwargs: Dag_Params) -> None:
     """GWAS catalog DAG."""
-
     # [START PREPARE CURATION MANIFEST]
     @task_group(group_id="curation")
     def gwas_catalog_curation() -> None:
