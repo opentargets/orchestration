@@ -45,7 +45,7 @@ export MANIFEST_PATH=$(cat manifest.json | jq -r '.manifestPath')
 echo "Dumping manifest.json to $MANIFEST_PATH"
 cat manifest.json
 
-# only save the manifest.json file if it is not a test run
+# only save the manifest.json file if itca is not a test run
 if [ -z $TEST_RUN ]; then
     gsutil cp manifest.json $MANIFEST_PATH
 fi

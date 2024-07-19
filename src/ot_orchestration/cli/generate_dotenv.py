@@ -1,4 +1,5 @@
 """Generate dotenv file for airflow configuration."""
+
 import logging
 import os
 import sys
@@ -11,7 +12,7 @@ __version__ = "1.0.0"
 
 
 @click.command()
-def main():
+def generate_dotenv():
     """Ïnteractive script to generate environment variables for local airflow stack."""
     env_file = ".env"
     logging.info("Checking if %s file exists", env_file)
@@ -36,3 +37,6 @@ def main():
     with open(env_file, "w") as f:
         for key, val in mapping.items():
             f.write(f"{key}={val}")
+
+
+__all__ = ["generate_dotenv"]
