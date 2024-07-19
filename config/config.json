@@ -13,7 +13,7 @@
         },
         "task_specs": {
           "max_retry_count": 3,
-          "max_run_duration": "32400s"
+          "max_run_duration": "32400m"
         },
         "policy_specs": {
           "machine_type": "n1-standard-2"
@@ -57,7 +57,9 @@
       "gentropy_image_tag": "europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:v1.5.0",
       "gcp_project" : "open-targets-genetics-dev",
       "gcp_region": "europe-west1",
-      "genetics_etl_image": "genetics_etl_latest"
+      "genetics_etl_image": "europe-west1-docker.pkg.dev/open-targets-genetics-dev/ot-orchestration/genetics_etl:dev",
+      "perform_test_on_curated_batch": true
     }
+
   }
 }
