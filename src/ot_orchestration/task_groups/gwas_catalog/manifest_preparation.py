@@ -25,10 +25,9 @@ def gwas_catalog_manifest_preparation():
         """Read manifests that already exist in staging bucket."""
         # recreate the paths with the gs://{bucket_name}/
         params = get_gwas_catalog_dag_params()
-        raw_sumstat_bucket: str = params["staging_bucket"]
+        staging_bucket: str = params["staging_bucket"]
         manifest_paths = [
-            f"gs://{raw_sumstat_bucket}/{manifest_path}"
-            for manifest_path in manifest_paths
+            f"gs://{staging_bucket}/{manifest_path}" for manifest_path in manifest_paths
         ]
         return GCSIOManager().load_many(manifest_paths)
 
@@ -63,7 +62,6 @@ def gwas_catalog_manifest_preparation():
         staging_prefix: str = params["staging_prefix"]
         harmonised_prefix: str = params["harmonised_prefix"]
         raw_sumstat_bucket: str = params["raw_sumstats_bucket"]
-        raw_sumstat_prefix: str = params["raw_sumstats_prefix"]
         qc_prefix: str = params["qc_prefix"]
         staging_dir = f"{staging_bucket}/{staging_prefix}"
         studies_in_staging_bucket = [
@@ -76,7 +74,7 @@ def gwas_catalog_manifest_preparation():
                 staging_path = f"{staging_dir}/{study_id}"
                 partial_manifest = {
                     "studyId": study_id,
-                    "rawPath": f"gs://{raw_sumstat_bucket}/{raw_sumstat_prefix}",
+                    "rawPath": f"gs://{raw_sumstat_bucket}/{raw_path}",
                     "manifestPath": f"gs://{staging_path}/manifest.json",
                     "harmonisedPath": f"gs://{staging_path}/{harmonised_prefix}",
                     "qcPath": f"gs://{staging_path}/{qc_prefix}",
@@ -121,7 +119,7 @@ def gwas_catalog_manifest_preparation():
         curated_manifests = curated_manifest.replace({float("nan"): None}).to_dict(
             "records"
         )
-        return curated_manifests[0:10]
+        return curated_manifests
 
     @task(task_id="save_manifests")
     def save_manifests(manifests: list[Manifest_Object]) -> None:
