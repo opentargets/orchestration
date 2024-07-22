@@ -22,7 +22,5 @@ RUN DOWNLOAD_URL="https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/goo
 
 ENV PATH="$PATH:$GCLOUD_HOME/bin"
 
-# Set environment variables for Java
-ENV JAVA_HOME=/usr/bin/
 COPY tasks/ tasks/
-ENTRYPOINT ["/bin/bash", "-c"]
+ENTRYPOINT ["/bin/bash"]
