@@ -1,0 +1,57 @@
+name: Build and Push to Artifact Registry
+
+"on":
+  push:
+    branches: ["dev", "szsz-code-cleanup"]
+    tags: ["v*"]
+
+env:
+  PROJECT_ID: open-targets-genetics-dev
+  REGION: europe-west1
+  GAR_LOCATION: europe-west1-docker.pkg.dev/open-targets-genetics-dev
+  REPOSITORY: ot-orchestration
+# Add "id-token" with the intended permissions.
+
+jobs:
+  build-push-artifact:
+    permissions:
+      contents: "read"
+      id-token: "write"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: "actions/checkout@v3"
+
+      - id: auth
+        name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          #NOTE: created with https://gist.github.com/javfg#how-to-push-tagged-docker-releases-to-google-artifact-registry-with-a-github-action
+          workload_identity_provider: projects/234703259993/locations/global/workloadIdentityPools/github/providers/my-provider
+          service_account: github-actions-access@open-targets-genetics-dev.iam.gserviceaccount.com
+
+      - name: "Set up Cloud SDK"
+        uses: "google-github-actions/setup-gcloud@v2"
+
+      - name: "Use gcloud CLI"
+        run: "gcloud info"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: "Docker auth"
+        run: |-
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build and push gentropy image
+        uses: docker/build-push-action@v6
+        with:
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: "${{ env.GAR_LOCATION }}/${{ env.REPOSITORY }}/genetics_etl:${{ github.ref_name }}"
+          context: .
+          file: images/genetics_etl/Dockerfile
