@@ -7,10 +7,9 @@ from ot_orchestration.task_groups import (
     gwas_catalog_batch_processing,
     gwas_catalog_manifest_preparation,
 )
-
+from ot_orchestration.utils import QRCP
 from airflow.decorators import dag
 
-from ot_orchestration import QRCP
 
 from airflow.utils.helpers import chain
 
@@ -18,7 +17,6 @@ from airflow.utils.helpers import chain
 RUN_DATE = datetime.today()
 
 config_path = "/opt/airflow/config/config.yaml"
-harmonise_script_path = "/opt/airflow/dags/ot_orchestration/"
 config = QRCP.from_file(config_path).serialize()
 
 

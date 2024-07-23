@@ -16,7 +16,7 @@ apache-airflow = { extras = [
   "google",
   "kubernetes",
   "openlineage",
-  "postgress",
+  "postgres",
   "sftp",
 ], version = "^2.9.2" }
 apache-airflow-providers-google = "^10.19.0"
