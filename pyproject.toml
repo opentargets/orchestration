@@ -61,7 +61,7 @@ no_implicit_reexport = true
 strict_equality = true
 warn_redundant_casts = true
 warn_unused_ignores = true
-exclude = "src/ot_orchestration/dags/*"
+exclude = ["src/ot_orchestration/dags/*", "src/ot_orchestration/task_groups/*"]
 plugins = ["returns.contrib.mypy.returns_plugin"]
 
 [[tool.mypy.overrides]]

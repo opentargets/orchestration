@@ -1,0 +1,32 @@
+---
+DAG: GWAS_Catalog
+force: False
+resume: False
+
+steps:
+
+  manifest_preparation:
+    raw_sumstats_bucket:  gentropy-tmp # for prod change it to gwas_catalog_data
+    raw_sumstats_prefix: raw_summary_statistics
+    staging_bucket: gentropy-tmp
+    staging_prefix: staging
+    manual_curation_manifest: https://raw.githubusercontent.com/opentargets/curation/master/genetics/GWAS_Catalog_study_curation.tsv
+    harmonised_result_path_prefix: harmonised
+    qc_result_path_prefix: qc
+
+  batch_processing:
+    googlebatch:
+      resource_specs:
+        cpu_milli: 2000
+        memory_mib: 2000
+        boot_disk_mib: 10000
+      task_specs:
+        max_retry_count: 3
+        max_run_duration: "10m"
+      policy_specs:
+        machine_type: n1-standard-2
+      image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/ot-orchestration/genetics_etl:dev
+      commands: [tasks/process_in_batch.py]
+    spark:
+      spark_uri: yarn
+      write_mode: errorifexists

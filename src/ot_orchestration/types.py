@@ -20,14 +20,27 @@ Manifest_Object = TypedDict(
         "studyId": Required[str],
         "rawPath": Required[str],
         "harmonisedPath": Required[str],
-        "passHarmonisation": Required[bool] | Required[None],
-        "passQC": Required[bool] | Required[None],
+        "passHarmonisation": bool | None,
+        "passQC": bool | None,
         "qcPath": Required[str],
         "manifestPath": Required[str],
-        "studyType": Required[str] | Required[None],
-        "analysisFlag": Required[str] | Required[None],
-        "isCurated": Required[bool] | Required[None],
-        "pubmetId": Required[str] | Required[None],
+        "studyType": str | None,
+        "analysisFlag": str | None,
+        "isCurated": str | None,
+        "pubmetId": str | None,
+    },
+)
+
+Manifest_Preparation_Params = TypedDict(
+    "Manifest_Preparation_Params",
+    {
+        "raw_sumstats_bucket": Required[str],
+        "raw_sumstats_prefix": Required[str],
+        "staging_bucket": Required[str],
+        "staging_prefix": Required[str],
+        "manual_curation_manifest": Required[str],
+        "harmonised_result_path_prefix": Required[str],
+        "qc_result_path_prefix": Required[str],
     },
 )
 
@@ -86,8 +99,21 @@ Batch_Specs = TypedDict(
         "resource_specs": Batch_Resource_Specs,
         "task_specs": Batch_Task_Specs,
         "policy_specs": Batch_Policy_Specs,
+        "image": str,
+        "commands": list[str],
     },
 )
+
+Spark_Options = TypedDict(
+    "Spark_Options",
+    {
+        "spark_uri": Literal["yarn"],
+        "write_mode": Literal["errorifexists", "overwrite"],
+    },
+)
+
+
+Log_Level = Literal["INFO", "TRACE", "DEBUG", "WARNING", "ERROR"]
 
 
 __all__ = [
@@ -109,4 +135,7 @@ __all__ = [
     "DagConfigNotFound",
     "GCS_Bucket_Name",
     "GCS_Path_Suffix",
+    "Log_Level",
+    "Manifest_Preparation_Params",
+    "Spark_Options",
 ]

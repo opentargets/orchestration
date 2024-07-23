@@ -9,7 +9,7 @@ from returns.result import Success, Failure
 
 @pytest.fixture
 def orchestration_config() -> Path:
-    return Path(__file__).parent.parent / "config" / "config.json"
+    return Path(__file__).parent.parent / "config" / "config.yaml"
 
 
 def test_qrcp_parser(orchestration_config: Path) -> None:
@@ -18,8 +18,10 @@ def test_qrcp_parser(orchestration_config: Path) -> None:
     Ensure config present in `config` dir can be parsed with QRCP."""
     cfg = QRCP.from_file(path=orchestration_config)
     assert isinstance(cfg.config, ConfigModel)
-    assert isinstance(cfg.get("DAGS"), Success)
-    assert isinstance(cfg.get("providers"), Success)
+    assert isinstance(cfg.get("DAG"), Success)
+    assert isinstance(cfg.get("resume"), Success)
+    assert isinstance(cfg.get("force"), Success)
+    assert isinstance(cfg.get("steps"), Success)
     assert isinstance(cfg.get("other_key"), Failure)  # type: ignore
 
 
@@ -49,8 +51,8 @@ def test_save_qrcp_to_file(orchestration_config: Path, tmp_path: Path) -> None:
     assert output.exists()
 
 
-def test_get_dag_params(orchestration_config: Path) -> None:
+def test_get_step_params(orchestration_config: Path) -> None:
     """Test getting correct DAG params from QRCP."""
     cfg = QRCP.from_file(orchestration_config)
-    assert isinstance(cfg.get_dag_params("DAG_A"), Failure)
-    assert isinstance(cfg.get_dag_params("GWAS_Catalog"), Success)
+    assert isinstance(cfg.get_step_params("aaa"), Failure)
+    assert isinstance(cfg.get_step_params("batch_processing"), Success)

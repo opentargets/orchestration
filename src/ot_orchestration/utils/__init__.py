@@ -3,8 +3,8 @@
 from ot_orchestration.utils.qrcp import (
     QRCP,
     ConfigModel,
-    get_config_from_dag_params,
-    get_gwas_catalog_dag_params,
+    get_step_params,
+    get_full_config,
 )
 from ot_orchestration.utils.utils import (
     check_gcp_folder_exists,
@@ -24,6 +24,6 @@ __all__ = [
     "time_to_seconds",
     "create_task_spec",
     "create_batch_job",
-    "get_config_from_dag_params",
-    "get_gwas_catalog_dag_params",
+    "get_step_params",
+    "get_full_config",
 ]
