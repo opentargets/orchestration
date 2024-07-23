@@ -18,6 +18,8 @@ TASK_GROUP_ID = "manifest_preparation"
 @task_group(group_id=TASK_GROUP_ID)
 def gwas_catalog_manifest_preparation():
     """Prepare initial manifest."""
+    options = ["FORCE", "RESUME", "CONTINUE"]
+    print(options)
     existing_manifest_paths = GCSListObjectsOperator(
         task_id="list_existing_manifests",
         bucket="{{ params.steps.manifest_preparation.staging_bucket }}",
@@ -32,20 +34,25 @@ def gwas_catalog_manifest_preparation():
         match_glob="**/*.h.tsv.gz",
     ).output
 
-    @task(task_id="generate_new_manifests")
-    def generate_new_manifests(
-        raw_sumstats_paths: list[str], existing_manifest_paths: list[Manifest_Object]
-    ) -> list[Manifest_Object]:
-        """Task to generate manifest files for the new studies."""
-        # get studies that are new and not processed
+    @task(task_id="get_new_sumstats")
+    def get_new_sumstats(
+        raw_sumstats_paths: list[str], existing_manifest_paths: list[str]
+    ) -> dict[str, str]:
+        """Get new sumstats."""
         processed = {extract_study_id_from_path(p) for p in existing_manifest_paths}
         logging.info("ALREADY PROCESSED STUDIES: %s", len(processed))
         all = {extract_study_id_from_path(p): p for p in raw_sumstats_paths}
         logging.info("ALL STUDIES (INCLUDING NOT PROCESSED): %s", len(all))
         new = {key: val for key, val in all.items() if key not in processed}
         logging.info("NEW STUDIES UNPROCESSED: %s", len(new))
-        params = get_step_params("manifest_preparation")
+        return new
 
+    new_sumstats = get_new_sumstats(raw_sumstats_paths, existing_manifest_paths)
+
+    @task(task_id="generate_new_manifests")
+    def generate_new_manifests(new_sumstats: dict[str, str]) -> list[Manifest_Object]:
+        """Task to generate manifest files for the new studies."""
+        params = get_step_params("manifest_preparation")
         # params from the configuration
         logging.info("USING FOLLOWING PARAMS: %s", params)
         raw_sumstat_bucket = params["raw_sumstats_bucket"]
@@ -56,7 +63,7 @@ def gwas_catalog_manifest_preparation():
 
         # prepare manifests for the new studies
         manifests = []
-        for study_id, raw_sumstat_path in new.items():
+        for study_id, raw_sumstat_path in new_sumstats.items():
             staging_path = f"gs://{staging_bucket}/{staging_prefix}/{study_id}"
             partial_manifest = {
                 "studyId": study_id,
@@ -64,14 +71,15 @@ def gwas_catalog_manifest_preparation():
                 "manifestPath": f"gs://{staging_path}/manifest.json",
                 "harmonisedPath": f"gs://{staging_path}/{harmonised_prefix}",
                 "qcPath": f"gs://{staging_path}/{qc_prefix}",
-                "passHarmonisation": None,
-                "passQC": None,
+                "passHarmonisation": False,
+                "passQC": False,
+                "passClumping": False,
             }
             manifests.append(partial_manifest)
             logging.info(partial_manifest)
         return manifests
 
-    new_manifests = generate_new_manifests(raw_sumstats_paths, existing_manifest_paths)
+    new_manifests = generate_new_manifests(new_sumstats)
 
     @task(task_id="amend_curation_metadata")
     def amend_curation_metadata(new_manifests: list[Manifest_Object]):
@@ -122,7 +130,7 @@ def gwas_catalog_manifest_preparation():
         full_config = get_full_config().serialize()
         config_path = f"gs://{params['staging_bucket']}/{params['staging_prefix']}/{run_id}/config.yaml"
         logging.info("DUMPING CONFIG TO THE FOLLOWING PATH: %s", config_path)
-        GCSIOManager().dump_config(gcs_path=config_path, data=full_config)
+        GCSIOManager().dump(gcs_path=config_path, data=full_config)
         return config_path
 
     saved_config_path = save_config()

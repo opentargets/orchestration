@@ -45,8 +45,9 @@ pytest-cov = "^5.0.0"
 pytest-sugar = "^1.0.0"
 pytest-xdist = "^3.6.1"
 deptry = "^0.16.1"
+
 [tool.poetry.scripts]
-generate-dotenv = "ot-orchestration.scripts:ot"
+ot = "ot_orchestration.cli:cli"
 
 [build-system]
 requires = ["poetry-core"]

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import Any, Callable, Literal
 from airflow.operators.python import get_current_context
 
 import json
@@ -27,8 +27,7 @@ class ConfigModel(BaseModel):
     """Top level config structure."""
 
     DAG: Data_Source
-    force: bool
-    resume: bool
+    mode: Literal["FORCE", "RESUME", "CONTINUE"]
     steps: StepModel
 
 
@@ -66,7 +65,7 @@ def default_config_parser(
         or Failure(ConfigParsingFailure)
     """
     match conf:
-        case {"DAG": _, "force": _, "resume": _, "steps": _}:
+        case {"DAG": _, "mode": _, "steps": _}:
             return Success(ConfigModel(**conf))
         case _:
             return Failure(

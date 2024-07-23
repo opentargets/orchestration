@@ -1,7 +1,6 @@
 ---
 DAG: GWAS_Catalog
-force: False
-resume: False
+mode: FORCE
 
 steps:
 

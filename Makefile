@@ -42,17 +42,20 @@ build-airflow-image: generate-requirements  ## build local airflow image for the
 		-f Dockerfile \
 		--no-cache
 
-build-genetics-etl-image: ## build local genetics-etl image for the infrastructure
-	docker build . \
-		--tag genetics_etl:latest \
-		-f images/genetics_etl/Dockerfile \
-		--no-cache
+build-whl: ## build ot-orchestration package wheel
+	poetry build --format wheel
 
-test-harmonisation-step: build-genetics-etl-image ## test harmonisation task
-	mkdir -p test_batch
-	gsutil -m rsync -r gs://genetics_etl_python_playground/test_data/test_batch test_batch
+# docker buildx build --platform=linux/amd64,linux/arm64 -t europe-west1-docker.pkg.dev/open-targets-genetics-dev/ot-orchestration/genetics_etl:dev --push -f images/genetics_etl/Dockerfile .
+build-genetics-etl-image: build-whl ## build local genetics-etl image for the testing purposes
+	docker build . \
+		--tag genetics_etl:test \
+		-f images/genetics_etl/Dockerfile \
+		--build-arg DIST=$(shell find dist -name 'ot_orchestration*')
+
+test-harmonisation-step: ## test harmonisation task
 	docker run \
-		-v $(PWD)/test_batch/:/test_batch/:rw \
-		genetics_etl:latest \
-	./tasks/harmonise.sh
-	rm -r test_batch
+		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
+		-e MANIFEST_PATH=gs://genetics_etl_python_playground/initialisation/0.1.0/manifests/manifest.json \
+		-ti \
+		--rm \
+		genetics_etl:test

@@ -1,4 +1,4 @@
-"""Test QRCP and orchestration config"""
+"""Test QRCP and orchestration config."""
 
 import pytest
 from pathlib import Path
@@ -19,8 +19,7 @@ def test_qrcp_parser(orchestration_config: Path) -> None:
     cfg = QRCP.from_file(path=orchestration_config)
     assert isinstance(cfg.config, ConfigModel)
     assert isinstance(cfg.get("DAG"), Success)
-    assert isinstance(cfg.get("resume"), Success)
-    assert isinstance(cfg.get("force"), Success)
+    assert isinstance(cfg.get("mode"), Success)
     assert isinstance(cfg.get("steps"), Success)
     assert isinstance(cfg.get("other_key"), Failure)  # type: ignore
 

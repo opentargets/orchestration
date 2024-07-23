@@ -10,6 +10,7 @@ env:
   REGION: europe-west1
   GAR_LOCATION: europe-west1-docker.pkg.dev/open-targets-genetics-dev
   REPOSITORY: ot-orchestration
+  PYTHON_VERSION_DEFAULT: "3.10"
 # Add "id-token" with the intended permissions.
 
 jobs:
@@ -21,6 +22,18 @@ jobs:
     steps:
       - name: "Checkout"
         uses: "actions/checkout@v3"
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION_DEFAULT }}
+
+      - name: Install and configure Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
 
       - id: auth
         name: Authenticate with Google Cloud
@@ -44,9 +57,16 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: "Docker auth"
-        run: |-
+        run: |
           gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
 
+      - name: Build ot package with poetry
+        run: |
+          poetry install
+          poetry build --format wheel
+      - name: Get distribution file
+        run: |
+          echo "DIST=$(find dist -name 'ot_orchestration*')" >> $GITHUB_ENV
       - name: Build and push gentropy image
         uses: docker/build-push-action@v6
         with:
@@ -55,3 +75,4 @@ jobs:
           tags: "${{ env.GAR_LOCATION }}/${{ env.REPOSITORY }}/genetics_etl:${{ github.ref_name }}"
           context: .
           file: images/genetics_etl/Dockerfile
+          build-args: DIST=${{ env.DIST }}

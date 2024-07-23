@@ -10,6 +10,7 @@ from ot_orchestration.types import GCS_Bucket_Name, GCS_Path_Suffix
 import json
 from ot_orchestration.types import Manifest_Object
 import yaml
+from pathlib import Path
 
 
 class GCSPath:
@@ -51,23 +52,36 @@ class GCSIOManager:
         self.client._http.mount("https://", adapter)
         self.client._http._auth_request.session.mount("https://", adapter)
 
-    def dump_config(self, gcs_path: str, data: dict) -> None:
+    def dump(self, gcs_path: str, data: dict) -> None:
         """Write data to Google Cloud Storage."""
         gcs_path = GCSPath(gcs_path)
         bucket_name, file_name = gcs_path.split()
         bucket = Bucket(client=self.client, name=bucket_name)
         blob = Blob(name=file_name, bucket=bucket)
         with blob.open("w") as fp:
-            yaml.safe_dump(data, fp)
+            match Path(file_name).suffix:
+                case ".json":
+                    return json.dump(data, fp)
+                case ".yaml" | ".yml":
+                    return yaml.safe_dump(data, fp)
+                case _:
+                    return fp.write(data)
 
-    def load_config(self, gcs_path: str) -> dict:
+    def load(self, gcs_path: str) -> dict:
         """Read data from Google Cloud Storage."""
         gcs_path = GCSPath(gcs_path)
         bucket_name, file_name = gcs_path.split()
         bucket = Bucket(client=self.client, name=bucket_name)
         blob = Blob(name=file_name, bucket=bucket)
+
         with blob.open("r") as fp:
-            return yaml.safe_load(fp)
+            match Path(file_name).suffix:
+                case ".json":
+                    return json.load(fp)
+                case ".yaml" | ".yml":
+                    return yaml.safe_load(fp)
+                case _:
+                    return {"data": fp.read()}
 
     def load_many(self, gcs_paths: list[str]) -> list[Manifest_Object]:
         """Load many json objects from google cloud by concurrent operations.
