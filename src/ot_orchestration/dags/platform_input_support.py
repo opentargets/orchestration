@@ -28,6 +28,7 @@ from ot_orchestration.utils.utils import create_name, read_yaml_config, strhash
 PIS_CONFIG_PATH = Path(__file__).parent / "config" / "pis.yaml"
 PIS_IMAGE = "europe-west1-docker.pkg.dev/open-targets-eu-dev/platform-input-support-test/platform-input-support-test:latest"
 PIS_MACHINE_SPEC = {"cpu": "1", "memory": "512Mi"}
+PIS_SACC = "platform-input-support@open-targets-eu-dev.iam.gserviceaccount.com"
 
 
 def get_steps() -> list[str]:
@@ -54,7 +55,9 @@ with DAG(
                 project_id=GCP_PROJECT_PLATFORM,
                 region=GCP_REGION,
                 job_name=job_name,
-                job=create_cloud_run_job(PIS_IMAGE, env_vars, PIS_MACHINE_SPEC),
+                job=create_cloud_run_job(
+                    PIS_IMAGE, env_vars, PIS_MACHINE_SPEC, PIS_SACC
+                ),
                 dag=dag,
             )
 

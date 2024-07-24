@@ -4,7 +4,10 @@ from google.cloud import run_v2
 
 
 def create_cloud_run_job(
-    image: str, env: dict[str, str], limits: dict[str, str]
+    image: str,
+    env: dict[str, str],
+    limits: dict[str, str],
+    service_account: str | None = None,
 ) -> run_v2.Job:
     """Create a Cloud Run job instance for a given step."""
     job = run_v2.Job()
@@ -16,4 +19,6 @@ def create_cloud_run_job(
     )
     job.template.template.containers.append(container)
     job.template.template.max_retries = 0
+    if service_account:
+        job.template.template.service_account = service_account
     return job
