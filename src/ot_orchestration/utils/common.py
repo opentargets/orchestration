@@ -8,6 +8,7 @@ GENTROPY_VERSION = "0.0.0"
 
 # Cloud configuration.
 GCP_PROJECT = "open-targets-genetics-dev"
+GCP_PROJECT_PLATFORM = "open-targets-eu-dev"
 GCP_REGION = "europe-west1"
 GCP_ZONE = "europe-west1-d"
 GCP_DATAPROC_IMAGE = "2.1"

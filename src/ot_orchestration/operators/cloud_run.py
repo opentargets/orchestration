@@ -10,8 +10,10 @@ from google.cloud import logging
 class CloudRunExecuteJobWithLogsOperator(CloudRunExecuteJobOperator):
     """Custom operator to execute a Cloud Run job and fetch logs from it."""
 
+    template_fields = ["project_id", "region", "job_name"]
+
     @apply_defaults
-    def __init__(self, *args, project_id, region, job_name, **kwargs):
+    def __init__(self, *args, project_id, region, job_name, **kwargs) -> None:
         super().__init__(
             project_id=project_id,
             region=region,
@@ -23,7 +25,7 @@ class CloudRunExecuteJobWithLogsOperator(CloudRunExecuteJobOperator):
         self.region = region
         self.job_name = job_name
 
-    def execute(self, context):
+    def execute(self, context) -> None:
         """Execute the Cloud Run job and then fetch logs."""
         super().execute(context)
 
