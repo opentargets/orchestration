@@ -43,6 +43,9 @@ generate-dotenv = "ot-orchestration.scripts:ot"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.interrogate]
+ignore-init-method = true
+
 # Semi-strict mode for mypy
 [tool.mypy]
 disallow_any_generics = true
