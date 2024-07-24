@@ -1,5 +1,6 @@
 """Custom operator to execute a Cloud Run job and fetch logs from it."""
 
+from airflow.exceptions import AirflowException
 from airflow.providers.google.cloud.operators.cloud_run import (
     CloudRunExecuteJobOperator,
 )
@@ -27,10 +28,13 @@ class CloudRunExecuteJobWithLogsOperator(CloudRunExecuteJobOperator):
 
     def execute(self, context) -> None:
         """Execute the Cloud Run job and then fetch logs."""
-        super().execute(context)
-
-        client = logging.Client(project=self.project_id)
-        query = f'resource.type = "cloud_run_job" resource.labels.job_name = "{self.job_name}"'
-        entries = client.list_entries(filter_=query, order_by=logging.ASCENDING)
-        for entry in entries:
-            self.log.info(entry.payload)
+        try:
+            super().execute(context)
+        except AirflowException as e:
+            raise e
+        finally:
+            client = logging.Client(project=self.project_id)
+            query = f'resource.type = "cloud_run_job" resource.labels.job_name = "{self.job_name}"'
+            entries = client.list_entries(filter_=query, order_by=logging.ASCENDING)
+            for entry in entries:
+                self.log.info(entry.payload)
