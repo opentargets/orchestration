@@ -5,9 +5,9 @@ mode: FORCE
 steps:
 
   manifest_preparation:
-    raw_sumstats_bucket:  gentropy-tmp # for prod change it to gwas_catalog_data
+    raw_sumstats_bucket:  ot_orchestration # for prod change it to gwas_catalog_data
     raw_sumstats_prefix: raw_summary_statistics
-    staging_bucket: gentropy-tmp
+    staging_bucket: ot_orchestration
     staging_prefix: staging
     manual_curation_manifest: https://raw.githubusercontent.com/opentargets/curation/master/genetics/GWAS_Catalog_study_curation.tsv
     harmonised_result_path_prefix: harmonised

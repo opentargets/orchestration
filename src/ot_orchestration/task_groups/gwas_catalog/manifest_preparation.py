@@ -64,7 +64,7 @@ def gwas_catalog_manifest_preparation():
         # prepare manifests for the new studies
         manifests = []
         for study_id, raw_sumstat_path in new_sumstats.items():
-            staging_path = f"gs://{staging_bucket}/{staging_prefix}/{study_id}"
+            staging_path = f"{staging_bucket}/{staging_prefix}/{study_id}"
             partial_manifest = {
                 "studyId": study_id,
                 "rawPath": f"gs://{raw_sumstat_bucket}/{raw_sumstat_path}",

@@ -23,5 +23,5 @@ RUN DOWNLOAD_URL="https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/goo
     && rm -rf "${TMP_DIR}"
 
 ENV PATH="$PATH:$GCLOUD_HOME/bin"
-
+ENV HYDRA_FULL_ERROR=1
 ENTRYPOINT ["/bin/bash"]

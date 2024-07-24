@@ -20,17 +20,19 @@ def harmonise(manifest: Manifest_Object) -> Manifest_Object:
         "step=gwas_catalog_sumstat_preprocess",
         f'step.raw_sumstats_path="{raw_path}"',
         f'step.out_sumstats_path="{harmonised_path}"',
-        "'+step.session.extended_spark_conf={spark.jars:https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop3-latest.jar}'",
-        "'+step.session.extended_spark_conf={spark.dynamicAllocation.enabled:False}'",
-        "'+step.session.extended_spark_conf={spark.driver.memory:30g}'",
-        "'+step.session.extended_spark_conf={spark.kryoserializer.buffer.max:500m}'",
-        "'+step.session.extended_spark_conf={spark.driver.maxResultSize:5g}'",
+        "+step.session.extended_spark_conf={spark.jars:'https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop3-latest.jar'}",
+        "+step.session.extended_spark_conf={spark.dynamicAllocation.enabled:'false'}",
+        "+step.session.extended_spark_conf={spark.driver.memory:'30g'}",
+        "+step.session.extended_spark_conf={spark.kryoserializer.buffer.max:'500m'}",
+        "+step.session.extended_spark_conf={spark.driver.maxResultSize:'5g'}",
     ]
+
     result = subprocess.run(args=command, capture_output=True)
     if result.returncode != 0:
         logging.error("Harmonisation for study %s failed!", study_id)
-        logging.error(result.stderr)
+        logging.error(result.stderr.decode())
         manifest["passHarmonisation"] = False
+        logging.info("Dumping manifest to %s", manifest["manifestPath"])
         GCSIOManager().dump(manifest["manifestPath"], manifest)
         exit(1)
     else:

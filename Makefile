@@ -52,10 +52,14 @@ build-genetics-etl-image: build-whl ## build local genetics-etl image for the te
 		-f images/genetics_etl/Dockerfile \
 		--build-arg DIST=$(shell find dist -name 'ot_orchestration*')
 
-test-harmonisation-step: ## test harmonisation task
+test-gwas-catalog-batch-script: ## test harmonisation task
+	# mkdir -p test_batch
+	# gsutil -m rsync -r gs://ot_orchestration/tests/gwas_catalog/basic_test/GCST004600 test_batch
 	docker run \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
-		-e MANIFEST_PATH=gs://genetics_etl_python_playground/initialisation/0.1.0/manifests/manifest.json \
+		-e MANIFEST_PATH=gs://ot_orchestration/tests/gwas_catalog/basic_test/GCST004600/manifest.json \
+		-e GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/service_account_credentials.json \
 		-ti \
 		--rm \
 		genetics_etl:test
+	# gsutil -m rsync -r test_batch gs://ot_orchestration/tests/gwas_catalog/basic_test/GCST004600
