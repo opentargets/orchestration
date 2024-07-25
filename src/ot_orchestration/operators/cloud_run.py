@@ -35,6 +35,10 @@ class CloudRunExecuteJobWithLogsOperator(CloudRunExecuteJobOperator):
         finally:
             client = logging.Client(project=self.project_id)
             query = f'resource.type = "cloud_run_job" resource.labels.job_name = "{self.job_name}"'
-            entries = client.list_entries(filter_=query, order_by=logging.ASCENDING)
+            entries = client.list_entries(
+                filter_=query,
+                order_by=logging.ASCENDING,
+                page_size=1000,
+            )
             for entry in entries:
                 self.log.info(entry.payload)
