@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from ot_orchestration.task_groups import (
     gwas_catalog_batch_processing,
     gwas_catalog_manifest_preparation,
@@ -24,7 +23,7 @@ def gwas_catalog_dag() -> None:
     """GWAS catalog DAG."""
     chain(
         gwas_catalog_manifest_preparation(),
-        # gwas_catalog_batch_processing(),
+        gwas_catalog_batch_processing(),
     )
 
 
