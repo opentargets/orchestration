@@ -27,7 +27,7 @@ from ot_orchestration.utils.utils import create_name, read_yaml_config, strhash
 
 PIS_CONFIG_PATH = Path(__file__).parent / "config" / "pis.yaml"
 PIS_IMAGE = "europe-west1-docker.pkg.dev/open-targets-eu-dev/platform-input-support-test/platform-input-support-test:latest"
-PIS_MACHINE_SPEC = {"cpu": "1", "memory": "512Mi"}
+PIS_MACHINE_SPEC = {"cpu": "1", "memory": "4Gi"}
 PIS_SACC = "platform-input-support@open-targets-eu-dev.iam.gserviceaccount.com"
 
 
