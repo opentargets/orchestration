@@ -52,6 +52,14 @@ class GCSIOManager:
         self.client._http.mount("https://", adapter)
         self.client._http._auth_request.session.mount("https://", adapter)
 
+    def exists(self, gcs_path: str) -> bool:
+        """Check if file exists in Google Cloud Storage."""
+        gcs_path = GCSPath(gcs_path)
+        bucket_name, file_name = gcs_path.split()
+        bucket = Bucket(client=self.client, name=bucket_name)
+        blob = Blob(name=file_name, bucket=bucket)
+        return blob.exists()
+
     def dump(self, gcs_path: str, data: dict) -> None:
         """Write data to Google Cloud Storage."""
         gcs_path = GCSPath(gcs_path)

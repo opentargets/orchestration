@@ -26,28 +26,104 @@ def harmonise(manifest: Manifest_Object) -> Manifest_Object:
         "+step.session.extended_spark_conf={spark.kryoserializer.buffer.max:'500m'}",
         "+step.session.extended_spark_conf={spark.driver.maxResultSize:'5g'}",
     ]
+    if GCSIOManager().exists(harmonised_path):
+        logging.info("Harmonisation result exists for %s. Skipping", study_id)
+        manifest["passHarmonisation"] = True
+        return manifest
 
     result = subprocess.run(args=command, capture_output=True)
     if result.returncode != 0:
         logging.error("Harmonisation for study %s failed!", study_id)
-        logging.error(result.stderr.decode())
+        error_msg = result.stderr.decode()
+        logging.error(error_msg)
         manifest["passHarmonisation"] = False
         logging.info("Dumping manifest to %s", manifest["manifestPath"])
         GCSIOManager().dump(manifest["manifestPath"], manifest)
         exit(1)
-    else:
-        logging.info("Harmonisation for study %s completed successfully!", study_id)
-        manifest["passHarmonisation"] = True
+
+    logging.info("Harmonisation for study %s succeded!", study_id)
+    manifest["passHarmonisation"] = True
     return manifest
 
 
 def qc(manifest: Manifest_Object) -> Manifest_Object:
     """Run QC."""
+    harmonised_path = manifest["harmonisedPath"]
+    qc_path = manifest["qcPath"]
+    study_id = manifest["studyId"]
+    command = [
+        "poetry",
+        "run",
+        "gentropy",
+        "step=summary_statistics_qc",
+        f'step.gwas_path="{harmonised_path}"',
+        f'step.output_path="{qc_path}"',
+        f'step.study_id="{study_id}"',
+        "+step.session.extended_spark_conf={spark.jars:'https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop3-latest.jar'}",
+        "+step.session.extended_spark_conf={spark.dynamicAllocation.enabled:'false'}",
+        "+step.session.extended_spark_conf={spark.driver.memory:'30g'}",
+        "+step.session.extended_spark_conf={spark.kryoserializer.buffer.max:'500m'}",
+        "+step.session.extended_spark_conf={spark.driver.maxResultSize:'5g'}",
+    ]
+    result_exists = GCSIOManager().exists(qc_path)
+    logging.info("Result exists: %s", result_exists)
+    if GCSIOManager().exists(qc_path):
+        logging.info("QC result exists for %s. Skipping", study_id)
+        manifest["passQC"] = True
+        return manifest
+
+    result = subprocess.run(args=command, capture_output=True)
+    if result.returncode != 0:
+        logging.error("QC for study %s failed!", study_id)
+        error_msg = result.stderr.decode()
+        logging.error(error_msg)
+        manifest["passQC"] = False
+        logging.info("Dumping manifest to %s", manifest["manifestPath"])
+        GCSIOManager().dump(manifest["manifestPath"], manifest)
+        exit(1)
+
+    logging.info("QC for study %s succeded!", study_id)
+    manifest["passQC"] = True
     return manifest
+
+
+def qc_consolidation(manifest: Manifest_Object) -> Manifest_Object:
+    pass
 
 
 def clumping(manifest: Manifest_Object) -> Manifest_Object:
     """Run Clumping."""
+    harmonised_path = manifest["harmonisedPath"]
+    clumping_path = manifest["clumpingPath"]
+    study_id = manifest["studyId"]
+    command = [
+        "poetry",
+        "run",
+        "gentropy",
+        "step=clumping",
+        f'step.gwas_path="{harmonised_path}"',
+        f'step.output_path="{clumping_path}"',
+        f'step.study_id="{study_id}"',
+        "+step.session.extended_spark_conf={spark.jars:'https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop3-latest.jar'}",
+        "+step.session.extended_spark_conf={spark.dynamicAllocation.enabled:'false'}",
+        "+step.session.extended_spark_conf={spark.driver.memory:'30g'}",
+        "+step.session.extended_spark_conf={spark.kryoserializer.buffer.max:'500m'}",
+        "+step.session.extended_spark_conf={spark.driver.maxResultSize:'5g'}",
+    ]
+    if GCSIOManager().exists(clumping_path):
+        logging.info("Clumping result exists for %s. Skipping", study_id)
+        manifest["passClumping"] = True
+        return manifest
+
+    result = subprocess.run(args=command, capture_output=True)
+    if result.returncode != 0:
+        logging.error("Clumping for study %s failed!", study_id)
+        error_msg = result.stderr.decode()
+        logging.error(error_msg)
+        manifest["passClumping"] = False
+        logging.info("Dumping manifest to %s", manifest["manifestPath"])
+        GCSIOManager().dump(manifest["manifestPath"], manifest)
+        exit(1)
     return manifest
 
 
