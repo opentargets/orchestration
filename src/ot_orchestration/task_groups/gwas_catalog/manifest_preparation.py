@@ -20,23 +20,23 @@ def get_execution_mode():
     """Get execution mode."""
     mode_handlers = {
         "RESUME": "manifest_preparation.read_manifests",
-        "FORCE": "manifest_preparation.get_all_sumstats",
-        "CONTINUE": "manifest_preparation.get_new_sumstats",
+        "FORCE": "manifest_preparation.get_all_sumstat_paths",
+        "CONTINUE": "manifest_preparation.get_new_sumstat_paths",
     }
-    mode = get_full_config().config.mode.lower()
+    mode = get_full_config().config.mode
     return mode_handlers[mode]
 
 
-@task(task_id="get_all_sumstats")
-def get_all_sumstats(
+@task(task_id="get_all_sumstat_paths")
+def get_all_sumstat_paths(
     raw_sumstats_paths: list[str],
 ) -> dict[str, str]:
     """Get all sumstats."""
     return {extract_study_id_from_path(p): p for p in raw_sumstats_paths}
 
 
-@task(task_id="get_new_sumstats")
-def get_new_sumstats(
+@task(task_id="get_new_sumstat_paths")
+def get_new_sumstat_paths(
     raw_sumstats_paths: list[str],
     existing_manifest_paths: list[str],
 ) -> dict[str, str]:
@@ -50,10 +50,16 @@ def get_new_sumstats(
     return new
 
 
-@task(task_id="generate_new_manifests")
-def generate_new_manifests(
-    new_sumstats: dict[str, str],
+@task(
+    task_id="collect_sumstats_and_generate_new_manifests",
+    trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
+)
+def collect_sumstats_and_generate_new_manifests(
+    ti: TaskInstance | None = None,
 ) -> list[Manifest_Object]:
+    task_id: str = ti.xcom_pull(task_ids="manifest_preparation.get_execution_mode")
+    logging.info("TASK ID: %s", task_id)
+    new_sumstats = ti.xcom_pull(task_ids=task_id)
     """Task to generate manifest files for the new studies."""
     params = get_step_params("manifest_preparation")
     # params from the configuration
@@ -126,37 +132,16 @@ def save_config(task_instance: TaskInstance | None = None) -> str:
 
 
 @task(
-    task_id="collect_raw_sumstats_from_branches",
-    trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
-)
-def collect_raw_sumstats_from_branches(
-    ti: TaskInstance | None = None,
-) -> list[Manifest_Object]:
-    """Collect manifests from branches."""
-    branch_name = ti.xcom_pull(task_ids="manifest_preparation.get_execution_mode")
-    logging.info("BRANCH NAME: %s", branch_name)
-
-    if branch_name == "manifest_preparation.force":
-        new_sumstats = ti.xcom_pull(task_ids="manifest_preparation.get_all_sumstats")
-
-    if branch_name == "manifest_preparation.continue":
-        new_sumstats = ti.xcom_pull(task_ids="manifest_preparation.get_new_sumstats")
-    return new_sumstats
-
-
-@task(
     task_id="choose_manifest_paths",
     trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
 )
 def choose_manifest_paths(ti: TaskInstance | None = None) -> list[str]:
     """Choose manifests to pass to the next."""
-    branch_name = ti.xcom_pull(task_ids="manifest_preparation.get_execution_mode")
-    logging.info("BRANCH NAME: %s", branch_name)
-    manifest_generation_task = f"{branch_name}.save_manifests"
-    if branch_name == "manifest_preparation.resume":
-        manifest_generation_task = "manifest_preparation.read_manifests"
-    logging.info("MANIFEST GENERATION TASK: %s", manifest_generation_task)
-    manifests = ti.xcom_pull(task_ids=manifest_generation_task)
+    task_id: str = ti.xcom_pull(task_ids="manifest_preparation.get_execution_mode")
+    logging.info("TASK ID: %s", task_id)
+    if not task_id.endswith("read_manifests"):
+        task_id = "manifest_preparation.save_manifests"
+    manifests = ti.xcom_pull(task_ids=task_id)
     return [manifest["manifestPath"] for manifest in manifests if manifest["isCurated"]]
 
 
@@ -173,87 +158,81 @@ def save_manifests(manifests: list[Manifest_Object]) -> list[Manifest_Object]:
 def exit_when_no_new_sumstats(new_sumstats: dict[str, str]) -> bool:
     """Exit when no new sumstats."""
     logging.info("NEW SUMSTATS: %s", new_sumstats)
-    return new_sumstats
+    return bool(new_sumstats)
 
 
 @task_group(group_id=TASK_GROUP_ID)
 def gwas_catalog_manifest_preparation():
     """Prepare initial manifest."""
 
-    existing_manifest_paths = GCSListObjectsOperator(
+    fetch_existing_manifests = GCSListObjectsOperator(
         task_id="list_existing_manifests",
         bucket="{{ params.steps.manifest_preparation.staging_bucket }}",
         prefix="{{ params.steps.manifest_preparation.staging_prefix }}",
         match_glob="**/manifest.json",
-    ).output
-
-    raw_sumstats_paths = GCSListObjectsOperator(
+    )
+    fetch_all_raw_sumstats = GCSListObjectsOperator(
         task_id="list_raw_harmonised",
         bucket="{{ params.steps.manifest_preparation.raw_sumstats_bucket }}",
         prefix="{{ params.steps.manifest_preparation.raw_sumstats_prefix }}",
         match_glob="**/*.h.tsv.gz",
-    ).output
+    )
 
-    raw_sumstats = collect_raw_sumstats_from_branches()
-
+    existing_manifest_paths = fetch_existing_manifests.output
+    raw_sumstats_paths = fetch_all_raw_sumstats.output
     execution_mode = get_execution_mode()
-
-    new_manifests = generate_new_manifests(raw_sumstats)
+    # when exec_mode == resume
+    existing_manifests = read_manifests(existing_manifest_paths)
+    # when exec_mode == force
+    all_sumstats = get_all_sumstat_paths(raw_sumstats_paths)
+    # when exec_mode == continue
+    new_sumstats = get_new_sumstat_paths(raw_sumstats_paths, existing_manifest_paths)
+    no_new_sumstats = exit_when_no_new_sumstats(new_sumstats)
+    # when exec_mode == force or continue
+    new_manifests = collect_sumstats_and_generate_new_manifests()
     new_manifests_with_curation = amend_curation_metadata(new_manifests)
     saved_manifests = save_manifests(new_manifests_with_curation)
+    # run always
     choosen_manifests = choose_manifest_paths()
     saved_config_path = save_config()
 
-    for branch in ["resume", ["force", "continue"]]:
-        if branch == "resume":
-            mode = branch
-            manifests = read_manifests(existing_manifest_paths)
-            chain(
-                execution_mode,
-                Label("Resume previous run"),
-                manifests,
-                Label("Filtering manifests by curation status"),
-                choosen_manifests,
-            )
-        else:
-            for mode in branch:
-                if mode == "force":
-                    all_sumstats = get_all_sumstats(raw_sumstats_paths)
+    # resume previous run subchain
+    chain(
+        execution_mode,
+        Label("Resume from existing manifests"),
+        existing_manifests,
+        Label("Filtering manifests by curation status"),
+        choosen_manifests,
+    )
+    # force rerun on all sumstats subchain
+    chain(
+        execution_mode,
+        Label("Forcing rerun on all sumstats"),
+        all_sumstats,
+        Label("Getting list of all sumstats"),
+        new_manifests,
+    )
+    # continue previous run subchain
+    chain(
+        execution_mode,
+        Label("Running only on new sumstats"),
+        new_sumstats,
+        no_new_sumstats,
+        Label("Getting list of new sumstats"),
+        new_manifests,
+    )
+    chain(
+        new_manifests,
+        Label("Generating manifests"),
+        new_manifests_with_curation,
+        Label("Amending curation metadata to the generated manifests"),
+        saved_manifests,
+        Label("Dumping manifests to GCS"),
+        choosen_manifests,
+        Label("Filtering manifests by curation status"),
+    )
 
-                    chain(
-                        execution_mode,
-                        Label("Forcing rerun on all sumstats"),
-                        all_sumstats,
-                        Label("Getting list of all sumstats"),
-                        raw_sumstats,
-                    )
-                if mode == "continue":
-                    new_sumstats = get_new_sumstats(
-                        raw_sumstats_paths, existing_manifest_paths
-                    )
-                    no_new_sumstats = exit_when_no_new_sumstats(new_sumstats)
-
-                    chain(
-                        execution_mode,
-                        Label("Running only on new sumstats"),
-                        new_sumstats,
-                        Label("Getting list of new sumstats"),
-                        [raw_sumstats, no_new_sumstats],
-                    )
-
-            chain(
-                raw_sumstats,
-                Label("Collecting raw sumstats from execution branch"),
-                new_manifests,
-                Label("Generating manifests"),
-                new_manifests_with_curation,
-                Label("Amending curation metadata to the generated manifests"),
-                saved_manifests,
-                Label("Dumping manifests to GCS"),
-                choosen_manifests,
-                Label("Filtering manifests by curation status"),
-            )
-
+    # always run subchain
     chain(
         choosen_manifests,
         Label("Dumping configuration to GCS"),
