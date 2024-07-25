@@ -41,7 +41,6 @@ with DAG(
     dag_id="platform_input_support",
     default_args=shared_dag_args,
     description="Open Targets Platform — platform-input-support",
-    user_defined_filters={"strhash": strhash},
     **platform_dag_kwargs,
 ) as dag:
     for step_name in get_steps():
