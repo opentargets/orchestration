@@ -5,10 +5,20 @@ from __future__ import annotations
 import hashlib
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import yaml
 from google.cloud.storage import Client
+
+
+def bucket_name(gs_url: str) -> str:
+    """Extract the bucket name from a GCS path."""
+    return gs_url.replace("gs://", "").split("/", 1)[0]
+
+
+def bucket_path(gs_url: str) -> str:
+    """Extract the path from a GCS path."""
+    return gs_url.replace("gs://", "").split("/", 1)[1]
 
 
 def check_gcp_folder_exists(bucket_name: str, folder_path: str) -> bool:
@@ -82,6 +92,8 @@ def time_to_seconds(time_str: str) -> int:
 
 
 __all__ = [
+    "bucket_name",
+    "bucket_path",
     "check_gcp_folder_exists",
     "create_name",
     "read_yaml_config",

@@ -46,7 +46,7 @@ shared_dag_kwargs = {
 
 platform_dag_kwargs = {
     "catchup": False,
-    "schedule": "@once",
+    "schedule": None,
     "start_date": pendulum.now(tz="Europe/London").subtract(days=1),
     "tags": [
         "platform",
