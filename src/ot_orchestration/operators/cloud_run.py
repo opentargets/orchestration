@@ -114,6 +114,7 @@ class CloudRunCreateJobExtendedOperator(CloudRunCreateJobOperator):
                             resources=self.limits,
                         )
                     ],
+                    timeout=f"{str(5*60*60)}s",
                 )
             ),
         )
