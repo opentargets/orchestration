@@ -113,9 +113,8 @@ class GCSPath(ProtoPath):
         client (storage.Client, optional): Google Cloud Storage client. Defaults to storage.Client().
     """
 
-    def __init__(
-        self, gcs_path: str, chunk_size: int = 1024 * 256, client=storage.Client()
-    ):
+    def __init__(self, gcs_path: str, chunk_size: int = 1024 * 256, client=None):
+        client = client or storage.Client()
         self.gcs_path = gcs_path
         self.path_pattern = re.compile("^(gs://)?(?P<bucket_name>[(\\w)-]+)")
         self.chunk_size = chunk_size
