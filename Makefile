@@ -6,6 +6,7 @@ APP_NAME ?= $$(cat pyproject.toml| grep -m 1 "name" | cut -d" " -f3 | sed  's/"/
 VERSION := $$(grep '^version' pyproject.toml | sed 's%version = "\(.*\)"%\1%')
 BUCKET_NAME=gs://genetics_etl_python_playground/initialisation/${VERSION}/
 DOCKER_IMAGE := "Orchestration-Airflow"
+TEST_COVERAGE := 40
 
 .PHONY: $(shell sed -n -e '/^$$/ { n ; /^[^ .\#][^ ]*:/ { s/:.*$$// ; p ; } ; }' $(MAKEFILE_LIST))
 .DEFAULT_GOAL := help
@@ -29,17 +30,18 @@ format: ## run formatting
 	@poetry run python -m ruff check --fix src/$(APP_NAME) tests
 
 test: ## run unit tests
-	@poetry run python -m pytest tests/*.py
+	@poetry run coverage run -m pytest tests/*.py -s -p no:warnings
+	@poetry run coverage report --omit="tests/*" --fail-under=$(TEST_COVERAGE)
 
 check: format check-types test ## run all checks
 
 generate-requirements: ## generate requirements.txt from poetry dependencies to install in the docker image
-	poetry export --without-hashes --with dev --format=requirements.txt > requirements.txt
+	poetry export --without-hashes --with dev --format=requirements.txt > docker/airflow-dev/requirements.txt
 
 build-airflow-image: generate-requirements  ## build local airflow image for the infrastructure
-	docker build . \
+	docker build docker/airflow-dev \
 		--tag extending_airflow:latest \
-		-f Dockerfile \
+		-f docker/airflow-dev/Dockerfile \
 		--no-cache
 
 build-whl: ## build ot-orchestration package wheel
@@ -53,13 +55,14 @@ build-genetics-etl-image: build-whl ## build local genetics-etl image for the te
 		--build-arg DIST=$(shell find dist -name 'ot_orchestration*')
 
 test-gwas-catalog-batch-script: ## test harmonisation task
-	# mkdir -p test_batch
-	# gsutil -m rsync -r gs://ot_orchestration/tests/gwas_catalog/basic_test/GCST004600 test_batch
+	mkdir -p test_batch
+	gsutil -m rsync -r gs://ot_orchestration/tests/gwas_catalog/basic_test/GCST004600 test_batch
 	docker run \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
 		-e MANIFEST_PATH=gs://ot_orchestration/tests/gwas_catalog/basic_test/GCST004600/manifest.json \
 		-e GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/service_account_credentials.json \
 		-ti \
 		--rm \
-		genetics_etl:test
-	# gsutil -m rsync -r test_batch gs://ot_orchestration/tests/gwas_catalog/basic_test/GCST004600
+		genetics_etl:test \
+		-c "ot gwas-catalog-process-in-batch"
+	gsutil -m rsync -r test_batch gs://ot_orchestration/tests/gwas_catalog/basic_test/GCST004600

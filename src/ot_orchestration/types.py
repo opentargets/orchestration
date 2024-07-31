@@ -26,8 +26,8 @@ Manifest_Object = TypedDict(
         "manifestPath": Required[str],
         "studyType": str | None,
         "analysisFlag": str | None,
-        "isCurated": str | None,
-        "pubmetId": str | None,
+        "isCurated": bool | None,
+        "pubmedId": str | None,
     },
 )
 
@@ -54,8 +54,6 @@ JSON_blob = str
 GCS_Mount_Object = TypedDict(
     "GCS_Mount_Object", {"remote_path": Required[str], "mount_point": Required[str]}
 )
-GCS_Bucket_Name = str
-GCS_Path_Suffix = str
 
 Provider_Name = Literal["googlebatch", "dataproc"]
 Step_Name = Literal["harmonisation"]
@@ -133,8 +131,6 @@ __all__ = [
     "Provider_Name",
     "Step_Name",
     "DagConfigNotFound",
-    "GCS_Bucket_Name",
-    "GCS_Path_Suffix",
     "Log_Level",
     "Manifest_Preparation_Params",
     "Spark_Options",

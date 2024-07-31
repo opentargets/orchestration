@@ -74,7 +74,15 @@ def default_config_parser(
 
 
 class QRCP:
-    """Initialize Quick and Robust Configuration Parser."""
+    """Initialize QRCP object.
+
+    Args:
+        conf (Any): Configuration object.
+        parser (Config_Parser, optional): configuration parser. Defaults to default_config_parser.
+
+    Raises:
+        TypeError: _description_
+    """
 
     @classmethod
     def from_file(cls, path: Path | str, **kwargs: Any) -> QRCP:
@@ -145,7 +153,7 @@ class QRCP:
 
 def get_full_config() -> QRCP:
     """Get full configuration."""
-    return QRCP(get_current_context()["params"])
+    return QRCP(get_current_context().get("params"))
 
 
 def get_step_params(step: str) -> dict[str, Base_Type]:
@@ -157,6 +165,8 @@ def get_step_params(step: str) -> dict[str, Base_Type]:
             return params
         case Failure(msg):
             raise TypeError(msg)
+        case _:
+            raise NotImplementedError
 
 
 __all__ = ["QRCP", "ConfigModel", "get_step_params", "get_full_config"]

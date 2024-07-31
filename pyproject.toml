@@ -27,9 +27,9 @@ pyyaml = "^6.0.1"
 google = "^3.0.0"
 pendulum = "^3.0.0"
 apache-airflow-providers-apache-beam = "^5.7.1"
-pandas = "<2.2"
 typing-extensions = "^4.12.2"
 requests = "^2.32.3"
+pandas = "<2.2"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.4.9"
@@ -95,13 +95,14 @@ ignore = [
 
 ]
 
-
 [tool.ruff.lint.flake8-quotes]
 docstring-quotes = "double"
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
-
 [tool.pytest]
 pytonpath = "src/"
+
+[tool.pytest.ini_options]
+markers = ["integration_test"]

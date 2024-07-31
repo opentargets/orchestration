@@ -1,0 +1,14 @@
+{
+    "studyId": "GCST004600",
+    "rawPath": "gs://ot_orchestration/raw_summary_statistics/GCST004001-GCST005000/GCST004600/harmonised/27863252-GCST004600-EFO_0007991.h.tsv.gz",
+    "manifestPath": "gs://ot_orchestration/staging/GCST004600/manifest.json",
+    "harmonisedPath": "gs://ot_orchestration/staging/GCST004600/harmonised",
+    "qcPath": "gs://ot_orchestration/staging/GCST004600/qc",
+    "passHarmonisation": false,
+    "passQC": false,
+    "passClumping": false,
+    "studyType": null,
+    "analysisFlag": null,
+    "isCurated": true,
+    "pubmedId": "27863252"
+  }

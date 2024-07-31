@@ -4,7 +4,7 @@ import click
 import logging
 from ot_orchestration.cli.fetch_raw_sumstat_paths import fetch_raw_sumstat_paths
 from ot_orchestration.cli.generate_dotenv import generate_dotenv
-from ot_orchestration.cli.process_in_batch import gwas_catalog_process_in_batch
+from ot_orchestration.cli.process_in_batch import gwas_catalog_pipeline
 
 logging.basicConfig(level=logging.INFO)
 asci_art = """
@@ -24,7 +24,7 @@ def cli():
 
 cli.add_command(fetch_raw_sumstat_paths)
 cli.add_command(generate_dotenv)
-cli.add_command(gwas_catalog_process_in_batch)
+cli.add_command(gwas_catalog_pipeline)
 
 
 __all__ = ["cli"]
