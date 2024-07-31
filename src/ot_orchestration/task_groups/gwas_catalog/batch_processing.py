@@ -10,7 +10,6 @@ from ot_orchestration.utils.common import GCP_PROJECT, GCP_REGION
 from airflow.operators.python import get_current_context
 from airflow.utils.helpers import chain
 from ot_orchestration.utils import create_batch_job, create_task_spec
-from ot_orchestration.utils import GCSPath
 from airflow.models import TaskInstance
 import logging
 import time
@@ -23,8 +22,10 @@ def gwas_catalog_batch_processing() -> None:
     @task(task_id="get_manifests_from_preparation", multiple_outputs=True)
     def get_batch_task_inputs(
         task_instance: TaskInstance | None = None,
-    ) -> list[GCSPath]:
+    ) -> dict[str, str]:
         """Get manifests from preparation step."""
+        if task_instance is None:
+            raise ValueError("Task instance is None")
         manifest_paths = task_instance.xcom_pull(
             task_ids="manifest_preparation.choose_manifest_paths"
         )
@@ -38,9 +39,7 @@ def gwas_catalog_batch_processing() -> None:
     batch_inputs = get_batch_task_inputs()
 
     @task(task_id="batch_job", multiple_outputs=True)
-    def execute_batch_job(
-        manifest_paths: list[str], config_path: str
-    ) -> CloudBatchSubmitJobOperator:
+    def execute_batch_job(manifest_paths: list[str], config_path: str):
         """Create a harmonisation batch job."""
         params = get_step_params("batch_processing")
         logging.info("PARAMS: %s", params)
