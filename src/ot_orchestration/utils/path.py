@@ -2,9 +2,7 @@
 
 import re
 import concurrent.futures
-from google.cloud.storage.blob import Blob, TextIOWrapper
-from google.cloud.storage.client import Client
-from google.cloud.storage.bucket import Bucket
+from google.cloud import storage
 from requests.adapters import HTTPAdapter
 import json
 import yaml
@@ -71,6 +69,8 @@ class NativePath(ProtoPath):
         Args:
             data (Any): Data to write.
         """
+        dirname = self.native_path.parent
+        dirname.mkdir(parents=True, exist_ok=True)
         with open(self.native_path, "w") as fp:
             match self.native_path.suffix:
                 case ".json":
@@ -110,12 +110,17 @@ class GCSPath(ProtoPath):
     Args:
         gcs_path (str): Google Cloud Storage path.
         chunk_size (int, optional): Chunk size for reading and writing. Defaults to 1024*256.
+        client (storage.Client, optional): Google Cloud Storage client. Defaults to storage.Client().
     """
 
-    def __init__(self, gcs_path: str, chunk_size: int = 1024 * 256):
+    def __init__(
+        self, gcs_path: str, chunk_size: int = 1024 * 256, client=storage.Client()
+    ):
         self.gcs_path = gcs_path
         self.path_pattern = re.compile("^(gs://)?(?P<bucket_name>[(\\w)-]+)")
         self.chunk_size = chunk_size
+        self.client = client
+        self._increase_pool_()
 
     @property
     def _match(self) -> re.Match:
@@ -132,12 +137,11 @@ class GCSPath(ProtoPath):
             raise ValueError("Invalid GCS path %s", self.gcs_path)
         return _match
 
-    def __post_init__(self):
+    def _increase_pool_(self):
         """Create a client object.
 
         This is a post init method that allows to expand the number of concurrent tasks that can be run.
         """
-        self.client = Client()
         adapter = HTTPAdapter(pool_connections=128, pool_maxsize=1024, max_retries=3)
         self.client._http.mount("https://", adapter)
         self.client._http._auth_request.session.mount("https://", adapter)
@@ -168,8 +172,8 @@ class GCSPath(ProtoPath):
         Returns:
             bool: True if file exists.
         """
-        bucket = Bucket(client=self.client, name=self.bucket)
-        blob = Blob(name=self.path, bucket=bucket, chunk_size=self.chunk_size)
+        bucket = storage.Bucket(client=self.client, name=self.bucket)
+        blob = storage.Blob(name=self.path, bucket=bucket, chunk_size=self.chunk_size)
         return blob.exists()
 
     def split(self) -> tuple[str, str]:
@@ -190,13 +194,12 @@ class GCSPath(ProtoPath):
         Args:
             data (Any): Data to write.
         """
-        bucket = Bucket(client=self.client, name=self.bucket)
-        blob = Blob(name=self.path, bucket=bucket)
+        bucket = storage.Bucket(client=self.client, name=self.bucket)
+        blob = storage.Blob(name=self.path, bucket=bucket)
         with blob.open("w") as fp:
-            assert isinstance(fp, TextIOWrapper)
             match Path(self.path).suffix:
                 case ".json":
-                    json.dump(data, fp)
+                    json.dump(data, fp)  # type: ignore
                 case ".yaml" | ".yml":
                     yaml.safe_dump(data, fp, indent=2)
                 case _:
@@ -208,8 +211,8 @@ class GCSPath(ProtoPath):
         Returns:
             Any: Loaded data.
         """
-        bucket = Bucket(client=self.client, name=self.bucket)
-        blob = Blob(name=self.path, bucket=bucket)
+        bucket = storage.Bucket(client=self.client, name=self.bucket)
+        blob = storage.Blob(name=self.path, bucket=bucket)
 
         with blob.open("r") as fp:
             match Path(self.path).suffix:
