@@ -74,5 +74,5 @@ jobs:
           push: true
           tags: "${{ env.GAR_LOCATION }}/${{ env.REPOSITORY }}/genetics_etl:${{ github.ref_name }}"
           context: .
-          file: images/genetics_etl/Dockerfile
+          file: docker/genetics_etl/Dockerfile
           build-args: DIST=${{ env.DIST }}
