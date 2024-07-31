@@ -25,7 +25,7 @@ steps:
       policy_specs:
         machine_type: n1-standard-2
       image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/ot-orchestration/genetics_etl:dev
-      commands: [tasks/process_in_batch.py]
+      commands: ["ot gwas-catalog-dag"]
     spark:
       spark_uri: yarn
       write_mode: errorifexists
