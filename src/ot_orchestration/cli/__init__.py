@@ -7,7 +7,7 @@ from ot_orchestration.cli.generate_dotenv import generate_dotenv
 from ot_orchestration.cli.process_in_batch import gwas_catalog_pipeline
 
 logging.basicConfig(level=logging.INFO)
-asci_art = """
+asci_art = r"""
    ____  ______   ____            __              __             __  _
   / __ \/_  __/  / __ \__________/ /_  ___  _____/ /__________ _/ /_(_)___  ____
  / / / / / /    / / / / ___/ ___/ __ \/ _ \/ ___/ __/ ___/ __ `/ __/ / __ \/ __ \\
