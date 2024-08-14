@@ -11,7 +11,7 @@ from airflow.decorators import task
 from airflow.models.dag import DAG
 from airflow.providers.google.cloud.operators.gcs import GCSListObjectsOperator
 
-from ot_orchestration.common_airflow import shared_dag_args, shared_dag_kwargs
+from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 from ot_orchestration.utils.dataproc import (
     submit_pyspark_job_no_operator,
     install_dependencies,

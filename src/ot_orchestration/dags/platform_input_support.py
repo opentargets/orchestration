@@ -17,7 +17,7 @@ from airflow.providers.google.cloud.operators.cloud_run import (
 )
 from airflow.utils.task_group import TaskGroup
 
-from ot_orchestration.common_airflow import (
+from ot_orchestration.utils.common import (
     GCP_REGION,
     platform_dag_kwargs,
     shared_dag_args,

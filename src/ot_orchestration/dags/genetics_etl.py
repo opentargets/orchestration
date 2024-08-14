@@ -9,7 +9,7 @@ from airflow.operators.python import ShortCircuitOperator
 from airflow.providers.google.cloud.transfers.gcs_to_gcs import GCSToGCSOperator
 from airflow.utils.task_group import TaskGroup
 
-from ot_orchestration.common_airflow import shared_dag_args, shared_dag_kwargs
+from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 from ot_orchestration.utils.dataproc import submit_step, generate_dag
 from ot_orchestration.utils.utils import check_gcp_folder_exists, read_yaml_config
 
