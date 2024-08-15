@@ -4,6 +4,7 @@ This operator will create a GCS bucket if it does not exist and upload the
 configurations to the specified path inside that bucket.
 """
 
+from collections.abc import Sequence
 from pathlib import Path
 
 from airflow.models.baseoperator import BaseOperator
@@ -13,27 +14,28 @@ from google.cloud.storage.bucket import Bucket
 from ot_orchestration.utils.utils import bucket_name, bucket_path
 
 
+
 class UploadConfigOperator(BaseOperator):
     """Custom operator that uploads configurations to GCS."""
 
-    template_fields = ["src", "gcs_url"]
+    template_fields: Sequence[str] = ("src", "dst")
 
     def __init__(
         self,
         *args,
         project_id: str,
-        gcs_url: str,
         src: Path,
+        dst: str,
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
         # try to get upload url from yaml_file
         self.project_id = project_id
-        self.gcs_url = gcs_url
+        self.dst = dst
         self.src = src
 
-        self.bucket_name = bucket_name(self.gcs_url)
-        self.path = bucket_path(self.gcs_url)
+        self.bucket_name = bucket_name(self.dst)
+        self.path = bucket_path(self.dst)
 
     def execute(self, context) -> None:
         """Upload the configurations to GCS."""

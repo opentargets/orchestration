@@ -37,6 +37,21 @@ def check_gcp_folder_exists(bucket_name: str, folder_path: str) -> bool:
     return any(blobs)
 
 
+def clean_label(label: str) -> str:
+    """Clean a label for use in google cloud.
+
+    According to the docs: The value can only contain lowercase letters, numeric
+    characters, underscores and dashes. The value can be at most 63 characters
+    long.
+    """
+    return re.sub(r"[^a-z0-9-_]", "-", label.lower())[0:63]
+
+
+def clean_name(name: str) -> str:
+    """Create a clean name meeting google cloud naming conventions."""
+    return re.sub(r"[^a-z0-9-]", "-", name.lower())
+
+
 def create_name(prefix: str, suffix: str) -> str:
     """Create a clean name meeting google cloud naming conventions."""
     return re.sub(r"[^a-z0-9-]", "-", f"{prefix}-{suffix}".lower())
@@ -95,6 +110,8 @@ __all__ = [
     "bucket_name",
     "bucket_path",
     "check_gcp_folder_exists",
+    "clean_label",
+    "clean_name",
     "create_name",
     "read_yaml_config",
     "strhash",
