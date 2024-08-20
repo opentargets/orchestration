@@ -1,7 +1,5 @@
 """Utilities for parsing and job orchestration."""
 
-# from ot_orchestration.utils.generic_genetics_dag import generic_genetics_dag
-
 from ot_orchestration.utils.utils import (
     check_gcp_folder_exists,
     read_yaml_config,
