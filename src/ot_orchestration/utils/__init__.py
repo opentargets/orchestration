@@ -9,10 +9,7 @@ from ot_orchestration.utils.utils import (
 )
 from ot_orchestration.utils.batch import create_task_spec, create_batch_job
 from ot_orchestration.utils.path import GCSPath, IOManager, NativePath
-from ot_orchestration.utils.manifest import (
-    GWASCatalogPipelineManifest,
-    extract_study_id_from_path,
-)
+from ot_orchestration.utils.manifest import extract_study_id_from_path
 
 __all__ = [
     "IOManager",
@@ -24,6 +21,5 @@ __all__ = [
     "create_task_spec",
     "create_batch_job",
     "extract_study_id_from_path",
-    "GWASCatalogPipelineManifest",
     "generic_genetics_dag",
 ]

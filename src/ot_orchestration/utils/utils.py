@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from configparser import ParsingError
 from typing import Any
 from google.cloud.storage import Client
-import subprocess
 import yaml
 import re
 from pathlib import Path
@@ -37,38 +35,9 @@ def read_yaml_config(config_path: Path | str) -> Any:
         Any: Parsed YAML config file.
     """
     config_path = config_path if isinstance(config_path, Path) else Path(config_path)
-    assert config_path.exists(), f"YAML config path {config_path} does not exist."
+    assert config_path.exists(), f"YAML config path {config_path} does not exists"
     with open(config_path) as config_file:
         return yaml.safe_load(config_file)
-
-
-def get_bash_script_blob(path: Path | str) -> str:
-    """Read and validate bash script as a string.
-
-    The function utilizes the
-    -n flag  - Read commands but do not execute them.  This may
-                be used to check a shell script for syntax errors.
-                This is ignored by interactive shells.
-    https://www.man7.org/linux/man-pages/man1/bash.1.html
-
-    Args:
-        path (Path | str) either a path or a string to the script.
-
-    Returns:
-        str: validated command string.
-
-    Raises:
-        ParsingError: when script failed validation.
-    """
-    # dry run the script
-    path = path if isinstance(path, Path) else Path(path)
-    assert path.exists(), f"Bash script {path} does not exist."
-    result = subprocess.run(["bash" "-n", str(path)], capture_output=True)
-    if result.returncode != 0:
-        raise ParsingError("Failed to parse script under %s", str(path))
-    with open(path, "r") as f:
-        content = f.read()
-        return content
 
 
 def time_to_seconds(time_str: str) -> int:
@@ -103,6 +72,5 @@ def time_to_seconds(time_str: str) -> int:
 __all__ = [
     "check_gcp_folder_exists",
     "read_yaml_config",
-    "get_bash_script_blob",
     "time_to_seconds",
 ]
