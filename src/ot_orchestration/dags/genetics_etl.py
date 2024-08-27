@@ -12,20 +12,20 @@ from airflow.utils.task_group import TaskGroup
 from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 from ot_orchestration.utils.dataproc import submit_step, generate_dag
 from ot_orchestration.utils.utils import check_gcp_folder_exists, read_yaml_config
-
+from airflow.models.baseoperator import chain
 
 CLUSTER_NAME = "otg-etl"
 SOURCE_CONFIG_FILE_PATH = Path(__file__).parent / "configs" / "dag.yaml"
 
 # Release specific variables:
-RELEASE_VERSION = "24.06"
+RELEASE_VERSION = "24.08+szsz"
 RELEASE_BUCKET_NAME = "genetics_etl_python_playground"
 
 # Datasource paths:
 GWAS_CATALOG_BUCKET_NAME = "gwas_catalog_data"
 EQTL_BUCKET_NAME = "eqtl_catalogue_data"
 FINNGEN_BUCKET_NAME = "finngen_data"
-FINNGEN_RELEASE = "r10"
+FINNGEN_RELEASE = "r11"
 
 # Files to move:
 DATA_TO_MOVE = {
@@ -34,60 +34,81 @@ DATA_TO_MOVE = {
         "source_bucket": GWAS_CATALOG_BUCKET_NAME,
         "source_object": "study_index",
         "destination_bucket": RELEASE_BUCKET_NAME,
-        "destination_object": f"releases/{RELEASE_VERSION}/study_index/gwas_catalog",
+        "destination_object": f"releases/{RELEASE_VERSION}/study_index/gwas_catalog/",
     },
     # PICS credible sets from GWAS Catalog curated associations:
     "gwas_catalog_curated_credible_set": {
         "source_bucket": GWAS_CATALOG_BUCKET_NAME,
         "source_object": "credible_set_datasets/gwas_catalog_PICSed_curated_associations",
         "destination_bucket": RELEASE_BUCKET_NAME,
-        "destination_object": f"releases/{RELEASE_VERSION}/credible_set/gwas_catalog_PICSed_curated_associations",
+        "destination_object": f"releases/{RELEASE_VERSION}/credible_set/gwas_catalog_PICSed_curated_associations/",
     },
-    # PICS credible sets from GWAS Catalog summary statistics:
+    # # PICS credible sets from GWAS Catalog summary statistics:
     "gwas_catalog_sumstats_credible_set": {
         "source_bucket": GWAS_CATALOG_BUCKET_NAME,
         "source_object": "credible_set_datasets/gwas_catalog_PICSed_summary_statistics",
         "destination_bucket": RELEASE_BUCKET_NAME,
-        "destination_object": f"releases/{RELEASE_VERSION}/credible_set/gwas_catalog_PICSed_summary_statistics",
+        "destination_object": f"releases/{RELEASE_VERSION}/credible_set/gwas_catalog_PICSed_summary_statistics/",
+    },
+    # SuSiE credible sets from GWAS Catalog curated associations:
+    "gwas_catalog_curated_susie_credible_set": {
+        "source_bucket": RELEASE_BUCKET_NAME,
+        "source_object": "input/credible_set/gwas_catalog_susie",
+        "destination_bucket": RELEASE_BUCKET_NAME,
+        "destination_object": f"releases/{RELEASE_VERSION}/credible_set/gwas_catalog_curated_studies_susie/",
     },
     # GWAS Catalog manifest files:
     "gwas_catalog_manifests": {
         "source_bucket": GWAS_CATALOG_BUCKET_NAME,
         "source_object": "manifests",
         "destination_bucket": RELEASE_BUCKET_NAME,
-        "destination_object": f"releases/{RELEASE_VERSION}/manifests",
+        "destination_object": f"releases/{RELEASE_VERSION}/manifests/",
     },
     # eQTL Catalog study index:
     "eqtl_catalogue_study_index": {
         "source_bucket": EQTL_BUCKET_NAME,
         "source_object": "study_index",
         "destination_bucket": RELEASE_BUCKET_NAME,
-        "destination_object": f"releases/{RELEASE_VERSION}/study_index/eqtl_catalogue",
+        "destination_object": f"releases/{RELEASE_VERSION}/study_index/eqtl_catalogue/",
     },
     # eQTL Catalog SuSiE credible sets:
     "eqtl_catalogue_susie_credible_set": {
         "source_bucket": EQTL_BUCKET_NAME,
         "source_object": "credible_set_datasets/susie",
         "destination_bucket": RELEASE_BUCKET_NAME,
-        "destination_object": f"releases/{RELEASE_VERSION}/credible_set/eqtl_catalogue_susie",
+        "destination_object": f"releases/{RELEASE_VERSION}/credible_set/eqtl_catalogue_susie/",
     },
     # Finngen study index:
     "finngen_study_index": {
         "source_bucket": FINNGEN_BUCKET_NAME,
         "source_object": f"{FINNGEN_RELEASE}/study_index",
         "destination_bucket": RELEASE_BUCKET_NAME,
-        "destination_object": f"releases/{RELEASE_VERSION}/study_index/finngen",
+        "destination_object": f"releases/{RELEASE_VERSION}/study_index/finngen/",
     },
     # Finngen SuSiE credible sets:
     "finngen_susie_credible_set": {
         "source_bucket": FINNGEN_BUCKET_NAME,
-        "source_object": f"{FINNGEN_RELEASE}/credible_set_datasets/finngen_susie_processed",
+        "source_object": f"{FINNGEN_RELEASE}/finemapping",
         "destination_bucket": RELEASE_BUCKET_NAME,
-        "destination_object": f"releases/{RELEASE_VERSION}/credible_set/finngen_susie",
+        "destination_object": f"releases/{RELEASE_VERSION}/credible_set/finngen_susie/",
+    },
+    # UKB PPP eur study index:
+    "UKB_PPP_study_index": {
+        "source_bucket": RELEASE_BUCKET_NAME,
+        "source_object": "output/python_etl/parquet/XX.XX/study_index/ukbiobank",
+        "destination_bucket": RELEASE_BUCKET_NAME,
+        "destination_object": f"releases/{RELEASE_VERSION}/study_index/ukb_ppp_eur/",
+    },
+    # UKB PPP eur credible sets:
+    "ukb_ppp_eur_credible_set": {
+        "source_bucket": RELEASE_BUCKET_NAME,
+        "source_object": "input/credible_set/ukb_ppp_susie",
+        "destination_bucket": RELEASE_BUCKET_NAME,
+        "destination_object": f"releases/{RELEASE_VERSION}/credible_set/ukb_ppp_eur_susie/",
     },
     # L2G gold standard:
     "gold_standard": {
-        "source_bucket": "genetics_etl_python_playground",
+        "source_bucket": RELEASE_BUCKET_NAME,
         "source_object": "input/l2g/gold_standard/curation.json",
         "destination_bucket": RELEASE_BUCKET_NAME,
         "destination_object": f"releases/{RELEASE_VERSION}/locus_to_gene_gold_standard.json",
@@ -145,11 +166,11 @@ with DAG(
         generate_dag(cluster_name=CLUSTER_NAME, tasks=list(tasks.values()))
 
     # DAG description:
-    (
+    chain(
         # Test that the release folder doesn't exist:
-        ensure_release_folder_not_exists
+        ensure_release_folder_not_exists,
         # Run data transfer:
-        >> data_transfer
+        data_transfer,
         # Once datasets are transferred, run the rest of the steps:
-        >> genetics_etl
+        genetics_etl,
     )

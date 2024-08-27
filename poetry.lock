@@ -594,19 +594,19 @@ openlineage = ["apache-airflow-providers-openlineage"]
 
 [[package]]
 name = "apache-airflow-providers-google"
-version = "10.22.0rc1"
+version = "10.22.0"
 description = "Provider package apache-airflow-providers-google for Apache Airflow"
 optional = false
 python-versions = "~=3.8"
 files = [
-    {file = "apache_airflow_providers_google-10.22.0rc1-py3-none-any.whl", hash = "sha256:fb96c4ebfe5a0d91636311ce06711c780146f67b22405b14e772664f35122f1a"},
-    {file = "apache_airflow_providers_google-10.22.0rc1.tar.gz", hash = "sha256:72d27a78624da2d1b21e26ffccd368bf891eecf549d099d3dfdf9de4e6d0e5ff"},
+    {file = "apache_airflow_providers_google-10.22.0-py3-none-any.whl", hash = "sha256:ea49b25845a36d80449803bcbfd15015b3c6a4f32c099854e6c96b59197c4ac8"},
+    {file = "apache_airflow_providers_google-10.22.0.tar.gz", hash = "sha256:76f40da3ec78d0591af621589861edbe6e42f1d28542d1050d69ae19851b7fb1"},
 ]
 
 [package.dependencies]
-apache-airflow = ">=2.8.0rc0"
-apache-airflow-providers-common-compat = ">=1.1.0rc0"
-apache-airflow-providers-common-sql = ">=1.7.2rc0"
+apache-airflow = ">=2.8.0"
+apache-airflow-providers-common-compat = ">=1.1.0"
+apache-airflow-providers-common-sql = ">=1.7.2"
 asgiref = ">=3.5.2"
 dill = ">=0.2.3"
 gcloud-aio-auth = ">=5.2.0"
@@ -670,19 +670,19 @@ sqlalchemy-spanner = ">=1.6.2"
 tenacity = ">=8.1.0"
 
 [package.extras]
-amazon = ["apache-airflow-providers-amazon (>=2.6.0rc0)"]
+amazon = ["apache-airflow-providers-amazon (>=2.6.0)"]
 apache-beam = ["apache-airflow-providers-apache-beam", "apache-beam[gcp]"]
 apache-cassandra = ["apache-airflow-providers-apache-cassandra"]
-cncf-kubernetes = ["apache-airflow-providers-cncf-kubernetes (>=7.2.0rc0)"]
+cncf-kubernetes = ["apache-airflow-providers-cncf-kubernetes (>=7.2.0)"]
 common-compat = ["apache-airflow-providers-common-compat"]
 common-sql = ["apache-airflow-providers-common-sql"]
-facebook = ["apache-airflow-providers-facebook (>=2.2.0rc0)"]
+facebook = ["apache-airflow-providers-facebook (>=2.2.0)"]
 leveldb = ["plyvel"]
 microsoft-azure = ["apache-airflow-providers-microsoft-azure"]
 microsoft-mssql = ["apache-airflow-providers-microsoft-mssql"]
 mysql = ["apache-airflow-providers-mysql"]
 openlineage = ["apache-airflow-providers-openlineage"]
-oracle = ["apache-airflow-providers-oracle (>=3.1.0rc0)"]
+oracle = ["apache-airflow-providers-oracle (>=3.1.0)"]
 postgres = ["apache-airflow-providers-postgres"]
 presto = ["apache-airflow-providers-presto"]
 salesforce = ["apache-airflow-providers-salesforce"]
@@ -7686,4 +7686,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10, <3.11"
-content-hash = "a189e2f876925bfcc26a2754757f3a5f2118bafd419523845457373b567fe284"
+content-hash = "d162f82cb4e229b0b4bcafd48290c9fd70d72a9a248f3b1670cc9444d8ddd3ee"
