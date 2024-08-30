@@ -1,6 +1,7 @@
 """Custom sensor that runs a containerized workload on a Google Compute Engine instance."""
 
 import asyncio
+import datetime
 import logging
 import time
 from functools import cached_property
@@ -24,8 +25,11 @@ from google.cloud.logging_v2.services.logging_service_v2 import (
     LoggingServiceV2AsyncClient,
 )
 
-from ot_orchestration.common_airflow import GCP_PROJECT_PLATFORM, GCP_REGION
-from ot_orchestration.utils.utils import clean_label
+from ot_orchestration.common_airflow import (
+    GCP_PROJECT_PLATFORM,
+    GCP_REGION,
+    prepare_labels,
+)
 
 CONTAINER_NAME = "workload_container"
 LOGGING_REQUEST_INTERVAL = 5
@@ -98,6 +102,7 @@ class RateLimitedLoggingClient(logging_v2.Client):
         self.request_interval = LOGGING_REQUEST_INTERVAL
 
     def list_entries(self, *args, **kwargs):
+        """List log entries and retries request that get rate-limited."""
         entries = None
 
         while True:
@@ -143,6 +148,7 @@ class CloudLoggingHook(GoogleBaseHook):
         self.api_version = api_version
 
     def get_conn(self) -> RateLimitedLoggingClient:
+        """Return the Google Cloud Logging service client."""
         if self._client is None:
             self._client = RateLimitedLoggingClient(
                 log=self.log,
@@ -181,6 +187,7 @@ class CloudLoggingAsyncHook(GoogleBaseHook):
         self.request_interval = LOGGING_REQUEST_INTERVAL
 
     def get_conn(self) -> LoggingServiceV2AsyncClient:
+        """Return the Google Cloud Logging service client."""
         if self._client is None:
             self._client = LoggingServiceV2AsyncClient(
                 credentials=self.get_credentials(),
@@ -192,6 +199,7 @@ class CloudLoggingAsyncHook(GoogleBaseHook):
         self,
         project_name: str,
         instance_name: str,
+        initial_timestamp: datetime.datetime,
     ) -> int:
         """Get the exit code of the startup script of a Google Compute Engine instance.
 
@@ -216,8 +224,8 @@ class CloudLoggingAsyncHook(GoogleBaseHook):
         Script "startup-script" failed with error: exit status 1
         """
         client = self.get_conn()
-
-        query = f'resource.type="gce_instance" labels.instance_name="{instance_name}" jsonPayload.message=~"startup-script[\w\\\":\s]*exit status [0-9]+"'  # fmt: skip
+        timestamp_str = initial_timestamp.isoformat()
+        query = f'resource.type="gce_instance" labels.instance_name="{instance_name}" timestamp>"{timestamp_str}" jsonPayload.message=~"startup-script[\w\\\":\s]*exit status [0-9]+"'  # fmt: skip
         log_pages = None
 
         while True:
@@ -244,11 +252,17 @@ class CloudLoggingAsyncHook(GoogleBaseHook):
                 await asyncio.sleep(self.request_interval)
                 self.request_interval *= 2
 
-        first_page = await anext(log_pages.pages, None)
-        if first_page and first_page.entries:
-            entry = first_page.entries[0]
+        logs = None
+        try:
+            logs = await anext(log_pages.pages, None)
+        except Exception as e:
+            self.log.error("Error occurred while fetching log entries: %s", e)
+
+        if logs and logs.entries:
+            entry = logs.entries[0]
             return int(entry.json_payload["message"].split("exit status", 1)[1].strip())
-        self.log.info("No log pages entries found, returning None.")
+
+        self.log.info("No log entries with an exit status found yet.")
         return None
 
 
@@ -447,13 +461,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
         - Network configuration.
         - Service account and scopes.
         """
-        labels = {
-            "team": "open-targets",
-            "product": "platform",
-            "environment": "development" if "dev" in self.project else "production",
-            "created_by": "unified-orchestrator",
-            **{k: clean_label(v) for k, v in self.labels.items()},
-        }
+        labels = prepare_labels(self.labels, self.project)
 
         boot_disk = compute_v1.AttachedDisk(
             auto_delete=True,
@@ -605,6 +613,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
 
     @cached_property
     def hook(self) -> ComputeEngineHook:
+        """Return the Google Compute Engine hook."""
         return ComputeEngineHook(
             gcp_conn_id=self.gcp_conn_id,
             impersonation_chain=self.impersonation_chain,
@@ -612,6 +621,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
 
     @cached_property
     def logging_hook(self) -> CloudLoggingHook:
+        """Return the Google Cloud Logging hook."""
         return CloudLoggingHook(
             gcp_conn_id=self.gcp_conn_id,
             impersonation_chain=self.impersonation_chain,
@@ -653,6 +663,7 @@ class ComputeEngineExitCodeTrigger(BaseTrigger):
         self.gcp_conn_id = gcp_conn_id
         self.impersonation_chain = impersonation_chain
         self.poll_sleep = poll_sleep
+        self.timestamp = datetime.datetime.now(datetime.timezone.utc)
 
     def serialize(self) -> tuple[str, dict[str, Any]]:
         """Serialize class arguments and classpath."""
@@ -683,7 +694,9 @@ class ComputeEngineExitCodeTrigger(BaseTrigger):
         try:
             while True:
                 exit_code = await self.hook.get_exit_code(
-                    self.project, self.instance_name
+                    self.project,
+                    self.instance_name,
+                    self.timestamp,
                 )
 
                 self.log.info(f"VM {self.instance_name} exit code is {exit_code}")
@@ -712,6 +725,7 @@ class ComputeEngineExitCodeTrigger(BaseTrigger):
 
     @cached_property
     def hook(self) -> CloudLoggingAsyncHook:
+        """Return the Google Cloud Logging async hook."""
         return CloudLoggingAsyncHook(
             gcp_conn_id=self.gcp_conn_id,
             impersonation_chain=self.impersonation_chain,

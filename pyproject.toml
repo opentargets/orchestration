@@ -62,7 +62,6 @@ plugins = ["returns.contrib.mypy.returns_plugin"]
 module = ["google.cloud.storage", "yaml"]
 ignore_missing_imports = true
 
-
 [tool.ruff.lint]
 select = ["D", "I", "E"]
 ignore = [
