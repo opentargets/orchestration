@@ -1,6 +1,5 @@
 defaults:
   - eqtl_catalogue
-
 eqtl_catalogue_paths_imported: ???
 eqtl_catalogue_study_index_out: ???
 eqtl_catalogue_credible_sets_out: ???

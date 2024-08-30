@@ -1,6 +1,5 @@
 defaults:
   - variant_to_gene
-
 variant_index_path: ${datasets.variant_index}
 variant_annotation_path: ${datasets.variant_annotation}
 gene_index_path: ${datasets.gene_index}

@@ -1,6 +1,5 @@
 defaults:
   - locus_to_gene
-
 run_mode: predict
 model_path: ${datasets.l2g_model}
 predictions_path: ${datasets.l2g_predictions}

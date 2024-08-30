@@ -2,11 +2,9 @@
 release_version: "24.06"
 dev_version: XX.XX
 release_folder: gs://genetics_etl_python_playground/releases/${datasets.release_version}
-
 inputs: gs://genetics_etl_python_playground/input
 static_assets: gs://genetics_etl_python_playground/static_assets
 outputs: gs://genetics_etl_python_playground/output/python_etl/parquet/${datasets.dev_version}
-
 ## Datasets:
 # GWAS
 gwas_catalog_dataset: gs://gwas_catalog_data
@@ -29,7 +27,6 @@ gwas_catalog_summary_statistics_inclusion_list: ${datasets.gwas_catalog_dataset}
 gwas_catalog_study_index: ${datasets.gwas_catalog_dataset}/study_index
 gwas_catalog_study_locus_folder: ${datasets.gwas_catalog_dataset}/study_locus_datasets
 gwas_catalog_credible_set_folder: ${datasets.gwas_catalog_dataset}/credible_set_datasets
-
 # GnomAD
 gnomad_public_bucket: gs://gcp-public-data--gnomad/release/
 # LD generation
@@ -39,7 +36,6 @@ ld_index_raw_template: ${datasets.gnomad_public_bucket}/2.1.1/ld/gnomad.genomes.
 liftover_ht_path: ${datasets.gnomad_public_bucket}/2.1.1/liftover_grch38/ht/genomes/gnomad.genomes.r2.1.1.sites.liftover_grch38.ht
 # variant_annotation
 gnomad_genomes_path: ${datasets.gnomad_public_bucket}4.0/ht/genomes/gnomad.genomes.v4.0.sites.ht/
-
 # Others
 chain_38_37: gs://hail-common/references/grch38_to_grch37.over.chain.gz
 chain_37_38: ${datasets.static_assets}/grch37_to_grch38.over.chain
@@ -50,22 +46,17 @@ jung: ${datasets.static_assets}/jung2019_pchic_tableS3.csv
 thurman: ${datasets.static_assets}/thurman2012/genomewideCorrs_above0.7_promoterPlusMinus500kb_withGeneNames_32celltypeCategories.bed8.gz
 target_index: ${datasets.static_assets}/targets # OTP 23.12 data
 gene_interactions: ${datasets.static_assets}/interaction # OTP 23.12 data
-
-
 # Dev output datasets
 variant_annotation: ${datasets.outputs}/variant_annotation
 study_locus: ${datasets.outputs}/study_locus
 summary_statistics: ${datasets.outputs}/summary_statistics
 study_locus_overlap: ${datasets.outputs}/study_locus_overlap
 susie_finemapping: ${datasets.outputs}/finngen_susie_finemapping
-
 ld_index: ${datasets.static_assets}/ld_index
 catalog_study_index: ${datasets.study_index}/catalog
 catalog_study_locus: ${datasets.study_locus}/catalog_study_locus
-
 from_sumstats_study_locus: ${datasets.study_locus}/from_sumstats
 from_sumstats_pics: ${datasets.credible_set}/from_sumstats
-
 # ETL output datasets:
 l2g_gold_standard_curation: ${datasets.release_folder}/locus_to_gene_gold_standard.json
 l2g_model: ${datasets.release_folder}/locus_to_gene_model
