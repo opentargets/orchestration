@@ -15,7 +15,7 @@ from ot_orchestration.utils.dataproc import generate_dag, submit_step
 from ot_orchestration.utils.utils import check_gcp_folder_exists, read_yaml_config
 
 CLUSTER_NAME = "otg-etl"
-SOURCE_CONFIG_FILE_PATH = Path(__file__).parent / "configs" / "dag.yaml"
+SOURCE_CONFIG_FILE_PATH = Path(__file__).parent / "config" / "genetics_etl.yaml"
 
 # Release specific variables:
 RELEASE_VERSION = "24.08+szsz"

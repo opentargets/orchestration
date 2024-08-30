@@ -28,7 +28,7 @@ from ot_orchestration.utils.common import (
 )
 from ot_orchestration.utils.utils import read_yaml_config
 
-PIS_CONFIG_PATH = Path(__file__).parent / "configs" / "pis.yaml"
+PIS_CONFIG_PATH = Path(__file__).parent / "config" / "pis.yaml"
 PIS_IMAGE = "europe-west1-docker.pkg.dev/open-targets-eu-dev/platform-input-support-test/platform-input-support-test:latest"
 PIS_GCP_PROJECT = "open-targets-eu-dev"
 PIS_MACHINE_SPEC = {"cpu": "1", "memory": "512Mi"}
