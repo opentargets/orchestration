@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from ot_orchestration.utils import read_yaml_config
-from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
-from airflow.models.dag import DAG
+import logging
 from pathlib import Path
 
-import logging
-from ot_orchestration.dynamic_dags import generic_genetics_dag
+from airflow.models.dag import DAG
 
+from ot_orchestration.dynamic_dags import generic_genetics_dag
+from ot_orchestration.utils import read_yaml_config
+from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 
 config_path = "/opt/airflow/config/config.yaml"
 config = read_yaml_config(config_path)

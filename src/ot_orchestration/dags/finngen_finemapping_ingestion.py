@@ -3,16 +3,18 @@
 from __future__ import annotations
 
 from pathlib import Path
-from ot_orchestration.utils import common
+
+from airflow.models.baseoperator import chain
 from airflow.models.dag import DAG
 from airflow.utils.trigger_rule import TriggerRule
+
+from ot_orchestration.utils import common
 from ot_orchestration.utils.dataproc import (
-    delete_cluster,
-    submit_step,
     create_cluster,
+    delete_cluster,
     install_dependencies,
+    submit_step,
 )
-from airflow.models.baseoperator import chain
 
 EFO_MAPPINGS_PATH = "https://raw.githubusercontent.com/opentargets/curation/24.09.1/mappings/disease/manual_string.tsv"
 STUDY_INDEX_OUT = "gs://finngen_data/r11/study_index"

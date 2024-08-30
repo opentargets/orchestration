@@ -3,24 +3,25 @@
 from typing import Any
 
 from google.cloud.batch_v1 import (
-    Runnable,
-    TaskSpec,
-    Volume,
     GCS,
+    AllocationPolicy,
+    ComputeResource,
     Environment,
     Job,
-    ComputeResource,
-    TaskGroup,
-    AllocationPolicy,
     LogsPolicy,
-)
-from ot_orchestration.types import (
-    GCS_Mount_Object,
-    Batch_Policy_Specs,
-    Batch_Task_Specs,
-    Batch_Resource_Specs,
+    Runnable,
+    TaskGroup,
+    TaskSpec,
+    Volume,
 )
 from google.protobuf.duration_pb2 import Duration
+
+from ot_orchestration.types import (
+    Batch_Policy_Specs,
+    Batch_Resource_Specs,
+    Batch_Task_Specs,
+    GCS_Mount_Object,
+)
 from ot_orchestration.utils import time_to_seconds
 
 
@@ -35,9 +36,7 @@ def create_container_runnable(
         **kwargs (Any): Additional optional parameters to set on the container.
 
     Returns:
-        batch_v1.Runnable: The container runnable.
-
-
+        Runnable: The container runnable.
     """
     runnable = Runnable()
     runnable.container = Runnable.Container(
@@ -63,7 +62,7 @@ def create_task_spec(
         **kwargs (Any): Any additional parameter to pass to the container runnable
 
     Returns:
-        batch_v1.TaskSpec: The task specification.
+        TaskSpec: The task specification.
     """
     task = TaskSpec()
     task.runnables = [create_container_runnable(image, commands=commands, **kwargs)]
@@ -90,7 +89,7 @@ def set_up_mounting_points(
         mounting_points (list[GCS_Mount_Object]): The mounting points.
 
     Returns:
-        list[batch_v1.Volume]: The volumes.
+        list[Volume]: The volumes.
     """
     volumes = []
     for mount in mounting_points:
@@ -114,8 +113,8 @@ def create_batch_job(
     Args:
         task (TaskSpec): The task specification.
         task_env (list[Environment]): The environment variables for the task.
-        policy_specs: (Batch_Policy_Specs): The policy specification for the task
-        mounting_points (list[GCS_Mount_Object]] | None): List of mounting points.
+        policy_specs (Batch_Policy_Specs): The policy specification for the task
+        mounting_points (list[GCS_Mount_Object] | None): List of mounting points.
 
     Returns:
         Job: The Batch job.

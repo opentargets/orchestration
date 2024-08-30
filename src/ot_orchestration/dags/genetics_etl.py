@@ -4,15 +4,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from airflow.models.baseoperator import chain
 from airflow.models.dag import DAG
 from airflow.operators.python import ShortCircuitOperator
 from airflow.providers.google.cloud.transfers.gcs_to_gcs import GCSToGCSOperator
 from airflow.utils.task_group import TaskGroup
 
 from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
-from ot_orchestration.utils.dataproc import submit_step, generate_dag
+from ot_orchestration.utils.dataproc import generate_dag, submit_step
 from ot_orchestration.utils.utils import check_gcp_folder_exists, read_yaml_config
-from airflow.models.baseoperator import chain
 
 CLUSTER_NAME = "otg-etl"
 SOURCE_CONFIG_FILE_PATH = Path(__file__).parent / "configs" / "dag.yaml"

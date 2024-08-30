@@ -1,20 +1,22 @@
 """Manifest operators."""
 
-from airflow.utils.context import Context
+import logging
+import re
+from typing import Any, Sequence
+
+from airflow.exceptions import AirflowSkipException
 from airflow.models.baseoperator import BaseOperator
-from typing import Sequence
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.providers.google.cloud.operators.cloud_batch import (
     CloudBatchSubmitJobOperator,
 )
+from airflow.utils.context import Context
 from google.cloud.batch_v1 import Environment
-import re
-from ot_orchestration.utils.manifest import extract_study_id_from_path
-from ot_orchestration.utils.batch import create_batch_job, create_task_spec
+
 from ot_orchestration.types import Manifest_Object
-import logging
+from ot_orchestration.utils.batch import create_batch_job, create_task_spec
+from ot_orchestration.utils.manifest import extract_study_id_from_path
 from ot_orchestration.utils.path import IOManager
-from airflow.exceptions import AirflowSkipException
 
 
 class ManifestGenerateOperator(BaseOperator):
@@ -44,15 +46,18 @@ class ManifestGenerateOperator(BaseOperator):
         self.qc_prefix = qc_prefix
         self.gcp_conn_id = gcp_conn_id
 
-    def execute(self, **_) -> list[Manifest_Object]:
+    def execute(self, **kwargs: dict[str, Any]) -> list[Manifest_Object]:
         """Execute the operator.
+
+        Arguments:
+            **kwargs(dict[str, Any]): Keyword arguments provided by BaseOperator signature. Not used.
 
         Raises:
             ValueError: when incorrect glob is defined
             ValueError: when the glob protocol is not gs
 
         Returns:
-            dict[str, str]: list of manifests
+            list[Manifest_Object]: list of manifests
         """
         # this regex pattern can be utilized for any path or uri glob pattern
         pattern = r"^((?P<protocol>.*)://)?(?P<root>[(\w)-]+)/(?P<prefix>([(\w)-/])+?)/(?P<matchglob>[(\w)-*]+.*){1}"
@@ -129,8 +134,11 @@ class ManifestSaveOperator(BaseOperator):
         super().__init__(**kwargs)
         self.manifest_blobs = manifest_blobs
 
-    def execute(self, **_) -> list[Manifest_Object]:
+    def execute(self, **kwargs: dict[str, Any]) -> list[Manifest_Object]:
         """Execute the operator.
+
+        Arguments:
+            **kwargs(dict[str, Any]): Keyword arguments provided by BaseOperator signature. Not used.
 
         Returns:
             list[Manifest_Object]: saved manifests
@@ -156,8 +164,11 @@ class ManifestReadOperator(BaseOperator):
         self.staging_manifest_path_pattern = staging_manifest_path_pattern
         self.gcp_conn_id = gcp_conn_id
 
-    def execute(self, **_) -> list[Manifest_Object]:
+    def execute(self, **kwargs: dict[str, Any]) -> list[Manifest_Object]:
         """Read manifests.
+
+        Arguments:
+            **kwargs(dict[str, Any]): Keyword arguments provided by BaseOperator signature. Not used.
 
         Raises:
             ValueError: when incorrect glob is defined.
@@ -262,8 +273,8 @@ class ManifestSubmitBatchJobOperator(BaseOperator):
 class ManifestFilterOperator(BaseOperator):
     """Filter manifests based on the previous task status.
 
-    The operator filters the manifests based on the `pass*` flags and returns
-    the set of manifests where any flag is False.
+    The operator filters the manifests based on the `pass*` flags and
+    returns the set of manifests where any flag is False.
     """
 
     template_fields: Sequence[str] = ["manifests"]

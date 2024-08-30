@@ -1,3 +1,4 @@
+"""Try to parse and validate the DAGs."""
 from airflow.models import DagBag
 
 

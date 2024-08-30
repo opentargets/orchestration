@@ -84,7 +84,8 @@ repos:
     rev: 6.3.0
     hooks:
       - id: pydocstyle
-        args: [--convention=google, --ignore=D107, D105]
+        args: [--convention=google, --add-ignore=D107, D105]
+        additional_dependencies: [tomli]
   - repo: https://github.com/jsh9/pydoclint
     rev: 0.4.1
     hooks:

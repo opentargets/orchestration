@@ -9,11 +9,10 @@ from airflow.models.dag import DAG
 
 from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 from ot_orchestration.utils.dataproc import (
-    submit_step,
-    install_dependencies,
     create_cluster,
+    install_dependencies,
+    submit_step,
 )
-
 
 CLUSTER_NAME = "otg-gwascatalog-curation"
 RUN_DATE = datetime.now().strftime("%Y-%m-%d")

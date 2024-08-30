@@ -1,8 +1,8 @@
 """Types introduced in the library."""
 
-from typing_extensions import Required, TypedDict
 from typing import Literal
 
+from typing_extensions import Required, TypedDict
 
 # type definitions
 FTP_Transfer_Object = TypedDict(

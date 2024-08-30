@@ -13,9 +13,9 @@ from airflow.providers.google.cloud.operators.gcs import GCSListObjectsOperator
 
 from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 from ot_orchestration.utils.dataproc import (
-    submit_pyspark_job_no_operator,
-    install_dependencies,
     create_cluster,
+    install_dependencies,
+    submit_pyspark_job_no_operator,
 )
 
 CLUSTER_NAME = "otg-gwascatalog-harmonisation"

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pendulum
 
-
 # Code version. It has to be repeated here as well as in `pyproject.toml`, because Airflow isn't able to look at files outside of its `dags/` directory.
 GENTROPY_VERSION = "0.0.0"
 

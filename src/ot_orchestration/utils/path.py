@@ -1,16 +1,19 @@
 """Module for Google Cloud Path naive parsers."""
 
-import re
 import concurrent.futures
+import json
+import logging
+import re
+from abc import abstractmethod
+from pathlib import Path
+from typing import Any, Protocol
+
+import yaml
 from google.cloud import storage
 from requests.adapters import HTTPAdapter
-import json
-import yaml
-from pathlib import Path
-from typing import Any
-import logging
-from typing import Protocol
-from abc import abstractmethod
+
+CHUNK_SIZE = 1024 * 256
+N_THREADS = 100
 
 
 class ProtoPath(Protocol):
@@ -109,11 +112,11 @@ class GCSPath(ProtoPath):
 
     Args:
         gcs_path (str): Google Cloud Storage path.
-        chunk_size (int, optional): Chunk size for reading and writing. Defaults to 1024*256.
-        client (storage.Client, optional): Google Cloud Storage client. Defaults to storage.Client().
+        chunk_size (int): Chunk size for reading and writing. Defaults to 1024*256.
+        client (storage.Client | None): Google Cloud Storage client. Defaults to storage.Client().
     """
 
-    def __init__(self, gcs_path: str, chunk_size: int = 1024 * 256, client=None):
+    def __init__(self, gcs_path: str, chunk_size: int = CHUNK_SIZE, client: storage.Client | None = None):
         client = client or storage.Client()
         self.gcs_path = gcs_path
         self.path_pattern = re.compile("^(gs://)?(?P<bucket_name>[(\\w)-]+)")
@@ -139,7 +142,8 @@ class GCSPath(ProtoPath):
     def _increase_pool_(self):
         """Create a client object.
 
-        This is a post init method that allows to expand the number of concurrent tasks that can be run.
+        This is a post init method that allows to expand the number of
+        concurrent tasks that can be run.
         """
         adapter = HTTPAdapter(pool_connections=128, pool_maxsize=1024, max_retries=3)
         self.client._http.mount("https://", adapter)
@@ -151,7 +155,6 @@ class GCSPath(ProtoPath):
 
         Returns:
             str: Bucket name.
-
         """
         return self._match.group("bucket_name")
 
@@ -247,6 +250,9 @@ class IOManager:
 
         Returns:
             ProtoPath: Path object instance following ProtoPath protocol.
+
+        Raises:
+            NotImplementedError: When not supported file protocol is provided as input path.
         """
         match path.split("://"):
             case ["gs", _]:
@@ -274,7 +280,7 @@ class IOManager:
         """
         return [self.resolve(p) for p in paths]
 
-    def load_many(self, paths: list[str], n_threads=100) -> list[Any]:
+    def load_many(self, paths: list[str], n_threads: int = N_THREADS) -> list[Any]:
         """Load many objects by concurrent operations.
 
         Args:
@@ -308,7 +314,7 @@ class IOManager:
                 results.append(future.result())
         return results
 
-    def dump_many(self, objects: list[Any], paths: list[str], n_threads=100) -> None:
+    def dump_many(self, objects: list[Any], paths: list[str], n_threads: int = N_THREADS) -> None:
         """Dump many objects by concurrent operations.
 
         Args:

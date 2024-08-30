@@ -1,5 +1,15 @@
 """Generic genetics DAG with batch job support."""
 
+import logging
+import time
+
+from airflow.decorators import task
+from airflow.exceptions import AirflowSkipException
+from airflow.models.baseoperator import chain
+from airflow.models.taskinstance import TaskInstance
+from airflow.operators.python import get_current_context
+from airflow.utils.trigger_rule import TriggerRule
+
 from ot_orchestration.operators.manifest_operators import (
     ManifestFilterOperator,
     ManifestGenerateOperator,
@@ -7,16 +17,6 @@ from ot_orchestration.operators.manifest_operators import (
     ManifestSaveOperator,
     ManifestSubmitBatchJobOperator,
 )
-
-from airflow.models.baseoperator import chain
-
-import time
-from airflow.decorators import task
-import logging
-from airflow.models.taskinstance import TaskInstance
-from airflow.operators.python import get_current_context
-from airflow.exceptions import AirflowSkipException
-from airflow.utils.trigger_rule import TriggerRule
 from ot_orchestration.types import Manifest_Object
 from ot_orchestration.utils import IOManager
 
@@ -25,7 +25,6 @@ from ot_orchestration.utils import IOManager
 def end():
     """Finish the DAG execution."""
     logging.info("FINISHED")
-
 
 @task(
     task_id="consolidate_manifests",
@@ -88,9 +87,10 @@ def collect_task_outcome(manifests: list[Manifest_Object]):
 def generic_genetics_dag():
     """Generic genetics DAG.
 
-    This function is used to create a dynamic DAG based on provided yaml configuration.
-    The dag is responsible for creating manifests based on a yaml configuration (TBI)
-    and correct manifest parser for specific genetics pipeline.
+    This function is used to create a dynamic DAG based on provided yaml
+    configuration. The dag is responsible for creating manifests based
+    on a yaml configuration (TBI) and correct manifest parser for
+    specific genetics pipeline.
     """
     exec_mode_branch = begin()
 

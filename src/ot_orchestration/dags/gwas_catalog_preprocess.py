@@ -4,19 +4,19 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from airflow.models.baseoperator import chain
 from airflow.models.dag import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.providers.google.cloud.operators.gcs import GCSListObjectsOperator
 from airflow.utils.task_group import TaskGroup
-from airflow.models.baseoperator import chain
 
 from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 from ot_orchestration.utils.dataproc import (
-    submit_step,
-    install_dependencies,
     create_cluster,
     delete_cluster,
+    install_dependencies,
+    submit_step,
 )
 
 CLUSTER_NAME = "otg-preprocess-gwascatalog"

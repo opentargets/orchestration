@@ -26,7 +26,7 @@ check-types: ## run mypy and check types
 	@poetry run python -m mypy --install-types --non-interactive src/$(APP_NAME)
 
 format: ## run formatting
-	@poetry run python -m ruff check --fix src/$(APP_NAME) tests
+	@poetry run python -m ruff check --fix  src/$(APP_NAME) tests
 
 test: ## run unit tests
 	@poetry run python -m pytest tests/*.py
