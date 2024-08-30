@@ -17,7 +17,7 @@ from ot_orchestration.operators.manifest_operators import (
     ManifestSaveOperator,
     ManifestSubmitBatchJobOperator,
 )
-from ot_orchestration.types import Manifest_Object
+from ot_orchestration.types import ManifestObject
 from ot_orchestration.utils import IOManager
 
 
@@ -31,7 +31,7 @@ def end():
     task_id="consolidate_manifests",
     trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
 )
-def consolidate_manifests(ti: TaskInstance | None = None) -> list[Manifest_Object]:
+def consolidate_manifests(ti: TaskInstance | None = None) -> list[ManifestObject]:
     """Consolidate manifests from the execution mode branching."""
     params = get_current_context().get("params")
     if params["mode"] == "CONTINUE":
@@ -57,11 +57,11 @@ def begin() -> str:
 
 
 @task(task_id="collect_task_outcome", multiple_outputs=True)
-def collect_task_outcome(manifests: list[Manifest_Object]):
+def collect_task_outcome(manifests: list[ManifestObject]):
     """Collect the task(s) outcome and return failed and succeeded manifests."""
     # we need to re-read the manifests to report the updated status of the tasks
     manifest_paths = [m["manifestPath"] for m in manifests]
-    new_manifests: list[Manifest_Object] = IOManager().load_many(manifest_paths)
+    new_manifests: list[ManifestObject] = IOManager().load_many(manifest_paths)
 
     failed_manifests = []
     succeeded_manifests = []

@@ -4,18 +4,8 @@ from typing import Literal
 
 from typing_extensions import Required, TypedDict
 
-# type definitions
-FTP_Transfer_Object = TypedDict(
-    "FTP_Transfer_Object",
-    {
-        "source_path": Required[str],
-        "destination_path": Required[str],
-        "destination_bucket": Required[str],
-    },
-)
-
-Manifest_Object = TypedDict(
-    "Manifest_Object",
+ManifestObject = TypedDict(
+    "ManifestObject",
     {
         "studyId": Required[str],
         "rawPath": Required[str],
@@ -32,42 +22,21 @@ Manifest_Object = TypedDict(
     },
 )
 
-Manifest_Preparation_Params = TypedDict(
-    "Manifest_Preparation_Params",
-    {
-        "raw_sumstats_bucket": Required[str],
-        "raw_sumstats_prefix": Required[str],
-        "staging_bucket": Required[str],
-        "staging_prefix": Required[str],
-        "manual_curation_manifest": Required[str],
-        "harmonised_result_path_prefix": Required[str],
-        "qc_result_path_prefix": Required[str],
-    },
+
+GCSMountObject = TypedDict(
+    "GCSMountObject", {"remote_path": Required[str], "mount_point": Required[str]}
 )
 
-Config_Field_Name = Literal["tags", "providers", "DAGS"]
-Data_Source = Literal["GWAS_Catalog", "eQTL_Catalogque", "finngen", "UK_Biobank_PPP"]
-DagConfigNotFound = str
-ConfigFieldNotFound = str
-Base_Type = str | list[str] | bool
-ConfigParsingFailure = str
-JSON_blob = str
-GCS_Mount_Object = TypedDict(
-    "GCS_Mount_Object", {"remote_path": Required[str], "mount_point": Required[str]}
-)
-
-Provider_Name = Literal["googlebatch", "dataproc"]
-Step_Name = Literal["harmonisation"]
-Batch_Task_Specs = TypedDict(
-    "Batch_Task_Specs",
+BatchTaskSpecs = TypedDict(
+    "BatchTaskSpecs",
     {
         "max_retry_count": Required[int],
         "max_run_duration": Required[str],
     },
 )
 
-Batch_Resource_Specs = TypedDict(
-    "Batch_Resource_Specs",
+BatchResourceSpecs = TypedDict(
+    "BatchResourceSpecs",
     {
         "cpu_milli": Required[int],
         "memory_mib": Required[int],
@@ -75,41 +44,21 @@ Batch_Resource_Specs = TypedDict(
     },
 )
 
-Batch_Policy_Specs = TypedDict(
-    "Batch_Policy_Specs",
+BatchPolicySpecs = TypedDict(
+    "BatchPolicySpecs",
     {
         "machine_type": Required[str],
     },
 )
 
-Dataproc_Specs = TypedDict(
-    "Dataproc_Specs",
-    {
-        "spark_uri": Required[Literal["yarn"]],
-        "write_mode": Required[
-            Literal["append", "overwrite", "error", "errorifexists", "ignore"]
-        ],
-    },
-)
 
-Batch_Specs = TypedDict(
-    "Batch_Specs",
+BatchSpecs = TypedDict(
+    "BatchSpecs",
     {
-        "resource_specs": Batch_Resource_Specs,
-        "task_specs": Batch_Task_Specs,
-        "policy_specs": Batch_Policy_Specs,
+        "resource_specs": BatchResourceSpecs,
+        "task_specs": BatchTaskSpecs,
+        "policy_specs": BatchPolicySpecs,
         "image": str,
         "commands": list[str],
     },
 )
-
-Spark_Options = TypedDict(
-    "Spark_Options",
-    {
-        "spark_uri": Literal["yarn"],
-        "write_mode": Literal["errorifexists", "overwrite"],
-    },
-)
-
-
-Log_Level = Literal["INFO", "TRACE", "DEBUG", "WARNING", "ERROR"]

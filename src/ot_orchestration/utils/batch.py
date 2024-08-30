@@ -17,10 +17,10 @@ from google.cloud.batch_v1 import (
 from google.protobuf.duration_pb2 import Duration
 
 from ot_orchestration.types import (
-    Batch_Policy_Specs,
-    Batch_Resource_Specs,
-    Batch_Task_Specs,
-    GCS_Mount_Object,
+    BatchPolicySpecs,
+    BatchResourceSpecs,
+    BatchTaskSpecs,
+    GCSMountObject,
 )
 from ot_orchestration.utils import time_to_seconds
 
@@ -48,8 +48,8 @@ def create_container_runnable(
 def create_task_spec(
     image: str,
     commands: list[str],
-    resource_specs: Batch_Resource_Specs,
-    task_specs: Batch_Task_Specs,
+    resource_specs: BatchResourceSpecs,
+    task_specs: BatchTaskSpecs,
     **kwargs: Any,
 ) -> TaskSpec:
     """Create a task for a Batch job.
@@ -57,8 +57,8 @@ def create_task_spec(
     Args:
         image (str): The Docker image to use.
         commands (list[str]): The commands to run in the container.
-        resource_specs (Batch_Resource_Specs): The specification of the resources for the task.
-        task_specs (Batch_Task_Specs): The specification of the task.
+        resource_specs (BatchResourceSpecs): The specification of the resources for the task.
+        task_specs (BatchTaskSpecs): The specification of the task.
         **kwargs (Any): Any additional parameter to pass to the container runnable
 
     Returns:
@@ -81,12 +81,12 @@ def create_task_spec(
 
 
 def set_up_mounting_points(
-    mounting_points: list[GCS_Mount_Object],
+    mounting_points: list[GCSMountObject],
 ) -> list[Volume]:
     """Set up the mounting points for the container.
 
     Args:
-        mounting_points (list[GCS_Mount_Object]): The mounting points.
+        mounting_points (list[GCSMountObject]): The mounting points.
 
     Returns:
         list[Volume]: The volumes.
@@ -105,16 +105,16 @@ def set_up_mounting_points(
 def create_batch_job(
     task: TaskSpec,
     task_env: list[Environment],
-    policy_specs: Batch_Policy_Specs,
-    mounting_points: list[GCS_Mount_Object] | None = None,
+    policy_specs: BatchPolicySpecs,
+    mounting_points: list[GCSMountObject] | None = None,
 ) -> Job:
     """Create a Google Batch job.
 
     Args:
         task (TaskSpec): The task specification.
         task_env (list[Environment]): The environment variables for the task.
-        policy_specs (Batch_Policy_Specs): The policy specification for the task
-        mounting_points (list[GCS_Mount_Object] | None): List of mounting points.
+        policy_specs (BatchPolicySpecs): The policy specification for the task
+        mounting_points (list[GCSMountObject] | None): List of mounting points.
 
     Returns:
         Job: The Batch job.

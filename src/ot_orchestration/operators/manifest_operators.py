@@ -14,7 +14,7 @@ from airflow.providers.google.cloud.operators.cloud_batch import (
 from airflow.utils.context import Context
 from google.cloud.batch_v1 import Environment
 
-from ot_orchestration.types import Manifest_Object
+from ot_orchestration.types import ManifestObject
 from ot_orchestration.utils.batch import create_batch_job, create_task_spec
 from ot_orchestration.utils.manifest import extract_study_id_from_path
 from ot_orchestration.utils.path import IOManager
@@ -53,7 +53,7 @@ class ManifestGenerateOperator(BaseOperator):
         """Get the google cloud storage hook."""
         return GCSHook(gcp_conn_id=self.gcp_conn_id)
 
-    def execute(self, **kwargs: dict[str, Any]) -> list[Manifest_Object]:
+    def execute(self, **kwargs: dict[str, Any]) -> list[ManifestObject]:
         """Execute the operator.
 
         Arguments:
@@ -64,7 +64,7 @@ class ManifestGenerateOperator(BaseOperator):
             ValueError: when the glob protocol is not gs
 
         Returns:
-            list[Manifest_Object]: list of manifests
+            list[ManifestObject]: list of manifests
         """
         # this regex pattern can be utilized for any path or uri glob pattern
         pattern = r"^((?P<protocol>.*)://)?(?P<root>[(\w)-]+)/(?P<prefix>([(\w)-/])+?)/(?P<matchglob>[(\w)-*]+.*){1}"
@@ -138,18 +138,18 @@ class ManifestSaveOperator(BaseOperator):
 
     template_fields: Sequence[str] = ["manifest_blobs"]
 
-    def __init__(self, manifest_blobs: list[Manifest_Object], **kwargs) -> None:
+    def __init__(self, manifest_blobs: list[ManifestObject], **kwargs) -> None:
         super().__init__(**kwargs)
         self.manifest_blobs = manifest_blobs
 
-    def execute(self, **kwargs: dict[str, Any]) -> list[Manifest_Object]:
+    def execute(self, **kwargs: dict[str, Any]) -> list[ManifestObject]:
         """Execute the operator.
 
         Arguments:
             **kwargs(dict[str, Any]): Keyword arguments provided by BaseOperator signature. Not used.
 
         Returns:
-            list[Manifest_Object]: saved manifests
+            list[ManifestObject]: saved manifests
         """
         logging.info(self.manifest_blobs)
         manifest_paths = [m["manifestPath"] for m in self.manifest_blobs]
@@ -172,7 +172,7 @@ class ManifestReadOperator(BaseOperator):
         self.staging_manifest_path_pattern = staging_manifest_path_pattern
         self.gcp_conn_id = gcp_conn_id
 
-    def execute(self, **kwargs: dict[str, Any]) -> list[Manifest_Object]:
+    def execute(self, **kwargs: dict[str, Any]) -> list[ManifestObject]:
         """Read manifests.
 
         Arguments:
@@ -183,7 +183,7 @@ class ManifestReadOperator(BaseOperator):
             NotImplementedError: for protocol other then gs.
 
         Returns:
-            list[Manifest_Object]: list of read manifests.
+            list[ManifestObject]: list of read manifests.
         """
         logging.info(self.staging_manifest_path_pattern)
         pattern = r"^((?P<protocol>.*)://)?(?P<root>[(\w)-]+)/(?P<prefix>([(\w)-/])+?)/(?P<matchglob>[(\w)-*]+.*){1}"
@@ -222,7 +222,7 @@ class ManifestSubmitBatchJobOperator(BaseOperator):
     template_fields: Sequence[str] = ["job_name", "manifests", "step"]
 
     def __init__(
-        self, step: str, job_name: str, manifests: list[Manifest_Object], **kwargs
+        self, step: str, job_name: str, manifests: list[ManifestObject], **kwargs
     ) -> None:
         super().__init__(**kwargs)
         self.job_name = job_name
@@ -253,12 +253,12 @@ class ManifestSubmitBatchJobOperator(BaseOperator):
         gcp_region = gcp.get("GCP_REGION")
         steps_params = params.get("steps")
         step_params = steps_params.get(self.step)
-        google_batch_specs = step_params.get("googlebatch")
-        policy_specs = google_batch_specs.get("policy_specs")
-        resource_specs = google_batch_specs.get("resource_specs")
-        task_specs = google_batch_specs.get("task_specs")
-        image = google_batch_specs.get("image")
-        commands = google_batch_specs.get("commands")
+        google_BatchSpecs = step_params.get("googlebatch")
+        policy_specs = google_BatchSpecs.get("policy_specs")
+        resource_specs = google_BatchSpecs.get("resource_specs")
+        task_specs = google_BatchSpecs.get("task_specs")
+        image = google_BatchSpecs.get("image")
+        commands = google_BatchSpecs.get("commands")
         task_spec = create_task_spec(image, commands, resource_specs, task_specs)
         task_env = [
             Environment(variables={"MANIFEST_PATH": mp}) for mp in manifest_paths
@@ -287,11 +287,11 @@ class ManifestFilterOperator(BaseOperator):
 
     template_fields: Sequence[str] = ["manifests"]
 
-    def __init__(self, manifests: list[Manifest_Object], **kwargs) -> None:
+    def __init__(self, manifests: list[ManifestObject], **kwargs) -> None:
         super().__init__(**kwargs)
         self.manifests = manifests
 
-    def execute(self, **_) -> list[Manifest_Object]:
+    def execute(self, **_) -> list[ManifestObject]:
         """Execute the operator."""
         step_flag_prefix = "pass"
         filtered_manifests = []
