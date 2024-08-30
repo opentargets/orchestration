@@ -112,7 +112,7 @@ class ManifestGenerateOperator(BaseOperator):
         manifests = []
         for study_id, raw_sumstat_path in studies_with_sumstats.items():
             if study_id in new_study_ids:
-                parital_manifest = {
+                partial_manifest = {
                     "studyId": study_id,
                     "rawPath": raw_sumstat_path,
                     "manifestPath": f"{common_path}/{study_id}/manifest.json",
@@ -122,7 +122,7 @@ class ManifestGenerateOperator(BaseOperator):
                     "passQc": False,
                     "status": self.status,
                 }
-                manifests.append(parital_manifest)
+                manifests.append(partial_manifest)
 
         return manifests
 
