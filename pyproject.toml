@@ -67,14 +67,10 @@ ignore_missing_imports = true
 
 
 [tool.ruff.lint]
-select = [
-  "D",
-  "I",
-  "E"
-]
+select = ["D", "I", "E"]
 ignore = [
-  "E501", # line too long
-  "E731", # do not assign a lambda expression, use a def
+  "E501",    # line too long
+  "E731",    # do not assign a lambda expression, use a def
   "PLC0208", # Use a sequence type instead of a `set` when iterating over values
   "PLR0911", # Too many return statements ({returns} > {max_returns})
   "PLR0912", # Too many branches ({branches} > {max_branches})
@@ -84,9 +80,9 @@ ignore = [
   "PLW2901", # Outer {outer_kind} variable {name} overwritten by inner {inner_kind} target
   "UP006",   # keep type annotation style as is
   "UP007",   # keep type annotation style as is
-  # Ignored due to performance: https://github.com/charliermarsh/ruff/issues/2923
-  "UP038", # Use `X | Y` in `isinstance` call instead of `(X, Y)`
-  "D107",  # ignore missing docstring in __init__
+  "UP038",   # Use `X | Y` in `isinstance` call instead of `(X, Y)`
+  "D107",    # Ignore missing docstring in __init__
+  "D101",    # Missing docstring in public class
 ]
 
 

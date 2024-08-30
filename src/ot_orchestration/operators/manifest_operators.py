@@ -17,7 +17,7 @@ from google.cloud.batch_v1 import Environment
 from ot_orchestration.types import ManifestObject
 from ot_orchestration.utils.batch import create_batch_job, create_task_spec
 from ot_orchestration.utils.manifest import extract_study_id_from_path
-from ot_orchestration.utils.path import IOManager
+from ot_orchestration.utils.path import GCS_PATH_PATTERN, IOManager
 
 
 class ManifestGenerateOperator(BaseOperator):
@@ -67,8 +67,8 @@ class ManifestGenerateOperator(BaseOperator):
             list[ManifestObject]: list of manifests
         """
         # this regex pattern can be utilized for any path or uri glob pattern
-        pattern = r"^((?P<protocol>.*)://)?(?P<root>[(\w)-]+)/(?P<prefix>([(\w)-/])+?)/(?P<matchglob>[(\w)-*]+.*){1}"
-        compiled_pattern = re.compile(pattern)
+
+        compiled_pattern = re.compile(GCS_PATH_PATTERN)
 
         globs = {
             "raw_sumstat": self.raw_sumstat_path_pattern,
@@ -83,7 +83,7 @@ class ManifestGenerateOperator(BaseOperator):
             protocol = _match.group("protocol")
             root = _match.group("root")
             prefix = _match.group("prefix")
-            matchglob = _match.group("matchglob")
+            matchglob = _match.group("filename")
 
             if protocol != "gs":
                 raise NotImplementedError(
@@ -186,8 +186,7 @@ class ManifestReadOperator(BaseOperator):
             list[ManifestObject]: list of read manifests.
         """
         logging.info(self.staging_manifest_path_pattern)
-        pattern = r"^((?P<protocol>.*)://)?(?P<root>[(\w)-]+)/(?P<prefix>([(\w)-/])+?)/(?P<matchglob>[(\w)-*]+.*){1}"
-        compiled_pattern = re.compile(pattern)
+        compiled_pattern = re.compile(GCS_PATH_PATTERN)
         _match = compiled_pattern.match(self.staging_manifest_path_pattern)
         if _match is None:
             raise ValueError(
@@ -196,7 +195,7 @@ class ManifestReadOperator(BaseOperator):
         protocol = _match.group("protocol")
         root = _match.group("root")
         prefix = _match.group("prefix")
-        matchglob = _match.group("matchglob")
+        matchglob = _match.group("filename")
 
         if protocol != "gs":
             raise NotImplementedError(

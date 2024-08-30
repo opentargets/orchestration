@@ -14,6 +14,7 @@ from requests.adapters import HTTPAdapter
 
 CHUNK_SIZE = 1024 * 256
 N_THREADS = 100
+GCS_PATH_PATTERN = r"^((?P<protocol>.*)://)?(?P<root>[(\w)-]+)/(?P<prefix>([(\w)-/])+?)/(?P<filename>[(\w)-*]+.*){1}"
 
 
 class ProtoPath(Protocol):
@@ -116,10 +117,15 @@ class GCSPath(ProtoPath):
         client (storage.Client | None): Google Cloud Storage client. Defaults to storage.Client().
     """
 
-    def __init__(self, gcs_path: str, chunk_size: int = CHUNK_SIZE, client: storage.Client | None = None):
+    def __init__(
+        self,
+        gcs_path: str,
+        chunk_size: int = CHUNK_SIZE,
+        client: storage.Client | None = None,
+    ):
         client = client or storage.Client()
         self.gcs_path = gcs_path
-        self.path_pattern = re.compile("^(gs://)?(?P<bucket_name>[(\\w)-]+)")
+        self.path_pattern = re.compile(GCS_PATH_PATTERN)
         self.chunk_size = chunk_size
         self.client = client
         self._increase_pool_()
@@ -156,7 +162,7 @@ class GCSPath(ProtoPath):
         Returns:
             str: Bucket name.
         """
-        return self._match.group("bucket_name")
+        return self._match.group("root")
 
     @property
     def path(self) -> str:
@@ -166,7 +172,7 @@ class GCSPath(ProtoPath):
             str: Path segment after Bucket Name.
         """
         # +1 to remove "/" afer bucket name
-        return self.gcs_path[self._match.end() + 1 :]
+        return self._match.group("prefix") + "/" + self._match.group("filename")
 
     def exists(self) -> bool:
         """Check if file exists in Google Cloud Storage.
@@ -314,7 +320,9 @@ class IOManager:
                 results.append(future.result())
         return results
 
-    def dump_many(self, objects: list[Any], paths: list[str], n_threads: int = N_THREADS) -> None:
+    def dump_many(
+        self, objects: list[Any], paths: list[str], n_threads: int = N_THREADS
+    ) -> None:
         """Dump many objects by concurrent operations.
 
         Args:
@@ -346,6 +354,3 @@ class IOManager:
                 logging.error(exe)
             else:
                 logging.info(f"Successfully dumped {idx + 1}/{len(futures)} objects.")
-
-
-__all__ = ["GCSPath", "IOManager", "NativePath"]
