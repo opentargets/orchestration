@@ -76,7 +76,7 @@ repos:
     rev: 1.7.0
     hooks:
       - id: interrogate
-        args: [-vv, --style google, --ignore-magic, --ignore-setters, --ignore-private]
+        args: [-vv, --style, google, --ignore-magic, --ignore-setters, --ignore-private]
   # - repo: https://github.com/pycqa/pydocstyle
   #   rev: 6.3.0
   #   hooks:
