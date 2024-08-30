@@ -45,6 +45,7 @@ class ManifestGenerateOperator(BaseOperator):
         self.harmonised_prefix = harmonised_prefix
         self.qc_prefix = qc_prefix
         self.gcp_conn_id = gcp_conn_id
+        self.status = "pending"
 
     def execute(self, **kwargs: dict[str, Any]) -> list[Manifest_Object]:
         """Execute the operator.
@@ -119,6 +120,7 @@ class ManifestGenerateOperator(BaseOperator):
                     "qcPath": f"{common_path}/{study_id}/{self.qc_prefix}",
                     "passHarmonisation": False,
                     "passQc": False,
+                    "status": self.status,
                 }
                 manifests.append(parital_manifest)
 

@@ -28,6 +28,7 @@ Manifest_Object = TypedDict(
         "analysisFlag": str | None,
         "isCurated": bool | None,
         "pubmedId": str | None,
+        "status": Literal["success", "failure", "pending"],
     },
 )
 

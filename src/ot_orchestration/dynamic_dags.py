@@ -26,6 +26,7 @@ def end():
     """Finish the DAG execution."""
     logging.info("FINISHED")
 
+
 @task(
     task_id="consolidate_manifests",
     trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
@@ -57,30 +58,30 @@ def begin() -> str:
 
 @task(task_id="collect_task_outcome", multiple_outputs=True)
 def collect_task_outcome(manifests: list[Manifest_Object]):
-    """Collect the task(s) outcome and return failed and succeded manifests."""
+    """Collect the task(s) outcome and return failed and succeeded manifests."""
     # we need to re-read the manifests to report the updated status of the tasks
     manifest_paths = [m["manifestPath"] for m in manifests]
     new_manifests: list[Manifest_Object] = IOManager().load_many(manifest_paths)
 
     failed_manifests = []
-    succeded_manifests = []
-    status_flag_prefix = "pass"
+    succeeded_manifests = []
+    pending_manifests = []
+    status_flag_prefix = "status"
     for new_manifest in new_manifests:
-        # we assume that the initial state is success
-        succeded = True
-        for key, val in new_manifest.items():
-            if key.startswith(status_flag_prefix) and not val:
-                succeded = False
-
-        if succeded:
-            succeded_manifests.append(new_manifest)
-        else:
+        if new_manifest[status_flag_prefix] == "pending":
+            pending_manifests.append(new_manifest)
+            continue
+        if new_manifest[status_flag_prefix] == "failure":
             failed_manifests.append(new_manifest)
+            continue
+        if new_manifest[status_flag_prefix] == "success":
+            succeeded_manifests.append(new_manifest)
 
     logging.info("FAILED MANIFESTS %s/%s", len(failed_manifests), len(manifests))
     return {
         "failed_manifests": failed_manifests,
-        "succeded_manifests": succeded_manifests,
+        "succeeded_manifests": succeeded_manifests,
+        "pending_manifests": pending_manifests,
     }
 
 
