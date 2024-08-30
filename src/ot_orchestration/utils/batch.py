@@ -14,7 +14,6 @@ from google.cloud.batch_v1 import (
     TaskSpec,
     Volume,
 )
-from google.protobuf.duration_pb2 import Duration
 
 from ot_orchestration.types import (
     BatchPolicySpecs,
@@ -38,9 +37,8 @@ def create_container_runnable(
     Returns:
         Runnable: The container runnable.
     """
-    runnable = Runnable()
-    runnable.container = Runnable.Container(
-        image_uri=image, commands=commands, **kwargs
+    runnable = Runnable(
+        container=Runnable.Container(image_uri=image, commands=commands, **kwargs)
     )
     return runnable
 
@@ -64,17 +62,16 @@ def create_task_spec(
     Returns:
         TaskSpec: The task specification.
     """
-    task = TaskSpec()
-    task.runnables = [create_container_runnable(image, commands=commands, **kwargs)]
-    resources = ComputeResource()
-    resources.cpu_milli = resource_specs["cpu_milli"]
-    resources.memory_mib = resource_specs["memory_mib"]
-    resources.boot_disk_mib = resource_specs["boot_disk_mib"]
-    task.compute_resource = resources
-
-    task.max_retry_count = task_specs["max_retry_count"]
-    task.max_run_duration = Duration(
-        seconds=time_to_seconds(task_specs["max_run_duration"])
+    time_duration = (time_to_seconds(task_specs["max_run_duration"]),)
+    task = TaskSpec(
+        runnables=[create_container_runnable(image, commands=commands, **kwargs)],
+        compute_resource=ComputeResource(
+            cpu_mili=resource_specs["cpu_milli"],
+            memory_mib=resource_specs["memory_mib"],
+            boot_disk_mib=resource_specs["boot_disk_mib"],
+        ),
+        max_retry_count=task_specs["max_retry_count"],
+        max_run_duration=f"{time_duration}s",  # type: ignore
     )
 
     return task
@@ -93,11 +90,8 @@ def set_up_mounting_points(
     """
     volumes = []
     for mount in mounting_points:
-        gcs_bucket = GCS()
-        gcs_bucket.remote_path = mount["remote_path"]
-        gcs_volume = Volume()
-        gcs_volume.gcs = gcs_bucket
-        gcs_volume.mount_path = mount["mount_point"]
+        gcs_bucket = GCS(remote_path=mount["remote_path"])
+        gcs_volume = Volume(gcs=gcs_bucket, mount_path=mount["mount_point"])
         volumes.append(gcs_volume)
     return volumes
 
@@ -122,24 +116,20 @@ def create_batch_job(
     if mounting_points:
         task.volumes = set_up_mounting_points(mounting_points)
 
-    group = TaskGroup()
-    group.task_spec = task
-    group.task_environments = task_env
-
-    policy = AllocationPolicy.InstancePolicy()
-    policy.machine_type = policy_specs["machine_type"]
-    policy.provisioning_model = AllocationPolicy.ProvisioningModel.SPOT
-
-    instances = AllocationPolicy.InstancePolicyOrTemplate()
-    instances.policy = policy
-    allocation_policy = AllocationPolicy()
-    allocation_policy.instances = [instances]
-
-    job = Job()
-    job.task_groups = [group]
-    job.allocation_policy = allocation_policy
-    job.logs_policy = LogsPolicy()
-    job.logs_policy.destination = LogsPolicy.Destination.CLOUD_LOGGING
+    job = Job(
+        task_groups=[TaskGroup(task_spec=task, task_environments=task_env)],
+        allocation_policy=AllocationPolicy(
+            instances=[
+                AllocationPolicy.InstancePolicyOrTemplate(
+                    policy=AllocationPolicy.InstancePolicy(
+                        machine_type=policy_specs["machine_type"],
+                        provisioning_model=AllocationPolicy.ProvisioningModel.SPOT,
+                    )
+                )
+            ]
+        ),
+        logs_policy=LogsPolicy(destination=LogsPolicy.Destination.CLOUD_LOGGING),
+    )
 
     return job
 
