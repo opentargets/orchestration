@@ -2,6 +2,7 @@
 
 import logging
 import re
+from functools import cached_property
 from typing import Any, Sequence
 
 from airflow.exceptions import AirflowSkipException
@@ -47,6 +48,11 @@ class ManifestGenerateOperator(BaseOperator):
         self.gcp_conn_id = gcp_conn_id
         self.status = "pending"
 
+    @cached_property
+    def gcs_hook(self) -> GCSHook:
+        """Get the google cloud storage hook."""
+        return GCSHook(gcp_conn_id=self.gcp_conn_id)
+
     def execute(self, **kwargs: dict[str, Any]) -> list[Manifest_Object]:
         """Execute the operator.
 
@@ -87,7 +93,7 @@ class ManifestGenerateOperator(BaseOperator):
             logging.info(
                 "Listing files at %s/%s with match glob %s", root, prefix, matchglob
             )
-            files = GCSHook(gcp_conn_id=self.gcp_conn_id).list(
+            files = self.gcs_hook.list(
                 bucket_name=root,
                 prefix=prefix,
                 match_glob=matchglob,
