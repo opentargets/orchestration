@@ -1,6 +1,5 @@
 """Manifest operators."""
 
-import logging
 import re
 from functools import cached_property
 from typing import Any, Sequence
@@ -90,7 +89,7 @@ class ManifestGenerateOperator(BaseOperator):
                     "Listing objects from path with %s protocol is not implemented",
                     protocol,
                 )
-            logging.info(
+            self.log.info(
                 "Listing files at %s/%s with match glob %s", root, prefix, matchglob
             )
             files = self.gcs_hook.list(
@@ -98,8 +97,8 @@ class ManifestGenerateOperator(BaseOperator):
                 prefix=prefix,
                 match_glob=matchglob,
             )
-            logging.info("Found %s %s files", len(files), key)
-            logging.info(files)
+            self.log.info("Found %s %s files", len(files), key)
+            self.log.info(files)
             results[key] = {
                 "common_path": f"{protocol}://{root}/{prefix}",
                 "samplesheet": {
@@ -151,7 +150,7 @@ class ManifestSaveOperator(BaseOperator):
         Returns:
             list[ManifestObject]: saved manifests
         """
-        logging.info(self.manifest_blobs)
+        self.log.info(self.manifest_blobs)
         manifest_paths = [m["manifestPath"] for m in self.manifest_blobs]
         IOManager().dump_many(self.manifest_blobs, manifest_paths)
         return self.manifest_blobs
@@ -185,7 +184,7 @@ class ManifestReadOperator(BaseOperator):
         Returns:
             list[ManifestObject]: list of read manifests.
         """
-        logging.info(self.staging_manifest_path_pattern)
+        self.log.info(self.staging_manifest_path_pattern)
         compiled_pattern = re.compile(GCS_PATH_PATTERN)
         _match = compiled_pattern.match(self.staging_manifest_path_pattern)
         if _match is None:
@@ -202,7 +201,7 @@ class ManifestReadOperator(BaseOperator):
                 "Listing objects from path with %s protocol is not implemented",
                 protocol,
             )
-        logging.info(
+        self.log.info(
             "Listing files at %s/%s with match glob %s", root, prefix, matchglob
         )
         manifest_paths = GCSHook(gcp_conn_id=self.gcp_conn_id).list(
@@ -263,7 +262,7 @@ class ManifestSubmitBatchJobOperator(BaseOperator):
             Environment(variables={"MANIFEST_PATH": mp}) for mp in manifest_paths
         ]
         batch_job = create_batch_job(task_spec, task_env, policy_specs)
-        logging.info(batch_job)
+        self.log.info(batch_job)
         self.task_id
         cloudbatch_operator = CloudBatchSubmitJobOperator(
             project_id=gcp_project,
@@ -298,5 +297,5 @@ class ManifestFilterOperator(BaseOperator):
             for key, val in manifest.items():
                 if key.startswith(step_flag_prefix) and not val:
                     filtered_manifests.append(manifest)
-        logging.info("PREVIOUSLY FAILED TASKS: %s", len(filtered_manifests))
+        self.log.info("PREVIOUSLY FAILED TASKS: %s", len(filtered_manifests))
         return filtered_manifests
