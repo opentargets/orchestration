@@ -27,7 +27,7 @@ repos:
         pass_filenames: false
   # Hook for formatting yaml files.
   - repo: https://github.com/google/yamlfmt
-    rev: v0.10.0
+    rev: v0.13.0
     hooks:
       - id: yamlfmt
   # Hook for parsing and sanity check of yaml files.

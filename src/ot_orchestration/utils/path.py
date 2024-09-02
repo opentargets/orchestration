@@ -157,12 +157,16 @@ class GCSPath(ProtoPath):
         chunk_size: int = CHUNK_SIZE,
         client: storage.Client | None = None,
     ):
-        client = client or storage.Client()
+        self._client = client
         self.gcs_path = gcs_path
         self.path_pattern = re.compile(POSIX_PATH_PATTERN)
         self.chunk_size = chunk_size
-        self.client = client
         self._increase_pool_()
+
+    @cached_property
+    def client(self) -> storage.Client:
+        """Get existing or set new the GCS client."""
+        return self._client or storage.Client()
 
     @cached_property
     def _match(self) -> re.Match:
@@ -425,7 +429,9 @@ class IOManager:
                 logging.info(f"Successfully dumped {idx + 1}/{len(futures)} objects.")
 
     @staticmethod
-    def _find_optimal_thread_num(n_processes: int, max_n_threads: int =  MAX_N_THREADS) -> int:
+    def _find_optimal_thread_num(
+        n_processes: int, max_n_threads: int = MAX_N_THREADS
+    ) -> int:
         """Find optimal number of threads to spawn for the concurrent IO operations.
 
         Args:
