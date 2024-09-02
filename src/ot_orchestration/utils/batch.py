@@ -21,7 +21,7 @@ from ot_orchestration.types import (
     BatchTaskSpecs,
     GCSMountObject,
 )
-from ot_orchestration.utils import time_to_seconds
+from ot_orchestration.utils.utils import time_to_seconds
 
 
 def create_container_runnable(

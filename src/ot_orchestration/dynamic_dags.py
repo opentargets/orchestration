@@ -18,7 +18,7 @@ from ot_orchestration.operators.manifest_operators import (
     ManifestSubmitBatchJobOperator,
 )
 from ot_orchestration.types import ManifestObject
-from ot_orchestration.utils import IOManager
+from ot_orchestration.utils import IOManager, common
 
 
 @task(task_id="end")
@@ -34,10 +34,14 @@ def end():
 def consolidate_manifests(ti: TaskInstance | None = None) -> list[ManifestObject]:
     """Consolidate manifests from the execution mode branching."""
     params = get_current_context().get("params")
+    if not params:
+        raise AirflowSkipException("No params provided, skipping.")
     if params["mode"] == "CONTINUE":
         branch = "generate_staging_output"
     else:
         branch = "filter_failed_manifests"
+    if not ti:
+        raise AirflowSkipException("Could not find task instance, skipping.")
     manifests = ti.xcom_pull(branch)
     if len(manifests) == 0:
         raise AirflowSkipException("No manifests detected, skipping.")
@@ -49,6 +53,8 @@ def begin() -> str:
     """Start the DAG execution by choosing the execution mode."""
     logging.info("START")
     params = get_current_context().get("params")
+    if not params:
+        raise AirflowSkipException("No params provided, skipping.")
     logging.info(params)
     if params["mode"] == "CONTINUE":
         return "generate_manifests"
@@ -110,7 +116,7 @@ def generic_genetics_dag():
 
     failed_existing_manifests = ManifestFilterOperator(
         task_id="filter_failed_manifests",
-        manifests=existing_manifests,
+        manifests=existing_manifests,  # type: ignore
     ).output
 
     saved_manifests = ManifestSaveOperator(
@@ -122,11 +128,13 @@ def generic_genetics_dag():
     batch_job = ManifestSubmitBatchJobOperator(
         task_id="gwas-catalog_batch_job",
         manifests=consolidated_manifests,  # type: ignore
+        gcs_project=common.GCP_PROJECT,
+        gcs_region=common.GCP_REGION,
         job_name=f"gwas-catalog-job-{time.strftime('%Y%m%d-%H%M%S')}",
         step="gwas-catalog-etl",
     ).output
 
-    updated_manifests = collect_task_outcome(manifests=consolidated_manifests)
+    updated_manifests = collect_task_outcome(manifests=consolidated_manifests)  # type: ignore
 
     # MODE == CONTINUE
     chain(

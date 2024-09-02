@@ -1,6 +1,5 @@
 """Manifest operators."""
 
-import re
 from functools import cached_property
 from typing import Any, Sequence
 
@@ -16,7 +15,7 @@ from google.cloud.batch_v1 import Environment
 from ot_orchestration.types import ManifestObject
 from ot_orchestration.utils.batch import create_batch_job, create_task_spec
 from ot_orchestration.utils.manifest import extract_study_id_from_path
-from ot_orchestration.utils.path import GCS_PATH_PATTERN, IOManager
+from ot_orchestration.utils.path import IOManager
 
 
 class ManifestGenerateOperator(BaseOperator):
@@ -52,6 +51,11 @@ class ManifestGenerateOperator(BaseOperator):
         """Get the google cloud storage hook."""
         return GCSHook(gcp_conn_id=self.gcp_conn_id)
 
+    @cached_property
+    def io_manager(self) -> IOManager:
+        """Get IO manager."""
+        return IOManager()
+
     def execute(self, **kwargs: dict[str, Any]) -> list[ManifestObject]:
         """Execute the operator.
 
@@ -59,16 +63,11 @@ class ManifestGenerateOperator(BaseOperator):
             **kwargs(dict[str, Any]): Keyword arguments provided by BaseOperator signature. Not used.
 
         Raises:
-            ValueError: when incorrect glob is defined
             ValueError: when the glob protocol is not gs
 
         Returns:
             list[ManifestObject]: list of manifests
         """
-        # this regex pattern can be utilized for any path or uri glob pattern
-
-        compiled_pattern = re.compile(GCS_PATH_PATTERN)
-
         globs = {
             "raw_sumstat": self.raw_sumstat_path_pattern,
             "manifest": self.staging_manifest_path_pattern,
@@ -76,13 +75,11 @@ class ManifestGenerateOperator(BaseOperator):
 
         results = {}
         for key, glob in globs.items():
-            _match = compiled_pattern.match(glob)
-            if _match is None:
-                raise ValueError("Incorrect glob pattern %s", glob)
-            protocol = _match.group("protocol")
-            root = _match.group("root")
-            prefix = _match.group("prefix")
-            matchglob = _match.group("filename")
+            path = self.io_manager.resolve(glob)
+            protocol = path.segments.get("protocol")
+            root = path.segments.get("root")
+            prefix = path.segments.get("prefix")
+            matchglob = path.segments.get("filename")
 
             if protocol != "gs":
                 raise NotImplementedError(
@@ -171,6 +168,16 @@ class ManifestReadOperator(BaseOperator):
         self.staging_manifest_path_pattern = staging_manifest_path_pattern
         self.gcp_conn_id = gcp_conn_id
 
+    @cached_property
+    def io_manager(self) -> IOManager:
+        """Get IO manager."""
+        return IOManager()
+
+    @cached_property
+    def gcs_hook(self) -> GCSHook:
+        """Get the google cloud storage hook."""
+        return GCSHook(gcp_conn_id=self.gcp_conn_id)
+
     def execute(self, **kwargs: dict[str, Any]) -> list[ManifestObject]:
         """Read manifests.
 
@@ -184,17 +191,12 @@ class ManifestReadOperator(BaseOperator):
         Returns:
             list[ManifestObject]: list of read manifests.
         """
-        self.log.info(self.staging_manifest_path_pattern)
-        compiled_pattern = re.compile(GCS_PATH_PATTERN)
-        _match = compiled_pattern.match(self.staging_manifest_path_pattern)
-        if _match is None:
-            raise ValueError(
-                "Incorrect glob pattern %s", self.staging_manifest_path_pattern
-            )
-        protocol = _match.group("protocol")
-        root = _match.group("root")
-        prefix = _match.group("prefix")
-        matchglob = _match.group("filename")
+        self.log.info("Reading manifests from: %s", self.staging_manifest_path_pattern)
+        path = self.io_manager.resolve(self.staging_manifest_path_pattern)
+        protocol = path.segments.get("protocol")
+        root = path.segments.get("root")
+        prefix = path.segments.get("prefix")
+        matchglob = path.segments.get("filename")
 
         if protocol != "gs":
             raise NotImplementedError(
@@ -204,7 +206,7 @@ class ManifestReadOperator(BaseOperator):
         self.log.info(
             "Listing files at %s/%s with match glob %s", root, prefix, matchglob
         )
-        manifest_paths = GCSHook(gcp_conn_id=self.gcp_conn_id).list(
+        manifest_paths = self.gcs_hook.list(
             bucket_name=root,
             prefix=prefix,
             match_glob=matchglob,
@@ -220,13 +222,21 @@ class ManifestSubmitBatchJobOperator(BaseOperator):
     template_fields: Sequence[str] = ["job_name", "manifests", "step"]
 
     def __init__(
-        self, step: str, job_name: str, manifests: list[ManifestObject], **kwargs
+        self,
+        step: str,
+        job_name: str,
+        manifests: list[ManifestObject],
+        gcp_project: str,
+        gcp_region: str,
+        **kwargs,
     ) -> None:
         super().__init__(**kwargs)
         self.job_name = job_name
         self.kwargs = kwargs
         self.manifests = manifests
         self.step = step
+        self.gcp_project = gcp_project
+        self.gcp_region = gcp_region
 
     def execute(self, context: Context) -> str:
         """Execute the operator.
@@ -244,19 +254,46 @@ class ManifestSubmitBatchJobOperator(BaseOperator):
         manifest_paths = [m["manifestPath"] for m in self.manifests]
 
         if not manifest_paths:
-            raise AirflowSkipException("No manifests to run the batch job")
+            raise AirflowSkipException("No manifests to run the batch job.")
         params = context.get("params")
-        gcp = params.get("gcp")
-        gcp_project = gcp.get("GCP_PROJECT")
-        gcp_region = gcp.get("GCP_REGION")
+        if not params:
+            raise AirflowSkipException("No params found for batch job.")
         steps_params = params.get("steps")
+        if not steps_params:
+            raise AirflowSkipException("No params found for steps.")
         step_params = steps_params.get(self.step)
-        google_BatchSpecs = step_params.get("googlebatch")
-        policy_specs = google_BatchSpecs.get("policy_specs")
-        resource_specs = google_BatchSpecs.get("resource_specs")
-        task_specs = google_BatchSpecs.get("task_specs")
-        image = google_BatchSpecs.get("image")
-        commands = google_BatchSpecs.get("commands")
+        if not step_params:
+            raise AirflowSkipException(f"No params for step {self.step} were found.")
+        google_batch_job_specs = step_params.get("googlebatch")
+        if not google_batch_job_specs:
+            raise AirflowSkipException(
+                f"No batch job params were defined for step {self.step}."
+            )
+        policy_specs = google_batch_job_specs.get("policy_specs")
+        if not policy_specs:
+            raise AirflowSkipException(
+                f"No policy specs defined found for step {self.step} batch job configuration."
+            )
+        resource_specs = google_batch_job_specs.get("resource_specs")
+        if not resource_specs:
+            raise AirflowSkipException(
+                f"No resource specs defined found for step {self.step} batch job configuration."
+            )
+        task_specs = google_batch_job_specs.get("task_specs")
+        if not task_specs:
+            raise AirflowSkipException(
+                f"No task specs were defined for step {self.step} batch job configuration."
+            )
+        image = google_batch_job_specs.get("image")
+        if not policy_specs:
+            raise AirflowSkipException(
+                f"No image was defined for step {self.step} batch job configuration."
+            )
+        commands = google_batch_job_specs.get("commands")
+        if not commands:
+            raise AirflowSkipException(
+                f"No commands were defined for step {self.step} batch job configuration."
+            )
         task_spec = create_task_spec(image, commands, resource_specs, task_specs)
         task_env = [
             Environment(variables={"MANIFEST_PATH": mp}) for mp in manifest_paths
@@ -265,8 +302,8 @@ class ManifestSubmitBatchJobOperator(BaseOperator):
         self.log.info(batch_job)
         self.task_id
         cloudbatch_operator = CloudBatchSubmitJobOperator(
-            project_id=gcp_project,
-            region=gcp_region,
+            project_id=self.gcp_project,
+            region=self.gcp_region,
             job_name=self.job_name,
             job=batch_job,
             deferrable=False,

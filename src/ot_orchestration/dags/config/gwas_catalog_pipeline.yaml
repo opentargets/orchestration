@@ -1,11 +1,5 @@
 DAG: GWAS_Catalog
 mode: CONTINUE
-gcp:
-  GCP_PROJECT: "open-targets-genetics-dev"
-  GCP_REGION: "europe-west1"
-  GCP_ZONE: "europe-west1-d"
-  GCP_DATAPROC_IMAGE: "2.1"
-  GCP_AUTOSCALING_POLICY: "otg-etl"
 steps:
   manifest_preparation:
     raw_sumstat_path_pattern: gs://ot_orchestration/raw_summary_statistics/**/*.h.tsv.gz

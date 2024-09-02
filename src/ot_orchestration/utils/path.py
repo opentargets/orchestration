@@ -5,8 +5,9 @@ import json
 import logging
 import re
 from abc import abstractmethod
+from functools import cached_property
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Protocol, TypedDict
 
 import yaml
 from google.cloud import storage
@@ -14,10 +15,28 @@ from requests.adapters import HTTPAdapter
 
 CHUNK_SIZE = 1024 * 256
 N_THREADS = 100
-GCS_PATH_PATTERN = r"^((?P<protocol>.*)://)?(?P<root>[(\w)-]+)/(?P<prefix>([(\w)-/])+?)/(?P<filename>[(\w)-*]+.*){1}"
+POSIX_PATH_PATTERN = r"^((?P<protocol>.*)://)?(?P<root>[(\w)-]+)/(?P<prefix>([(\w)-/])+?)/(?P<filename>[(\w)-*]+.*){1}"
+
+
+class PathSegments(TypedDict):
+    """Path segments.
+
+    Args:
+        protocol(str): For example gs, s3, file.
+        root(str): The first path segment.
+        prefix(str): The path segment between the basename and final filename.
+        filename(str): The final path segment (basename).
+    """
+
+    protocol: str
+    root: str
+    prefix: str
+    filename: str
 
 
 class ProtoPath(Protocol):
+    segments: PathSegments
+
     @abstractmethod
     def dump(self, data: Any) -> None:
         """Dump data to storage.
@@ -107,6 +126,20 @@ class NativePath(ProtoPath):
         """
         return self.native_path.exists()
 
+    @cached_property
+    def segments(self) -> PathSegments:
+        """Get path segments.
+
+        Returns:
+            PathSegments: Object with path segments.
+        """
+        return {
+            "protocol": "file",
+            "root": self.native_path.root,
+            "prefix": str(self.native_path.parent),
+            "filename": self.native_path.name,
+        }
+
 
 class GCSPath(ProtoPath):
     """Create GCS Path object.
@@ -125,12 +158,12 @@ class GCSPath(ProtoPath):
     ):
         client = client or storage.Client()
         self.gcs_path = gcs_path
-        self.path_pattern = re.compile(GCS_PATH_PATTERN)
+        self.path_pattern = re.compile(POSIX_PATH_PATTERN)
         self.chunk_size = chunk_size
         self.client = client
         self._increase_pool_()
 
-    @property
+    @cached_property
     def _match(self) -> re.Match:
         """Match the path with the pattern.
 
@@ -231,6 +264,20 @@ class GCSPath(ProtoPath):
                 case _:
                     return fp.read()
 
+    @cached_property
+    def segments(self) -> PathSegments:
+        """Get path segments.
+
+        Returns:
+            PathSegments: Object with path segments.
+        """
+        return {
+            "protocol": self._match.group("protocol"),
+            "root": self._match.group("root"),
+            "prefix": self._match.group("prefix"),
+            "filename": self._match.group("filename"),
+        }
+
 
 class IOManager:
     """Input Output manager class."""
@@ -249,7 +296,8 @@ class IOManager:
         - https:// (currently not implemented)
         - ftp:// (currently not implemented)
 
-        Based on registred protocols, the path is resolved to the appropriate Path object
+        Based on registred protocols, the path is resolved to the appropriate Path object.
+        Works only with POSIX path objects.
 
         Args:
             path (str): Path to resolve.
@@ -287,7 +335,7 @@ class IOManager:
         return [self.resolve(p) for p in paths]
 
     def load_many(self, paths: list[str], n_threads: int = N_THREADS) -> list[Any]:
-        """Load many objects by concurrent operations.
+        """Load many objects by concurrent operations. Thread safe.
 
         Args:
             paths (list[str]): Paths to read from.
@@ -323,7 +371,9 @@ class IOManager:
     def dump_many(
         self, objects: list[Any], paths: list[str], n_threads: int = N_THREADS
     ) -> None:
-        """Dump many objects by concurrent operations.
+        """Dump many objects by concurrent operations. Not thread safe.
+
+        When dumping many objects make sure, you are not writing to the same object multiple times.
 
         Args:
             objects (list[Any]): Objects to write.
@@ -332,6 +382,8 @@ class IOManager:
 
         Raises:
             ValueError: When number of objects does not match paths.
+            ThreadSafetyError: When attempting to write to the same file from multiple threads.
+
         """
         if len(paths) != len(objects):
             raise ValueError("Empty paths or unequal number of objects")
@@ -340,6 +392,13 @@ class IOManager:
             return None
 
         resolved_paths = self.resolve_paths(paths)
+        unique_paths = set(paths)
+        if len(paths) != len(unique_paths):
+            duplicated_paths = [p for p in paths if p not in unique_paths]
+            raise ThreadSafetyError(
+                "You are trying to write to the same file multiple times %s",
+                duplicated_paths,
+            )
         logging.info(f"DUMPING {len(paths)} OBJECTS.")
         with concurrent.futures.ThreadPoolExecutor(max_workers=n_threads) as executor:
             futures: list[concurrent.futures.Future] = []
@@ -354,3 +413,9 @@ class IOManager:
                 logging.error(exe)
             else:
                 logging.info(f"Successfully dumped {idx + 1}/{len(futures)} objects.")
+
+
+class ThreadSafetyError(Exception):
+    """Exception raised for errors in thread safety."""
+
+    pass
