@@ -3,6 +3,7 @@
 import concurrent.futures
 import json
 import logging
+import multiprocessing
 import re
 from abc import abstractmethod
 from functools import cached_property
@@ -14,7 +15,7 @@ from google.cloud import storage
 from requests.adapters import HTTPAdapter
 
 CHUNK_SIZE = 1024 * 256
-N_THREADS = 100
+MAX_N_THREADS = 32
 POSIX_PATH_PATTERN = r"^((?P<protocol>.*)://)?(?P<root>[(\w)-]+)/(?P<prefix>([(\w)-/])+?)/(?P<filename>[(\w)-*]+.*){1}"
 
 
@@ -334,12 +335,15 @@ class IOManager:
         """
         return [self.resolve(p) for p in paths]
 
-    def load_many(self, paths: list[str], n_threads: int = N_THREADS) -> list[Any]:
+    def load_many(self, paths: list[str], n_threads: int | None = None) -> list[Any]:
         """Load many objects by concurrent operations. Thread safe.
+
+        By default this method spawns 32 or num of cpus treads depending on which number is
+        closer to the oveall concurrent process count.
 
         Args:
             paths (list[str]): Paths to read from.
-            n_threads (int): number of concurrent threads to use.
+            n_threads (int | None): number of concurrent threads to use. If None, default is used. See description.
 
         Returns:
             list[Any]: Objects that were read.
@@ -349,8 +353,9 @@ class IOManager:
             return []
 
         resolved_paths = self.resolve_paths(paths)
-
-        logging.info(f"LOADING {len(paths)} OBJECTS.")
+        if not n_threads:
+            n_threads = self._find_optimal_thread_num(len(paths))
+        logging.info(f"LOADING %s OBJECTS by %s THREADS.", len(paths), n_threads)
         with concurrent.futures.ThreadPoolExecutor(max_workers=n_threads) as executor:
             futures: list[concurrent.futures.Future] = []
             for path in resolved_paths:
@@ -369,16 +374,19 @@ class IOManager:
         return results
 
     def dump_many(
-        self, objects: list[Any], paths: list[str], n_threads: int = N_THREADS
+        self, objects: list[Any], paths: list[str], n_threads: int | None = None
     ) -> None:
         """Dump many objects by concurrent operations. Not thread safe.
 
         When dumping many objects make sure, you are not writing to the same object multiple times.
 
+        By default this method spawns 32 or num of cpus treads depending on which number is
+        closer to the oveall concurrent process count.
+
         Args:
             objects (list[Any]): Objects to write.
             paths (list[str]): Paths to write the objects to.
-            n_threads (int): number of concurrent threads to use.
+            n_threads (int | None): number of concurrent threads to use. If None, default is used. See description.
 
         Raises:
             ValueError: When number of objects does not match paths.
@@ -399,7 +407,9 @@ class IOManager:
                 "You are trying to write to the same file multiple times %s",
                 duplicated_paths,
             )
-        logging.info(f"DUMPING {len(paths)} OBJECTS.")
+        if not n_threads:
+            n_threads = self._find_optimal_thread_num(len(paths))
+        logging.info(f"DUMPING %s OBJECTS by %s THREADS.", len(paths), n_threads)
         with concurrent.futures.ThreadPoolExecutor(max_workers=n_threads) as executor:
             futures: list[concurrent.futures.Future] = []
             for path, ob in zip(resolved_paths, objects, strict=True):
@@ -413,6 +423,23 @@ class IOManager:
                 logging.error(exe)
             else:
                 logging.info(f"Successfully dumped {idx + 1}/{len(futures)} objects.")
+
+    @staticmethod
+    def _find_optimal_thread_num(n_processes: int, max_n_threads: int =  MAX_N_THREADS) -> int:
+        """Find optimal number of threads to spawn for the concurrent IO operations.
+
+        Args:
+            n_processes(int): Number of concurrent processes.
+            max_n_threads(int): Max number of threads to spawn.
+
+        Returns:
+            int: Either max_n_threads or number of cpu cores depending on which is closer to the number of n_processes.
+        """
+        n_cpus = multiprocessing.cpu_count()
+        if abs(n_cpus - n_processes) < abs(max_n_threads - n_processes):
+            return n_cpus
+        else:
+            return max_n_threads
 
 
 class ThreadSafetyError(Exception):
