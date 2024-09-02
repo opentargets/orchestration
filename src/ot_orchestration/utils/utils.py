@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
-from google.cloud.storage import Client
-import yaml
+import re
+from pathlib import Path
+from typing import Any
 
-if TYPE_CHECKING:
-    from pathlib import Path
+import yaml
+from google.cloud.storage import Client
 
 
 def check_gcp_folder_exists(bucket_name: str, folder_path: str) -> bool:
@@ -26,15 +26,52 @@ def check_gcp_folder_exists(bucket_name: str, folder_path: str) -> bool:
     return any(blobs)
 
 
-def read_yaml_config(config_path: Path) -> Any:
+def read_yaml_config(config_path: Path | str) -> Any:
     """Parse a YAMl config file and do all necessary checks.
 
     Args:
-        config_path (Path): Path to the YAML config file.
+        config_path (Path | str): Path to the YAML config file.
 
     Returns:
         Any: Parsed YAML config file.
     """
-    assert config_path.exists(), f"YAML config path {config_path} does not exist."
+    config_path = config_path if isinstance(config_path, Path) else Path(config_path)
+    assert config_path.exists(), f"YAML config path {config_path} does not exists"
     with open(config_path) as config_file:
         return yaml.safe_load(config_file)
+
+
+def time_to_seconds(time_str: str) -> int:
+    """Parse time interval.
+
+    Args:
+        time_str (str): time string like 1d, 1h, 1m, 1s.
+
+    Returns:
+        int: time interval in seconds.
+
+    Raises:
+        ParsingError: when pattern is not matched.
+    """
+    time_pattern = r"^\d+[dhms]{1}$"
+    result = re.match(time_pattern, time_str)
+    if not result:
+        raise ValueError("Cound not parse %s time string", time_str)
+    match list(time_str):
+        case [*days, "d"]:
+            return int("".join(days)) * 24 * 60 * 60
+        case [*hours, "h"]:
+            return int("".join(hours)) * 60 * 60
+        case [*minutes, "m"]:
+            return int("".join(minutes)) * 60
+        case [*seconds, "s"]:
+            return int("".join(seconds))
+        case _:
+            return 0
+
+
+__all__ = [
+    "check_gcp_folder_exists",
+    "read_yaml_config",
+    "time_to_seconds",
+]

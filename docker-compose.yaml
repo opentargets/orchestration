@@ -43,7 +43,6 @@
 #                                Default: ''
 #
 # Feel free to modify this file to suit your needs.
----
 x-airflow-common: &airflow-common
   # In order to add custom dependencies or upgrade provider packages you can use your extended image.
   # Comment the image line, place your Dockerfile in the directory where you placed the docker-compose.yaml
@@ -73,7 +72,6 @@ x-airflow-common: &airflow-common
     AIRFLOW_CONN_GOOGLE_CLOUD_DEFAULT: ${AIRFLOW_CONN_GOOGLE_CLOUD_DEFAULT:-}
     GCP_PROJECT_ID: ${GCP_PROJECT_ID:-}
     GCP_GCS_BUCKET: ${GCP_GCS_BUCKET:-}
-
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/src:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
@@ -85,7 +83,6 @@ x-airflow-common: &airflow-common
   depends_on: &airflow-common-depends-on
     postgres:
       condition: service_healthy
-
 services:
   postgres:
     image: postgres:13
@@ -101,9 +98,8 @@ services:
       retries: 5
       start_period: 5s
     restart: always
-
   airflow-webserver:
-    <<: *airflow-common
+    !!merge <<: *airflow-common
     command: webserver
     ports:
       - "8080:8080"
@@ -115,12 +111,11 @@ services:
       start_period: 30s
     restart: always
     depends_on:
-      <<: *airflow-common-depends-on
+      !!merge <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
-
   airflow-scheduler:
-    <<: *airflow-common
+    !!merge <<: *airflow-common
     command: scheduler
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
@@ -130,12 +125,11 @@ services:
       start_period: 30s
     restart: always
     depends_on:
-      <<: *airflow-common-depends-on
+      !!merge <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
-
   airflow-init:
-    <<: *airflow-common
+    !!merge <<: *airflow-common
     entrypoint: /bin/bash
     # yamllint disable rule:line-length
     command:
@@ -188,7 +182,7 @@ services:
         exec /entrypoint airflow version
     # yamllint enable rule:line-length
     environment:
-      <<: *airflow-common-env
+      !!merge <<: *airflow-common-env
       _AIRFLOW_DB_MIGRATE: "true"
       _AIRFLOW_WWW_USER_CREATE: "true"
       _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
@@ -197,19 +191,17 @@ services:
     user: "0:0"
     volumes:
       - ${AIRFLOW_PROJ_DIR:-.}:/sources
-
   airflow-cli:
-    <<: *airflow-common
+    !!merge <<: *airflow-common
     profiles:
       - debug
     environment:
-      <<: *airflow-common-env
+      !!merge <<: *airflow-common-env
       CONNECTION_CHECK_MAX_COUNT: "0"
     # Workaround for entrypoint issue. See: https://github.com/apache/airflow/issues/16252
     command:
       - bash
       - -c
       - airflow
-
 volumes:
   postgres-db-volume:

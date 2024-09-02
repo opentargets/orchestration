@@ -1,21 +1,64 @@
 """Types introduced in the library."""
 
-from typing import TypedDict
 from typing import Literal
 
-# type definitions
-FTP_Transfer_Object = TypedDict(
-    "SFTP_Transfer_Object",
+from typing_extensions import Required, TypedDict
+
+ManifestObject = TypedDict(
+    "ManifestObject",
     {
-        "source_path": str,
-        "destination_path": str,
-        "destination_bucket": str,
+        "studyId": Required[str],
+        "rawPath": Required[str],
+        "harmonisedPath": Required[str],
+        "passHarmonisation": bool | None,
+        "passQC": bool | None,
+        "qcPath": Required[str],
+        "manifestPath": Required[str],
+        "studyType": str | None,
+        "analysisFlag": str | None,
+        "isCurated": bool | None,
+        "pubmedId": str | None,
+        "status": Literal["success", "failure", "pending"],
     },
 )
-Provider_Name = Literal["dataproc", "googlebatch"]
-Config_Field_Name = Literal["tags", "providers", "DAGS"]
-Data_Source = Literal["GWAS_Catalog", "eQTL_Catalogque", "finngen", "UK_Biobank_PPP"]
-ConfigFieldNotFound = str
-Base_Type = str | int | float | bool | list[str]
-Dag_Params = dict[str, dict[str, Base_Type | list[Base_Type]]]
-ConfigParsingFailure = str
+
+
+GCSMountObject = TypedDict(
+    "GCSMountObject", {"remote_path": Required[str], "mount_point": Required[str]}
+)
+
+BatchTaskSpecs = TypedDict(
+    "BatchTaskSpecs",
+    {
+        "max_retry_count": Required[int],
+        "max_run_duration": Required[str],
+    },
+)
+
+BatchResourceSpecs = TypedDict(
+    "BatchResourceSpecs",
+    {
+        "cpu_milli": Required[int],
+        "memory_mib": Required[int],
+        "boot_disk_mib": Required[int],
+    },
+)
+
+BatchPolicySpecs = TypedDict(
+    "BatchPolicySpecs",
+    {
+        "machine_type": Required[str],
+    },
+)
+
+
+BatchSpecs = TypedDict(
+    "BatchSpecs",
+    {
+        "resource_specs": BatchResourceSpecs,
+        "task_specs": BatchTaskSpecs,
+        "policy_specs": BatchPolicySpecs,
+        "image": str,
+        "commands": list[str],
+    },
+)

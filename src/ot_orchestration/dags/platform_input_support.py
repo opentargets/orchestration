@@ -17,18 +17,18 @@ from airflow.providers.google.cloud.operators.cloud_run import (
 )
 from airflow.utils.task_group import TaskGroup
 
-from ot_orchestration.common_airflow import (
-    GCP_REGION,
-    platform_dag_kwargs,
-    shared_dag_args,
-)
 from ot_orchestration.operators.cloud_run_fetch_logs_operator import (
     CloudRunExecuteJobWithLogsOperator,
 )
 from ot_orchestration.utils.cloud_run import clean_name, create_cloud_run_job, strhash
+from ot_orchestration.utils.common import (
+    GCP_REGION,
+    platform_dag_kwargs,
+    shared_dag_args,
+)
 from ot_orchestration.utils.utils import read_yaml_config
 
-PIS_CONFIG_PATH = Path(__file__).parent / "configs" / "pis.yaml"
+PIS_CONFIG_PATH = Path(__file__).parent / "config" / "pis.yaml"
 PIS_IMAGE = "europe-west1-docker.pkg.dev/open-targets-eu-dev/platform-input-support-test/platform-input-support-test:latest"
 PIS_GCP_PROJECT = "open-targets-eu-dev"
 PIS_MACHINE_SPEC = {"cpu": "1", "memory": "512Mi"}

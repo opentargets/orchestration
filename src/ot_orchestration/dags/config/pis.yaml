@@ -1,4 +1,3 @@
----
 work_dir: ./work
 gcs_url: gs://open-targets-pre-data-releases/24.06dev-test/input
 log_level: TRACE
@@ -223,7 +222,6 @@ steps:
         - name: download ${species} ncrna homologies
           source: https://ftp.ensembl.org/pub/release-${ensembl_release_version}/tsv/ensembl-compara/homologies/${species}/Compara.${ensembl_release_version}.ncrna_default.homologies.tsv.gz
           destination: target-inputs/homologue/homologies/ncrna-${species}.tsv.gz
-
 
   interactions:
     - name: download ensembl interactions grch38

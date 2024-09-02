@@ -1,6 +1,5 @@
 defaults:
   - ld_index
-
 ld_index_out: ${datasets.ld_index}
 ld_matrix_template: ${datasets.ld_matrix_template}
 ld_index_raw_template: ${datasets.ld_index_raw_template}

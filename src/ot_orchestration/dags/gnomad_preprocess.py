@@ -6,8 +6,8 @@ from pathlib import Path
 
 from airflow.models.dag import DAG
 
-from ot_orchestration.common_airflow import shared_dag_args, shared_dag_kwargs
-from ot_orchestration.utils.dataproc import submit_step, generate_dag
+from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
+from ot_orchestration.utils.dataproc import generate_dag, submit_step
 
 CLUSTER_NAME = "gnomad-preprocess"
 

@@ -4,21 +4,28 @@ version = "0.1.0"
 description = "Open Targets Genetics Orchestration Pipeline"
 authors = ["Szymon Szyszkowski <ss60@mib117351s.internal.sanger.ac.uk>"]
 readme = "README.md"
-packages = [{include = "ot_orchestration", from = "src"}]
+packages = [{ include = "ot_orchestration", from = "src" }]
 
 
 [tool.poetry.dependencies]
 python = "^3.10, <3.11"
-apache-airflow = {extras = ["apache-beam", "async", "celery", "google", "kubernetes", "openlineage", "postgres", "sftp"], version = "^2.9.2"}
-apache-airflow-providers-google = "^10.19.0"
-returns = {extras = ["compatible-mypy"], version = "^0.23.0"}
-pydantic = "^2.7.4"
-click = "^8.1.7"
+apache-airflow = { extras = [
+  "apache-beam",
+  "async",
+  "celery",
+  "google",
+  "kubernetes",
+  "openlineage",
+  "postgres",
+  "sftp",
+], version = "^2.9.2" }
+apache-airflow-providers-google = "10.22.0"
 pyyaml = "^6.0.1"
 google = "^3.0.0"
 pendulum = "^3.0.0"
 apache-airflow-providers-apache-beam = "^5.7.1"
-pandas = "<2.2"
+typing-extensions = "^4.12.2"
+requests = "^2.32.3"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.4.9"
@@ -27,6 +34,7 @@ mypy = "^1.10.0"
 pre-commit = "^3.7.1"
 coverage = "^7.5.4"
 psycopg2-binary = "^2.9.9"
+interrogate = "^1.7.0"
 
 
 [tool.poetry.group.test.dependencies]
@@ -54,24 +62,15 @@ exclude = "src/ot_orchestration/dags/*"
 plugins = ["returns.contrib.mypy.returns_plugin"]
 
 [[tool.mypy.overrides]]
-module = [
-  "google.cloud.storage",
-  "yaml"
-]
+module = ["google.cloud.storage", "yaml"]
 ignore_missing_imports = true
 
 
 [tool.ruff.lint]
+select = ["D", "I", "E"]
 ignore = [
-  "E501", # line too long
-  "E731", # do not assign a lambda expression, use a def
-
-  # Ignore ignored, as the rule is now back in preview/nursery, which cannot
-  # be ignored anymore without warnings.
-  # https://github.com/astral-sh/ruff/issues/7491
-  # "PLC1901", # Lots of false positives
-
-  # False positives https://github.com/astral-sh/ruff/issues/5386
+  "E501",    # line too long
+  "E731",    # do not assign a lambda expression, use a def
   "PLC0208", # Use a sequence type instead of a `set` when iterating over values
   "PLR0911", # Too many return statements ({returns} > {max_returns})
   "PLR0912", # Too many branches ({branches} > {max_branches})
@@ -81,9 +80,9 @@ ignore = [
   "PLW2901", # Outer {outer_kind} variable {name} overwritten by inner {inner_kind} target
   "UP006",   # keep type annotation style as is
   "UP007",   # keep type annotation style as is
-  # Ignored due to performance: https://github.com/charliermarsh/ruff/issues/2923
-  "UP038", # Use `X | Y` in `isinstance` call instead of `(X, Y)`
-
+  "UP038",   # Use `X | Y` in `isinstance` call instead of `(X, Y)`
+  "D107",    # Ignore missing docstring in __init__
+  "D101",    # Missing docstring in public class
 ]
 
 

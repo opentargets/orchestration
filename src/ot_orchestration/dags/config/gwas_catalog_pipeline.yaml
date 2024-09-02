@@ -1,0 +1,24 @@
+DAG: GWAS_Catalog
+mode: CONTINUE
+steps:
+  manifest_preparation:
+    raw_sumstat_path_pattern: gs://ot_orchestration/raw_summary_statistics/**/*.h.tsv.gz
+    staging_manifest_path_pattern: gs://ot_orchestration/staging/**/manifest.json
+    harmonised_prefix: harmonised
+    qc_prefix: qc
+  gwas-catalog-etl:
+    googlebatch:
+      resource_specs:
+        cpu_milli: 2000
+        memory_mib: 2000
+        boot_disk_mib: 10000
+      task_specs:
+        max_retry_count: 0
+        max_run_duration: "10m"
+      policy_specs:
+        machine_type: n1-standard-2
+      image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/ot-orchestration/genetics_etl:dev
+      commands: ["exit 1"]
+    spark:
+      spark_uri: yarn
+      write_mode: errorifexists
