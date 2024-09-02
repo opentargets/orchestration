@@ -161,12 +161,22 @@ class GCSPath(ProtoPath):
         self.gcs_path = gcs_path
         self.path_pattern = re.compile(POSIX_PATH_PATTERN)
         self.chunk_size = chunk_size
-        self._increase_pool_()
 
     @cached_property
     def client(self) -> storage.Client:
-        """Get existing or set new the GCS client."""
-        return self._client or storage.Client()
+        """Get existing or set new the GCS client.
+
+        This is a post init method that allows to expand the number of
+        concurrent tasks that can be run.
+
+        Returns:
+            storage.Client: GCS client.
+        """
+        client = self._client or storage.Client()
+        adapter = HTTPAdapter(pool_connections=128, pool_maxsize=1024, max_retries=3)
+        client._http.mount("https://", adapter)
+        client._http._auth_request.session.mount("https://", adapter)
+        return
 
     @cached_property
     def _match(self) -> re.Match:
@@ -182,16 +192,6 @@ class GCSPath(ProtoPath):
         if _match is None:
             raise ValueError("Invalid GCS path %s", self.gcs_path)
         return _match
-
-    def _increase_pool_(self):
-        """Create a client object.
-
-        This is a post init method that allows to expand the number of
-        concurrent tasks that can be run.
-        """
-        adapter = HTTPAdapter(pool_connections=128, pool_maxsize=1024, max_retries=3)
-        self.client._http.mount("https://", adapter)
-        self.client._http._auth_request.session.mount("https://", adapter)
 
     @property
     def bucket(self) -> str:
