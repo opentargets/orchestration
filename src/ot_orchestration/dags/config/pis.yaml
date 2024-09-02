@@ -2,16 +2,19 @@ work_dir: ./work
 gcs_url: gs://open-targets-pre-data-releases/24.06dev-test/input
 log_level: TRACE
 force: no
+
 scratchpad:
   efo_release_version: v3.65.0
   ensembl_release_version: '111'
   chembl_release_version: '34'
   release: '24.06'
+
 steps:
   baseline_expression:
     - name: download_latest baseline_expression
       source: gs://otar000-evidence_input/BaselineExpression/json
       destination: expression-inputs/baseline_expression.json.gz
+
   disease:
     - name: download efo otar_slim
       source: https://github.com/EBISPOT/efo/releases/download/${efo_release_version}/efo_otar_slim.owl
@@ -25,6 +28,7 @@ steps:
     - name: download mondo
       source: https://github.com/monarch-initiative/mondo/releases/download/v2021-12-30/mondo.json
       destination: ontology-inputs/ontology-mondo.json
+
   drug:
     - name: download drugbank vocabulary
       source: https://go.drugbank.com/releases/5-1-9/downloads/all-drugbank-vocabulary
@@ -100,6 +104,7 @@ steps:
         - warning_refs
         - warning_type
         - warning_year
+
   evidence:
     - name: download_latest cancerbiomarkers
       source: gs://otar000-evidence_input/CancerBiomarkers/json
@@ -165,6 +170,7 @@ steps:
     - name: download_latest eva
       source: gs://otar012-eva/disease-target-evidence
       destination: evidence-files/eva.json.gz
+
   expression:
     - name: download expression hierarchy
       source: https://raw.githubusercontent.com/opentargets/expression_hierarchy/master/process/curation.tsv
@@ -184,10 +190,12 @@ steps:
     - name: download_latest baseline expression zscore binned
       source: gs://atlas_baseline_expression/baseline_expression_zscore_binned
       destination: expression-inputs/baseline_expression_zscore_binned.tsv
+
   go:
     - name: download gene-ontology
       source: http://purl.obolibrary.org/obo/go.obo
       destination: gene-ontology-inputs/go.obo
+
   homologues:
     - name: explode homologues
       foreach:
@@ -214,6 +222,7 @@ steps:
         - name: download ${species} ncrna homologies
           source: https://ftp.ensembl.org/pub/release-${ensembl_release_version}/tsv/ensembl-compara/homologies/${species}/Compara.${ensembl_release_version}.ncrna_default.homologies.tsv.gz
           destination: target-inputs/homologue/homologies/ncrna-${species}.tsv.gz
+
   interactions:
     - name: download ensembl interactions grch38
       source: https://ftp.ensembl.org/pub/release-${ensembl_release_version}/gtf/homo_sapiens/Homo_sapiens.GRCh38.${ensembl_release_version}.chr.gtf.gz
@@ -230,14 +239,17 @@ steps:
     - name: download_latest string interactions
       source: otar001-core/stringInteractions
       destination: interactions-inputs/string-interactions.txt.gz
+
   literature:
     - name: download literature
       source: https://ftp.ebi.ac.uk/pub/databases/pmc/DOI/PMID_PMCID_DOI.csv.gz
       destination: literature-inputs/PMID_PMCID_DOI.csv.gz
+
   mouse_phenotypes:
     - name: download_latest mouse phenotypes
       source: otar001-core/MousePhenotypes
       destination: mouse-phenotypes-inputs/mouse_phenotypes.json.gz
+
   openfda:
     - name: download blacklisted events
       source: https://raw.githubusercontent.com/opentargets/platform-etl-backend/master/src/main/resources/blacklisted_events.txt
@@ -252,6 +264,7 @@ steps:
         - name: download fda events ${destination}
           source: ${source}
           destination: fda-inputs/${destination}
+
   otar:
     - name: download otar meta spreadsheet
       source: https://docs.google.com/spreadsheets/d/1CV_shXJy1ACM09HZBB_-3Nl6l_dfkrA26elMAF0ttHs/export?format=csv&gid=1179867447
@@ -259,10 +272,12 @@ steps:
     - name: download otar project to efo spreadsheet
       source: https://docs.google.com/spreadsheets/d/1CV_shXJy1ACM09HZBB_-3Nl6l_dfkrA26elMAF0ttHs/export?format=csv&gid=72910172
       destination: otar-inputs/otar_project_to_efo.csv
+
   pharmacogenomics:
     - name: download_latest pharmacogenomics
       source: otar012-eva/pharmacogenomics
       destination: pharmacogenomics-inputs/pharmacogenomics.json.gz
+
   ppp_evidence:
     - name: download_latest validation lab
       source: otar013-ppp/validation_lab
@@ -273,6 +288,7 @@ steps:
     - name: download_latest ot_crispr
       source: otar013-ppp/ot_crispr
       destination: evidence-files/ot_crispr.json.gz
+
   reactome:
     - name: download reactome pathways
       source: https://reactome.org/download/current/ReactomePathways.txt
@@ -280,10 +296,12 @@ steps:
     - name: download reactome pathways relation
       source: https://reactome.org/download/current/ReactomePathwaysRelation.txt
       destination: reactome-inputs/ReactomePathwaysRelation.txt
+
   so:
     - name: download so
       source: https://raw.githubusercontent.com/The-Sequence-Ontology/SO-Ontologies/master/Ontology_Files/so.json
       destination: so-inputs/so.json
+
   target:
     - name: download hgnc complete set
       source: https://ftp.ebi.ac.uk/pub/databases/genenames/new/json/hgnc_complete_set.json
@@ -361,6 +379,7 @@ steps:
     - name: download_latest cosmic
       source: ${cosmic_file_list}
       destination: evidence-files/cosmic.json.gz
+
   target_engine:
     - name: download protein atlas
       source: https://www.proteinatlas.org/download/proteinatlas.json.gz
