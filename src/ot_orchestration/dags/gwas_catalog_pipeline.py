@@ -14,8 +14,7 @@ from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 SOURCE_CONFIG_FILE_PATH = (
     Path(__file__).parent / "config" / "gwas_catalog_pipeline.yaml"
 )
-config_path = "/opt/airflow/config/config.yaml"
-config = read_yaml_config(config_path)
+config = read_yaml_config(SOURCE_CONFIG_FILE_PATH)
 logging.basicConfig(level=logging.INFO)
 
 

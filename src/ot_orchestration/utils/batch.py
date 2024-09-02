@@ -62,11 +62,11 @@ def create_task_spec(
     Returns:
         TaskSpec: The task specification.
     """
-    time_duration = (time_to_seconds(task_specs["max_run_duration"]),)
+    time_duration = time_to_seconds(task_specs["max_run_duration"])
     task = TaskSpec(
         runnables=[create_container_runnable(image, commands=commands, **kwargs)],
         compute_resource=ComputeResource(
-            cpu_mili=resource_specs["cpu_milli"],
+            cpu_milli=resource_specs["cpu_milli"],
             memory_mib=resource_specs["memory_mib"],
             boot_disk_mib=resource_specs["boot_disk_mib"],
         ),

@@ -128,8 +128,8 @@ def generic_genetics_dag():
     batch_job = ManifestSubmitBatchJobOperator(
         task_id="gwas-catalog_batch_job",
         manifests=consolidated_manifests,  # type: ignore
-        gcs_project=common.GCP_PROJECT,
-        gcs_region=common.GCP_REGION,
+        gcp_project=common.GCP_PROJECT,
+        gcp_region=common.GCP_REGION,
         job_name=f"gwas-catalog-job-{time.strftime('%Y%m%d-%H%M%S')}",
         step="gwas-catalog-etl",
     ).output

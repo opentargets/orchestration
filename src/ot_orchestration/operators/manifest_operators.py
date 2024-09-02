@@ -109,6 +109,8 @@ class ManifestGenerateOperator(BaseOperator):
         new_study_ids = set(studies_with_sumstats.keys()) - set(
             studies_with_manifests.keys()
         )
+        if len(new_study_ids) == 0:
+            raise AirflowSkipException("All raw sumstats have manifests, skipping.")
         common_path: str = results["manifest"]["common_path"]
         # generate the manifest per each new sumstat
         manifests = []
@@ -219,7 +221,13 @@ class ManifestReadOperator(BaseOperator):
 class ManifestSubmitBatchJobOperator(BaseOperator):
     """Submit manifest as a batch job."""
 
-    template_fields: Sequence[str] = ["job_name", "manifests", "step"]
+    template_fields: Sequence[str] = [
+        "job_name",
+        "manifests",
+        "step",
+        "gcp_project",
+        "gcp_region",
+    ]
 
     def __init__(
         self,
