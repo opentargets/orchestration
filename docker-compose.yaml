@@ -99,7 +99,7 @@ services:
       start_period: 5s
     restart: always
   airflow-webserver:
-    !!merge <<: *airflow-common
+    <<: *airflow-common
     command: webserver
     ports:
       - "8080:8080"
@@ -111,11 +111,11 @@ services:
       start_period: 30s
     restart: always
     depends_on:
-      !!merge <<: *airflow-common-depends-on
+      <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
   airflow-scheduler:
-    !!merge <<: *airflow-common
+    <<: *airflow-common
     command: scheduler
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
@@ -125,11 +125,11 @@ services:
       start_period: 30s
     restart: always
     depends_on:
-      !!merge <<: *airflow-common-depends-on
+      <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
   airflow-init:
-    !!merge <<: *airflow-common
+    <<: *airflow-common
     entrypoint: /bin/bash
     # yamllint disable rule:line-length
     command:
@@ -182,7 +182,7 @@ services:
         exec /entrypoint airflow version
     # yamllint enable rule:line-length
     environment:
-      !!merge <<: *airflow-common-env
+      <<: *airflow-common-env
       _AIRFLOW_DB_MIGRATE: "true"
       _AIRFLOW_WWW_USER_CREATE: "true"
       _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
@@ -192,11 +192,11 @@ services:
     volumes:
       - ${AIRFLOW_PROJ_DIR:-.}:/sources
   airflow-cli:
-    !!merge <<: *airflow-common
+    <<: *airflow-common
     profiles:
       - debug
     environment:
-      !!merge <<: *airflow-common-env
+      <<: *airflow-common-env
       CONNECTION_CHECK_MAX_COUNT: "0"
     # Workaround for entrypoint issue. See: https://github.com/apache/airflow/issues/16252
     command:
