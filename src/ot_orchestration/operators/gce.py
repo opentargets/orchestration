@@ -25,7 +25,7 @@ from google.cloud.logging_v2.services.logging_service_v2 import (
     LoggingServiceV2AsyncClient,
 )
 
-from ot_orchestration.common_airflow import (
+from ot_orchestration.utils.common import (
     GCP_PROJECT_PLATFORM,
     GCP_REGION,
     prepare_labels,
@@ -54,6 +54,7 @@ def wait_for_extended_operation(
             used only during error and warning reporting.
         timeout: how long (in seconds) to wait for operation to finish.
             If None, wait indefinitely.
+        log: (optional) a logger to use for logging.
 
     Returns:
         Whatever the operation.result() returns.
@@ -222,7 +223,7 @@ class CloudLoggingAsyncHook(GoogleBaseHook):
         And when the script fails:
 
         Script "startup-script" failed with error: exit status 1
-        """
+        """  # noqa: D301
         client = self.get_conn()
         timestamp_str = initial_timestamp.isoformat()
         query = f'resource.type="gce_instance" labels.instance_name="{instance_name}" timestamp>"{timestamp_str}" jsonPayload.message=~"startup-script[\w\\\":\s]*exit status [0-9]+"'  # fmt: skip

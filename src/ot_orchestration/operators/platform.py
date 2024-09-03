@@ -5,42 +5,48 @@ from pathlib import Path
 from typing import Any, Iterable
 
 import yaml
-from airflow.exceptions import AirflowException
 from airflow.operators.branch import BaseBranchOperator
 from airflow.utils.context import Context
 from google.api_core.exceptions import NotFound
 from google.cloud.storage import Client
 from google.cloud.storage.bucket import Bucket
 
-from ot_orchestration.utils.utils import bucket_name, bucket_path, read_yaml_config
+from ot_orchestration.utils import bucket_name, bucket_path, read_yaml_config
+from ot_orchestration.utils.common import GCP_PROJECT_PLATFORM
 
 
 class PISDiffComputeOperator(BaseBranchOperator):
     """Custom operator that decides whether to run a PIS step or not.
 
-    This operator will check the part of the PIS configuration that is relevant
-    to the current step, comparing it against the copy in the specified bucket.
-    If the two are different, that means the step should be run. Otherwise, the
-    operator will branch to the end of the DAG.
+    At the moment, this operator will check the parts of the PIS configuration
+    that are relevant to the current step, comparing them against the copy in the
+    specified bucket. If they are different, that means the step should be
+    run.
+
+    It would be interesting add a check that downloads the manifest from the
+    specified bucket and compares the resources listed for the step with the
+    files in the bucket, along with their checksums. That way we can ensure the
+    files exist and have not been tampered with.
+
+    :param project_id: The GCP project ID. Defaults to the platform project.
+    :param step_name: The name of the PIS step to check.
+    :param local_config_path: The path to the local configuration file.
+    :param upstream_config_url: The URL of the upstream configuration file.
     """
 
     template_fields: Sequence[str] = (
         "step_name",
         "local_config_path",
         "upstream_config_url",
-        "downstream_task_id",
-        "joiner_task_id",
     )
 
     def __init__(
         self,
         *args,
-        project_id: str,
+        project_id: str = GCP_PROJECT_PLATFORM,
         step_name: str,
         local_config_path: Path,
         upstream_config_url: str,
-        downstream_task_id: str,
-        joiner_task_id: str,
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
@@ -48,8 +54,6 @@ class PISDiffComputeOperator(BaseBranchOperator):
         self.project_id = project_id
         self.local_config_path = local_config_path
         self.upstream_config_url = upstream_config_url
-        self.downstream_task_id = downstream_task_id
-        self.joiner_task_id = joiner_task_id
 
     def get_local_config(self) -> dict[str, Any]:
         """Read the local configuration file and return the relevant part."""
@@ -73,7 +77,7 @@ class PISDiffComputeOperator(BaseBranchOperator):
     def choose_branch(self, context: Context) -> str | Iterable[str]:
         """Decide whether to run the current PIS step or not."""
         local_config = self.get_local_config()
-        upstream_config = None
+        upstream_config = {}
 
         try:
             upstream_config = self.get_upstream_config(self.upstream_config_url)
@@ -82,14 +86,18 @@ class PISDiffComputeOperator(BaseBranchOperator):
                 "Upstream configuration file not found, assuming first run, %s",
                 self.upstream_config_url,
             )
-            raise
 
-        l = self.extract_relevant_config(local_config)
-        u = self.extract_relevant_config(upstream_config)
+        lc = self.extract_relevant_config(local_config)
+        uc = self.extract_relevant_config(upstream_config)
 
-        self.log.info(f"Local config: {l}")
-        self.log.info(f"Upstream config: {u}")
+        self.log.info(f"Local config: {lc}")
+        self.log.info(f"Upstream config: {uc}")
 
-        if l["scratchpad"] != u["scratchpad"] or l["step"] != u["step"]:
-            return self.downstream_task_id
-        return self.joiner_task_id
+        should_run = lc["scratchpad"] != uc["scratchpad"] or lc["step"] != uc["step"]
+
+        if should_run:
+            self.log.info("Configuration differ, step %s will run", self.step_name)
+            return f"pis_{self.step_name}.upload_config_{self.step_name}"
+
+        self.log.info("Configuration is equal, step %s will not run", self.step_name)
+        return f"pis_{self.step_name}.join_{self.step_name}"

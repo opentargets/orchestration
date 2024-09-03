@@ -1,8 +1,4 @@
-"""Custom operator that uploads configurations to GCS.
-
-This operator will create a GCS bucket if it does not exist and upload the
-configurations to the specified path inside that bucket.
-"""
+"""Custom operators for Google Cloud Storage (GCS) interactions."""
 
 from collections.abc import Sequence
 from pathlib import Path
@@ -11,19 +7,27 @@ from airflow.models.baseoperator import BaseOperator
 from google.cloud.storage import Client
 from google.cloud.storage.bucket import Bucket
 
-from ot_orchestration.utils.utils import bucket_name, bucket_path
+from ot_orchestration.utils import bucket_name, bucket_path
+from ot_orchestration.utils.common import GCP_PROJECT_PLATFORM
 
 
+class UploadFileOperator(BaseOperator):
+    """Custom operator that uploads a file to GCS.
 
-class UploadConfigOperator(BaseOperator):
-    """Custom operator that uploads configurations to GCS."""
+    This operator will create a GCS bucket if it does not exist and upload the
+    file to the specified path inside that bucket.
+
+    :param project_id: The GCP project ID. Defaults to the platform project.
+    :param src: The path to the file to upload.
+    :param dst: The destination path in GCS.
+    """
 
     template_fields: Sequence[str] = ("src", "dst")
 
     def __init__(
         self,
         *args,
-        project_id: str,
+        project_id: str = GCP_PROJECT_PLATFORM,
         src: Path,
         dst: str,
         **kwargs,
