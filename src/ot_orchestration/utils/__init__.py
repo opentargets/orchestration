@@ -9,6 +9,8 @@ from ot_orchestration.utils.path import (
     NativePath,
 )
 from ot_orchestration.utils.utils import (
+    bucket_name,
+    bucket_path,
     check_gcp_folder_exists,
     clean_name,
     read_yaml_config,
@@ -19,6 +21,8 @@ __all__ = [
     "IOManager",
     "GCSPath",
     "NativePath",
+    "bucket_name",
+    "bucket_path",
     "clean_name",
     "check_gcp_folder_exists",
     "read_yaml_config",
