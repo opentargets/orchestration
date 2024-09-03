@@ -20,9 +20,6 @@ apache-airflow = { extras = [
   "sftp",
 ], version = "^2.9.2" }
 apache-airflow-providers-google = "^10.22.0"
-returns = { extras = ["compatible-mypy"], version = "^0.23.0" }
-pydantic = "^2.7.4"
-click = "^8.1.7"
 pyyaml = "^6.0.1"
 google = "^3.0.0"
 pendulum = "^3.0.0"
@@ -51,9 +48,6 @@ generate-dotenv = "ot-orchestration.scripts:ot"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.interrogate]
-ignore-init-method = true
 
 # Semi-strict mode for mypy
 [tool.mypy]
