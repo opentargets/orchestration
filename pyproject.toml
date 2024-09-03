@@ -9,9 +9,18 @@ packages = [{ include = "ot_orchestration", from = "src" }]
 
 [tool.poetry.dependencies]
 python = "^3.10, <3.11"
-apache-airflow = {extras = ["apache-beam","async","celery","google","kubernetes","openlineage","postgres","sftp"], version = "^2.9.2"}
+apache-airflow = { extras = [
+  "apache-beam",
+  "async",
+  "celery",
+  "google",
+  "kubernetes",
+  "openlineage",
+  "postgres",
+  "sftp",
+], version = "^2.9.2" }
 apache-airflow-providers-google = "^10.22.0"
-returns = {extras = ["compatible-mypy"], version = "^0.23.0"}
+returns = { extras = ["compatible-mypy"], version = "^0.23.0" }
 pydantic = "^2.7.4"
 click = "^8.1.7"
 pyyaml = "^6.0.1"
@@ -81,9 +90,12 @@ ignore = [
   "D101",    # Missing docstring in public class
 ]
 
-
 [tool.ruff.lint.flake8-quotes]
 docstring-quotes = "double"
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+ignore-decorators = [
+  "airflow.decorators.task",                  # Don't require docstrings for Airflow tasks
+  "airflow.decorators.task_group.task_group", # ^ for airflow task groups
+]
