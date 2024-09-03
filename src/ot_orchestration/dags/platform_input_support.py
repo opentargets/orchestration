@@ -5,19 +5,21 @@ from pathlib import Path
 
 from airflow.models.dag import DAG
 from airflow.models.param import Param
+from airflow.operators.empty import EmptyOperator
 from airflow.providers.google.cloud.operators.compute import (
     ComputeEngineDeleteInstanceOperator,
 )
 
 from ot_orchestration.operators.gce import ComputeEngineRunContainerizedWorkloadSensor
 from ot_orchestration.operators.gcs import UploadConfigOperator
+from ot_orchestration.operators.platform import PISDiffComputeOperator
+from ot_orchestration.utils import clean_name, read_yaml_config
 from ot_orchestration.utils.common import (
     GCP_PROJECT_PLATFORM,
     GCP_REGION,
     platform_dag_kwargs,
     shared_dag_args,
 )
-from ot_orchestration.utils.utils import clean_name, read_yaml_config
 
 PIS_IMAGE = "europe-west1-docker.pkg.dev/open-targets-eu-dev/platform-input-support-test/platform-input-support-test:latest"
 PIS_SACC = "platform-input-support@open-targets-eu-dev.iam.gserviceaccount.com"
@@ -44,17 +46,27 @@ with DAG(
 ) as dag:
     steps = list(CONFIG["steps"].keys())
 
-    u = UploadConfigOperator(
-        task_id="upload_config",
-        project_id=GCP_PROJECT_PLATFORM,
-        src=CONFIG_PATH,
-        dst=GCS_URL + "/config.yaml",
-    )
-
     for step in steps:
         instance_name = f"uo-pis-{clean_name(step)}-{{{{ run_id | strhash }}}}"
 
-        c = ComputeEngineRunContainerizedWorkloadSensor(
+        c = PISDiffComputeOperator(
+            task_id=f"diff_{step}",
+            project_id=GCP_PROJECT_PLATFORM,
+            step_name=step,
+            local_config_path=CONFIG_PATH,
+            upstream_config_url=GCS_URL + "/config.yaml",
+            downstream_task_id=f"upload_config_{step}",
+            joiner_task_id=f"join_{step}",
+        )
+
+        u = UploadConfigOperator(
+            task_id=f"upload_config_{step}",
+            project_id=GCP_PROJECT_PLATFORM,
+            src=CONFIG_PATH,
+            dst=GCS_URL + "/config.yaml",
+        )
+
+        r = ComputeEngineRunContainerizedWorkloadSensor(
             task_id=f"run_{step}",
             instance_name=instance_name,
             labels={"subteam": "backend", "tool": "pis", "run": dag.params["run"]},
@@ -71,8 +83,6 @@ with DAG(
             deferrable=True,
         )
 
-        c.set_upstream(u)
-
         d = ComputeEngineDeleteInstanceOperator(
             task_id=f"delete_vm_{step}",
             project_id=GCP_PROJECT_PLATFORM,
@@ -81,4 +91,7 @@ with DAG(
             trigger_rule="none_failed" if dag.params["keep_failed"] else "all_done",
         )
 
-        d.set_upstream(c)
+        j = EmptyOperator(task_id=f"join_{step}")
+
+        c >> u >> r >> d >> j
+        c >> j
