@@ -1,0 +1,17 @@
+finngen_release_prefix: FINNGEN_R11_
+
+# inputs
+efo_mappings_path: https://raw.githubusercontent.com/opentargets/curation/24.09.1/mappings/disease/manual_string.tsv
+finngen_credible_set_input_glob: gs://finngen-public-data-r11/finemap/summary/*.cred.summary.tsv
+finngen_snp_input_glob: gs://finngen-public-data-r11/finemap/full/susie/*.snp.bgz
+phenotype_table_url: https://r11.finngen.fi/api/phenos
+finngen_summary_stats_url_prefix: gs://finngen-public-data-r11/summary_stats/finngen_R11_
+finngen_summary_stats_url_suffix: ".gz"
+
+# outputs
+credible_set_output_path: gs://finngen_data/r11/credible_set_datasets/finngen_r11_susie
+study_index_output_path: gs://finngen_data/r11/study_index
+
+# cluster setup
+cluster_name: otg-ingestion-finngen
+autoscaling_policy: finngen-preprocess
