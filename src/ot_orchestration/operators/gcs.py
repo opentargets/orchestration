@@ -7,7 +7,7 @@ from airflow.models.baseoperator import BaseOperator
 from google.cloud.storage import Client
 from google.cloud.storage.bucket import Bucket
 
-from ot_orchestration.utils import bucket_name, bucket_path
+from ot_orchestration.utils import GCSPath
 from ot_orchestration.utils.common import GCP_PROJECT_PLATFORM
 
 
@@ -17,9 +17,10 @@ class UploadFileOperator(BaseOperator):
     This operator will create a GCS bucket if it does not exist and upload the
     file to the specified path inside that bucket.
 
-    :param project_id: The GCP project ID. Defaults to the platform project.
-    :param src: The path to the file to upload.
-    :param dst: The destination path in GCS.
+    Args:
+        project_id: The GCP project ID. Defaults to the platform project.
+        src: The path to the file to upload.
+        dst: The destination path in GCS.
     """
 
     template_fields: Sequence[str] = ("src", "dst")
@@ -35,11 +36,10 @@ class UploadFileOperator(BaseOperator):
         super().__init__(*args, **kwargs)
         # try to get upload url from yaml_file
         self.project_id = project_id
-        self.dst = dst
+        self.dst = GCSPath(dst)
         self.src = src
 
-        self.bucket_name = bucket_name(self.dst)
-        self.path = bucket_path(self.dst)
+        self.bucket_name, self.path = self.dst.split()
 
     def execute(self, context) -> None:
         """Upload the configurations to GCS."""

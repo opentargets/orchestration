@@ -11,7 +11,7 @@ from google.api_core.exceptions import NotFound
 from google.cloud.storage import Client
 from google.cloud.storage.bucket import Bucket
 
-from ot_orchestration.utils import bucket_name, bucket_path, read_yaml_config
+from ot_orchestration.utils import GCSPath, read_yaml_config
 from ot_orchestration.utils.common import GCP_PROJECT_PLATFORM
 
 
@@ -28,10 +28,11 @@ class PISDiffComputeOperator(BaseBranchOperator):
     files in the bucket, along with their checksums. That way we can ensure the
     files exist and have not been tampered with.
 
-    :param project_id: The GCP project ID. Defaults to the platform project.
-    :param step_name: The name of the PIS step to check.
-    :param local_config_path: The path to the local configuration file.
-    :param upstream_config_url: The URL of the upstream configuration file.
+    Args:
+        project_id: The GCP project ID. Defaults to the platform project.
+        step_name: The name of the PIS step to check.
+        local_config_path: The path to the local configuration file.
+        upstream_config_url: The URL of the upstream configuration file.
     """
 
     template_fields: Sequence[str] = (
@@ -62,8 +63,9 @@ class PISDiffComputeOperator(BaseBranchOperator):
     def get_upstream_config(self, url: str) -> dict[str, Any]:
         """Download the upstream configuration file and return the relevant part."""
         c = Client(self.project_id)
-        b = Bucket(client=c, name=bucket_name(url))
-        blob = b.blob(bucket_path(url))
+        bucket_name, bucket_path = GCSPath(url).split()
+        b = Bucket(client=c, name=bucket_name)
+        blob = b.blob(bucket_path)
         upstream_config = blob.download_as_bytes()
         return yaml.safe_load(upstream_config)
 
@@ -96,7 +98,7 @@ class PISDiffComputeOperator(BaseBranchOperator):
         should_run = lc["scratchpad"] != uc["scratchpad"] or lc["step"] != uc["step"]
 
         if should_run:
-            self.log.info("Configuration differ, step %s will run", self.step_name)
+            self.log.info("Configuration differs, step %s will run", self.step_name)
             return f"pis_{self.step_name}.upload_config_{self.step_name}"
 
         self.log.info("Configuration is equal, step %s will not run", self.step_name)

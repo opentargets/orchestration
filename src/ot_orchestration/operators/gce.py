@@ -109,6 +109,7 @@ class RateLimitedLoggingClient(logging_v2.Client):
         while True:
             try:
                 entries = super().list_entries(*args, **kwargs)
+                self.request_interval = LOGGING_REQUEST_INTERVAL  # Reset the interval on successful requests
                 break
             except ResourceExhausted:
                 self.log.warning(
@@ -124,15 +125,16 @@ class RateLimitedLoggingClient(logging_v2.Client):
 class CloudLoggingHook(GoogleBaseHook):
     """Hook for the Google Logging service.
 
-    :param gcp_conn_id: The connection ID to use when fetching connection info.
-    :param impersonation_chain: Optional service account to impersonate using short-term
-        credentials, or chained list of accounts required to get the access_token
-        of the last account in the list, which will be impersonated in the request.
-        If set as a string, the account must grant the originating account
-        the Service Account Token Creator IAM role.
-        If set as a sequence, the identities from the list must grant
-        Service Account Token Creator IAM role to the directly preceding identity, with first
-        account from the list granting this role to the originating account.
+    Args:
+        gcp_conn_id: The connection ID to use when connecting to Google Cloud.
+        impersonation_chain: Optional service account to impersonate using short-term
+            credentials, or chained list of accounts required to get the access_token
+            of the last account in the list, which will be impersonated in the request.
+            If set as a string, the account must grant the originating account the
+            Service Account Token Creator IAM role.
+            If set as a sequence, the identities from the list must grant Service Account
+            Token Creator IAM role to the directly preceding identity, with first account
+            from the list granting this role to the originating account.
     """
 
     def __init__(
@@ -162,15 +164,16 @@ class CloudLoggingHook(GoogleBaseHook):
 class CloudLoggingAsyncHook(GoogleBaseHook):
     """Async hook for the Google Logging service.
 
-    :param gcp_conn_id: The connection ID to use when fetching connection info.
-    :param impersonation_chain: Optional service account to impersonate using short-term
-        credentials, or chained list of accounts required to get the access_token
-        of the last account in the list, which will be impersonated in the request.
-        If set as a string, the account must grant the originating account
-        the Service Account Token Creator IAM role.
-        If set as a sequence, the identities from the list must grant
-        Service Account Token Creator IAM role to the directly preceding identity, with first
-        account from the list granting this role to the originating account.
+    Args:
+        gcp_conn_id: The connection ID to use when connecting to Google Cloud.
+        impersonation_chain: Optional service account to impersonate using short-term
+            credentials, or chained list of accounts required to get the access_token
+            of the last account in the list, which will be impersonated in the request.
+            If set as a string, the account must grant the originating account the
+            Service Account Token Creator IAM role.
+            If set as a sequence, the identities from the list must grant Service Account
+            Token Creator IAM role to the directly preceding identity, with first account
+            from the list granting this role to the originating account.
     """
 
     def __init__(
@@ -236,6 +239,7 @@ class CloudLoggingAsyncHook(GoogleBaseHook):
                     filter=query,
                     timeout=300,
                 )
+                self.request_interval = LOGGING_REQUEST_INTERVAL  # Reset the interval on successful requests
                 break
             except ResourceExhausted:
                 self.log.warning(
@@ -280,44 +284,45 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
 
     To enable non-deferrable mode we must implement the poke method properly.
 
-    :param project_id: Optional, the Google Cloud project ID where the job is.
-        If set to None or missing, the default project_id from the Google Cloud connection is used.
-    :param zone: The zone where the instance will be created (default is f'{GCP_REGION}-b').
-    :param instance_name: Name of the instance name that will run the workload.
-    :param labels: Optional dict of labels to apply to the instance on top of the default ones, which
-        are `team: open-targets`, `product: platform`, `environment: development` or `production`,
-        and `created_by: unified-orchestrator`. Refer to `controlled vocabularies
-        <https://github.com/opentargets/controlled-vocabularies/blob/main/infrastructure.yaml>`__ for
-        more information.
-    :param container_image: Container image to run.
-    :param container_command: Command to run inside the container (optional).
-    :param container_args: Arguments to pass to the container (optional).
-    :param container_env: Environment variables to pass to the container (optional).
-    :param container_service_account: Service account to use for the instance (default default).
-    :param container_scopes: A list of extra scopes to add to the service account if any are needed.
-    :param container_files: Files to copy to the instance (optional). This is a dictionary where
-        the key is a GCS path in the form `gs://bucket/path/to/file` and the value is the path
-        where the file will be copied to in the instance. This is intented for small files needed
-        to run the workload (like the configuration). Large files should be downloaded by the
-        workload itself. The paths specified as values will be relative to the `/home/app` directory
-        and will be created if they don't exist. Inside the docker container, they will be mounted
-        under the root directory.
-    :param machine_type: Machine type to use for the instance (default e2-standard-2).
-    :param work_disk_size_gb: If present, a second disk with the specified size in GB will be
-        attached to the instance besides the boot disk, to be used by the workload. The disk will
-        be formatted with ext4 and mounted under `/mnt/disks/work`. The instance will have write
-        permissions to the disk. The disk will be deleted when the instance is deleted.
-    :param gcp_conn_id: The connection ID to use connecting to Google Cloud.
-    :param impersonation_chain: Optional service account to impersonate using short-term
-        credentials, or chained list of accounts required to get the access_token
-        of the last account in the list, which will be impersonated in the request.
-        If set as a string, the account must grant the originating account
-        the Service Account Token Creator IAM role.
-        If set as a sequence, the identities from the list must grant
-        Service Account Token Creator IAM role to the directly preceding identity, with first
-        account from the list granting this role to the originating account (templated).
-    :param deferrable: If True, run the sensor in deferrable mode.
-    :param poll_interval: Time (seconds) to wait between checks for the job status.
+    Args:
+        project_id: Optional, the Google Cloud project ID where the job is.
+            If set to None or missing, the default project_id for platform is used (GCP_PROJECT_PLATFORM).
+        zone: The zone where the instance will be created (default is GCP_ZONE).
+        instance_name: Name of the instance name that will run the workload.
+        labels: Optional dict of labels to apply to the instance on top of the default ones, which
+            are `team: open-targets`, `product: platform`, `environment: development` or `production`,
+            and `created_by: unified-orchestrator`. Refer to `controlled vocabularies
+            <https://github.com/opentargets/controlled-vocabularies/blob/main/infrastructure.yaml>`__
+            for more information.
+        container_image: Container image to run.
+        container_command: Command to run inside the container (optional).
+        container_args: Arguments to pass to the container (optional).
+        container_env: Environment variables to pass to the container (optional).
+        container_service_account: Service account to use for the instance (default default).
+        container_scopes: A list of extra scopes to add to the service account if any are needed.
+        container_files: Files to copy to the instance (optional). This is a dictionary where
+            the key is a GCS path in the form `gs://bucket/path/to/file` and the value is the path
+            where the file will be copied to in the instance. This is intended for small files needed
+            to run the workload (like the configuration). Large files should be downloaded by the
+            workload itself. The paths specified as values will be relative to the `/home/app` directory
+            and all the parents will be created if they don't exist. Inside the docker container,
+            they will be mounted under the root directory.
+        machine_type: Machine type to use for the instance (default e2-standard-2).
+        work_disk_size_gb: If present, a second disk with the specified size in GB will be
+            attached to the instance besides the boot disk, to be used by the workload. The disk will
+            be formatted with ext4 and mounted under `/mnt/disks/work`. The instance will have write
+            permissions to the disk. The disk will be deleted when the instance is deleted.
+        gcp_conn_id: The connection ID to use when connecting to Google Cloud.
+        impersonation_chain: Optional service account to impersonate using short-term
+            credentials, or chained list of accounts required to get the access_token
+            of the last account in the list, which will be impersonated in the request.
+            If set as a string, the account must grant the originating account the
+            Service Account Token Creator IAM role.
+            If set as a sequence, the identities from the list must grant Service Account
+            Token Creator IAM role to the directly preceding identity, with first account
+            from the list granting this role to the originating account.
+        deferrable: If True, run the sensor in deferrable mode.
+        poll_interval: Time (seconds) to wait between checks for the job status.
     """
 
     template_fields: Sequence[str] = (
@@ -423,15 +428,11 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
             orig=( {gcs_files} )
             dest=( {dest_paths} )
             if [ -n "${{dest[*]}}" ]; then
-                for i in "${{!dest[@]}}"; do
-                    if=${{orig[$i]}}
-                    od=$(dirname "${{dest[$i]}}")
-                    if [ "$od" = "." ]; then
-                        od=""
-                    else
-                        mkdir -p "$od"
-                    fi
-                    of=${{dest[$i]}}
+                for d in "${{!dest[@]}}"; do
+                    if=${{orig[$d]}}
+                    od=$(dirname "${{dest[$d]}}")
+                    mkdir -p "$od"
+                    of=${{dest[$d]}}
                     echo "Copying $if to $of ($od)"
                     sudo -u app docker run \
                         -v /home/app/"$od":/downloads/"$od" \
@@ -576,7 +577,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
     def poke(self, context: Context) -> bool:
         """Check if the instance is still running in a synchronous way."""
         # We must implement this if we want to run this sensor in a non-deferrable mode.
-        return False
+        return NotImplementedError
 
     def execute(self, context: Context) -> bool:
         """Set up and execute the sensor, then start the trigger."""
@@ -632,20 +633,21 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
 class ComputeEngineExitCodeTrigger(BaseTrigger):
     """Trigger that checks for the exit code of a google compute engine instance startup script.
 
-    :param instance_name: Name of the instance to check.
-    :param project_id: Optional, the Google Cloud project ID where the job is.
-        If set to None or missing, the default project_id from the Google Cloud connection is used.
-    :param zone: The zone of the VM (for example europe-west1-b).
-    :param gcp_conn_id: The connection ID to use connecting to Google Cloud.
-    :param impersonation_chain: Optional service account to impersonate using short-term
-        credentials, or chained list of accounts required to get the access_token
-        of the last account in the list, which will be impersonated in the request.
-        If set as a string, the account must grant the originating account
-        the Service Account Token Creator IAM role.
-        If set as a sequence, the identities from the list must grant
-        Service Account Token Creator IAM role to the directly preceding identity, with first
-        account from the list granting this role to the originating account (templated).
-    :param poll_sleep: Time (seconds) to wait between two consecutive checks.
+    Args:
+        instance_name: Name of the instance to check.
+        project_id: Optional, the Google Cloud project ID where the job is.
+            If set to None or missing, the default project_id from the Google Cloud connection is used.
+        zone: The zone of the VM (for example europe-west1-b).
+        gcp_conn_id: The connection ID to use when connecting to Google Cloud.
+        impersonation_chain: Optional service account to impersonate using short-term
+            credentials, or chained list of accounts required to get the access_token
+            of the last account in the list, which will be impersonated in the request.
+            If set as a string, the account must grant the originating account the
+            Service Account Token Creator IAM role.
+            If set as a sequence, the identities from the list must grant Service Account
+            Token Creator IAM role to the directly preceding identity, with first account
+            from the list granting this role to the originating account.
+        poll_sleep: Time (seconds) to wait between two consecutive checks.
     """
 
     def __init__(

@@ -9,8 +9,6 @@ from ot_orchestration.utils.path import (
     NativePath,
 )
 from ot_orchestration.utils.utils import (
-    bucket_name,
-    bucket_path,
     check_gcp_folder_exists,
     clean_name,
     read_yaml_config,

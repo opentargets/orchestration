@@ -11,16 +11,6 @@ import yaml
 from google.cloud.storage import Client
 
 
-def bucket_name(gs_url: str) -> str:
-    """Extract the bucket name from a GCS path."""
-    return gs_url.replace("gs://", "").split("/", 1)[0]
-
-
-def bucket_path(gs_url: str) -> str:
-    """Extract the path from a GCS path."""
-    return gs_url.replace("gs://", "").split("/", 1)[1]
-
-
 def check_gcp_folder_exists(bucket_name: str, folder_path: str) -> bool:
     """Check if a folder exists in a Google Cloud bucket.
 
