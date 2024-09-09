@@ -8,14 +8,13 @@ from airflow.models.baseoperator import chain
 from airflow.models.dag import DAG
 from airflow.utils.trigger_rule import TriggerRule
 
-from ot_orchestration.utils import common
+from ot_orchestration.utils import common, read_yaml_config
 from ot_orchestration.utils.dataproc import (
     create_cluster,
     delete_cluster,
     install_dependencies,
     submit_step,
 )
-from ot_orchestration.utils.utils import read_yaml_config
 
 SOURCE_CONFIG_FILE_PATH = Path(__file__).parent / "config" / "finngen_ingestion.yaml"
 config = read_yaml_config(SOURCE_CONFIG_FILE_PATH)
