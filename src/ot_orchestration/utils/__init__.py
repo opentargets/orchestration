@@ -10,6 +10,7 @@ from ot_orchestration.utils.path import (
 )
 from ot_orchestration.utils.utils import (
     check_gcp_folder_exists,
+    clean_name,
     read_yaml_config,
     time_to_seconds,
 )
@@ -18,6 +19,9 @@ __all__ = [
     "IOManager",
     "GCSPath",
     "NativePath",
+    "bucket_name",
+    "bucket_path",
+    "clean_name",
     "check_gcp_folder_exists",
     "read_yaml_config",
     "time_to_seconds",

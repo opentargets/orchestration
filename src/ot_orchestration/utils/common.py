@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import pendulum
 
+from ot_orchestration.utils.utils import clean_label, strhash
+
 GENTROPY_VERSION = "0.0.0"
 
 # Cloud configuration.
 GCP_PROJECT = "open-targets-genetics-dev"
+GCP_PROJECT_PLATFORM = "open-targets-eu-dev"
 GCP_REGION = "europe-west1"
 GCP_ZONE = "europe-west1-d"
 GCP_DATAPROC_IMAGE = "2.1"
@@ -44,11 +47,41 @@ shared_dag_kwargs = {
 }
 
 platform_dag_kwargs = {
-    "start_date": pendulum.now(tz="Europe/London").subtract(days=1),
-    "schedule": "@once",
     "catchup": False,
+    "schedule": None,
+    "start_date": pendulum.now(tz="Europe/London").subtract(days=1),
     "tags": [
         "platform",
         "experimental",
     ],
+    "user_defined_filters": {"strhash": strhash},
 }
+
+platform_shared_labels = lambda project: {
+    "team": "open-targets",
+    "subteam": "backend",
+    "product": "platform",
+    "environment": "development" if "dev" in project else "production",
+    "created_by": "unified-orchestrator",
+}
+
+
+def prepare_labels(
+    custom_labels: dict[str, str] = {},
+    project: str = GCP_PROJECT_PLATFORM,
+) -> dict[str, str]:
+    """Prepare labels for use in google cloud.
+
+    Includes a set of default labels, and ensures that all labels are
+    correctly formatted.
+    note: To use outside platform, a way to override the "product" label should
+    be added.
+
+    Args:
+        custom_labels (dict[str, str]): Custom labels to add to the default labels.
+        project (str): The name of the project. Defaults to GCP_PROJECT_PLATFORM.
+    """
+    labels = platform_shared_labels(project)
+    labels.update(custom_labels)
+
+    return {k: clean_label(v) for k, v in labels.items()}
