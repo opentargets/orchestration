@@ -19,7 +19,7 @@ apache-airflow = { extras = [
   "postgres",
   "sftp",
 ], version = "^2.9.2" }
-apache-airflow-providers-google = "10.22.0"
+apache-airflow-providers-google = "^10.22.0"
 pyyaml = "^6.0.1"
 google = "^3.0.0"
 pendulum = "^3.0.0"
@@ -65,7 +65,6 @@ plugins = ["returns.contrib.mypy.returns_plugin"]
 module = ["google.cloud.storage", "yaml"]
 ignore_missing_imports = true
 
-
 [tool.ruff.lint]
 select = ["D", "I", "E"]
 ignore = [
@@ -85,9 +84,12 @@ ignore = [
   "D101",    # Missing docstring in public class
 ]
 
-
 [tool.ruff.lint.flake8-quotes]
 docstring-quotes = "double"
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+ignore-decorators = [
+  "airflow.decorators.task",                  # Don't require docstrings for Airflow tasks
+  "airflow.decorators.task_group.task_group", # ^ for airflow task groups
+]
