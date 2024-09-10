@@ -3,7 +3,7 @@
 from ot_orchestration.utils.batch import create_batch_job, create_task_spec
 from ot_orchestration.utils.manifest import extract_study_id_from_path
 from ot_orchestration.utils.path import (
-    POSIX_PATH_PATTERN,
+    URI_PATTERN,
     GCSPath,
     IOManager,
     NativePath,
@@ -28,5 +28,5 @@ __all__ = [
     "create_task_spec",
     "create_batch_job",
     "extract_study_id_from_path",
-    "POSIX_PATH_PATTERN",
+    "URI_PATTERN",
 ]

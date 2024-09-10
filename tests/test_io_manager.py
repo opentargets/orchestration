@@ -7,7 +7,7 @@ from typing import Any
 import pytest
 from ot_orchestration.utils import GCSPath, IOManager
 from ot_orchestration.utils.path import (
-    POSIX_PATH_PATTERN,
+    URI_PATTERN,
     GCSPath,
     IOManager,
     NativePath,
@@ -76,15 +76,15 @@ def test_native_path(tmp_path: Path, suffix: str, obj: Any) -> None:
         ),
     ],
 )
-def test_posix_path_regex(
+def test_uri_pattern_regex(
     input_path: str,
     _match: bool,
     protocol: str | None,
     root: str | None,
     path: str | None,
 ) -> None:
-    """Test POSIX path regex."""
-    pattern = re.compile(POSIX_PATH_PATTERN)
+    """Test URI regex pattern."""
+    pattern = re.compile(URI_PATTERN)
     pattern_match = pattern.search(input_path)
 
     if not _match:
