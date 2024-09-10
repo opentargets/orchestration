@@ -1,4 +1,4 @@
-cluster_name: otg-ukb-ppp-eur"
+cluster_name: otg-ukb-ppp-eur
 steps:
   - id: ukb_ppp_eur_sumstat_preprocess
     params:
