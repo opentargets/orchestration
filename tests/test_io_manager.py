@@ -133,8 +133,8 @@ class TestGCSPath:
             ),
         ],
     )
-    def test_segments(self, gcs_path: str, filename: str, prefix: str) -> None:
-        """Test GCSPath object segments return correct values."""
+    def test_segments_property(self, gcs_path: str, filename: str, prefix: str) -> None:
+        """Test GCSPath object segments property return correct values."""
         gcs_path_obj = GCSPath(gcs_path)
         assert isinstance(gcs_path_obj.segments, dict)
         assert set(gcs_path_obj.segments.keys()) == {
@@ -169,7 +169,7 @@ class TestGCSPath:
             ),
         ],
     )
-    def test_path(self, gcs_path: str, path: str) -> None:
+    def test_path_property(self, gcs_path: str, path: str) -> None:
         """Test GCSPath object path property."""
         gcs_path_obj = GCSPath(gcs_path)
         assert gcs_path_obj.path == path
@@ -184,7 +184,7 @@ class TestGCSPath:
             ),
         ],
     )
-    def test_bucket(self, gcs_path: str, bucket: str) -> None:
-        """Test GCSPath object path property."""
+    def test_bucket_property(self, gcs_path: str, bucket: str) -> None:
+        """Test GCSPath object bucket property."""
         gcs_path_obj = GCSPath(gcs_path)
         assert gcs_path_obj.bucket == bucket
