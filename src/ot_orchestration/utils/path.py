@@ -1,5 +1,7 @@
 """Module for Google Cloud Path naive parsers."""
 
+from __future__ import annotations
+
 import concurrent.futures
 import json
 import logging
@@ -16,7 +18,7 @@ from requests.adapters import HTTPAdapter
 
 CHUNK_SIZE = 1024 * 256
 MAX_N_THREADS = 32
-POSIX_PATH_PATTERN = r"^((?P<protocol>.*)://)?(?P<root>[(\w)-]+)/(?P<prefix>([(\w)-/])+?)/(?P<filename>[(\w)-*]+.*){1}"
+POSIX_PATH_PATTERN = r"^^((?P<protocol>.*)://)?(?P<root>[(\w)-]+)/(?P<path>([(\w)-/])+)"
 
 
 class PathSegments(TypedDict):
@@ -209,8 +211,7 @@ class GCSPath(ProtoPath):
         Returns:
             str: Path segment after Bucket Name.
         """
-        # +1 to remove "/" afer bucket name
-        return self._match.group("prefix") + "/" + self._match.group("filename")
+        return self._match.group("path")
 
     def exists(self) -> bool:
         """Check if file exists in Google Cloud Storage.
@@ -276,11 +277,12 @@ class GCSPath(ProtoPath):
         Returns:
             PathSegments: Object with path segments.
         """
+        split = self._match.group("path").split("/")
         return {
             "protocol": self._match.group("protocol"),
             "root": self._match.group("root"),
-            "prefix": self._match.group("prefix"),
-            "filename": self._match.group("filename"),
+            "prefix": "/".join(split[0:-1]),
+            "filename": split[-1],
         }
 
 

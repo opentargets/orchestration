@@ -6,7 +6,12 @@ from typing import Any
 
 import pytest
 from ot_orchestration.utils import GCSPath, IOManager
-from ot_orchestration.utils.path import POSIX_PATH_PATTERN, IOManager, NativePath
+from ot_orchestration.utils.path import (
+    POSIX_PATH_PATTERN,
+    GCSPath,
+    IOManager,
+    NativePath,
+)
 
 
 @pytest.mark.parametrize(
@@ -43,48 +48,44 @@ def test_native_path(tmp_path: Path, suffix: str, obj: Any) -> None:
 
 
 @pytest.mark.parametrize(
-    ["path", "_match", "protocol", "root", "prefix", "filename"],
+    ["input_path", "_match", "protocol", "root", "path"],
     [
         pytest.param(
-            "gs://filename",
+            "gs://bucket_name",
             False,
             None,
             None,
             None,
-            None,
-            id="Regex pattern requires root (bucket) and prefix.",
+            id="Regex pattern requires root (bucket) and path (prefix + filename).",
         ),
         pytest.param(
             "gs://root/filename",
-            False,
-            None,
-            None,
-            None,
-            None,
-            id="Regex pattern requires prefix.",
+            True,
+            "gs",
+            "root",
+            "filename",
+            id="Regex pattern for path with protocol, root and filename - without prefix.",
         ),
         pytest.param(
             "gs://root/prefix/filename",
             True,
             "gs",
             "root",
-            "prefix",
-            "filename",
+            "prefix/filename",
             id="Regex pattern for path with protocol, root, prefix and filename.",
         ),
     ],
 )
 def test_posix_path_regex(
-    path: str,
+    input_path: str,
     _match: bool,
     protocol: str | None,
     root: str | None,
-    prefix: str | None,
-    filename: str | None,
+    path: str | None,
 ) -> None:
     """Test POSIX path regex."""
     pattern = re.compile(POSIX_PATH_PATTERN)
-    pattern_match = pattern.search(path)
+    pattern_match = pattern.search(input_path)
 
     if not _match:
         print(pattern_match)
@@ -93,5 +94,97 @@ def test_posix_path_regex(
         assert pattern_match is not None
         assert pattern_match.group("protocol") == protocol
         assert pattern_match.group("root") == root
-        assert pattern_match.group("prefix") == prefix
-        assert pattern_match.group("filename") == filename
+        assert pattern_match.group("path") == path
+
+
+class TestGCSPath:
+    @pytest.mark.parametrize(
+        ["gcs_path"],
+        [
+            pytest.param("gs://bucket/prefix/filename", id="GCS path with prefix."),
+            pytest.param("gs://bucket/filename", id="GCS path without prefix."),
+        ],
+    )
+    def test_reprint(self, gcs_path: str) -> None:
+        """Test GCSPath object converts correctly back to string."""
+        gcs_path_obj = GCSPath(gcs_path)
+        assert str(gcs_path_obj) == gcs_path
+
+    @pytest.mark.parametrize(
+        ["gcs_path", "filename", "prefix"],
+        [
+            pytest.param(
+                "gs://bucket/prefix/filename",
+                "filename",
+                "prefix",
+                id="GCS path with prefix.",
+            ),
+            pytest.param(
+                "gs://bucket/filename",
+                "filename",
+                "",
+                id="GCS path without prefix.",
+            ),
+            pytest.param(
+                "gs://bucket/longer/path/filename",
+                "filename",
+                "longer/path",
+                id="GCS path without prefix.",
+            ),
+        ],
+    )
+    def test_segments(self, gcs_path: str, filename: str, prefix: str) -> None:
+        """Test GCSPath object segments return correct values."""
+        gcs_path_obj = GCSPath(gcs_path)
+        assert isinstance(gcs_path_obj.segments, dict)
+        assert set(gcs_path_obj.segments.keys()) == {
+            "protocol",
+            "root",
+            "prefix",
+            "filename",
+        }
+        print(gcs_path_obj.segments)
+        assert gcs_path_obj.segments["protocol"] == "gs"
+        assert gcs_path_obj.segments["root"] == "bucket"
+        assert gcs_path_obj.segments["prefix"] == prefix
+        assert gcs_path_obj.segments["filename"] == filename
+
+    @pytest.mark.parametrize(
+        ["gcs_path", "path"],
+        [
+            pytest.param(
+                "gs://bucket/prefix/filename",
+                "prefix/filename",
+                id="GCS path with prefix.",
+            ),
+            pytest.param(
+                "gs://bucket/filename",
+                "filename",
+                id="GCS path without prefix.",
+            ),
+            pytest.param(
+                "gs://bucket/longer/path/filename",
+                "longer/path/filename",
+                id="GCS path without prefix.",
+            ),
+        ],
+    )
+    def test_path(self, gcs_path: str, path: str) -> None:
+        """Test GCSPath object path property."""
+        gcs_path_obj = GCSPath(gcs_path)
+        assert gcs_path_obj.path == path
+
+    @pytest.mark.parametrize(
+        ["gcs_path", "bucket"],
+        [
+            pytest.param(
+                "gs://bucket/prefix/filename",
+                "bucket",
+                id="GCS path with bucket",
+            ),
+        ],
+    )
+    def test_bucket(self, gcs_path: str, bucket: str) -> None:
+        """Test GCSPath object path property."""
+        gcs_path_obj = GCSPath(gcs_path)
+        assert gcs_path_obj.bucket == bucket
