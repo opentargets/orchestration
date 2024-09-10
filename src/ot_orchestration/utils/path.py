@@ -16,7 +16,7 @@ from requests.adapters import HTTPAdapter
 
 CHUNK_SIZE = 1024 * 256
 MAX_N_THREADS = 32
-POSIX_PATH_PATTERN = r"^((?P<protocol>.*)://)?(?P<root>[(\w)-]+)/(?P<prefix>([(\w)-/])+?)/(?P<filename>[(\w)-*]+.*){1}"
+URI_PATTERN = r"^^((?P<protocol>.*)://)?(?P<root>[(\w)-]+)/(?P<path>([(\w)-/])+)"
 
 
 class PathSegments(TypedDict):
@@ -159,7 +159,7 @@ class GCSPath(ProtoPath):
     ):
         self._client = client
         self.gcs_path = gcs_path
-        self.path_pattern = re.compile(POSIX_PATH_PATTERN)
+        self.path_pattern = re.compile(URI_PATTERN)
         self.chunk_size = chunk_size
 
     @cached_property
@@ -209,8 +209,7 @@ class GCSPath(ProtoPath):
         Returns:
             str: Path segment after Bucket Name.
         """
-        # +1 to remove "/" afer bucket name
-        return self._match.group("prefix") + "/" + self._match.group("filename")
+        return self._match.group("path")
 
     def exists(self) -> bool:
         """Check if file exists in Google Cloud Storage.
@@ -276,11 +275,12 @@ class GCSPath(ProtoPath):
         Returns:
             PathSegments: Object with path segments.
         """
+        split = self._match.group("path").split("/")
         return {
             "protocol": self._match.group("protocol"),
             "root": self._match.group("root"),
-            "prefix": self._match.group("prefix"),
-            "filename": self._match.group("filename"),
+            "prefix": "/".join(split[0:-1]),
+            "filename": split[-1],
         }
 
 
@@ -301,7 +301,7 @@ class IOManager:
         - https:// (currently not implemented)
         - ftp:// (currently not implemented)
 
-        Based on registred protocols, the path is resolved to the appropriate Path object.
+        Based on registered protocols, the path is resolved to the appropriate Path object.
         Works only with POSIX path objects.
 
         Args:
@@ -343,7 +343,7 @@ class IOManager:
         """Load many objects by concurrent operations. Thread safe.
 
         By default this method spawns 32 or num of cpus treads depending on which number is
-        closer to the oveall concurrent process count.
+        closer to the overall concurrent process count.
 
         Args:
             paths (list[str]): Paths to read from.
@@ -385,7 +385,7 @@ class IOManager:
         When dumping many objects make sure, you are not writing to the same object multiple times.
 
         By default this method spawns 32 or num of cpus treads depending on which number is
-        closer to the oveall concurrent process count.
+        closer to the overall concurrent process count.
 
         Args:
             objects (list[Any]): Objects to write.
