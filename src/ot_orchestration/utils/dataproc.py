@@ -10,7 +10,6 @@ from airflow.providers.google.cloud.operators.dataproc import (
     DataprocDeleteClusterOperator,
     DataprocSubmitJobOperator,
 )
-from airflow.utils.helpers import chain
 from airflow.utils.trigger_rule import TriggerRule
 from google.cloud import dataproc_v1
 from google.cloud.dataproc_v1 import Job
@@ -260,12 +259,15 @@ def generate_dag(cluster_name: str, tasks: list[DataprocSubmitJobOperator]) -> A
     Returns:
         Any: Airflow DAG.
     """
-    return chain(
-        create_cluster(cluster_name),
-        install_dependencies(cluster_name),
-        tasks,
-        delete_cluster(cluster_name),
-    )
+    create_cluster_task = create_cluster(cluster_name)
+    delete_cluster_task = delete_cluster(cluster_name)
+    for task in tasks:
+        if not task.get_direct_relatives(upstream=True):
+            task.set_upstream(create_cluster_task)
+        if not task.get_direct_relatives(upstream=False):
+            task.set_downstream(delete_cluster_task)
+
+    return tasks
 
 
 def submit_pyspark_job_no_operator(
