@@ -10,108 +10,37 @@ from airflow.operators.python import ShortCircuitOperator
 from airflow.providers.google.cloud.transfers.gcs_to_gcs import GCSToGCSOperator
 from airflow.utils.task_group import TaskGroup
 
-from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
+from ot_orchestration.utils.common import (
+    convert_params_to_hydra_positional_arg,
+    shared_dag_args,
+    shared_dag_kwargs,
+)
 from ot_orchestration.utils.dataproc import generate_dag, submit_step
+from ot_orchestration.utils.path import GCSPath
 from ot_orchestration.utils.utils import check_gcp_folder_exists, read_yaml_config
 
-CLUSTER_NAME = "otg-etl"
 SOURCE_CONFIG_FILE_PATH = Path(__file__).parent / "config" / "genetics_etl.yaml"
-
-# Release specific variables:
-RELEASE_VERSION = "24.08+szsz"
-RELEASE_BUCKET_NAME = "genetics_etl_python_playground"
-
-# Datasource paths:
-GWAS_CATALOG_BUCKET_NAME = "gwas_catalog_data"
-EQTL_BUCKET_NAME = "eqtl_catalogue_data"
-FINNGEN_BUCKET_NAME = "finngen_data"
-FINNGEN_RELEASE = "r11"
+config = read_yaml_config(SOURCE_CONFIG_FILE_PATH)
+steps = config["steps"]
+gwas_catalog_manifests_path = GCSPath(config["gwas_catalog_manifests_path"])
+l2g_gold_standard_path = GCSPath(config["l2g_gold_standard_path"])
+release_dir = GCSPath(config["release_dir"])
 
 # Files to move:
 DATA_TO_MOVE = {
-    # GWAS Catalog summary study index:
-    "gwas_catalog_study_index": {
-        "source_bucket": GWAS_CATALOG_BUCKET_NAME,
-        "source_object": "study_index",
-        "destination_bucket": RELEASE_BUCKET_NAME,
-        "destination_object": f"releases/{RELEASE_VERSION}/study_index/gwas_catalog/",
-    },
-    # PICS credible sets from GWAS Catalog curated associations:
-    "gwas_catalog_curated_credible_set": {
-        "source_bucket": GWAS_CATALOG_BUCKET_NAME,
-        "source_object": "credible_set_datasets/gwas_catalog_PICSed_curated_associations",
-        "destination_bucket": RELEASE_BUCKET_NAME,
-        "destination_object": f"releases/{RELEASE_VERSION}/credible_set/gwas_catalog_PICSed_curated_associations/",
-    },
-    # # PICS credible sets from GWAS Catalog summary statistics:
-    "gwas_catalog_sumstats_credible_set": {
-        "source_bucket": GWAS_CATALOG_BUCKET_NAME,
-        "source_object": "credible_set_datasets/gwas_catalog_PICSed_summary_statistics",
-        "destination_bucket": RELEASE_BUCKET_NAME,
-        "destination_object": f"releases/{RELEASE_VERSION}/credible_set/gwas_catalog_PICSed_summary_statistics/",
-    },
-    # SuSiE credible sets from GWAS Catalog curated associations:
-    "gwas_catalog_curated_susie_credible_set": {
-        "source_bucket": RELEASE_BUCKET_NAME,
-        "source_object": "input/credible_set/gwas_catalog_susie",
-        "destination_bucket": RELEASE_BUCKET_NAME,
-        "destination_object": f"releases/{RELEASE_VERSION}/credible_set/gwas_catalog_curated_studies_susie/",
-    },
     # GWAS Catalog manifest files:
     "gwas_catalog_manifests": {
-        "source_bucket": GWAS_CATALOG_BUCKET_NAME,
-        "source_object": "manifests",
-        "destination_bucket": RELEASE_BUCKET_NAME,
-        "destination_object": f"releases/{RELEASE_VERSION}/manifests/",
-    },
-    # eQTL Catalog study index:
-    "eqtl_catalogue_study_index": {
-        "source_bucket": EQTL_BUCKET_NAME,
-        "source_object": "study_index",
-        "destination_bucket": RELEASE_BUCKET_NAME,
-        "destination_object": f"releases/{RELEASE_VERSION}/study_index/eqtl_catalogue/",
-    },
-    # eQTL Catalog SuSiE credible sets:
-    "eqtl_catalogue_susie_credible_set": {
-        "source_bucket": EQTL_BUCKET_NAME,
-        "source_object": "credible_set_datasets/susie",
-        "destination_bucket": RELEASE_BUCKET_NAME,
-        "destination_object": f"releases/{RELEASE_VERSION}/credible_set/eqtl_catalogue_susie/",
-    },
-    # Finngen study index:
-    "finngen_study_index": {
-        "source_bucket": FINNGEN_BUCKET_NAME,
-        "source_object": f"{FINNGEN_RELEASE}/study_index",
-        "destination_bucket": RELEASE_BUCKET_NAME,
-        "destination_object": f"releases/{RELEASE_VERSION}/study_index/finngen/",
-    },
-    # Finngen SuSiE credible sets:
-    "finngen_susie_credible_set": {
-        "source_bucket": FINNGEN_BUCKET_NAME,
-        "source_object": f"{FINNGEN_RELEASE}/finemapping",
-        "destination_bucket": RELEASE_BUCKET_NAME,
-        "destination_object": f"releases/{RELEASE_VERSION}/credible_set/finngen_susie/",
-    },
-    # UKB PPP eur study index:
-    "UKB_PPP_study_index": {
-        "source_bucket": RELEASE_BUCKET_NAME,
-        "source_object": "output/python_etl/parquet/XX.XX/study_index/ukbiobank",
-        "destination_bucket": RELEASE_BUCKET_NAME,
-        "destination_object": f"releases/{RELEASE_VERSION}/study_index/ukb_ppp_eur/",
-    },
-    # UKB PPP eur credible sets:
-    "ukb_ppp_eur_credible_set": {
-        "source_bucket": RELEASE_BUCKET_NAME,
-        "source_object": "input/credible_set/ukb_ppp_susie",
-        "destination_bucket": RELEASE_BUCKET_NAME,
-        "destination_object": f"releases/{RELEASE_VERSION}/credible_set/ukb_ppp_eur_susie/",
+        "source_bucket": gwas_catalog_manifests_path.bucket,
+        "source_object": gwas_catalog_manifests_path.path,
+        "destination_bucket": release_dir.bucket,
+        "destination_object": f"{release_dir.path}/manifests/",
     },
     # L2G gold standard:
-    "gold_standard": {
-        "source_bucket": RELEASE_BUCKET_NAME,
-        "source_object": "input/l2g/gold_standard/curation.json",
-        "destination_bucket": RELEASE_BUCKET_NAME,
-        "destination_object": f"releases/{RELEASE_VERSION}/locus_to_gene_gold_standard.json",
+    "l2g_gold_standard": {
+        "source_bucket": l2g_gold_standard_path.bucket,
+        "source_object": l2g_gold_standard_path.path,
+        "destination_bucket": release_dir.bucket,
+        "destination_object": f"{release_dir.path}/locus_to_gene_gold_standard.json",
     },
 }
 
@@ -120,10 +49,7 @@ DATA_TO_MOVE = {
 ensure_release_folder_not_exists = ShortCircuitOperator(
     task_id="test_release_folder_exists",
     python_callable=lambda bucket, path: not check_gcp_folder_exists(bucket, path),
-    op_kwargs={
-        "bucket": RELEASE_BUCKET_NAME,
-        "path": f"releases/{RELEASE_VERSION}",
-    },
+    op_kwargs={"bucket": release_dir.bucket, "path": release_dir.path},
 )
 
 with DAG(
@@ -149,21 +75,21 @@ with DAG(
     with TaskGroup(group_id="genetics_etl") as genetics_etl:
         # Parse and define all steps and their prerequisites.
         tasks = {}
-        steps = read_yaml_config(SOURCE_CONFIG_FILE_PATH)
         for step in steps:
-            # Define task for the current step.
             step_id = step["id"]
+            step_params = convert_params_to_hydra_positional_arg(step)
             this_task = submit_step(
-                cluster_name=CLUSTER_NAME,
+                cluster_name=config["cluster_name"],
                 step_id=step_id,
                 task_id=step_id,
+                other_args=step_params,
             )
             # Chain prerequisites.
             tasks[step_id] = this_task
             for prerequisite in step.get("prerequisites", []):
                 this_task.set_upstream(tasks[prerequisite])
 
-        generate_dag(cluster_name=CLUSTER_NAME, tasks=list(tasks.values()))
+        generate_dag(cluster_name=config["cluster_name"], tasks=list(tasks.values()))
 
     # DAG description:
     chain(
