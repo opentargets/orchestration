@@ -7,7 +7,7 @@
 
 Make sure you have [Docker](https://docs.docker.com/get-docker/) and [Google Cloud SDK](https://cloud.google.com/sdk/docs/install) installed on your system.
 
-> [!WARN]
+> [!WARNING]
 > On macOS, the default amount of memory available for Docker might not be enough to get Airflow up and running. Allocate at least 4GB of memory for the Docker Engine (ideally 8GB). [More info](https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html#)
 
 ## 2. Development environment
@@ -16,7 +16,7 @@ Run `make dev`. This command will install Pyenv, Python 3.10, Poetry, pre-commit
 
 ## 3. Set up Google Cloud access
 
-> [!WARN]
+> [!WARNING]
 > Run the next two command with the appropriate Google Cloud project ID and service account name to ensure the correct Google default application credentials are set up.
 
 Authenticate to Google Cloud:
