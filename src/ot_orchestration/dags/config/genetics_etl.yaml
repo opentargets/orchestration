@@ -48,31 +48,31 @@ steps:
         - PALINDROMIC_ALLELE_FLAG
         - SUBSIGNIFICANT_FLAG
       session.write_mode: overwrite
-# - id: "ot_gene_index"
-# - id: "ot_variant_index"
-# - id: "ot_variant_to_gene"
-#   prerequisites:
-#     - credible_set_validation
-#     - "ot_variant_index"
-#     - "ot_gene_index"
-# - id: "ot_colocalisation_ecaviar"
-#   prerequisites:
-#     - credible_set_validation
-# - id: "ot_colocalisation_coloc"
-#   prerequisites:
-#     - credible_set_validation
-# - id: "ot_locus_to_gene_train"
-#   prerequisites:
-#     - credible_set_validation
-#     - "ot_variant_index"
-#     - "ot_variant_to_gene"
-#     - "ot_colocalisation_ecaviar"
-#     - "ot_colocalisation_coloc"
-# - id: "ot_locus_to_gene_predict"
-#   prerequisites:
-#     - credible_set_validation
-#     - "ot_locus_to_gene_train"
-#     - "ot_variant_index"
-#     - "ot_variant_to_gene"
-#     - "ot_colocalisation_ecaviar"
-#     - "ot_colocalisation_coloc"
+  - id: "ot_gene_index"
+  - id: "ot_variant_index"
+  - id: "ot_variant_to_gene"
+    prerequisites:
+      - credible_set_validation
+      - "ot_variant_index"
+      - "ot_gene_index"
+  - id: "ot_colocalisation_ecaviar"
+    prerequisites:
+      - credible_set_validation
+  - id: "ot_colocalisation_coloc"
+    prerequisites:
+      - credible_set_validation
+  - id: "ot_locus_to_gene_train"
+    prerequisites:
+      - credible_set_validation
+      - "ot_variant_index"
+      - "ot_variant_to_gene"
+      - "ot_colocalisation_ecaviar"
+      - "ot_colocalisation_coloc"
+  - id: "ot_locus_to_gene_predict"
+    prerequisites:
+      - credible_set_validation
+      - "ot_locus_to_gene_train"
+      - "ot_variant_index"
+      - "ot_variant_to_gene"
+      - "ot_colocalisation_ecaviar"
+      - "ot_colocalisation_coloc"
