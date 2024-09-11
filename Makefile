@@ -41,3 +41,6 @@ build-airflow-image: generate-requirements  ## build local airflow image for the
 		--tag extending_airflow:latest \
 		-f Dockerfile \
 		--no-cache
+
+upload-gwas-catalog-bucket-readme: ## Upload gwas_catalog_bucket readme to the bucket.
+	@gsutil cp docs/datasources/gwas_catalog_data/README.md gs://gwas_catalog_data/README.md
