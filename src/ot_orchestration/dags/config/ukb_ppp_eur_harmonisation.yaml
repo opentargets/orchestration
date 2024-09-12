@@ -2,11 +2,12 @@ cluster_name: otg-ukb-ppp-eur
 steps:
   - id: ukb_ppp_eur_sumstat_preprocess
     params:
-      raw_study_index_path: gs://gentropy-tmp/batch/output/ukb_ppp_eur/study_index.tsv
+      raw_study_index_path_from_tsv: gs://gentropy-tmp/batch/output/ukb_ppp_eur/study_index.tsv
       raw_summary_stats_path: gs://gentropy-tmp/batch/output/ukb_ppp_eur/summary_stats.parquet
       variant_annotation_path: gs://genetics_etl_python_playground/output/python_etl/parquet/XX.XX/variant_annotation
       tmp_variant_annotation_path: gs://gentropy-tmp/variant_annotation
       study_index_output_path: gs://ukb_ppp_eur_data/study_index
       summary_stats_output_path: gs://ukb_ppp_eur_data/summary_stats
-      # session parameters
-      session.extended_stark_conf.spark.sql.shuffle.partitions: "3200"
+session:
+  extended_stark_conf:
+    spark.sql.shuffle.partitions: "3200"
