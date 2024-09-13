@@ -20,7 +20,7 @@ from ot_orchestration.utils.common import (
     CONFIG_TAG,
     GCP_AUTOSCALING_POLICY,
     GCP_DATAPROC_IMAGE,
-    GCP_PROJECT,
+    GCP_PROJECT_GENETICS,
     GCP_REGION,
     GCP_ZONE,
     GENTROPY_VERSION,
@@ -58,7 +58,7 @@ def create_cluster(
     """
     # Create base cluster configuration.
     cluster_config = ClusterGenerator(
-        project_id=GCP_PROJECT,
+        project_id=GCP_PROJECT_GENETICS,
         zone=GCP_ZONE,
         master_machine_type=master_machine_type,
         worker_machine_type=worker_machine_type,
@@ -74,7 +74,7 @@ def create_cluster(
             "PACKAGE": PACKAGE_WHEEL,
         },
         idle_delete_ttl=30 * 60,  # In seconds.
-        autoscaling_policy=f"projects/{GCP_PROJECT}/regions/{GCP_REGION}/autoscalingPolicies/{autoscaling_policy}",
+        autoscaling_policy=f"projects/{GCP_PROJECT_GENETICS}/regions/{GCP_REGION}/autoscalingPolicies/{autoscaling_policy}",
     ).make()
 
     # If specified, amend the configuration to include local SSDs for worker nodes.
@@ -90,7 +90,7 @@ def create_cluster(
     # Return the cluster creation operator.
     return DataprocCreateClusterOperator(
         task_id="create_cluster",
-        project_id=GCP_PROJECT,
+        project_id=GCP_PROJECT_GENETICS,
         cluster_config=cluster_config,
         region=GCP_REGION,
         cluster_name=cluster_name,
@@ -120,10 +120,10 @@ def submit_job(
     return DataprocSubmitJobOperator(
         task_id=task_id,
         region=GCP_REGION,
-        project_id=GCP_PROJECT,
+        project_id=GCP_PROJECT_GENETICS,
         job={
             "job_uuid": f"airflow-{task_id}",
-            "reference": {"project_id": GCP_PROJECT},
+            "reference": {"project_id": GCP_PROJECT_GENETICS},
             "placement": {"cluster_name": cluster_name},
             job_type: job_specification,
         },
@@ -242,7 +242,7 @@ def delete_cluster(cluster_name: str) -> DataprocDeleteClusterOperator:
     """
     return DataprocDeleteClusterOperator(
         task_id="delete_cluster",
-        project_id=GCP_PROJECT,
+        project_id=GCP_PROJECT_GENETICS,
         cluster_name=cluster_name,
         region=GCP_REGION,
         trigger_rule=TriggerRule.ALL_DONE,
@@ -312,5 +312,5 @@ def submit_pyspark_job_no_operator(
         }
     )
     job_client.submit_job(
-        project_id=GCP_PROJECT, region=GCP_REGION, job=job_description
+        project_id=GCP_PROJECT_GENETICS, region=GCP_REGION, job=job_description
     )

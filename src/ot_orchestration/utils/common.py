@@ -11,7 +11,7 @@ from ot_orchestration.utils import strhash
 GENTROPY_VERSION = "0.0.0"
 
 # Cloud configuration.
-GCP_PROJECT = "open-targets-genetics-dev"
+GCP_PROJECT_GENETICS = "open-targets-genetics-dev"
 GCP_PROJECT_PLATFORM = "open-targets-eu-dev"
 GCP_PROJECT_ZONE = "europe-west1-b"
 GCP_REGION = "europe-west1"
