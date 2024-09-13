@@ -1,21 +1,78 @@
-- id: "ot_gene_index"
-- id: "ot_variant_index"
-- id: "ot_variant_to_gene"
-  prerequisites:
-    - "ot_variant_index"
-    - "ot_gene_index"
-- id: "ot_colocalisation_ecaviar"
-- id: "ot_colocalisation_coloc"
-- id: "ot_locus_to_gene_train"
-  prerequisites:
-    - "ot_variant_index"
-    - "ot_variant_to_gene"
-    - "ot_colocalisation_ecaviar"
-    - "ot_colocalisation_coloc"
-- id: "ot_locus_to_gene_predict"
-  prerequisites:
-    - "ot_locus_to_gene_train"
-    - "ot_variant_index"
-    - "ot_variant_to_gene"
-    - "ot_colocalisation_ecaviar"
-    - "ot_colocalisation_coloc"
+cluster_name: otg-etl
+gwas_catalog_manifests_path: gs://gwas_catalog_data/manifests
+l2g_gold_standard_path: gs://genetics_etl_python_playground/input/l2g/gold_standard/curation.json
+release_dir: gs://genetics_etl_python_playground/releases/24.09
+
+steps:
+  - id: study_validation
+    params:
+      study_index_path:
+        - gs://gwas_catalog_data/study_index
+        - gs://eqtl_catalogue_data/study_index
+        - gs://ukb_ppp_eur_data/study_index
+        - gs://finngen_data/r11/study_index
+      target_index_path: gs://genetics_etl_python_playground/releases/24.06/gene_index
+      disease_index_path: gs://open-targets-pre-data-releases/24.06/output/etl/parquet/diseases
+      valid_study_index_path: &valid_study_index gs://genetics_etl_python_playground/releases/24.09/study_index
+      invalid_study_index_path: gs://genetics_etl_python_playground/releases/24.09/invalid_study_index
+      invalid_qc_reasons:
+        - UNRESOLVED_TARGET
+        - UNRESOLVED_DISEASE
+        - UNKNOWN_STUDY_TYPE
+        - DUPLICATED_STUDY
+        - NO_GENE_PROVIDED
+      session.write_mode: overwrite
+
+  - id: credible_set_validation
+    prerequisites:
+      - study_validation
+    params:
+      study_index_path: *valid_study_index
+      study_locus_path:
+        - gs://gwas_catalog_data/credible_set_datasets/gwas_catalog_PICSed_curated_associations
+        - gs://gwas_catalog_data/credible_set_datasets/gwas_catalog_PICSed_summary_statistics
+        - gs://gwas_catalog_data/credible_set_datasets/gwas_catalog_susie_summary_statistics
+        - gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie/
+        - gs://ukb_ppp_eur_data/credible_set_datasets/ukb_ppp_eur_susie
+        - gs://finngen_data/r11/credible_set_datasets/finngen_r11_susie
+      valid_study_locus_path: &valid_credible_set gs://genetics_etl_python_playground/releases/24.09/credible_set
+      invalid_study_locus_path: gs://genetics_etl_python_playground/releases/24.09/invalid_credible_set
+      invalid_qc_reasons:
+        - DUPLICATED_STUDYLOCUS_ID
+        - AMBIGUOUS_STUDY
+        - FAILED_STUDY
+        - MISSING_STUDY
+        - NO_GENOMIC_LOCATION_FLAG
+        - COMPOSITE_FLAG
+        - INCONSISTENCY_FLAG
+        - PALINDROMIC_ALLELE_FLAG
+        - SUBSIGNIFICANT_FLAG
+      session.write_mode: overwrite
+  - id: "ot_gene_index"
+  - id: "ot_variant_index"
+  - id: "ot_variant_to_gene"
+    prerequisites:
+      - credible_set_validation
+      - "ot_variant_index"
+      - "ot_gene_index"
+  - id: "ot_colocalisation_ecaviar"
+    prerequisites:
+      - credible_set_validation
+  - id: "ot_colocalisation_coloc"
+    prerequisites:
+      - credible_set_validation
+  - id: "ot_locus_to_gene_train"
+    prerequisites:
+      - credible_set_validation
+      - "ot_variant_index"
+      - "ot_variant_to_gene"
+      - "ot_colocalisation_ecaviar"
+      - "ot_colocalisation_coloc"
+  - id: "ot_locus_to_gene_predict"
+    prerequisites:
+      - credible_set_validation
+      - "ot_locus_to_gene_train"
+      - "ot_variant_index"
+      - "ot_variant_to_gene"
+      - "ot_colocalisation_ecaviar"
+      - "ot_colocalisation_coloc"
