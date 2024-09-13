@@ -24,8 +24,6 @@ __all__ = [
     "IOManager",
     "GCSPath",
     "NativePath",
-    "bucket_name",
-    "bucket_path",
     "clean_name",
     "check_gcp_folder_exists",
     "random_id",
