@@ -8,6 +8,3 @@ steps:
       tmp_variant_annotation_path: gs://gentropy-tmp/variant_annotation
       study_index_output_path: gs://finngen_ukb_meta_data/study_index
       summary_stats_output_path: gs://finngen_ukb_meta_data/summary_stats
-session:
-  extended_stark_conf:
-    spark.sql.shuffle.partitions: "3200"
