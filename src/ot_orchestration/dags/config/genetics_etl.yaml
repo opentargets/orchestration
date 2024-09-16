@@ -47,6 +47,7 @@ steps:
         - INCONSISTENCY_FLAG
         - PALINDROMIC_ALLELE_FLAG
         - SUBSIGNIFICANT_FLAG
+        - LD_CLUMPED
       session.write_mode: overwrite
   - id: "ot_gene_index"
   - id: "ot_variant_index"
