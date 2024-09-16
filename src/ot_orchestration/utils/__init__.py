@@ -11,6 +11,7 @@ from ot_orchestration.utils.path import (
 from ot_orchestration.utils.utils import (
     check_gcp_folder_exists,
     clean_name,
+    random_id,
     read_hocon_config,
     read_yaml_config,
     strhash,
@@ -27,6 +28,7 @@ __all__ = [
     "bucket_path",
     "clean_name",
     "check_gcp_folder_exists",
+    "random_id",
     "read_hocon_config",
     "read_yaml_config",
     "time_to_seconds",

@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import hashlib
+import random
 import re
+import string
 from pathlib import Path
 from typing import Any
 
@@ -81,6 +83,11 @@ def to_hocon(config: pyhocon.ConfigTree) -> str:
 def strhash(s: str) -> str:
     """Create a simple hash from a string."""
     return hashlib.sha256(s.encode()).hexdigest()[:5]
+
+
+def random_id(length: int = 5) -> str:
+    """Create a random string of a given length."""
+    return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
 
 
 def time_to_seconds(time_str: str) -> int:
