@@ -11,8 +11,11 @@ from ot_orchestration.utils.path import (
 from ot_orchestration.utils.utils import (
     check_gcp_folder_exists,
     clean_name,
+    read_hocon_config,
     read_yaml_config,
     time_to_seconds,
+    to_hocon,
+    to_yaml,
 )
 
 __all__ = [
@@ -23,8 +26,11 @@ __all__ = [
     "bucket_path",
     "clean_name",
     "check_gcp_folder_exists",
+    "read_hocon_config",
     "read_yaml_config",
     "time_to_seconds",
+    "to_hocon",
+    "to_yaml",
     "create_task_spec",
     "create_batch_job",
     "extract_study_id_from_path",

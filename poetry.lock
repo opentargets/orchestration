@@ -5860,6 +5860,22 @@ files = [
 windows-terminal = ["colorama (>=0.4.6)"]
 
 [[package]]
+name = "pyhocon"
+version = "0.3.61"
+description = "HOCON parser for Python"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pyhocon-0.3.61-py3-none-any.whl", hash = "sha256:73d0f064af9a7d454949c5557284ce1d716cfd8e1383ecc90095fc575d278df0"},
+]
+
+[package.dependencies]
+pyparsing = {version = ">=2,<4", markers = "python_version >= \"3.0\""}
+
+[package.extras]
+duration = ["python-dateutil (>=2.8.0)"]
+
+[[package]]
 name = "pyjsparser"
 version = "2.7.1"
 description = "Fast javascript parser (based on esprima.js)"
@@ -7704,4 +7720,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10, <3.11"
-content-hash = "116fc847ae63d81b3e648b46e11df5064569aa734f2ace03a2abd9e271f6d20b"
+content-hash = "c3a428c92e2c09d5d9b28f4b68a09cf0a309056d538589656ecf271695c46db5"

@@ -7,6 +7,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+import pyhocon
 import yaml
 from google.cloud.storage import Client
 
@@ -60,6 +61,31 @@ def read_yaml_config(config_path: Path | str) -> Any:
     assert config_path.exists(), f"YAML config path {config_path} does not exists"
     with open(config_path) as config_file:
         return yaml.safe_load(config_file)
+
+
+def to_yaml(config: dict) -> str:
+    """Convert a dictionary to a YAML string."""
+    return yaml.dump(config)
+
+
+def read_hocon_config(config_path: Path | str) -> Any:
+    """Parse a HOCON config file and do all necessary checks.
+
+    Args:
+        config_path (Path | str): Path to the HOCON config file.
+
+    Returns:
+        Any: Parsed HOCON config file.
+    """
+    config_path = config_path if isinstance(config_path, Path) else Path(config_path)
+    assert config_path.exists(), f"HOCON config path {config_path} does not exists"
+    with open(config_path) as config_file:
+        return pyhocon.ConfigFactory.parse_string(config_file.read())
+
+
+def to_hocon(config: pyhocon.ConfigTree) -> str:
+    """Convert a ConfigTree to a HOCON string."""
+    return pyhocon.HOCONConverter.to_hocon(config)
 
 
 def strhash(s: str) -> str:
