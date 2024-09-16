@@ -32,8 +32,9 @@ etl_steps:
 
   - name: otar
     depends_on:
-      - pis_otar
       - etl_disease
+    depends_on_ppp:
+      - pis_otar # this extra dependency is added in ppp runs
   - name: target
     depends_on:
       - pis_target

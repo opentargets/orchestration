@@ -102,7 +102,7 @@ class PlatformConfig:
         # ppp - if not ppp, remove 'otar' and 'pppevidence' steps
         if not self.is_ppp:
             pis_raw_conf["steps"].pop("otar", None)
-            pis_raw_conf["steps"].pop("pppevidence", None)
+            pis_raw_conf["steps"].pop("ppp_evidence", None)
 
         return pis_raw_conf
 
