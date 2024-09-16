@@ -1,0 +1,101 @@
+gcs_url: gs://open-targets-pre-data-releases/24.06dev-test-config
+
+pis_version: 24.6.0
+etl_version: 24.1.0
+
+chembl_version: '34'
+efo_version: v3.68.0
+ensembl_version: '112'
+
+is_ppp: false
+
+# At the moment, there is no way to determine the dependencies
+# of the different steps in the ETL stage. The ETL config file
+# (see https://github.com/opentargets/platform-etl-backend/blob/master/src/main/resources/reference.conf)
+# lacks an explicit definition of dependencies in the step definition.
+# This is the next best option, but it is far from ideal.
+#
+# Any dependency change has to be reflected here _manually_.
+etl_steps:
+  - name: go
+    depends_on:
+      - pis_go
+  - name: disease
+    depends_on:
+      - pis_disease
+  - name: expression
+    depends_on:
+      - pis_expression
+  - name: reactome
+    depends_on:
+      - pis_reactome
+
+  - name: otar
+    depends_on:
+      - pis_otar
+      - etl_disease
+  - name: target
+    depends_on:
+      - pis_target
+      - pis_homologues
+      - etl_reactome
+
+  - name: drug
+    depends_on:
+      - pis_drug
+      - etl_target
+      - etl_disease
+  - name: facetsearch
+    depends_on:
+      - etl_target
+      - etl_disease
+      - etl_go
+  - name: interactions
+    depends_on:
+      - pis_interactions
+      - etl_target
+  - name: targetValidation
+    depends_on:
+      - pis_mouse_phenotypes
+      - etl_target
+
+  - name: fda
+    depends_on:
+      - pis_openfda
+      - etl_drug
+  - name: literature
+    depends_on:
+      - pis_literature
+      - etl_drug
+  - name: pharmacogenomics
+    depends_on:
+      - pis_pharmacogenomics
+      - etl_drug
+  - name: targetengine
+    depends_on:
+      - pis_target_engine
+      - etl_drug
+
+  - name: evidence
+    depends_on:
+      - pis_evidence
+      - etl_literature
+    depends_on_ppp: # this extra dependency is added in ppp runs
+      - pis_ppp_evidence
+
+  - name: association
+    depends_on:
+      - etl_evidence
+  - name: associationOTF
+    depends_on:
+      - etl_evidence
+  - name: knownDrug
+    depends_on:
+      - etl_evidence
+
+  - name: ebisearch
+    depends_on:
+      - etl_association
+  - name: search
+    depends_on:
+      - etl_association
