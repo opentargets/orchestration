@@ -3,7 +3,6 @@
 from google.cloud.batch_v1 import (
     AllocationPolicy,
     ComputeResource,
-    Environment,
     Job,
     LifecyclePolicy,
     LogsPolicy,
@@ -14,28 +13,23 @@ from google.cloud.batch_v1 import (
 from ot_orchestration.utils import common
 
 
-def finemapping_batch_jobs(
-    study_locus_paths: list[str],
-    output_paths: list[str],
+def finemapping_batch_job(
     study_index_path: str,
+    study_locus_manifest_path: str,
+    task_count: int,
     docker_image_url: str = common.GENTROPY_DOCKER_IMAGE,
-) -> list[Job]:
-    """Create a list of Batch jobs to run fine-mapping based on a list of study loci.
+) -> Job:
+    """Create a Batch job to run fine-mapping based on an input-output manifest.
 
     Args:
-        study_locus_paths (list[str]): The list of study loci (full gs:// paths) to fine-map.
-        output_paths (list[str]): The list of output locations, corresponding to study locus paths.
         study_index_path (str): The path to the study index.
+        study_locus_manifest_path (str): Path to the CSV manifest containing all study locus input and output locations. Should contain two columns: study_locus_input and study_locus_output
+        task_count (int): Total number of tasks in a job to run.
         docker_image_url (str): The URL of the Docker image to use for the job. By default, use a project wide image.
 
     Returns:
-        list[Job]: A Batch job to run fine-mapping on the given study loci.
+        Job: A Batch job to run fine-mapping on the given study loci.
     """
-    # Check that the input parameters make sense.
-    assert len(study_locus_paths) == len(
-        output_paths
-    ), "The length of study_locus_paths and output_paths must be the same."
-
     # Define runnable: container and parameters to use.
     runnable = Runnable(
         container=Runnable.Container(
@@ -46,9 +40,9 @@ def finemapping_batch_jobs(
                 (
                     "poetry run gentropy "
                     "step=susie_finemapping "
-                    'step.study_locus_to_finemap="$INPUTPATH" '
-                    'step.output_path="$OUTPUTPATH" '
                     f"step.study_index_path={study_index_path} "
+                    f"step.study_locus_manifest_path={study_locus_manifest_path} "
+                    "step.study_locus_index=$BATCH_TASK_INDEX "
                     "step.max_causal_snps=10 "
                     "step.primary_signal_pval_threshold=1 "
                     "step.secondary_signal_pval_threshold=1 "
@@ -89,23 +83,11 @@ def finemapping_batch_jobs(
         ],
     )
 
-    # Define task environments: individual configuration for each of the tasks.
-    task_environments = [
-        Environment(
-            variables={
-                "INPUTPATH": '"' + input_path + '"',
-                "OUTPUTPATH": '"' + output_path + '"',
-            }
-        )
-        for input_path, output_path in zip(study_locus_paths, output_paths)
-    ]
-
     # Define task group: collection of parameterised tasks.
     task_group = TaskGroup(
         task_spec=task_spec,
-        task_environments=task_environments,
         parallelism=2000,
-        task_count=len(study_locus_paths),
+        task_count=task_count,
     )
 
     # Define allocation policy: method of mapping a task group to compute resources.
@@ -122,8 +104,8 @@ def finemapping_batch_jobs(
     )
 
     # Define and return job: a complete description of the workload, ready to be submitted to Google Batch.
-    return [Job(
+    return Job(
         task_groups=[task_group],
         allocation_policy=allocation_policy,
         logs_policy=LogsPolicy(destination=LogsPolicy.Destination.CLOUD_LOGGING),
-    )]
+    )
