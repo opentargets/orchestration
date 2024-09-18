@@ -1,5 +1,10 @@
 """A reusable template for finemapping jobs."""
 
+import time
+
+from airflow.providers.google.cloud.operators.cloud_batch import (
+    CloudBatchSubmitJobOperator,
+)
 from google.cloud import storage
 from google.cloud.batch_v1 import (
     AllocationPolicy,
@@ -56,6 +61,7 @@ def finemapping_batch_job(
                     "step.carma_time_limit=600 "
                     "step.imputed_r2_threshold=0.9 "
                     "step.ld_score_threshold=5 "
+                    "step.carma_tau=0.15 "
                     "+step.session.extended_spark_conf={spark.jars:https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop3-latest.jar} "
                     "+step.session.extended_spark_conf={spark.dynamicAllocation.enabled:false} "
                     "+step.session.extended_spark_conf={spark.driver.memory:30g} "
@@ -142,7 +148,7 @@ def generate_manifests_for_finemapping(
     manifest_prefix: str,
     output_path: str,
     max_records_per_chunk: int = 100_000,
-) -> list[(str, int)]:
+) -> list[(int, str, int)]:
     """Starting from collected_loci, generate manifests for finemapping, splitting in chunks of at most 100,000 records.
 
     Args:
@@ -152,7 +158,7 @@ def generate_manifests_for_finemapping(
         max_records_per_chunk (int): Maximum number of records per one chunk. Defaults to 100,000, which is the maximum number of tasks per job that Google Batch supports.
 
     Return:
-        list[(str, int)]: List of tuples, where the first value is a path to manifest, and second is the number of records in that manifest.
+        list[(int, str, int)]: List of tuples, where the first value is index of the manifest, the second value is a path to manifest, and the third is the number of records in that manifest.
     """
     # Get list of loci from the input Google Storage path.
     client = storage.Client()
@@ -160,7 +166,7 @@ def generate_manifests_for_finemapping(
     bucket = client.get_bucket(bucket_name)
     blobs = bucket.list_blobs(prefix=prefix)
     all_loci = [
-        blob.name[:-1]
+        blob.name[:-1].split("/")[-1]
         for blob in blobs
         if "studyLocusId" in blob.name and blob.name.endswith("/")
     ]
@@ -183,7 +189,24 @@ def generate_manifests_for_finemapping(
         manifest_path = f"{manifest_prefix}/chunk_{i}"
         upload_strings_to_gcs(lines, manifest_path)
         all_manifests.append(
-            (manifest_path, len(chunk)),
+            (i, manifest_path, len(chunk)),
         )
 
     return all_manifests
+
+
+class FinemappingBatchOperator(CloudBatchSubmitJobOperator):
+    def __init__(self, manifest: list[int, str, int], study_index_path: str, **kwargs):
+        i, manifest_path, num_of_tasks = manifest
+        super().__init__(
+            project_id=common.GCP_PROJECT,
+            region=common.GCP_REGION,
+            job_name=f"finemapping-job-{i}-{time.strftime('%Y%m%d-%H%M%S')}",
+            job=finemapping_batch_job(
+                study_index_path=study_index_path,
+                study_locus_manifest_path=manifest_path,
+                task_count=num_of_tasks,
+            ),
+            deferrable=False,
+            **kwargs,
+        )
