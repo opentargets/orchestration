@@ -1,16 +1,17 @@
+"""A reusable template for finemapping jobs."""
+
 from google.cloud.batch_v1 import (
     AllocationPolicy,
     ComputeResource,
     Environment,
+    Job,
     LifecyclePolicy,
     LogsPolicy,
-    TaskSpec,
-    TaskGroup,
     Runnable,
-    Job,
+    TaskGroup,
+    TaskSpec,
 )
-
-import common_airflow as common
+from ot_orchestration.utils import common
 
 
 def finemapping_batch_job(
@@ -23,9 +24,8 @@ def finemapping_batch_job(
 
     Args:
         study_locus_paths (list[str]): The list of study loci (full gs:// paths) to fine-map.
+        output_paths (list[str]): The list of output locations, corresponding to study locus paths.
         study_index_path (str): The path to the study index.
-        output_path (str): The path to store the output.
-        output_path_log (str): The path to store the finemapping logs.
         docker_image_url (str): The URL of the Docker image to use for the job. By default, use a project wide image.
 
     Returns:

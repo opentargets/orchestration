@@ -5,13 +5,14 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-import common_airflow as common
 from airflow.decorators import task
 from airflow.models.dag import DAG
 from airflow.providers.google.cloud.operators.cloud_batch import (
     CloudBatchSubmitJobOperator,
 )
-from templates.finemapping import finemapping_batch_job
+
+from ot_orchestration.templates.finemapping import finemapping_batch_job
+from ot_orchestration.utils import common
 
 STUDY_LOCUS_BASE_PATH = (
     "gs://gentropy-tmp/tskir/ukb_ppp_eur_data_collected_patched_2024_07_09"
