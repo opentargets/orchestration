@@ -11,7 +11,7 @@ from airflow.providers.google.cloud.operators.cloud_batch import (
     CloudBatchSubmitJobOperator,
 )
 
-from ot_orchestration.templates.finemapping import finemapping_batch_job
+from ot_orchestration.templates.finemapping import finemapping_batch_jobs
 from ot_orchestration.utils import common
 
 STUDY_LOCUS_BASE_PATH = (
@@ -38,20 +38,23 @@ INPUT_PATHS = [f"{STUDY_LOCUS_BASE_PATH}/{L}" for L in LOCI]
 OUTPUT_PATHS = [f"{OUTPUT_BASE_PATH}/{L}" for L in LOCI]
 
 @task(task_id="finemapping_task")
-def finemapping_task() -> CloudBatchSubmitJobOperator:
-    """Submit a Batch job to run fine-mapping on a list of study loci."""
-    return CloudBatchSubmitJobOperator(
-        task_id="finemapping_batch_job",
-        project_id=common.GCP_PROJECT,
-        region=common.GCP_REGION,
-        job_name=f"finemapping-job-{time.strftime('%Y%m%d-%H%M%S')}",
-        job=finemapping_batch_job(
-            study_locus_paths = [],
-            output_paths = [],
+def finemapping_tasks() -> list[CloudBatchSubmitJobOperator]:
+    """Generate a list of Batch job operators to submit finemapping processing."""
+    return [
+        CloudBatchSubmitJobOperator(
+            task_id="finemapping_batch_job_{i}",
+            project_id=common.GCP_PROJECT,
+            region=common.GCP_REGION,
+            job_name=f"finemapping-job-{i}-{time.strftime('%Y%m%d-%H%M%S')}",
+            job=batch_job,
+            deferrable=False
+        )
+        for i, batch_job in enumerate(finemapping_batch_jobs(
+            study_locus_paths = INPUT_PATHS,
+            output_paths = OUTPUT_PATHS,
             study_index_path = STUDY_INDEX_PATH
-        ),
-        deferrable=False
-    )
+        ))
+    ]
 
 with DAG(
     dag_id=Path(__file__).stem,
@@ -60,5 +63,5 @@ with DAG(
     **common.shared_dag_kwargs,
 ) as dag:
     (
-        finemapping_task()
+        finemapping_tasks()
     )

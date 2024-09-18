@@ -14,13 +14,13 @@ from google.cloud.batch_v1 import (
 from ot_orchestration.utils import common
 
 
-def finemapping_batch_job(
+def finemapping_batch_jobs(
     study_locus_paths: list[str],
     output_paths: list[str],
     study_index_path: str,
     docker_image_url: str = common.GENTROPY_DOCKER_IMAGE,
-) -> Job:
-    """Create a Batch job to run fine-mapping on a list of study loci.
+) -> list[Job]:
+    """Create a list of Batch jobs to run fine-mapping based on a list of study loci.
 
     Args:
         study_locus_paths (list[str]): The list of study loci (full gs:// paths) to fine-map.
@@ -29,7 +29,7 @@ def finemapping_batch_job(
         docker_image_url (str): The URL of the Docker image to use for the job. By default, use a project wide image.
 
     Returns:
-        Job: A Batch job to run fine-mapping on the given study loci.
+        list[Job]: A Batch job to run fine-mapping on the given study loci.
     """
     # Check that the input parameters make sense.
     assert len(study_locus_paths) == len(
@@ -122,8 +122,8 @@ def finemapping_batch_job(
     )
 
     # Define and return job: a complete description of the workload, ready to be submitted to Google Batch.
-    return Job(
+    return [Job(
         task_groups=[task_group],
         allocation_policy=allocation_policy,
         logs_policy=LogsPolicy(destination=LogsPolicy.Destination.CLOUD_LOGGING),
-    )
+    )]
