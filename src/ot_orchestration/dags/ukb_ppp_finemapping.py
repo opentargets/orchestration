@@ -11,7 +11,7 @@ from airflow.providers.google.cloud.operators.cloud_batch import (
     CloudBatchSubmitJobOperator,
 )
 
-from ot_orchestration.templates.finemapping import finemapping_batch_jobs
+from ot_orchestration.templates.finemapping import finemapping_batch_job
 from ot_orchestration.utils import common
 
 STUDY_LOCUS_BASE_PATH = (
@@ -49,7 +49,7 @@ def finemapping_tasks() -> list[CloudBatchSubmitJobOperator]:
             job=batch_job,
             deferrable=False
         )
-        for i, batch_job in enumerate(finemapping_batch_jobs(
+        for i, batch_job in enumerate(finemapping_batch_job(
             study_locus_paths = INPUT_PATHS,
             output_paths = OUTPUT_PATHS,
             study_index_path = STUDY_INDEX_PATH

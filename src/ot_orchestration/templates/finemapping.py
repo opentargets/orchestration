@@ -1,5 +1,7 @@
 """A reusable template for finemapping jobs."""
 
+
+from google.cloud import storage
 from google.cloud.batch_v1 import (
     AllocationPolicy,
     ComputeResource,
@@ -109,3 +111,80 @@ def finemapping_batch_job(
         allocation_policy=allocation_policy,
         logs_policy=LogsPolicy(destination=LogsPolicy.Destination.CLOUD_LOGGING),
     )
+
+
+def upload_strings_to_gcs(strings_list: list[str], csv_upload_path: str) -> None:
+    """Upload a list of strings directly to Google Cloud Storage as a single blob.
+
+    Args:
+        strings_list (List[str]): The list of strings to be uploaded.
+        csv_upload_path (str): The full Google Storage path (gs://bucket_name/path/to/file.csv) where the data will be uploaded.
+
+    Returns:
+        None
+    """
+    # Join the list of strings with newlines to form the content.
+    content = "\n".join(strings_list)
+
+    # Extract bucket and path from csv_upload_path (format: gs://bucket_name/path/to/file.csv).
+    bucket_name, file_path = csv_upload_path.replace("gs://", "").split("/", 1)
+
+    # Initialise the Google Cloud Storage client.
+    client = storage.Client()
+    bucket = client.get_bucket(bucket_name)
+    blob = bucket.blob(file_path)
+
+    # Upload the joined content directly.
+    blob.upload_from_string(content, content_type="text/plain")
+
+
+def generate_manifests_for_finemapping(
+    collected_loci: str,
+    manifest_prefix: str,
+    output_path: str,
+    max_records_per_chunk: int = 100_000,
+) -> list[(str, int)]:
+    """Starting from collected_loci, generate manifests for finemapping, splitting in chunks of at most 100,000 records.
+
+    Args:
+        collected_loci (str): Google Storage path for collected loci.
+        manifest_prefix (str): Google Storage path prefix for uploading the manifests.
+        output_path (str): Google Storage path to store the finemapping results.
+        max_records_per_chunk (int): Maximum number of records per one chunk. Defaults to 100,000, which is the maximum number of tasks per job that Google Batch supports.
+
+    Return:
+        list[(str, int)]: List of tuples, where the first value is a path to manifest, and second is the number of records in that manifest.
+    """
+    # Get list of loci from the input Google Storage path.
+    client = storage.Client()
+    bucket_name, prefix = collected_loci.replace("gs://", "").split("/", 1)
+    bucket = client.get_bucket(bucket_name)
+    blobs = bucket.list_blobs(prefix=prefix)
+    all_loci = [
+        blob.name[:-1]
+        for blob in blobs
+        if "studyLocusId" in blob.name and blob.name.endswith("/")
+    ]
+
+    # Generate full list of input-output file paths.
+    inputs_outputs = [
+        f"{collected_loci}/{locus},{output_path}/{locus}" for locus in all_loci
+    ]
+
+    # Split into chunks of max size, as specified.
+    split_inputs_outputs = [
+        inputs_outputs[i : i + max_records_per_chunk]
+        for i in range(0, len(inputs_outputs), max_records_per_chunk)
+    ]
+
+    # Generate and upload manifests.
+    all_manifests = []
+    for i, chunk in enumerate(split_inputs_outputs):
+        lines = ["study_locus_input,study_locus_output"] + chunk
+        manifest_path = f"{manifest_prefix}/chunk_{i}"
+        upload_strings_to_gcs(lines, manifest_path)
+        all_manifests.append(
+            (manifest_path, len(chunk)),
+        )
+
+    return all_manifests
