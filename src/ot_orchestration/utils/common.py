@@ -16,6 +16,11 @@ GCP_ZONE = "europe-west1-d"
 GCP_DATAPROC_IMAGE = "2.1"
 GCP_AUTOSCALING_POLICY = "otg-etl"
 
+# Image configuration.
+GENTROPY_DOCKER_IMAGE = (
+    "europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:dev"
+)
+
 # Cluster init configuration.
 INITIALISATION_BASE_PATH = (
     f"gs://genetics_etl_python_playground/initialisation/{GENTROPY_VERSION}"
