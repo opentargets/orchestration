@@ -37,7 +37,7 @@ with DAG(
     )
     for i, (manifest_path, num_of_tasks) in enumerate(manifests):
         task = CloudBatchSubmitJobOperator(
-            task_id="finemapping_batch_job_{i}",
+            task_id=f"finemapping_batch_job_{i}",
             project_id=common.GCP_PROJECT,
             region=common.GCP_REGION,
             job_name=f"finemapping-job-{i}-{time.strftime('%Y%m%d-%H%M%S')}",
@@ -46,5 +46,5 @@ with DAG(
                 study_locus_manifest_path=manifest_path,
                 task_count=num_of_tasks,
             ),
-            deferrable=False
+            deferrable=False,
         )

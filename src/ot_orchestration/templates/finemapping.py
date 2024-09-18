@@ -1,6 +1,5 @@
 """A reusable template for finemapping jobs."""
 
-
 from google.cloud import storage
 from google.cloud.batch_v1 import (
     AllocationPolicy,
@@ -35,7 +34,7 @@ def finemapping_batch_job(
     # Define runnable: container and parameters to use.
     runnable = Runnable(
         container=Runnable.Container(
-            image_url=docker_image_url,
+            image_uri=docker_image_url,
             entrypoint="/bin/sh",
             commands=[
                 "-c",
@@ -72,7 +71,7 @@ def finemapping_batch_job(
     # Define task spec: runnable, compute resources, retry and lifecycle policies; shared between all tasks.
     task_spec = TaskSpec(
         runnables=[runnable],
-        resources=ComputeResource(cpu_milli=4000, memory_mib=25000),
+        compute_resource=ComputeResource(cpu_milli=4000, memory_mib=25000),
         max_run_duration="7200s",
         max_retry_count=5,
         lifecycle_policies=[
