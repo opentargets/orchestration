@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import hashlib
+import random
 import re
+import string
 from pathlib import Path
 from typing import Any
 
+import pyhocon
 import yaml
 from google.cloud.storage import Client
 
@@ -25,16 +28,6 @@ def check_gcp_folder_exists(bucket_name: str, folder_path: str) -> bool:
     bucket = client.get_bucket(bucket_name)
     blobs = bucket.list_blobs(prefix=folder_path)
     return any(blobs)
-
-
-def clean_label(label: str) -> str:
-    """Clean a label for use in google cloud.
-
-    According to the docs: The value can only contain lowercase letters, numeric
-    characters, underscores and dashes. The value can be at most 63 characters
-    long.
-    """
-    return re.sub(r"[^a-z0-9-_]", "-", label.lower())[0:63]
 
 
 def clean_name(name: str) -> str:
@@ -62,9 +55,39 @@ def read_yaml_config(config_path: Path | str) -> Any:
         return yaml.safe_load(config_file)
 
 
+def to_yaml(config: dict) -> str:
+    """Convert a dictionary to a YAML string."""
+    return yaml.dump(config)
+
+
+def read_hocon_config(config_path: Path | str) -> Any:
+    """Parse a HOCON config file and do all necessary checks.
+
+    Args:
+        config_path (Path | str): Path to the HOCON config file.
+
+    Returns:
+        Any: Parsed HOCON config file.
+    """
+    config_path = config_path if isinstance(config_path, Path) else Path(config_path)
+    assert config_path.exists(), f"HOCON config path {config_path} does not exists"
+    with open(config_path) as config_file:
+        return pyhocon.ConfigFactory.parse_string(config_file.read())
+
+
+def to_hocon(config: pyhocon.ConfigTree) -> str:
+    """Convert a ConfigTree to a HOCON string."""
+    return pyhocon.HOCONConverter.to_hocon(config)
+
+
 def strhash(s: str) -> str:
     """Create a simple hash from a string."""
     return hashlib.sha256(s.encode()).hexdigest()[:5]
+
+
+def random_id(length: int = 5) -> str:
+    """Create a random string of a given length."""
+    return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
 
 
 def time_to_seconds(time_str: str) -> int:

@@ -25,11 +25,8 @@ from google.cloud.logging_v2.services.logging_service_v2 import (
     LoggingServiceV2AsyncClient,
 )
 
-from ot_orchestration.utils.common import (
-    GCP_PROJECT_PLATFORM,
-    GCP_REGION,
-    prepare_labels,
-)
+from ot_orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_ZONE
+from ot_orchestration.utils.labels import Labels
 
 CONTAINER_NAME = "workload_container"
 LOGGING_REQUEST_INTERVAL = 5
@@ -289,11 +286,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
             If set to None or missing, the default project_id for platform is used (GCP_PROJECT_PLATFORM).
         zone: The zone where the instance will be created (default is GCP_ZONE).
         instance_name: Name of the instance name that will run the workload.
-        labels: Optional dict of labels to apply to the instance on top of the default ones, which
-            are `team: open-targets`, `product: platform`, `environment: development` or `production`,
-            and `created_by: unified-orchestrator`. Refer to `controlled vocabularies
-            <https://github.com/opentargets/controlled-vocabularies/blob/main/infrastructure.yaml>`__
-            for more information.
+        labels: Labels to apply to the instance. See the `Labels` class for more information.
         container_image: Container image to run.
         container_command: Command to run inside the container (optional).
         container_args: Arguments to pass to the container (optional).
@@ -339,15 +332,15 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
         self,
         *,
         project: str = GCP_PROJECT_PLATFORM,
-        zone: str = f"{GCP_REGION}-b",
+        zone: str = GCP_ZONE,
         instance_name: str,
-        labels: dict[str, str] = {},
+        labels: Labels | None = None,
         container_image: str,
         container_command: str = "",
         container_args: list[str] | None = None,
         container_env: dict[str, str] | None = None,
         container_service_account: str = "default",
-        container_scopes: list[str] = [],
+        container_scopes: list[str] | None = None,
         container_files: dict[str, str] | None = None,
         machine_type: str = "c3d-standard-8",
         work_disk_size_gb: int = 0,
@@ -363,13 +356,13 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
         self.project = project
         self.zone = zone
         self.instance_name = instance_name
-        self.labels = labels
+        self.labels = labels if labels else Labels()
         self.container_image = container_image
         self.container_command = container_command
         self.container_args = container_args
         self.container_env = container_env
         self.container_service_account = container_service_account
-        self.container_scopes = container_scopes
+        self.container_scopes = container_scopes or []
         self.container_files = container_files
         self.machine_type = machine_type
         self.gcp_conn_id = gcp_conn_id
@@ -463,15 +456,13 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
         - Network configuration.
         - Service account and scopes.
         """
-        labels = prepare_labels(self.labels, self.project)
-
         boot_disk = compute_v1.AttachedDisk(
             auto_delete=True,
             boot=True,
             initialize_params=compute_v1.AttachedDiskInitializeParams(
                 disk_type=f"zones/{self.zone}/diskTypes/pd-ssd",
-                labels=labels,
-                source_image="projects/cos-cloud/global/images/cos-stable-113-18244-151-9",
+                labels=self.labels.get(),
+                source_image="projects/cos-cloud/global/images/cos-113-18244-151-50",
             ),
         )
 
@@ -480,7 +471,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
             device_name="work-disk",
             initialize_params=compute_v1.AttachedDiskInitializeParams(
                 disk_size_gb=self.work_disk_size_gb,
-                labels=labels,
+                labels=self.labels.get(),
                 disk_type=f"zones/{self.zone}/diskTypes/pd-ssd",
             ),
         )
@@ -492,7 +483,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
             description="unified orchestrator runner instance",
             machine_type=f"zones/{self.zone}/machineTypes/{self.machine_type}",
             disks=disks,
-            labels=labels,
+            labels=self.labels.get(),
             metadata=types.Metadata(
                 items=[
                     {
@@ -531,8 +522,8 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
                             "https://www.googleapis.com/auth/servicecontrol",
                             "https://www.googleapis.com/auth/service.management.readonly",
                             "https://www.googleapis.com/auth/trace.append",
+                            *self.container_scopes,
                         ]
-                        + self.container_scopes
                     ),
                 ),
             ],
@@ -572,17 +563,18 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
             page_size=1000,
         )
         for entry in entries:
-            self.log.log(level=logging.INFO, msg=entry.payload.get("message", ""))
+            self.log.info(entry.payload.get("message", "Empty log message"))
 
     def poke(self, context: Context) -> bool:
         """Check if the instance is still running in a synchronous way."""
         # We must implement this if we want to run this sensor in a non-deferrable mode.
-        return NotImplementedError
+        return False
 
     def execute(self, context: Context) -> bool:
         """Set up and execute the sensor, then start the trigger."""
+        run = context.get("params", {}).get("run_label", context.get("dag_run").run_id)
+        self.labels.add({"run": run})
         self.start()
-        self.log.info("Instance created, now checking for the exit code.")
 
         if not self.deferrable:
             super().execute(context)
@@ -724,7 +716,7 @@ class ComputeEngineExitCodeTrigger(BaseTrigger):
                 await asyncio.sleep(self.poll_sleep)
         except Exception as e:
             self.log.error("Error occurred while checking startup script exit code.")
-            yield TriggerEvent({"status": "error", "message": f"{type(e)}: {str(e)}"})
+            yield TriggerEvent({"status": "error", "message": f"{type(e)}: {e!r}"})
 
     @cached_property
     def hook(self) -> CloudLoggingAsyncHook:

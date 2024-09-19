@@ -4,9 +4,9 @@ log_level: INFO
 force: no
 
 scratchpad:
-  efo_release_version: v3.68.0
-  ensembl_release_version: '112'
-  chembl_release_version: '34'
+  chembl_version: '34'
+  efo_version: v3.68.0
+  ensembl_version: '112'
 
 steps:
   baseline_expression:
