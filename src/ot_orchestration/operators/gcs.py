@@ -62,7 +62,7 @@ class UploadRemoteFileOperator(BaseOperator):
 
     Args:
         project_id: The GCP project ID. Defaults to the platform project.
-        src: The URL to the file to upload.
+        src: Source file URL.
         dst: The destination path in GCS.
     """
 

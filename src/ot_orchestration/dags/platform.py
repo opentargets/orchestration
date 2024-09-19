@@ -3,6 +3,7 @@
 from datetime import datetime
 
 from airflow.decorators.task_group import task_group
+from airflow.models.baseoperator import chain
 from airflow.models.dag import DAG
 from airflow.models.param import Param
 from airflow.operators.empty import EmptyOperator
@@ -15,6 +16,10 @@ from airflow.providers.google.cloud.operators.dataproc import (
 from airflow.utils.edgemodifier import Label
 
 from ot_orchestration.dags.config.platform import PlatformConfig
+from ot_orchestration.operators.dataproc import (
+    PlatformETLCreateClusterOperator,
+    PlatformETLSubmitJobOperator,
+)
 from ot_orchestration.operators.gce import ComputeEngineRunContainerizedWorkloadSensor
 from ot_orchestration.operators.gcs import (
     UploadRemoteFileOperator,
@@ -28,10 +33,6 @@ from ot_orchestration.utils.common import (
     GCP_ZONE,
     platform_dag_kwargs,
     shared_dag_args,
-)
-from ot_orchestration.utils.dataproc_platform import (
-    DataprocCreateClusterOperator,
-    DataprocSubmitJobOperator,
 )
 from ot_orchestration.utils.labels import Labels
 
@@ -119,8 +120,8 @@ with DAG(
                 # add the run task to the step registry
                 steps[f"pis_{step_name}"] = j
                 # here we define the task dependencies for both branches
-                c >> Label("invalid previous run") >> u >> r >> d >> j
-                c >> Label("valid previous run exists, skip run") >> j
+                chain(c, Label("invalid previous run"), u, r, d, j)
+                chain(c, Label("valid previous run exists, skip run"), j)
 
             pis_step(step_name)
 
@@ -139,7 +140,7 @@ with DAG(
 
     @task_group(group_id=f"etl_cluster_prepare")
     def etl_cluster_prepare() -> None:
-        c = DataprocCreateClusterOperator(
+        c = PlatformETLCreateClusterOperator(
             task_id="cluster_create",
             cluster_name=cluster_name,
             labels=labels_etl,
@@ -154,7 +155,7 @@ with DAG(
             src=config.etl_jar_origin_url,
             dst=config.etl_jar_gcs_uri,
         )
-        c >> uc >> uj
+        chain(c, uc, uj)
 
     p = etl_cluster_prepare()
 
@@ -167,7 +168,7 @@ with DAG(
             pis_dependencies = [p for p in step.get("depends_on", []) if "pis_" in p]
             etl_dependencies = [p for p in step.get("depends_on", []) if "etl_" in p]
 
-            r = DataprocSubmitJobOperator(
+            r = PlatformETLSubmitJobOperator(
                 task_id=f"run_{step_name}",
                 step_name=step_name,
                 cluster_name=cluster_name,
@@ -189,4 +190,4 @@ with DAG(
         trigger_rule="all_success",
     )
 
-    p >> r >> d
+    chain(p, r, d)

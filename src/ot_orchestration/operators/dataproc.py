@@ -3,10 +3,8 @@
 from collections.abc import Sequence
 
 from airflow.providers.google.cloud.operators.dataproc import (
-    DataprocCreateClusterOperator as _DataprocCreateClusterOperator,
-)
-from airflow.providers.google.cloud.operators.dataproc import (
-    DataprocSubmitJobOperator as _DataprocSubmitJobOperator,
+    DataprocCreateClusterOperator,
+    DataprocSubmitJobOperator,
 )
 from google.cloud.dataproc_v1 import Cluster, JobReference
 from google.cloud.dataproc_v1.types.jobs import Job, JobPlacement, SparkJob
@@ -17,7 +15,7 @@ from ot_orchestration.utils.dataproc import ClusterGenerator
 from ot_orchestration.utils.labels import Labels
 
 
-class DataprocCreateClusterOperator(_DataprocCreateClusterOperator):
+class PlatformETLCreateClusterOperator(DataprocCreateClusterOperator):
     """Create a new Dataproc cluster tailored for running Platform ETL.
 
     This class sets many default values and streamlines the cluster creation to
@@ -131,7 +129,7 @@ class DataprocCreateClusterOperator(_DataprocCreateClusterOperator):
         return super().execute(context)
 
 
-class DataprocSubmitJobOperator(_DataprocSubmitJobOperator):
+class PlatformETLSubmitJobOperator(DataprocSubmitJobOperator):
     """Submit a job to a cluster.
 
     Args:

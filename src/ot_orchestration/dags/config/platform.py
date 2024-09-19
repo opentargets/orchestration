@@ -34,11 +34,6 @@ class PlatformConfig:
         # are available.
 
         # fmt: off
-        # The base image for PIS, the version tag will be appended from the config file.
-        pis_image_base = "europe-west1-docker.pkg.dev/open-targets-eu-dev/platform-input-support-test/platform-input-support-test"
-        # The base url for the ETL jar, the version will be replaced in from the config file.
-        etl_jar_base = "https://github.com/opentargets/platform-etl-backend/releases/download/v{version}/etl-backend-{version}.jar"
-
         # The disk size for PIS vms, in GB.
         # Note: although not all steps need this much space, it is easier to have a
         # single value for all steps, and the machines are so short-lived that it
@@ -48,9 +43,8 @@ class PlatformConfig:
         # The service account and scopes to use (only used by PIS so far).
         # The drive scope is needed to download spreadsheets from Google Drive
         # for the PIS otar step.
-        self.service_account = "platform-input-support@open-targets-eu-dev.iam.gserviceaccount.com"
+        self.service_account = "platform-input-support@open-targets-eu-dev.iam.gserviceaccount.com" #fmt: skip
         self.service_account_scopes = ["https://www.googleapis.com/auth/drive"]
-        # fmt: on
 
         # Platform pipeline settings.
         settings = read_yaml_config(self.platform_config_path)
@@ -63,6 +57,8 @@ class PlatformConfig:
         # PIS-specific settings.
         self.pis_config = self.init_pis_config()
         pis_version = settings["pis_version"]
+        # The base image for PIS, the version tag will be appended from the config file.
+        pis_image_base = "europe-west1-docker.pkg.dev/open-targets-eu-dev/platform-input-support-test/platform-input-support-test"
         self.pis_image = f"{pis_image_base}:{pis_version}"
         self.pis_step_list = self.pis_config["steps"].keys()
         self.pis_pool = 16  # number of parallel workers inside of each PIS step
@@ -71,6 +67,8 @@ class PlatformConfig:
         self.etl_config = self.init_etl_config()
         self.etl_config_gcs_uri = f"{self.gcs_url}/output/etl-config.conf"
         etl_version = settings["etl_version"]
+        # The base url for the ETL jar, the version will be replaced in from the config file.
+        etl_jar_base = "https://github.com/opentargets/platform-etl-backend/releases/download/v{version}/etl-backend-{version}.jar"
         self.etl_jar_origin_url = f"{etl_jar_base.format(version=etl_version)}"
         self.etl_jar_gcs_uri = f"{self.gcs_url}/output/etl-backend-{etl_version}.jar"  # fmt: skip
         self.etl_step_list = settings["etl_steps"]
