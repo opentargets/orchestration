@@ -1,7 +1,7 @@
 """Test common functions."""
 
 import pytest
-from ot_orchestration.utils.common import convert_params_to_hydra_positional_arg
+from ot_orchestration.utils.dataproc import convert_params_to_hydra_positional_arg
 
 
 @pytest.mark.parametrize(
