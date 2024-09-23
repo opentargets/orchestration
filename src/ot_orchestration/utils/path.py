@@ -6,7 +6,6 @@ import logging
 import multiprocessing
 import re
 from abc import abstractmethod
-from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
 from typing import Any, Protocol, TypedDict
