@@ -156,11 +156,12 @@ def convert_params_to_hydra_positional_arg(
     incorrect_param_keys = [key for key in params if "step" not in key]
     if incorrect_param_keys:
         raise ValueError(f"Passed incorrect param keys {incorrect_param_keys}")
+
     return [f"{k}={v}" for k, v in params.items()]
 
 
 def find_node_in_config(config: list[ConfigNode], node_id: str) -> ConfigNode:
-    """Find node in the genetics etl config."""
+    """Find node config list."""
     for node_config in config:
         if node_config["id"] == node_id:
             return node_config
