@@ -38,6 +38,3 @@ make generate-requirements
 
 echo "Building airflow image"
 make build-airflow-image
-
-echo "Starting Poetry shell"
-poetry shell
