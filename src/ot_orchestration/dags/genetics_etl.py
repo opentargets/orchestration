@@ -10,12 +10,8 @@ from airflow.operators.python import ShortCircuitOperator
 from airflow.providers.google.cloud.transfers.gcs_to_gcs import GCSToGCSOperator
 from airflow.utils.task_group import TaskGroup
 
-from ot_orchestration.utils.common import (
-    convert_params_to_hydra_positional_arg,
-    shared_dag_args,
-    shared_dag_kwargs,
-)
-from ot_orchestration.utils.dataproc import generate_dag, submit_step
+from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
+from ot_orchestration.utils.dataproc import generate_dataproc_task_chain
 from ot_orchestration.utils.path import GCSPath
 from ot_orchestration.utils.utils import check_gcp_folder_exists, read_yaml_config
 
