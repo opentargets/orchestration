@@ -1,4 +1,4 @@
-"""Configuration class for the platform pipeline."""
+"""Configuration class for the unified pipeline."""
 
 from pathlib import Path
 from typing import Any
@@ -7,24 +7,25 @@ from ot_orchestration.utils import read_hocon_config, read_yaml_config
 
 
 class PlatformConfig:
-    """Configuration class for the platform pipeline.
+    """Configuration class for the platform part of the unified pipeline.
 
-    This class reads the configuration files for the platform dag, PIS and ETL
-    applications, performs some operations on them and then exposes the values.
+    This class reads the configuration files for both the platform part of the
+    unified pipeline dag as well as PIS and ETL applications, performs some
+    operations on them and then exposes the values.
 
     Some fields in PIS and ETL application configuration files are replaced with
-    values from the platform dag configuration, which is the only one the user of
+    values from the pipeline dag configuration, which is the only one the user of
     the orchestrator has to modify to run the pipeline.
 
     The configuration files are expected to be in the same directory as this file.
     They are:
-    - `platform.yaml`: contains the general configuration for the pipeline.
+    - `unified_pipeline.yaml`: contains the general configuration for the pipeline.
     - `pis.yaml`: contains the configuration for the PIS steps.
     - `etl.conf`: contains the configuration for the ETL steps.
     """
 
     def __init__(self) -> None:
-        self.platform_config_path = Path(__file__).parent / "platform.yaml"
+        self.platform_config_path = Path(__file__).parent / "unified_pipeline.yaml"
         self.pis_config_local_path = Path(__file__).parent / "pis.yaml"
         self.etl_config_local_path = Path(__file__).parent / "etl.conf"
 
@@ -46,7 +47,7 @@ class PlatformConfig:
         self.service_account = "platform-input-support@open-targets-eu-dev.iam.gserviceaccount.com" #fmt: skip
         self.service_account_scopes = ["https://www.googleapis.com/auth/drive"]
 
-        # Platform pipeline settings.
+        # Pipeline settings.
         settings = read_yaml_config(self.platform_config_path)
         self.gcs_url = settings["gcs_url"]
         self.chembl_version = settings["chembl_version"]
