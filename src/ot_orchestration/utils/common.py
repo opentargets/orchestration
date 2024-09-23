@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import pendulum
 
 from ot_orchestration.utils import strhash
