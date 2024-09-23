@@ -6,6 +6,7 @@ import logging
 import multiprocessing
 import re
 from abc import abstractmethod
+from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
 from typing import Any, Protocol, TypedDict
@@ -37,6 +38,7 @@ class PathSegments(TypedDict):
 
 class ProtoPath(Protocol):
     segments: PathSegments
+    path: str
 
     @abstractmethod
     def dump(self, data: Any) -> None:
@@ -128,6 +130,11 @@ class NativePath(ProtoPath):
         return self.native_path.exists()
 
     @cached_property
+    def path(self) -> str:
+        """Get path segment."""
+        return str(self.native_path)
+
+    @cached_property
     def segments(self) -> PathSegments:
         """Get path segments.
 
@@ -176,7 +183,7 @@ class GCSPath(ProtoPath):
         adapter = HTTPAdapter(pool_connections=128, pool_maxsize=1024, max_retries=3)
         client._http.mount("https://", adapter)
         client._http._auth_request.session.mount("https://", adapter)
-        return
+        return client
 
     @cached_property
     def _match(self) -> re.Match:
