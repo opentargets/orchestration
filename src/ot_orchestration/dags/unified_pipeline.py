@@ -1,4 +1,4 @@
-"""DAG for the Open Targets Platform pipeline."""
+"""DAG for the Open Targets unified pipeline."""
 
 from datetime import datetime
 
@@ -15,7 +15,7 @@ from airflow.providers.google.cloud.operators.dataproc import (
 )
 from airflow.utils.edgemodifier import Label
 
-from ot_orchestration.dags.config.platform import PlatformConfig
+from ot_orchestration.dags.config.unified_pipeline import PlatformConfig
 from ot_orchestration.operators.dataproc import (
     PlatformETLCreateClusterOperator,
     PlatformETLSubmitJobOperator,
@@ -25,20 +25,20 @@ from ot_orchestration.operators.gcs import (
     UploadRemoteFileOperator,
     UploadStringOperator,
 )
-from ot_orchestration.operators.platform import PISDiffComputeOperator
+from ot_orchestration.operators.unified_pipeline import PISDiffComputeOperator
 from ot_orchestration.utils import clean_name, to_hocon, to_yaml
 from ot_orchestration.utils.common import (
     GCP_PROJECT_PLATFORM,
     GCP_REGION,
     GCP_ZONE,
-    platform_dag_kwargs,
     shared_dag_args,
+    unified_pipeline_dag_kwargs,
 )
 from ot_orchestration.utils.labels import Labels
 
 with DAG(
     default_args=shared_dag_args,
-    **platform_dag_kwargs,
+    **unified_pipeline_dag_kwargs,
     params={
         "run_label": Param(
             default=f"pis-{datetime.now().strftime('%Y%m%d-%H%M')}",
@@ -183,7 +183,7 @@ with DAG(
     r = etl_stage()
 
     d = DataprocDeleteClusterOperator(
-        task_id="cluster_delete",
+        task_id="etl_cluster_delete",
         project_id=GCP_PROJECT_PLATFORM,
         region=GCP_REGION,
         cluster_name=cluster_name,
@@ -191,3 +191,6 @@ with DAG(
     )
 
     chain(p, r, d)
+
+if __name__ == "__main__":
+    dag.test()

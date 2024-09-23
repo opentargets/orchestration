@@ -54,13 +54,13 @@ shared_dag_kwargs = {
     "catchup": False,
 }
 
-platform_dag_kwargs = {
-    "dag_id": "platform_pipeline",
-    "description": "Open Targets Platform",
+unified_pipeline_dag_kwargs = {
+    "dag_id": "unified_pipeline",
+    "description": "Open Targets unified data generation pipeline",
     "catchup": False,
     "schedule": None,
     "start_date": pendulum.now(tz="Europe/London").subtract(days=1),
-    "tags": ["platform", "experimental"],
+    "tags": [*shared_dag_kwargs["tags"], "platform", "unified_pipeline"],
     "user_defined_filters": {"strhash": strhash},
 }
 
