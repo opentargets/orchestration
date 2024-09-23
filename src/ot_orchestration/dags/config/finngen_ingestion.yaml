@@ -1,4 +1,3 @@
-finngen_release_prefix: &release_prefix FINNGEN_R11_
 dataproc:
   python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/szsz-update-package-for-dataproc-run/cli.py
   cluster_metadata:
@@ -16,7 +15,7 @@ nodes:
     params:
       step.finngen_study_index_out: gs://finngen_data/r11/study_index
       step.finngen_phenotype_table_url: https://r11.finngen.fi/api/phenos
-      step.finngen_release_prefix: *release_prefix
+      step.finngen_release_prefix: FINNGEN_R11_
       step.finngen_summary_stats_url_prefix: gs://finngen-public-data-r11/summary_stats/finngen_R11_
       step.sample_size: 453733
       step.finngen_summary_stats_url_suffix: ".gz"

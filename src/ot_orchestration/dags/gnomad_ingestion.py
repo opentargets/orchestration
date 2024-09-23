@@ -1,32 +1,29 @@
-"""Airflow DAG to ingest and harmonize FinnGen UKB meta-analysis data."""
+"""Airflow DAG for the Preprocess part of the pipeline."""
+
+from __future__ import annotations
 
 from pathlib import Path
 
 from airflow.models.dag import DAG
 
 from ot_orchestration.utils import chain_dependencies, read_yaml_config
-from ot_orchestration.utils.common import (
-    shared_dag_args,
-    shared_dag_kwargs,
-)
+from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 from ot_orchestration.utils.dataproc import (
     generate_dataproc_task_chain,
     submit_gentropy_step,
 )
 
-config = read_yaml_config(
-    Path(__file__).parent / "config" / "finngen_ukb_meta_harmonisation.yaml"
-)
+CONFIG_FILE_PATH = Path(__file__).parent / "config" / "gnomad_ingestion.yaml"
+config = read_yaml_config(CONFIG_FILE_PATH)
 
 with DAG(
     dag_id=Path(__file__).stem,
-    description="Open Targets Genetics — Ingest FinnGen UKB meta-analysis",
+    description="Open Targets Genetics — Gnomad Ingestion",
     default_args=shared_dag_args,
     **shared_dag_kwargs,
 ):
     tasks = {}
     for step in config["nodes"]:
-        step_id = step["id"]
         task = submit_gentropy_step(
             cluster_name=config["dataproc"]["cluster_name"],
             step_name=step["id"],

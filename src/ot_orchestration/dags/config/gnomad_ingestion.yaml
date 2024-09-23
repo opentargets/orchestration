@@ -1,0 +1,32 @@
+dataproc:
+  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/szsz-update-package-for-dataproc-run/cli.py
+  cluster_metadata:
+    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/szsz-update-package-for-dataproc-run/gentropy-0.0.0-py3-none-any.whl
+  cluster_init_script: gs://genetics_etl_python_playground/initialisation/0.0.0/install_dependencies_on_cluster.sh
+  cluster_name: gnomad-preprocess
+
+# FIXME: ot_variant_annotation was replaced by ot_gnomad_variants, but
+# the configuration for the latter does not exist yet.
+
+nodes:
+  - id: ld_index
+    kind: Task
+    prerequisites: []
+    params:
+      step.ld_index_out: ${datasets.ld_index}
+      step.ld_matrix_template: ${datasets.ld_matrix_template}
+      step.ld_index_raw_template: ${datasets.ld_index_raw_template}
+      step.grch37_to_grch38_chain_path: ${datasets.chain_37_38}
+      step.liftover_ht_path: ${datasets.liftover_ht_path}
+      step.ld_populations:
+        - afr # African-American
+        - amr # American Admixed/Latino
+        - asj # Ashkenazi Jewish
+        - eas # East Asian
+        - est # Estonian
+        - fin # Finnish
+        - nfe # Non-Finnish European
+        - nwe # Northwestern European
+        - seu # Southeastern European
+      # The version will of the gnomad will be inferred from ld_matrix_template and appended to the ld_index_out.
+      step.use_version_from_input: true
