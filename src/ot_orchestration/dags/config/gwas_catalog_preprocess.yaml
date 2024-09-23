@@ -1,0 +1,119 @@
+gwas_catalog_harmonised_sumstat_glob: gs://gwas_catalog_data/harmonised_summary_statistics/**_SUCCESS
+harmonised_sumstat_list: gs://gwas_catalog_data/manifests/gwas_catalog_harmonised_summary_statistics_list.txt
+dataproc:
+  cluster_name: otg-preprocess-gwascatalog
+  autoscaling_policy: otg-preprocess-gwascatalog
+  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/szsz-update-package-for-dataproc-run/cli.py
+  cluster_metadata:
+    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/szsz-update-package-for-dataproc-run/gentropy-0.0.0-py3-none-any.whl
+  cluster_init_script: gs://genetics_etl_python_playground/initialisation/0.0.0/install_dependencies_on_cluster.sh
+  num_workers: 5
+
+nodes:
+  - id: top_hits_processing
+    kind: TaskGroup
+    prerequisites: []
+    nodes:
+      - id: gwas_catalog_study_inclusion
+        kind: Task
+        prerequisites: []
+        params:
+          step.catalog_study_files:
+            - gs://gwas_catalog_data/curated_inputs/gwas_catalog_download_studies.tsv
+            - gs://gwas_catalog_data/curated_inputs/gwas_catalog_unpublished_studies.tsv
+          step.ancestry_files:
+            - gs://gwas_catalog_data/curated_inputs/gwas_catalog_download_ancestries.tsv
+            - gs://gwas_catalog_data/curated_inputs/gwas_catalog_unpublished_ancestries.tsv
+          step.associations_file: gs://gwas_catalog_data/curated_inputs/gwas_catalog_associations_ontology_annotated.tsv
+          step.variant_annotation_path: gs://genetics_etl_python_playground/static_assets/gnomad_variants
+          step.harmonised_study_file: gs://gwas_catalog_data/manifests/gwas_catalog_harmonised_summary_statistics_list.txt
+          step.criteria: curation
+          step.inclusion_list_path: gs://gwas_catalog_data/manifests/gwas_catalog_summary_statistics_included_studies
+          step.exclusion_list_path: gs://gwas_catalog_data/manifests/gwas_catalog_summary_statistics_excluded_studies
+          step.session.write_mode: overwrite
+      - id: gwas_catalog_ingestion
+        kind: Task
+        prerequisites:
+          - gwas_catalog_study_inclusion
+        params:
+          step.catalog_study_files:
+            - gs://gwas_catalog_data/curated_inputs/gwas_catalog_download_studies.tsv
+            - gs://gwas_catalog_data/curated_inputs/gwas_catalog_unpublished_studies.tsv
+          step.catalog_ancestry_files:
+            - gs://gwas_catalog_data/curated_inputs/gwas_catalog_download_ancestries.tsv
+            - gs://gwas_catalog_data/curated_inputs/gwas_catalog_unpublished_ancestries.tsv
+          step.catalog_associations_file: gs://gwas_catalog_data/curated_inputs/gwas_catalog_associations_ontology_annotated.tsv
+          step.variant_annotation_path: gs://genetics_etl_python_playground/static_assets/gnomad_variants
+          step.catalog_sumstats_lut: gs://gwas_catalog_data//curated_inputs/harmonised_list.txt
+          step.catalog_studies_out: gs://gwas_catalog_data/study_index
+          step.catalog_associations_out: ${datasets.gwas_catalog_study_locus_folder}/gwas_catalog_curated_associations
+          step.gwas_catalog_study_curation_file: gs://gwas_catalog_data/manifests/gwas_catalog_study_curation.tsv
+          step.inclusion_list_path: gw://gwas_catalog_data/manifests/gwas_catalog_curation_included_studies
+          step.step.session.write_mode: overwrite
+      - id: ld_based_clumping
+        kind: Task
+        prerequisites:
+          - gwas_catalog_ingestion
+        params:
+          step.ld_index_path: gs://genetics_etl_python_playground/static_assets/ld_index
+          step.study_locus_input_path: gs://gwas_catalog_data/study_locus_datasets/gwas_catalog_curated_associations
+          step.clumped_study_locus_output_path: gs://gwas_catalog_data/study_locus_datasets/gwas_catalog_curated_associations_ld_clumped
+          step.study_index_path: gs://gwas_catalog_data/study_index
+          step.session.write_mode: overwrite
+      - id: pics
+        kind: Task
+        prerequisites:
+          - ld_based_clumping
+        params:
+          step.study_locus_ld_annotated_in: gs://gwas_catalog_data/study_locus_datasets/gwas_catalog_curated_associations_ld_clumped
+          step.picsed_study_locus_out: gs://gwas_catalog_data/credible_set_datasets/gwas_catalog_PICSed_curated_associations
+          step.session.write_mode: overwrite
+
+  - id: summary_statistics_processing
+    kind: TaskGroup
+    prerequisites: []
+    nodes:
+      - id: gwas_catalog_study_inclusion
+        kind: Task
+        prerequisites: []
+        params:
+          step.catalog_study_files:
+            - gs://gwas_catalog_data/curated_inputs/gwas_catalog_download_studies.tsv
+            - gs://gwas_catalog_data/curated_inputs/gwas_catalog_unpublished_studies.tsv
+          step.ancestry_files:
+            - gs://gwas_catalog_data/curated_inputs/gwas_catalog_download_ancestries.tsv
+            - gs://gwas_catalog_data/curated_inputs/gwas_catalog_unpublished_ancestries.tsv
+          step.associations_file: gs://gwas_catalog_data/curated_inputs/gwas_catalog_associations_ontology_annotated.tsv
+          step.variant_annotation_path: gs://genetics_etl_python_playground/static_assets/gnomad_variants
+          step.harmonised_study_file: gs://gwas_catalog_data/manifests/gwas_catalog_harmonised_summary_statistics_list.txt
+          step.criteria: summary_stats
+          step.inclusion_list_path: gs://gwas_catalog_data/manifests/gwas_catalog_summary_statistics_included_studies
+          step.exclusion_list_path: gs://gwas_catalog_data/manifests/gwas_catalog_summary_statistics_excluded_studies
+          step.session.write_mode: overwrite
+      - id: window_based_clumping
+        kind: Task
+        prerequisites:
+          - gwas_catalog_study_inclusion
+        params:
+          step.summary_statistics_input_path: gs://gwas_catalog_data/harmonised_summary_statistics
+          step.inclusion_list_path: gs://gwas_catalog_data/manifests/gwas_catalog_summary_statistics_included_studies
+          step.study_locus_output_path: gs://gwas_catalog_data/study_locus_datasets/gwas_catalog_summary_stats_window_clumped
+          step.session.write_mode: overwrite
+      - id: ld_based_clumping
+        kind: Task
+        prerequisites:
+          - window_based_clumping
+        params:
+          step.ld_index_path: gs://genetics_etl_python_playground/static_assets/ld_index
+          step.study_locus_input_path: gs://gwas_catalog_data/study_locus_datasets/gwas_catalog_summary_stats_window_clumped
+          step.clumped_study_locus_output_path: gs://gwas_catalog_data/study_locus_datasets/gwas_catalog_summary_stats_ld_clumped
+          step.study_index_path: gs://gwas_catalog_data/study_index
+          step.session.write_mode: overwrite
+      - id: pics
+        kind: Task
+        prerequisites:
+          - ld_based_clumping
+        params:
+          step.study_locus_ld_annotated_in: gs://gwas_catalog_data/study_locus_datasets/gwas_catalog_summary_stats_ld_clumped
+          step.picsed_study_locus_out: gs://gwas_catalog_data/credible_set_datasets/gwas_catalog_PICSed_summary_statistics
+          step.session.write_mode: overwrite

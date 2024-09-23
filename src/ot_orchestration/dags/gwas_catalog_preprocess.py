@@ -11,49 +11,25 @@ from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.providers.google.cloud.operators.gcs import GCSListObjectsOperator
 from airflow.utils.task_group import TaskGroup
 
+from ot_orchestration.utils import (
+    chain_dependencies,
+    find_node_in_config,
+    read_yaml_config,
+)
 from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 from ot_orchestration.utils.dataproc import (
     create_cluster,
     delete_cluster,
-    install_dependencies,
-    submit_step,
+    submit_gentropy_step,
 )
+from ot_orchestration.utils.path import GCSPath
 
-CLUSTER_NAME = "otg-preprocess-gwascatalog"
-AUTOSCALING = "otg-preprocess-gwascatalog"
-
-# Setting up bucket name and output object names:
-GWAS_CATALOG_BUCKET_NAME = "gwas_catalog_data"
-HARMONISED_SUMSTATS_PREFIX = "harmonised_summary_statistics"
-
-# Manifest paths:
-MANIFESTS_PATH = "gs://gwas_catalog_data/manifests/"
-HARMONISED_SUMSTATS_LIST_FULL_NAME = "gs://gwas_catalog_data/manifests/gwas_catalog_harmonised_summary_statistics_list.txt"
-
-# The name of the manifest files have to be consistent with the config file:
-HARMONISED_SUMSTATS_LIST_OBJECT_NAME = (
-    "manifests/gwas_catalog_harmonised_summary_statistics_list.txt"
-)
-CURATION_INCLUSION_NAME = f"{MANIFESTS_PATH}/gwas_catalog_curation_included_studies"
-CURATION_EXCLUSION_NAME = f"{MANIFESTS_PATH}/gwas_catalog_curation_excluded_studies"
-SUMMARY_STATISTICS_INCLUSION_NAME = (
-    f"{MANIFESTS_PATH}/gwas_catalog_summary_statistics_included_studies"
-)
-SUMMARY_STATISTICS_EXCLUSION_NAME = (
-    f"{MANIFESTS_PATH}/gwas_catalog_summary_statistics_excluded_studies"
-)
-
-STUDY_INDEX = "gs://gwas_catalog_data/study_index"
-CURATED_STUDY_LOCI = (
-    "gs://gwas_catalog_data/study_locus_datasets/gwas_catalog_curated_associations"
-)
-CURATED_LD_CLUMPED = "gs://gwas_catalog_data/study_locus_datasets/gwas_catalog_curated_associations_ld_clumped"
-WINDOW_BASED_CLUMPED = "gs://gwas_catalog_data/study_locus_datasets/gwas_catalog_summary_stats_window_clumped"
-LD_BASED_CLUMPED = (
-    "gs://gwas_catalog_data/study_locus_datasets/gwas_catalog_summary_stats_ld_clumped"
-)
-CURATED_CREDIBLE_SETS = "gs://gwas_catalog_data/credible_set_datasets/gwas_catalog_PICSed_curated_associations"
-SUMMARY_STATISTICS_CREDIBLE_SETS = "gs://gwas_catalog_data/credible_set_datasets/gwas_catalog_PICSed_summary_statistics"
+CONFIG_PATH = Path(__file__).parent / "config" / "gwas_catalog_preprocess.yaml"
+config = read_yaml_config(CONFIG_PATH)
+sumstat_glob = GCSPath(config["gwas_catalog_harmonised_sumstat_glob"])
+harmonised_sumstat_list = GCSPath(config["harmonised_sumstat_list"])
+sumstat_config = find_node_in_config(config["nodes"], "summary_statistics_processing")
+top_hits_config = find_node_in_config(config["nodes"], "top_hits_processing")
 
 
 def upload_harmonized_study_list(
@@ -80,13 +56,13 @@ with DAG(
     description="Open Targets Genetics — GWAS Catalog preprocess",
     default_args=shared_dag_args,
     **shared_dag_kwargs,
-):
+) as dag:
     # Getting list of folders (each a gwas study with summary statistics)
     list_harmonised_sumstats = GCSListObjectsOperator(
-        task_id="list_harmonised_parquet",
-        bucket=GWAS_CATALOG_BUCKET_NAME,
-        prefix=HARMONISED_SUMSTATS_PREFIX,
-        match_glob="**/_SUCCESS",
+        task_id="list_harmonised_sumstats",
+        bucket=sumstat_glob.bucket,
+        prefix=sumstat_glob.segments["prefix"],
+        match_glob=sumstat_glob.segments["filename"],
     )
 
     # Upload resuling list to a bucket:
@@ -94,143 +70,59 @@ with DAG(
         task_id="uploader",
         python_callable=upload_harmonized_study_list,
         op_kwargs={
-            "concatenated_studies": '{{ "\n".join(ti.xcom_pull( key="return_value", task_ids="list_harmonised_parquet")) }}',
-            "bucket_name": GWAS_CATALOG_BUCKET_NAME,
-            "object_name": HARMONISED_SUMSTATS_LIST_OBJECT_NAME,
+            "concatenated_studies": '{{ "\n".join(ti.xcom_pull( key="return_value", task_ids="list_harmonised_sumstats")) }}',
+            "bucket_name": harmonised_sumstat_list.bucket,
+            "object_name": harmonised_sumstat_list.path,
         },
     )
 
     # Processing curated GWAS Catalog top-bottom:
-    with TaskGroup(group_id="curation_processing") as curation_processing:
-        # Generate inclusion list:
-        curation_calculate_inclusion_list = submit_step(
-            cluster_name=CLUSTER_NAME,
-            step_id="ot_gwas_catalog_study_inclusion",
-            task_id="catalog_curation_inclusion_list",
-            other_args=[
-                "step.criteria=curation",
-                f"step.inclusion_list_path={CURATION_INCLUSION_NAME}",
-                f"step.exclusion_list_path={CURATION_EXCLUSION_NAME}",
-                f"step.harmonised_study_file={HARMONISED_SUMSTATS_LIST_FULL_NAME}",
-                "step.session.write_mode=overwrite",
-            ],
-        )
-
-        # Ingest curated associations from GWAS Catalog:
-        curation_ingest_data = submit_step(
-            cluster_name=CLUSTER_NAME,
-            step_id="ot_gwas_catalog_ingestion",
-            task_id="ingest_curated_gwas_catalog_data",
-            other_args=[
-                f"step.inclusion_list_path={CURATION_INCLUSION_NAME}",
-                "step.session.write_mode=overwrite",
-            ],
-        )
-
-        # Run LD-annotation and clumping on curated data:
-        curation_ld_clumping = submit_step(
-            cluster_name=CLUSTER_NAME,
-            step_id="ot_ld_based_clumping",
-            task_id="catalog_curation_ld_clumping",
-            other_args=[
-                f"step.study_locus_input_path={CURATED_STUDY_LOCI}",
-                f"step.study_index_path={STUDY_INDEX}",
-                f"step.clumped_study_locus_output_path={CURATED_LD_CLUMPED}",
-                "step.session.write_mode=overwrite",
-            ],
-        )
-
-        # Do PICS based finemapping:
-        curation_pics = submit_step(
-            cluster_name=CLUSTER_NAME,
-            step_id="pics",
-            task_id="catalog_curation_pics",
-            other_args=[
-                f"step.study_locus_ld_annotated_in={CURATED_LD_CLUMPED}",
-                f"step.picsed_study_locus_out={CURATED_CREDIBLE_SETS}",
-                "step.session.write_mode=overwrite",
-            ],
-        )
-
-        # Define order of steps:
-        (
-            curation_calculate_inclusion_list
-            >> curation_ingest_data
-            >> curation_ld_clumping
-            >> curation_pics
-        )
+    with TaskGroup(group_id=top_hits_config["id"]) as top_hits_processing:
+        tasks = {}
+        if top_hits_config["nodes"]:
+            for step in top_hits_config["nodes"]:
+                task = submit_gentropy_step(
+                    cluster_name=config["dataproc"]["cluster_name"],
+                    step_name=step["id"],
+                    python_main_module=config["dataproc"]["python_main_module"],
+                    params=step["params"],
+                )
+                tasks[step["id"]] = task
+            chain_dependencies(
+                nodes=top_hits_config["nodes"], tasks_or_task_groups=tasks
+            )  # type: ignore
 
     # Processing summary statistics from GWAS Catalog:
-    with TaskGroup(
-        group_id="summary_statistics_processing"
-    ) as summary_statistics_processing:
-        # Generate inclusion study lists:
-        summary_stats_calculate_inclusion_list = submit_step(
-            cluster_name=CLUSTER_NAME,
-            step_id="ot_gwas_catalog_study_inclusion",
-            task_id="catalog_sumstats_inclusion_list",
-            other_args=[
-                "step.criteria=summary_stats",
-                f"step.inclusion_list_path={SUMMARY_STATISTICS_INCLUSION_NAME}",
-                f"step.exclusion_list_path={SUMMARY_STATISTICS_EXCLUSION_NAME}",
-                f"step.harmonised_study_file={HARMONISED_SUMSTATS_LIST_FULL_NAME}",
-                "step.session.write_mode=overwrite",
-            ],
-        )
-
-        # Run window-based clumping:
-        summary_stats_window_based_clumping = submit_step(
-            cluster_name=CLUSTER_NAME,
-            step_id="window_based_clumping",
-            task_id="catalog_sumstats_window_clumping",
-            other_args=[
-                f"step.summary_statistics_input_path=gs://{GWAS_CATALOG_BUCKET_NAME}/{HARMONISED_SUMSTATS_PREFIX}",
-                f"step.inclusion_list_path={SUMMARY_STATISTICS_INCLUSION_NAME}",
-                f"step.study_locus_output_path={WINDOW_BASED_CLUMPED}",
-                "step.session.write_mode=overwrite",
-            ],
-        )
-
-        # Run LD based clumping:
-        summary_stats_ld_clumping = submit_step(
-            cluster_name=CLUSTER_NAME,
-            step_id="ot_ld_based_clumping",
-            task_id="catalog_sumstats_ld_clumping",
-            other_args=[
-                f"step.study_locus_input_path={WINDOW_BASED_CLUMPED}",
-                f"step.study_index_path={STUDY_INDEX}",
-                f"step.clumped_study_locus_output_path={LD_BASED_CLUMPED}",
-                "step.session.write_mode=overwrite",
-            ],
-        )
-
-        # Run PICS finemapping:
-        summary_stats_pics = submit_step(
-            cluster_name=CLUSTER_NAME,
-            step_id="pics",
-            task_id="catalog_sumstats_pics",
-            other_args=[
-                f"step.study_locus_ld_annotated_in={LD_BASED_CLUMPED}",
-                f"step.picsed_study_locus_out={SUMMARY_STATISTICS_CREDIBLE_SETS}",
-                "step.session.write_mode=overwrite",
-            ],
-        )
-
-        # Order of steps within the group:
-        (
-            summary_stats_calculate_inclusion_list
-            >> summary_stats_window_based_clumping
-            >> summary_stats_ld_clumping
-            >> summary_stats_pics
-        )
+    with TaskGroup(group_id=sumstat_config["id"]) as summary_statistics_processing:
+        tasks = {}
+        if sumstat_config["nodes"]:
+            for step in sumstat_config["nodes"]:
+                task = submit_gentropy_step(
+                    cluster_name=config["dataproc"]["cluster_name"],
+                    step_name=step["id"],
+                    python_main_module=config["dataproc"]["python_main_module"],
+                    params=step["params"],
+                )
+                tasks[step["id"]] = task
+            chain_dependencies(
+                nodes=sumstat_config["nodes"], tasks_or_task_groups=tasks
+            )  # type: ignore
 
     # DAG description:
     chain(
-        create_cluster(CLUSTER_NAME, autoscaling_policy=AUTOSCALING, num_workers=5),
-        install_dependencies(CLUSTER_NAME),
+        create_cluster(
+            cluster_name=config["dataproc"]["cluster_name"],
+            autoscaling_policy=config["dataproc"]["autoscaling_policy"],
+            num_workers=config["dataproc"]["num_workers"],
+            cluster_metadata=config["dataproc"]["cluster_metadata"],
+            cluster_init_script=config["dataproc"]["cluster_init_script"],
+        ),
         list_harmonised_sumstats,
         upload_task,
-        curation_processing,
+        top_hits_processing,
         summary_statistics_processing,
-        delete_cluster(CLUSTER_NAME),
+        delete_cluster(config["dataproc"]["cluster_name"]),
     )
+
+if __name__ == "__main__":
+    pass
