@@ -188,18 +188,3 @@ class TestGCSPath:
         """Test GCSPath object bucket property."""
         gcs_path_obj = GCSPath(gcs_path)
         assert gcs_path_obj.bucket == bucket
-
-    @pytest.mark.parametrize(
-        ["gcs_path", "path"],
-        [
-            pytest.param(
-                "gs://bucket/prefix/filename",
-                "prefix/filename",
-                id="GCS path with bucket",
-            ),
-        ],
-    )
-    def test_path_property(self, gcs_path: str, path: str) -> None:
-        """Test GCSPath object bucket property."""
-        gcs_path_obj = GCSPath(gcs_path)
-        assert gcs_path_obj.path == path

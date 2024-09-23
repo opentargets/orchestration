@@ -127,10 +127,14 @@ def chain_dependencies(nodes: list[ConfigNode], tasks_or_task_groups: dict[str, 
     Map the dependencies between tasks.
 
     """
-    node_dependencies = {node["id"]: node.get("prerequisites", []) for node in nodes}
-    for label, node in tasks_or_task_groups.items():
-        for dependency in node_dependencies[label]:
-            node.set_upstream(tasks_or_task_groups[dependency])
+    if nodes:
+        node_dependencies = {
+            node["id"]: node.get("prerequisites", []) for node in nodes
+        }
+        for label, node in tasks_or_task_groups.items():
+            print(node_dependencies)
+            for dependency in node_dependencies[label]:
+                node.set_upstream(tasks_or_task_groups[dependency])
 
 
 def convert_params_to_hydra_positional_arg(
