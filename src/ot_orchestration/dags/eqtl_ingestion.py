@@ -22,6 +22,7 @@ from ot_orchestration.utils.dataproc import (
     delete_cluster,
     submit_gentropy_step,
 )
+from ot_orchestration.utils.path import GCSPath
 
 CONFIG_PATH = Path(__file__).parent / "config" / "eqtl_ingestion.yaml"
 config = read_yaml_config(CONFIG_PATH)
@@ -52,11 +53,12 @@ with DAG(
         python_main_module=config["dataproc"]["python_main_module"],
         params=step_config["params"],
     )
+    decompressed_files_path = GCSPath(config["eqtl_catalogue_decompressed_susie_path"])
 
     delete_decompressed_job = GCSDeleteObjectsOperator(
         task_id="delete_decompressed_files",
-        bucket_name=config["eqtl_catalogue_decompressed_susie_path"].split("/")[2],
-        prefix=f"{config['eqtl_catalogue_decompressed_susie_path'].split('/')[-1]}/",
+        bucket_name=decompressed_files_path.bucket,
+        prefix=f"{decompressed_files_path.segments['filename']}/",
     )
 
     chain(
