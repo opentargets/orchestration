@@ -52,9 +52,10 @@ release_dir = GCSPath(config["release_dir"])
 variant_annotation_task_group_config = find_node_in_config(nodes, "variant_annotation")
 
 
-# FIXME: eventually this task group should have 2 batch jobs only
-# - 1. transform variant sources to vcf files, collect and partition them by chunk size
-# - 2. list new chunk vcf files and annotate them DONE
+# FIXME: eventually this task group should have 2 steps only
+# - 1. transform variant sources to vcf files, collect and partition them by chunk size - should be done by a single gentropy step rather then
+# multiple tasks in the DAG (pending)
+# - 2. list new chunk vcf files and annotate them - batch job
 @task_group(group_id="variant_annotation")
 def variant_annotation():
     """Variant annotation task group."""
