@@ -8,12 +8,12 @@ from airflow.models.baseoperator import chain
 from airflow.models.dag import DAG
 from airflow.utils.trigger_rule import TriggerRule
 
-from ot_orchestration.utils import common, read_yaml_config
+from ot_orchestration.utils import chain_dependencies, read_yaml_config
+from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 from ot_orchestration.utils.dataproc import (
     create_cluster,
     delete_cluster,
-    install_dependencies,
-    submit_step,
+    submit_gentropy_step,
 )
 
 SOURCE_CONFIG_FILE_PATH = Path(__file__).parent / "config" / "finngen_ingestion.yaml"
@@ -22,46 +22,28 @@ config = read_yaml_config(SOURCE_CONFIG_FILE_PATH)
 with DAG(
     dag_id=Path(__file__).stem,
     description="Open Targets Genetics — Finngen Susie Finemapping Results Ingestion",
-    default_args=common.shared_dag_args,
-    **common.shared_dag_kwargs,
+    default_args=shared_dag_args,
+    **shared_dag_kwargs,
 ):
-    finngen_finemapping_ingestion = submit_step(
-        cluster_name=config["cluster_name"],
-        step_id="finngen_finemapping_ingestion",
-        task_id="finngen_finemapping_ingestion",
-        other_args=[
-            f"step.finngen_finemapping_out={config['credible_set_output_path']}",
-            f"step.finngen_susie_finemapping_snp_files={config['finngen_snp_input_glob']}",
-            f"step.finngen_susie_finemapping_cs_summary_files={config['finngen_credible_set_input_glob']}",
-            "step.session.start_hail=true",
-            "step.session.write_mode=overwrite",
-        ],
-        trigger_rule=TriggerRule.ALL_DONE,
-    )
+    tasks = {}
+    for step in config["nodes"]:
+        task = submit_gentropy_step(
+            cluster_name=config["dataproc"]["cluster_name"],
+            step_name=step["id"],
+            python_main_module=config["dataproc"]["python_main_module"],
+            params=step["params"],
+            trigger_rule=TriggerRule.ALL_DONE,
+        )
+        tasks[step["id"]] = task
+    chain_dependencies(nodes=config["nodes"], tasks_or_task_groups=tasks)
 
-    finngen_study_index = submit_step(
-        cluster_name=config["cluster_name"],
-        step_id="finngen_studies",
-        task_id="finngen_studies",
-        other_args=[
-            f"step.finngen_study_index_out={config['study_index_output_path']}",
-            f"step.finngen_phenotype_table_url={config['phenotype_table_url']}",
-            f"step.finngen_release_prefix={config['finngen_release_prefix']}",
-            f"step.finngen_summary_stats_url_prefix={config['finngen_summary_stats_url_prefix']}",
-            f"step.finngen_summary_stats_url_suffix={config['finngen_summary_stats_url_suffix']}",
-            "step.session.write_mode=overwrite",
-        ],
-        trigger_rule=TriggerRule.ALL_DONE,
-    )
     chain(
         create_cluster(
-            config["cluster_name"],
-            autoscaling_policy=config["autoscaling_policy"],
-            master_disk_size=2000,
-            num_workers=6,
+            config["dataproc"]["cluster_name"],
+            autoscaling_policy=config["dataproc"]["autoscaling_policy"],
+            master_disk_size=config["dataproc"]["master_disk_size"],
+            num_workers=config["dataproc"]["num_workers"],
         ),
-        install_dependencies(config["cluster_name"]),
-        finngen_study_index,
-        finngen_finemapping_ingestion,
-        delete_cluster(config["cluster_name"]),
+        [t for t in tasks.values()],
+        delete_cluster(config["dataproc"]["cluster_name"]),
     )

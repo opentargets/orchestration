@@ -13,6 +13,8 @@ import pyhocon
 import yaml
 from google.cloud.storage import Client
 
+from ot_orchestration.types import ConfigNode
+
 
 def check_gcp_folder_exists(bucket_name: str, folder_path: str) -> bool:
     """Check if a folder exists in a Google Cloud bucket.
@@ -119,14 +121,52 @@ def time_to_seconds(time_str: str) -> int:
             return 0
 
 
-__all__ = [
-    "bucket_name",
-    "bucket_path",
-    "check_gcp_folder_exists",
-    "clean_label",
-    "clean_name",
-    "create_name",
-    "read_yaml_config",
-    "strhash",
-    "time_to_seconds",
-]
+def chain_dependencies(nodes: list[ConfigNode], tasks_or_task_groups: dict[str, Any]):
+    """Compare two dictionaries left containing task definitions and right containing tasks.
+
+    Map the dependencies between tasks.
+
+    """
+    if nodes:
+        node_dependencies = {
+            node["id"]: node.get("prerequisites", []) for node in nodes
+        }
+        for label, node in tasks_or_task_groups.items():
+            print(node_dependencies)
+            for dependency in node_dependencies[label]:
+                node.set_upstream(tasks_or_task_groups[dependency])
+
+
+def convert_params_to_hydra_positional_arg(
+    params: dict[str, Any] | None,
+) -> list[str]:
+    """Convert configuration parameters to form that can be passed to hydra step positional arguments.
+
+    This function parses to get the overwrite syntax used by hydra.
+    https://hydra.cc/docs/advanced/override_grammar/basic/. Parameter keys have to start with `step.`
+    The first parameter should be the step: "step_name".
+
+    Args:
+        params (dict[str, Any]] | None): Parameters for the step to convert.
+
+    Raises:
+        ValueError: When keys passed to the function params dict does not contain the `step.` prefix.
+
+    Returns:
+        list[str] | None: List of strings that represents the positional arguments for hydra gentropy step.
+    """
+    if not params:
+        raise ValueError("Expected at least one parameter with the step: 'step_name'")
+    incorrect_param_keys = [key for key in params if "step" not in key]
+    if incorrect_param_keys:
+        raise ValueError(f"Passed incorrect param keys {incorrect_param_keys}")
+
+    return [f"{k}={v}" for k, v in params.items()]
+
+
+def find_node_in_config(config: list[ConfigNode], node_id: str) -> ConfigNode:
+    """Find node config list."""
+    for node_config in config:
+        if node_config["id"] == node_id:
+            return node_config
+    raise KeyError(f"Config for {node_id} was not found")

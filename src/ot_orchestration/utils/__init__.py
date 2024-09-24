@@ -9,8 +9,11 @@ from ot_orchestration.utils.path import (
     NativePath,
 )
 from ot_orchestration.utils.utils import (
+    chain_dependencies,
     check_gcp_folder_exists,
     clean_name,
+    convert_params_to_hydra_positional_arg,
+    find_node_in_config,
     random_id,
     read_hocon_config,
     read_yaml_config,
@@ -24,8 +27,6 @@ __all__ = [
     "IOManager",
     "GCSPath",
     "NativePath",
-    "bucket_name",
-    "bucket_path",
     "clean_name",
     "check_gcp_folder_exists",
     "random_id",
@@ -39,4 +40,7 @@ __all__ = [
     "create_batch_job",
     "extract_study_id_from_path",
     "URI_PATTERN",
+    "convert_params_to_hydra_positional_arg",
+    "find_node_in_config",
+    "chain_dependencies",
 ]

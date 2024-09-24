@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import pendulum
 
 from ot_orchestration.utils import strhash
@@ -11,7 +9,7 @@ from ot_orchestration.utils import strhash
 GENTROPY_VERSION = "0.0.0"
 
 # Cloud configuration.
-GCP_PROJECT = "open-targets-genetics-dev"
+GCP_PROJECT_GENETICS = "open-targets-genetics-dev"
 GCP_PROJECT_PLATFORM = "open-targets-eu-dev"
 GCP_PROJECT_ZONE = "europe-west1-b"
 GCP_REGION = "europe-west1"
@@ -70,27 +68,3 @@ shared_labels = lambda project: {
     "environment": "development" if "dev" in project else "production",
     "created_by": "unified-orchestrator",
 }
-
-
-def convert_params_to_hydra_positional_arg(
-    step: dict[str, dict[str, Any]],
-) -> list[str] | None:
-    """Convert configuration parameters to form that can be passed to hydra step positional arguments.
-
-    In case the step does not have a "params" key, there are no parameters to convert.
-
-    Args:
-        step (dict[str, dict[str, Any]]): Config parameters for the step to convert.
-
-    Returns:
-        list[str] | None: List of strings that represents the positional arguments for hydra gentropy step.
-
-    Example:
-        >>> convert_params_to_hydra_positional_arg({"params": {"sig": 1, "pval": 0.05}})
-        ["step.sig=1", "step.pval=0.05"]
-        >>> convert_params_to_hydra_positional_arg({"id": "step1"})
-        None
-    """
-    if "params" not in step.keys() or not step["params"]:
-        return None
-    return [f"step.{k}={v}" for k, v in step["params"].items()]
