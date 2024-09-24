@@ -75,7 +75,7 @@ nodes:
           image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:dev
           environment:
             - SOURCE_NAME: uniprot
-              SOURCE_PATH:  gs://open-targets-pre-data-releases/24.09/input/evidence-files/uniprot.json.gz
+              SOURCE_PATH: gs://open-targets-pre-data-releases/24.09/input/evidence-files/uniprot.json.gz
               SOURCE_FORMAT: json
             - SOURCE_NAME: clinvar
               SOURCE_PATH: gs://open-targets-pre-data-releases/24.09/input/evidence-files/eva.json.gz
@@ -154,7 +154,7 @@ nodes:
     params:
       step: variant_to_gene
       step.variant_index_path: gs://ot_orchestration/releases/24.09.19.2/variant_index
-      step.gene_index_path:  gs://ot_orchestration/releases/24.09.19.2/gene_index
+      step.gene_index_path: gs://ot_orchestration/releases/24.09.19.2/gene_index
       step.vep_consequences_path: gs://genetics_etl_python_playground/static_assets/variant_consequence_to_score.tsv
       step.liftover_chain_file_path: gs://genetics_etl_python_playground/static_assets/grch37_to_grch38.over.chain
       step.interval_sources:
@@ -215,12 +215,11 @@ nodes:
       step: locus_to_gene
       step.run_mode: predict
       step.model_path: null
-      step.predictions_path:  gs://ot_orchestration/releases/24.09.19.2/locus_to_gene_predictions
-      step.feature_matrix_path:  gs://ot_orchestration/releases/24.09.19.2/locus_to_gene_feature_matrix
-      step.credible_set_path:  *valid_credible_set
+      step.predictions_path: gs://ot_orchestration/releases/24.09.19.2/locus_to_gene_predictions
+      step.feature_matrix_path: gs://ot_orchestration/releases/24.09.19.2/locus_to_gene_feature_matrix
+      step.credible_set_path: *valid_credible_set
       step.study_index_path: *valid_study_index
       step.variant_gene_path: gs://ot_orchestration/releases/24.09.19.2/variant_to_gene
       step.colocalisation_path: gs://ot_orchestration/releases/24.09.19.2/colocalisation
     prerequisites:
       - l2g_train
-

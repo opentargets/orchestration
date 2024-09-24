@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import time
 from collections import OrderedDict
-from collections.abc import Sequence
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Set, Type
+from typing import Set, Type
 
 import pandas as pd
 from airflow.models import BaseOperator
