@@ -19,8 +19,8 @@ steps:
         - UNRESOLVED_TARGET
         - UNRESOLVED_DISEASE
         - UNKNOWN_STUDY_TYPE
+        - UNKNOWN_BIOSAMPLE
         - DUPLICATED_STUDY
-        - NO_GENE_PROVIDED
       session.write_mode: overwrite
 
   - id: credible_set_validation
@@ -48,6 +48,9 @@ steps:
         - PALINDROMIC_ALLELE_FLAG
         - SUBSIGNIFICANT_FLAG
         - LD_CLUMPED
+        - IN_MHC
+        - REDUNDANT_PICS_TOP_HIT
+        - EXPLAINED_BY_SUSIE
       session.write_mode: overwrite
   - id: "ot_gene_index"
   - id: "ot_variant_index"
