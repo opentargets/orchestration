@@ -101,8 +101,8 @@ nodes:
               SOURCE_FORMAT: parquet
           resource_specs:
             cpu_milli: 2000
-            memory_mib: 2000
-            boot_disk_mib: 10000
+            memory_mib: 10000
+            boot_disk_mib: 25000
           task_specs:
             max_retry_count: 4
             max_run_duration: "2h"
@@ -184,7 +184,6 @@ nodes:
     params:
       step: colocalisation
       step.credible_set_path: *valid_credible_set
-      step.study_index_path: *valid_study_index
       step.coloc_path: gs://ot_orchestration/releases/26.09/colocalisation/ecaviar
       step.colocalisation_method: ECaviar
     prerequisites:
@@ -193,7 +192,7 @@ nodes:
     command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
     params:
       step: colocalisation
-      step.study_index_path: *valid_study_index
+      step.credible_set_path: *valid_credible_set
       step.coloc_path: gs://ot_orchestration/releases/26.09/colocalisation/coloc
       step.colocalisation_method: Coloc
     prerequisites:
