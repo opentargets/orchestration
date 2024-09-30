@@ -32,9 +32,11 @@ with DAG(
         params={
             "step.catalog_study_files": [
                 "gs://gwas_catalog_data/curated_inputs/gwas_catalog_download_studies.tsv",
+                "gs://gwas_catalog_data/curated_inputs/gwas_catalog_unpublished_studies.tsv",
             ],
             "step.catalog_ancestry_files": [
                 "gs://gwas_catalog_data/curated_inputs/gwas_catalog_download_ancestries.tsv",
+                "gs://gwas_catalog_data/curated_inputs/gwas_catalog_unpublished_ancestries.tsv",
             ],
             "step.gwas_catalog_study_curation_file": "gs://gwas_catalg_data//manifests/gwas_catalog_study_curation.tsv",
             "step.gwas_catalog_study_curation_out": f"gs://genetics_etl_python_playground/input/v2d/GWAS_Catalog_study_curation_{RUN_DATE}.tsv",
