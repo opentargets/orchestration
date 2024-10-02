@@ -25,8 +25,8 @@ nodes:
     kind: Task
     infrastructure: dataproc
     prerequisites: []
-      # - ukb_ppp_eur_sumstat_preprocess
-      # - summary_statistics_qc
+    # - ukb_ppp_eur_sumstat_preprocess
+    # - summary_statistics_qc
     params:
       step: locus_breaker_clumping
       step.summary_statistics_input_path: gs://ot_orchestration/ukb_ppp_eur_data/harmonised_summary_statistics

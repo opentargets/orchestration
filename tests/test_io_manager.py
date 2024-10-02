@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-
 from ot_orchestration.utils import GCSPath, IOManager
 from ot_orchestration.utils.path import (
     URI_PATTERN,

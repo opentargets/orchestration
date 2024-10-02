@@ -8,12 +8,12 @@ from google.cloud.batch_v1 import (
     ComputeResource,
     Environment,
     Job,
+    LifecyclePolicy,
     LogsPolicy,
     Runnable,
     TaskGroup,
     TaskSpec,
     Volume,
-    LifecyclePolicy,
 )
 
 from ot_orchestration.types import (

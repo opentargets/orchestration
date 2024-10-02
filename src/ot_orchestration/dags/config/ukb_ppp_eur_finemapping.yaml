@@ -11,7 +11,7 @@ nodes:
   - id: finemapping_batch_job
     kind: Task
     prerequisites:
-    - generate_manifests
+      - generate_manifests
     params:
       study_index_path: gs://ukb_ppp_eur_data/study_index
     google_batch:
