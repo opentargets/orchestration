@@ -72,7 +72,6 @@ nodes:
         - REDUNDANT_PICS_TOP_HIT
         - EXPLAINED_BY_SUSIE
       step.session.write_mode: overwrite
-      step.session.spark_uri: yarn
   - id: variant_annotation
     kind: TaskGroup
     nodes:

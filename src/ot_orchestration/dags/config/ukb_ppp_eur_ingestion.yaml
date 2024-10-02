@@ -1,0 +1,43 @@
+dataproc:
+  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dev/cli.py
+  cluster_metadata:
+    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/dev/gentropy-0.0.0-py3-none-any.whl
+  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/dev/install_dependencies_on_cluster.sh
+  cluster_name: otg-ukb-ppp-eur
+  autoscaling_policy: otg-etl
+nodes:
+  - id: ukb_ppp_eur_sumstat_preprocess
+    infrastructure: dataproc
+    kind: Task
+    prerequisites: []
+    params:
+      # NOTE: Check documentation to see how to generate input files from source
+      step: ukb_ppp_eur_sumstat_preprocess
+      step.raw_study_index_path_from_tsv: gs://gentropy-tmp/batch/output/ukb_ppp_eur/study_index.tsv
+      step.raw_summary_stats_path: gs://gentropy-tmp/batch/output/ukb_ppp_eur/summary_stats.parquet
+      step.variant_annotation_path: gs://genetics_etl_python_playground/output/python_etl/parquet/XX.XX/variant_annotation
+      step.tmp_variant_annotation_path: gs://gentropy-tmp/variant_annotation
+      step.study_index_output_path: gs://ot_orchestration/ukb_ppp_eur_data/study_index
+      step.summary_stats_output_path: gs://ot_orchestration/ukb_ppp_eur_data/harmonised_summary_statistics
+      step.session.write_mode: overwrite
+
+  - id: locus_breaker_clumping
+    kind: Task
+    infrastructure: dataproc
+    prerequisites: []
+      # - ukb_ppp_eur_sumstat_preprocess
+      # - summary_statistics_qc
+    params:
+      step: locus_breaker_clumping
+      step.summary_statistics_input_path: gs://ot_orchestration/ukb_ppp_eur_data/harmonised_summary_statistics
+      step.clumped_study_locus_output_path: gs://ot_orchestration/ukb_ppp_eur_data/study_locus_datasets/locus_breaker_clumping
+      step.lbc_baseline_pvalue: 1.0e-5
+      step.lbc_distance_cutoff: 250_000
+      step.lbc_pvalue_threshold: 1.7e-11
+      step.lbc_flanking_distance: 100_000
+      step.large_loci_size: 1_500_000
+      step.wbc_clump_distance: 500_000
+      step.wbc_pvalue_threshold: 1.7e-11
+      step.collect_locus: True
+      step.remove_mhc: True
+      step.session.write_mode: overwrite

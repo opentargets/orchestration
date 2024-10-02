@@ -5,12 +5,14 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+
 from ot_orchestration.utils import GCSPath, IOManager
 from ot_orchestration.utils.path import (
     URI_PATTERN,
     GCSPath,
     IOManager,
     NativePath,
+    extract_partition_from_blob,
 )
 
 
@@ -188,3 +190,14 @@ class TestGCSPath:
         """Test GCSPath object bucket property."""
         gcs_path_obj = GCSPath(gcs_path)
         assert gcs_path_obj.bucket == bucket
+
+
+def test_extract_partition_from_blob():
+    """Test extract_partition_from_blob."""
+    with pytest.raises(ValueError, match="No partition found"):
+        extract_partition_from_blob("gs://bucket/prefix/filename")
+    # fmt: off
+    assert extract_partition_from_blob("gs://bucket/longer/path/partition=123") == "partition=123", "Failed extracting partition"
+    assert extract_partition_from_blob("clean_loci.parquet/studyLocusId=999080517901738023") == "studyLocusId=999080517901738023", "Failed extracting Locus partition"
+    assert extract_partition_from_blob("clean_loci.parquet/studyLocusId=999080517901738023/partition=123") == "studyLocusId=999080517901738023", "Get the first partition if multiple provided"
+    # fmt: on

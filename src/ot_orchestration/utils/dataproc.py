@@ -13,6 +13,7 @@ from airflow.providers.google.cloud.operators.dataproc import (
 from airflow.utils.trigger_rule import TriggerRule
 
 from ot_orchestration.utils import convert_params_to_hydra_positional_arg
+from ot_orchestration.utils.path import GCSPath
 
 # from ot_orchestration.utils import GCSPath
 from ot_orchestration.utils.common import (
@@ -126,7 +127,7 @@ def submit_gentropy_step(
         task_id=step_name,
         python_main_module=python_main_module,
         trigger_rule=trigger_rule,
-        args=convert_params_to_hydra_positional_arg(params=params),
+        args=convert_params_to_hydra_positional_arg(params=params, dataproc=True),
     )
 
 
@@ -221,9 +222,8 @@ def delete_cluster(cluster_name: str) -> DataprocDeleteClusterOperator:
 
 def generate_dataproc_task_chain(
     cluster_name: str,
-    cluster_init_script: str,
-    cluster_metadata: dict[str, str],
     tasks: list[DataprocSubmitJobOperator],
+    **kwargs: dict[str, Any],
 ) -> Any:
     """For a list of Dataproc tasks, generate a complete chain of tasks.
 
@@ -232,18 +232,13 @@ def generate_dataproc_task_chain(
 
     Args:
         cluster_name (str): Name of the cluster.
-        cluster_init_script (str): URI to the cluster initialization script.
-        cluster_metadata: (dict[str, str]): METADATA to fill into the cluster during initialization.
         tasks (list[DataprocSubmitJobOperator]): List of tasks to execute.
+        kwargs (dict[str, Any]): Keyword arguments to provide to the create_cluster function.
 
     Returns:
         list[DataprocSubmitJobOperator]: list of input tasks with muted chain.
     """
-    create_cluster_task = create_cluster(
-        cluster_name,
-        cluster_metadata=cluster_metadata,
-        cluster_init_script=cluster_init_script,
-    )
+    create_cluster_task = create_cluster(cluster_name, **kwargs)
     delete_cluster_task = delete_cluster(cluster_name)
     for task in tasks:
         if not task.get_direct_relatives(upstream=True):
@@ -273,3 +268,32 @@ def generate_dag(cluster_name: str, tasks: list[DataprocSubmitJobOperator]) -> A
             task.set_downstream(delete_cluster_task)
 
     return tasks
+
+
+def reinstall_dependencies(
+    cluster_name: str, cluster_init_script: str
+) -> DataprocSubmitJobOperator:
+    """Force install dependencies on a Dataproc cluster.
+
+    Args:
+        cluster_name (str): Name of the cluster.
+        cluster_init_script (str): Name of the script to run in the cluster to update the dependencies.
+
+    Returns:
+        DataprocSubmitJobOperator: Airflow task to install dependencies on a Dataproc cluster.
+    """
+    init_script = GCSPath(cluster_init_script).segments["filename"]
+    return submit_job(
+        cluster_name=cluster_name,
+        task_id="install_dependencies",
+        job_type="pig_job",
+        job_specification={
+            "jar_file_uris": [cluster_init_script],
+            "query_list": {
+                "queries": [
+                    f"sh chmod 750 $PWD/{init_script}",
+                    f"sh $PWD/{init_script}",
+                ]
+            },
+        },
+    )
