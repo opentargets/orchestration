@@ -1,0 +1,47 @@
+dataproc:
+  cluster_name: otg-tophit-gwascatalog
+  autoscaling_policy: otg-gwascatalog-tophit
+  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dev/cli.py
+  cluster_metadata:
+    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/dev/gentropy-0.0.0-py3-none-any.whl
+  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/dev/install_dependencies_on_cluster.sh
+  num_workers: 2
+
+nodes:
+  - id: top_hits_processing
+    kind: TaskGroup
+    prerequisites: []
+    nodes:
+      - id: gwas_catalog_top_hit_ingestion
+        kind: Task
+        params:
+          step: gwas_catalog_top_hit_ingestion
+          step.catalog_study_files:
+            - gs://gwas_catalog_top_hits_data/curated_inputs/gwas_catalog_download_studies.tsv
+          step.catalog_ancestry_files:
+            - gs://gwas_catalog_top_hits_data/curated_inputs/gwas_catalog_download_ancestries.tsv
+          step.catalog_associations_file: gs://gwas_catalog_top_hits_data/curated_inputs/gwas_catalog_associations_ontology_annotated.tsv
+          step.variant_annotation_path: gs://genetics_etl_python_playground/static_assets/gnomad_variants
+          step.catalog_studies_out: gs://gwas_catalog_top_hits_data/study_index
+          step.catalog_associations_out: gs://gwas_catalog_top_hits_data/study_locus_datasets/gwas_catalog_curated_associations
+          step.session.write_mode: overwrite
+      - id: ld_based_clumping
+        kind: Task
+        prerequisites:
+          - gwas_catalog_top_hit_ingestion
+        params:
+          step: ld_based_clumping
+          step.ld_index_path: gs://genetics_etl_python_playground/static_assets/ld_index
+          step.study_locus_input_path: gs://gwas_catalog_top_hits_data/study_locus_datasets/gwas_catalog_curated_associations
+          step.clumped_study_locus_output_path: gs://gwas_catalog_top_hits_data/study_locus_datasets/gwas_catalog_curated_associations_ld_clumped
+          step.study_index_path: gs://gwas_catalog_top_hits_data/study_index
+          step.session.write_mode: overwrite
+      - id: pics
+        kind: Task
+        prerequisites:
+          - ld_based_clumping
+        params:
+          step: pics
+          step.study_locus_ld_annotated_in: gs://gwas_catalog_top_hits_data/study_locus_datasets/gwas_catalog_curated_associations_ld_clumped
+          step.picsed_study_locus_out: gs://gwas_catalog_top_hits_data/credible_set_datasets/gwas_catalog_PICSed_curated_associations
+          step.session.write_mode: overwrite
