@@ -30,14 +30,13 @@ with DAG(
 ):
     tasks = {}
     for step in config["nodes"]:
-        if step["infrastructure"] == "dataproc" and step["kind"] == "Task":
-            task = submit_gentropy_step(
-                cluster_name=config["dataproc"]["cluster_name"],
-                step_name=step["id"],
-                python_main_module=config["dataproc"]["python_main_module"],
-                params=step["params"],
-            )
-            tasks[step["id"]] = task
+        task = submit_gentropy_step(
+            cluster_name=config["dataproc"]["cluster_name"],
+            step_name=step["id"],
+            python_main_module=config["dataproc"]["python_main_module"],
+            params=step["params"],
+        )
+        tasks[step["id"]] = task
 
     chain_dependencies(nodes=config["nodes"], tasks_or_task_groups=tasks)
     generate_dataproc_task_chain(

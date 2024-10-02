@@ -7,7 +7,6 @@ dataproc:
   autoscaling_policy: otg-etl
 nodes:
   - id: ukb_ppp_eur_sumstat_preprocess
-    infrastructure: dataproc
     kind: Task
     prerequisites: []
     params:
@@ -23,10 +22,8 @@ nodes:
 
   - id: locus_breaker_clumping
     kind: Task
-    infrastructure: dataproc
-    prerequisites: []
-    # - ukb_ppp_eur_sumstat_preprocess
-    # - summary_statistics_qc
+    prerequisites:
+      - ukb_ppp_eur_sumstat_preprocess
     params:
       step: locus_breaker_clumping
       step.summary_statistics_input_path: gs://ot_orchestration/ukb_ppp_eur_data/harmonised_summary_statistics
