@@ -1,10 +1,10 @@
 dataproc:
   cluster_name: otg-tophit-gwascatalog
   autoscaling_policy: otg-gwascatalog-tophit
-  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dev/cli.py
+  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dsdo_top_hits_step/cli.py
   cluster_metadata:
-    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/dev/gentropy-0.0.0-py3-none-any.whl
-  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/dev/install_dependencies_on_cluster.sh
+    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/dsdo_top_hits_step/gentropy-0.0.0-py3-none-any.whl
+  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/dsdo_top_hits_step/install_dependencies_on_cluster.sh
   num_workers: 2
 
 nodes:
@@ -25,6 +25,7 @@ nodes:
           step.catalog_studies_out: gs://gwas_catalog_top_hits_data/study_index
           step.catalog_associations_out: gs://gwas_catalog_top_hits_data/study_locus_datasets/gwas_catalog_curated_associations
           step.session.write_mode: overwrite
+          step.session.spark_uri: yarn
       - id: ld_based_clumping
         kind: Task
         prerequisites:
@@ -36,6 +37,7 @@ nodes:
           step.clumped_study_locus_output_path: gs://gwas_catalog_top_hits_data/study_locus_datasets/gwas_catalog_curated_associations_ld_clumped
           step.study_index_path: gs://gwas_catalog_top_hits_data/study_index
           step.session.write_mode: overwrite
+          step.session.spark_uri: yarn
       - id: pics
         kind: Task
         prerequisites:
@@ -45,3 +47,4 @@ nodes:
           step.study_locus_ld_annotated_in: gs://gwas_catalog_top_hits_data/study_locus_datasets/gwas_catalog_curated_associations_ld_clumped
           step.picsed_study_locus_out: gs://gwas_catalog_top_hits_data/credible_set_datasets/gwas_catalog_PICSed_curated_associations
           step.session.write_mode: overwrite
+          step.session.spark_uri: yarn
