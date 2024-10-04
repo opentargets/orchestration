@@ -18,7 +18,6 @@ from ot_orchestration.utils.dataproc import (
     create_cluster,
     delete_cluster,
     submit_gentropy_step,
-    reinstall_dependencies,
 )
 
 CONFIG_PATH = Path(__file__).parent / "config" / "gwas_catalog_sumstats_pics.yaml"
@@ -55,10 +54,6 @@ with DAG(
             autoscaling_policy=config["dataproc"]["autoscaling_policy"],
             num_workers=config["dataproc"]["num_workers"],
             cluster_metadata=config["dataproc"]["cluster_metadata"],
-            cluster_init_script=config["dataproc"]["cluster_init_script"],
-        ),
-        reinstall_dependencies(
-            cluster_name=config["dataproc"]["cluster_name"],
             cluster_init_script=config["dataproc"]["cluster_init_script"],
         ),
         summary_statistics_processing,
