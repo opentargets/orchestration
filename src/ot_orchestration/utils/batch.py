@@ -21,7 +21,10 @@ from ot_orchestration.types import (
     BatchTaskSpecs,
     GCSMountObject,
 )
-from ot_orchestration.utils.utils import time_to_seconds
+from ot_orchestration.utils import (
+    convert_params_to_hydra_positional_arg,
+    time_to_seconds,
+)
 
 
 def create_container_runnable(
@@ -134,4 +137,21 @@ def create_batch_job(
     return job
 
 
-__all__ = ["create_batch_job", "create_task_spec"]
+def create_task_env(var_list: list[dict[str, Any]]):
+    """This function creates list of batch_v1.Environment objects from provided list of dictionaries."""
+    return [Environment(variables=variables) for variables in var_list]
+
+
+def create_task_commands(
+    commands: list[str] | None, params: dict[str, dict[str, Any] | None]
+) -> list[str]:
+    """This function prepares list of commands for google batch job from the step configuration."""
+    args = convert_params_to_hydra_positional_arg(params=params)
+    task_commands = []
+    if commands:
+        task_commands.extend(commands)
+    task_commands.extend(args)
+
+    if len(task_commands) > 1 and task_commands[0] == "-c":
+        task_commands = ["-c", " ".join(task_commands[1:])]
+    return task_commands

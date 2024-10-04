@@ -26,6 +26,7 @@ pendulum = "^3.0.0"
 apache-airflow-providers-apache-beam = "^5.7.1"
 requests = "^2.32.3"
 pyhocon = "^0.3.61"
+pandas = ">=2.1.2,<2.2"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.4.9"
