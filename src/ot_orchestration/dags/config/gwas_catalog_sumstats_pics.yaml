@@ -30,7 +30,7 @@ nodes:
         params:
           step: window_based_clumping
           step.summary_statistics_input_path: gs://gwas_catalog_inputs/harmonised_summary_statistics
-          step.study_locus_output_path: gs://gwas_catalog_sumstats_pics/study_locus
+          step.study_locus_output_path: gs://gwas_catalog_sumstats_pics/study_locus_window_based_clumped
           step.session.write_mode: overwrite
           step.session.spark_uri: yarn
       - id: ld_based_clumping
@@ -40,7 +40,7 @@ nodes:
         params:
           step: ld_based_clumping
           step.ld_index_path: gs://genetics_etl_python_playground/static_assets/ld_index
-          step.study_locus_input_path: gs://gwas_catalog_sumstats_pics/study_locus
+          step.study_locus_input_path: gs://gwas_catalog_sumstats_pics/study_locus_window_based_clumped
           step.clumped_study_locus_output_path: gs://gwas_catalog_sumstats_pics/study_locus_ld_clumped
           step.study_index_path: gs://gwas_catalog_sumstats_pics/study_index
           step.session.write_mode: overwrite

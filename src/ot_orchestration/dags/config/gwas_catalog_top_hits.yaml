@@ -23,7 +23,7 @@ nodes:
           step.catalog_associations_file: gs://gwas_catalog_inputs/gwas_catalog_associations_ontology_annotated.tsv
           step.variant_annotation_path: gs://genetics_etl_python_playground/static_assets/gnomad_variants
           step.catalog_studies_out: gs://gwas_catalog_top_hits/study_index
-          step.catalog_associations_out: gs://gwas_catalog_top_hits/study_locus
+          step.catalog_associations_out: gs://gwas_catalog_top_hits/study_locus_window_based_clumped
           step.session.write_mode: overwrite
           step.session.spark_uri: yarn
       - id: ld_based_clumping
@@ -33,7 +33,7 @@ nodes:
         params:
           step: ld_based_clumping
           step.ld_index_path: gs://genetics_etl_python_playground/static_assets/ld_index
-          step.study_locus_input_path: gs://gwas_catalog_top_hits/study_locus
+          step.study_locus_input_path: gs://gwas_catalog_top_hits/study_locus_window_based_clumped
           step.clumped_study_locus_output_path: gs://gwas_catalog_top_hits/study_locus_ld_clumped
           step.study_index_path: gs://gwas_catalog_top_hits/study_index
           step.session.write_mode: overwrite
