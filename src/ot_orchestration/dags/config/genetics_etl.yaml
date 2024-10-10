@@ -2,10 +2,10 @@ gwas_catalog_manifests_path: gs://gwas_catalog_data/manifests
 l2g_gold_standard_path: gs://genetics_etl_python_playground/input/l2g/gold_standard/curation.json
 release_dir: gs://ot_orchestration/releases/24.10
 dataproc:
-  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dev/cli.py
+  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/ds_fix_coloc/cli.py
   cluster_metadata:
-    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/dev/gentropy-0.0.0-py3-none-any.whl
-  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/dev/install_dependencies_on_cluster.sh
+    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/ds_fix_coloc/gentropy-0.0.0-py3-none-any.whl
+  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/ds_fix_coloc/install_dependencies_on_cluster.sh
   cluster_name: otg-etl
   autoscaling_policy: otg-etl
 
@@ -164,13 +164,13 @@ nodes:
       step.session.write_mode: overwrite
     prerequisites:
       - variant_annotation
-  # - id: gene_index
-  #   command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
-  #   params:
-  #     step: gene_index
-  #     step.target_path: gs://genetics_etl_python_playground/static_assets/targets # OTP 23.12 data
-  #     step.gene_index_path: gs://ot_orchestration/releases/24.10/gene_index
-  #     step.session.spark_uri: yarn
+  - id: gene_index
+    command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
+    params:
+      step: gene_index
+      step.target_path: gs://genetics_etl_python_playground/static_assets/targets # OTP 23.12 data
+      step.gene_index_path: gs://ot_orchestration/releases/24.10/gene_index
+      step.session.spark_uri: yarn
   - id: colocalisation_ecaviar
     command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
     params:
@@ -192,7 +192,7 @@ nodes:
       step.session.spark_uri: yarn
       step.session.write_mode: overwrite
     prerequisites:
-      - colocalisation_ecaviar # ensure two tasks are not draining each other resources
+      - credible_set_validation
   - id: l2g_feature_matrix
     command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
     params:
@@ -204,12 +204,11 @@ nodes:
       step.gene_index_path: gs://ot_orchestration/releases/24.10/gene_index
       step.feature_matrix_path: gs://ot_orchestration/releases/24.10/locus_to_gene_feature_matrix
       step.session.spark_uri: yarn
-      step.features_list: null # Modify to change the list of default values from the Gentropy config
     prerequisites:
       - colocalisation_coloc
       - colocalisation_ecaviar
       - variant_index
-      - credible_set_validation
+      - gene_index
   - id: l2g_train
     command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
     params:
@@ -220,15 +219,15 @@ nodes:
       step.model_path: gs://ot_orchestration/releases/24.10/locus_to_gene_model/classifier.skops
       step.predictions_path: gs://ot_orchestration/releases/24.10/locus_to_gene_predictions
       step.credible_set_path: *valid_credible_set
+      step.variant_index_path: gs://ot_orchestration/releases/24.10/variant_index
+      step.feature_matrix_path: gs://ot_orchestration/releases/24.10/locus_to_gene_feature_matrix
       step.gold_standard_curation_path: gs://ot_orchestration/releases/24.10/locus_to_gene_gold_standard.json
       step.gene_interactions_path: gs://genetics_etl_python_playground/static_assets/interaction # OTP 23.12 data
-      step.hyperparameters:
-        n_estimators: 100
-        max_depth: 5
-        loss: log_loss
+      step.hyperparameters.n_estimators: 100
+      step.hyperparameters.max_depth: 5
+      step.hyperparameters.loss: log_loss
       step.download_from_hub: true
       step.session.spark_uri: yarn
-      step.features_list: null # Modify to change the list of default values from the Gentropy config
     prerequisites:
       - l2g_feature_matrix
   - id: l2g_predict
@@ -239,11 +238,11 @@ nodes:
       step.model_path: null
       step.hf_hub_repo_id: opentargets/locus_to_gene
       step.predictions_path: gs://ot_orchestration/releases/24.10/locus_to_gene_predictions
+      step.variant_index_path: gs://ot_orchestration/releases/24.10/variant_index
       step.feature_matrix_path: gs://ot_orchestration/releases/24.10/locus_to_gene_feature_matrix
       step.credible_set_path: *valid_credible_set
       step.study_index_path: *valid_study_index
       step.colocalisation_path: gs://ot_orchestration/releases/24.10/colocalisation
       step.session.spark_uri: yarn
-      step.features_list: null # Modify to change the list of default values from the Gentropy config
     prerequisites:
       - l2g_train
