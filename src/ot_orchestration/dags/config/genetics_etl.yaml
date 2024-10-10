@@ -197,6 +197,22 @@ nodes:
       step.colocalisation_method: Coloc
     prerequisites:
       - colocalisation_ecaviar # ensure two tasks are not draining each other resources
+
+  - id: l2g_feature_matrix
+    command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
+    params:
+      step: locus_to_gene_feature_matrix
+      step.credible_set_path: *valid_credible_set
+      step.variant_index_path: gs://ot_orchestration/releases/27.09/variant_index
+      step.colocalisation_path: gs://ot_orchestration/releases/27.09/colocalisation
+      step.study_index_path: *valid_study_index
+      step.gene_index_path: gs://ot_orchestration/releases/27.09/gene_index
+      step.feature_matrix_path: gs://ot_orchestration/releases/27.09/locus_to_gene_feature_matrix
+      # step.features_list: Modify to change the list of default values from the Gentropy config
+    prerequisites:
+      - colocalisation_coloc
+      - colocalisation_ecaviar
+      - variant_index
   - id: l2g_train
     command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
     params:
@@ -205,33 +221,30 @@ nodes:
       step.wandb_run_name: "24.09"
       step.hf_hub_repo_id: opentargets/locus_to_gene
       step.model_path: gs://ot_orchestration/releases/27.09/locus_to_gene_model/classifier.skops
-      step.predictions_path: gs://ot_orchestration/releases/27.09/locus_to_gene_predictions
       step.credible_set_path: *valid_credible_set
-      step.colocalisation_path: gs://ot_orchestration/releases/27.09/colocalisation
-      step.variant_gene_path: gs://ot_orchestration/releases/27.09/variant_to_gene
-      step.study_index_path: *valid_study_index
       step.gold_standard_curation_path: gs://ot_orchestration/releases/27.09/locus_to_gene_gold_standard.json
-      step.gene_interactions_path: gs://genetics_etl_python_playground/static_assets/targets # OTP 233.12 data
+      step.gene_interactions_path: gs://genetics_etl_python_playground/static_assets/interaction # OTP 23.12 data
       step.hyperparameters:
         n_estimators: 100
         max_depth: 5
         loss: log_loss
       step.download_from_hub: true
+      # step.features_list: Modify to change the list of default values from the Gentropy config
     prerequisites:
-      - colocalisation_coloc
-      - colocalisation_ecaviar
-      - variant_to_gene
+      - l2g_feature_matrix
+
   - id: l2g_predict
     command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
     params:
       step: locus_to_gene
       step.run_mode: predict
       step.model_path: null
+      step.hf_hub_repo_id: opentargets/locus_to_gene
       step.predictions_path: gs://ot_orchestration/releases/27.09/locus_to_gene_predictions
       step.feature_matrix_path: gs://ot_orchestration/releases/27.09/locus_to_gene_feature_matrix
       step.credible_set_path: *valid_credible_set
       step.study_index_path: *valid_study_index
-      step.variant_gene_path: gs://ot_orchestration/releases/27.09/variant_to_gene
       step.colocalisation_path: gs://ot_orchestration/releases/27.09/colocalisation
+      # step.features_list: Modify to change the list of default values from the Gentropy config
     prerequisites:
       - l2g_train
