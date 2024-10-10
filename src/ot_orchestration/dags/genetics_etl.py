@@ -8,7 +8,6 @@ from pathlib import Path
 from airflow.decorators import task, task_group
 from airflow.models.baseoperator import chain
 from airflow.models.dag import DAG
-from airflow.operators.python import ShortCircuitOperator
 from airflow.providers.google.cloud.operators.cloud_batch import (
     CloudBatchSubmitJobOperator,
 )
@@ -22,7 +21,6 @@ from ot_orchestration.operators.vep import (
 from ot_orchestration.utils import (
     GCSPath,
     chain_dependencies,
-    check_gcp_folder_exists,
     find_node_in_config,
     read_yaml_config,
 )
