@@ -1,12 +1,13 @@
 gwas_catalog_manifests_path: gs://gwas_catalog_data/manifests
 l2g_gold_standard_path: gs://genetics_etl_python_playground/input/l2g/gold_standard/curation.json
-release_dir: gs://ot_orchestration/releases/27.09
+release_dir: gs://ot_orchestration/releases/24.10
 dataproc:
-  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/szsz-fix-vep-vi-schema-ordering/cli.py
+  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dev/cli.py
   cluster_metadata:
-    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/szsz-fix-vep-vi-schema-ordering/gentropy-0.0.0-py3-none-any.whl
-  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/szsz-fix-vep-vi-schema-ordering/install_dependencies_on_cluster.sh
+    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/dev/gentropy-0.0.0-py3-none-any.whl
+  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/dev/install_dependencies_on_cluster.sh
   cluster_name: otg-etl
+  autoscaling_policy: otg-etl
 
 nodes:
   - id: biosample_index
@@ -16,7 +17,9 @@ nodes:
       step: biosample_index
       step.cell_ontology_input_path: gs://open-targets-pre-data-releases/24.06dev-test/input/biosamples/cl.json
       step.uberon_input_path: gs://open-targets-pre-data-releases/24.06dev-test/input/biosamples/uberon.json
-      step.biosample_index_path: gs://ot_orchestration/releases/27.09/biosample_index
+      step.biosample_index_path: gs://ot_orchestration/releases/24.10/biosample_index
+      step.session.spark_uri: yarn
+      step.session.write_mode: overwrite
   - id: study_validation
     kind: Task
     prerequisites:
@@ -24,15 +27,15 @@ nodes:
     params:
       step: study_validation
       step.study_index_path:
-        - gs://gwas_catalog_data/study_index
+        - gs://gwas_catalog_sumstats_pics/study_index/ # TEMPORARY LOCATION
         - gs://eqtl_catalogue_data/study_index
         - gs://ukb_ppp_eur_data/study_index
         - gs://finngen_data/r11/study_index
       step.target_index_path: gs://genetics_etl_python_playground/releases/24.06/gene_index
       step.disease_index_path: gs://open-targets-pre-data-releases/24.06/output/etl/parquet/diseases
-      step.valid_study_index_path: &valid_study_index gs://ot_orchestration/releases/27.09/study_index
-      step.invalid_study_index_path: gs://ot_orchestration/releases/27.09/invalid_study_index
-      step.biosample_index_path: gs://ot_orchestration/releases/27.09/biosample_index
+      step.valid_study_index_path: &valid_study_index gs://ot_orchestration/releases/24.10/study_index
+      step.invalid_study_index_path: gs://ot_orchestration/releases/24.10/invalid_study_index
+      step.biosample_index_path: gs://ot_orchestration/releases/24.10/biosample_index
       step.invalid_qc_reasons:
         - UNRESOLVED_TARGET
         - UNRESOLVED_DISEASE
@@ -40,6 +43,7 @@ nodes:
         - DUPLICATED_STUDY
         - UNKNOWN_BIOSAMPLE
       step.session.write_mode: overwrite
+      step.session.spark_uri: yarn
 
   - id: credible_set_validation
     kind: Task
@@ -49,14 +53,14 @@ nodes:
       step: credible_set_validation
       step.study_index_path: *valid_study_index
       step.study_locus_path:
-        - gs://gwas_catalog_data/credible_set_datasets/gwas_catalog_PICSed_curated_associations
-        - gs://gwas_catalog_data/credible_set_datasets/gwas_catalog_PICSed_summary_statistics
-        - gs://gwas_catalog_data/credible_set_datasets/gwas_catalog_susie_summary_statistics
+        - gs://gwas_catalog_top_hits/credible_sets/
+        - gs://gwas_catalog_sumstats_pics/credible_sets/
+        - gs://gwas_catalog_sumstats_susie/credible_sets/
         - gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie/
         - gs://ukb_ppp_eur_data/credible_set_datasets/ukb_ppp_eur_susie
-        - gs://finngen_data/r11/credible_set_datasets/finngen_r11_susie
-      step.valid_study_locus_path: &valid_credible_set gs://ot_orchestration/releases/27.09/credible_set
-      step.invalid_study_locus_path: gs://ot_orchestration/releases/27.09/invalid_credible_set
+        - gs://finngen_data/r11/credible_set_datasets/susie/
+      step.valid_study_locus_path: &valid_credible_set gs://ot_orchestration/releases/24.10/credible_set
+      step.invalid_study_locus_path: gs://ot_orchestration/releases/24.10/invalid_credible_set
       step.invalid_qc_reasons:
         - DUPLICATED_STUDYLOCUS_ID
         - AMBIGUOUS_STUDY
@@ -71,6 +75,8 @@ nodes:
         - IN_MHC
         - REDUNDANT_PICS_TOP_HIT
         - EXPLAINED_BY_SUSIE
+        - WINDOW_CLUMPED
+        - NON_MAPPED_VARIANT_FLAG
       step.session.write_mode: overwrite
       step.session.spark_uri: yarn
   - id: variant_annotation
@@ -97,7 +103,7 @@ nodes:
               SOURCE_PATH: gs://open-targets-pre-data-releases/24.09/input/pharmacogenomics-inputs/pharmacogenomics.json.gz
               SOURCE_FORMAT: json
             - SOURCE_NAME: gentropy_credible_sets
-              SOURCE_PATH: gs://ot_orchestration/releases/27.09/credible_set
+              SOURCE_PATH: gs://ot_orchestration/releases/24.10/credible_set
               SOURCE_FORMAT: parquet
           resource_specs:
             cpu_milli: 2000
@@ -112,7 +118,7 @@ nodes:
           step: variant_to_vcf
           step.source_path: $SOURCE_PATH
           step.source_format: $SOURCE_FORMAT
-          step.vcf_path: gs://ot_orchestration/releases/27.09/variants/raw_variants/$SOURCE_NAME
+          step.vcf_path: gs://ot_orchestration/releases/24.10/variants/raw_variants/$SOURCE_NAME
           step.session.write_mode: overwrite
           +step.session.extended_spark_conf: "{spark.jars:https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop3-latest.jar}"
 
@@ -120,8 +126,8 @@ nodes:
         kind: Task
         params:
           # the extension after saving from pyspark csv is going to be the .csv
-          input_vcf_glob: gs://ot_orchestration/releases/27.09/variants/raw_variants/**.csv
-          output_path: gs://ot_orchestration/releases/27.09/variants/merged_variants
+          input_vcf_glob: gs://ot_orchestration/releases/24.10/variants/raw_variants/**.csv
+          output_path: gs://ot_orchestration/releases/24.10/variants/merged_variants
           chunk_size: 2000
         prerequisites:
           - variant_to_vcf
@@ -141,8 +147,8 @@ nodes:
             machine_type: n1-standard-4
         params:
           vep_cache_path: gs://genetics_etl_python_playground/vep/cache
-          vcf_input_path: gs://ot_orchestration/releases/27.09/variants/merged_variants
-          vep_output_path: gs://ot_orchestration/releases/27.09/variants/annotated_variants
+          vcf_input_path: gs://ot_orchestration/releases/24.10/variants/merged_variants
+          vep_output_path: gs://ot_orchestration/releases/24.10/variants/annotated_variants
         prerequisites:
           - list_nonannotated_vcfs
     prerequisites:
@@ -151,41 +157,29 @@ nodes:
     command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
     params:
       step: variant_index
-      step.vep_output_json_path: gs://ot_orchestration/releases/27.09/variants/annotated_variants
+      step.vep_output_json_path: gs://ot_orchestration/releases/24.10/variants/annotated_variants
       step.gnomad_variant_annotations_path: gs://genetics_etl_python_playground/static_assets/gnomad_variants
-      step.variant_index_path: gs://ot_orchestration/releases/27.09/variant_index
+      step.variant_index_path: gs://ot_orchestration/releases/24.10/variant_index
+      step.session.spark_uri: yarn
+      step.session.write_mode: overwrite
     prerequisites:
       - variant_annotation
-  - id: gene_index
-    command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
-    params:
-      step: gene_index
-      step.target_index: gs://genetics_etl_python_playground/static_assets/targets # OTP 23.12 data
-      step.gene_index_path: gs://ot_orchestration/releases/27.09/gene_index
-  - id: variant_to_gene
-    command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
-    params:
-      step: variant_to_gene
-      step.variant_index_path: gs://ot_orchestration/releases/27.09/variant_index
-      step.gene_index_path: gs://ot_orchestration/releases/27.09/gene_index
-      step.vep_consequences_path: gs://genetics_etl_python_playground/static_assets/variant_consequence_to_score.tsv
-      step.liftover_chain_file_path: gs://genetics_etl_python_playground/static_assets/grch37_to_grch38.over.chain
-      step.interval_sources:
-        - andersson: gs://genetics_etl_python_playground/static_assets/andersson2014/enhancer_tss_associations.bed
-        - javierre: gs://genetics_etl_python_playground/static_assets/javierre_2016_preprocessed
-        - jung: gs://genetics_etl_python_playground/static_assets/jung2019_pchic_tableS3.csv
-        - thurman: gs://genetics_etl_python_playground/static_assets/thurman2012/genomewideCorrs_above0.7_promoterPlusMinus500kb_withGeneNames_32celltypeCategories.bed8.gz
-      step.v2g_path: gs://ot_orchestration/releases/27.09/variant_to_gene
-    prerequisites:
-      - variant_index
-      - gene_index
+  # - id: gene_index
+  #   command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
+  #   params:
+  #     step: gene_index
+  #     step.target_path: gs://genetics_etl_python_playground/static_assets/targets # OTP 23.12 data
+  #     step.gene_index_path: gs://ot_orchestration/releases/24.10/gene_index
+  #     step.session.spark_uri: yarn
   - id: colocalisation_ecaviar
     command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
     params:
       step: colocalisation
       step.credible_set_path: *valid_credible_set
-      step.coloc_path: gs://ot_orchestration/releases/27.09/colocalisation/ecaviar
+      step.coloc_path: gs://ot_orchestration/releases/24.10/colocalisation/ecaviar
       step.colocalisation_method: ECaviar
+      step.session.spark_uri: yarn
+      step.session.write_mode: overwrite
     prerequisites:
       - credible_set_validation
   - id: "colocalisation_coloc"
@@ -193,45 +187,46 @@ nodes:
     params:
       step: colocalisation
       step.credible_set_path: *valid_credible_set
-      step.coloc_path: gs://ot_orchestration/releases/27.09/colocalisation/coloc
+      step.coloc_path: gs://ot_orchestration/releases/24.10/colocalisation/coloc
       step.colocalisation_method: Coloc
+      step.session.spark_uri: yarn
+      step.session.write_mode: overwrite
     prerequisites:
-      - colocalisation_ecaviar # ensure two tasks are not draining each other resources
-  - id: l2g_train
-    command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
-    params:
-      step: locus_to_gene
-      step.run_mode: train
-      step.wandb_run_name: "24.09"
-      step.hf_hub_repo_id: opentargets/locus_to_gene
-      step.model_path: gs://ot_orchestration/releases/27.09/locus_to_gene_model/classifier.skops
-      step.predictions_path: gs://ot_orchestration/releases/27.09/locus_to_gene_predictions
-      step.credible_set_path: *valid_credible_set
-      step.colocalisation_path: gs://ot_orchestration/releases/27.09/colocalisation
-      step.variant_gene_path: gs://ot_orchestration/releases/27.09/variant_to_gene
-      step.study_index_path: *valid_study_index
-      step.gold_standard_curation_path: gs://ot_orchestration/releases/27.09/locus_to_gene_gold_standard.json
-      step.gene_interactions_path: gs://genetics_etl_python_playground/static_assets/targets # OTP 233.12 data
-      step.hyperparameters:
-        n_estimators: 100
-        max_depth: 5
-        loss: log_loss
-      step.download_from_hub: true
-    prerequisites:
-      - colocalisation_coloc
-      - colocalisation_ecaviar
-      - variant_to_gene
-  - id: l2g_predict
-    command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
-    params:
-      step: locus_to_gene
-      step.run_mode: predict
-      step.model_path: null
-      step.predictions_path: gs://ot_orchestration/releases/27.09/locus_to_gene_predictions
-      step.feature_matrix_path: gs://ot_orchestration/releases/27.09/locus_to_gene_feature_matrix
-      step.credible_set_path: *valid_credible_set
-      step.study_index_path: *valid_study_index
-      step.variant_gene_path: gs://ot_orchestration/releases/27.09/variant_to_gene
-      step.colocalisation_path: gs://ot_orchestration/releases/27.09/colocalisation
-    prerequisites:
-      - l2g_train
+      - credible_set_validation # ensure two tasks are not draining each other resources
+  # - id: l2g_train
+  #   command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
+  #   params:
+  #     step: locus_to_gene
+  #     step.run_mode: train
+  #     step.wandb_run_name: "24.09"
+  #     step.hf_hub_repo_id: opentargets/locus_to_gene
+  #     step.model_path: gs://ot_orchestration/releases/24.10/locus_to_gene_model/classifier.skops
+  #     step.predictions_path: gs://ot_orchestration/releases/24.10/locus_to_gene_predictions
+  #     step.credible_set_path: *valid_credible_set
+  #     step.colocalisation_path: gs://ot_orchestration/releases/24.10/colocalisation
+  #     step.variant_gene_path: gs://ot_orchestration/releases/24.10/variant_to_gene
+  #     step.study_index_path: *valid_study_index
+  #     step.gold_standard_curation_path: gs://ot_orchestration/releases/24.10/locus_to_gene_gold_standard.json
+  #     step.gene_interactions_path: gs://genetics_etl_python_playground/static_assets/targets # OTP 233.12 data
+  #     step.hyperparameters:
+  #       n_estimators: 100
+  #       max_depth: 5
+  #       loss: log_loss
+  #     step.download_from_hub: true
+  #   prerequisites:
+  #     - colocalisation_coloc
+  #     - colocalisation_ecaviar
+  # - id: l2g_predict
+  #   command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
+  #   params:
+  #     step: locus_to_gene
+  #     step.run_mode: predict
+  #     step.model_path: null
+  #     step.predictions_path: gs://ot_orchestration/releases/24.10/locus_to_gene_predictions
+  #     step.feature_matrix_path: gs://ot_orchestration/releases/24.10/locus_to_gene_feature_matrix
+  #     step.credible_set_path: *valid_credible_set
+  #     step.study_index_path: *valid_study_index
+  #     step.variant_gene_path: gs://ot_orchestration/releases/24.10/variant_to_gene
+  #     step.colocalisation_path: gs://ot_orchestration/releases/24.10/colocalisation
+  #   prerequisites:
+  #     - l2g_train
