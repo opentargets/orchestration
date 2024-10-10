@@ -204,7 +204,7 @@ nodes:
       step.gene_index_path: gs://ot_orchestration/releases/24.10/gene_index
       step.feature_matrix_path: gs://ot_orchestration/releases/24.10/locus_to_gene_feature_matrix
       step.session.spark_uri: yarn
-      step.features_list: null  # Modify to change the list of default values from the Gentropy config
+      step.features_list: null # Modify to change the list of default values from the Gentropy config
     prerequisites:
       - colocalisation_coloc
       - colocalisation_ecaviar
@@ -228,7 +228,7 @@ nodes:
         loss: log_loss
       step.download_from_hub: true
       step.session.spark_uri: yarn
-      step.features_list: null  # Modify to change the list of default values from the Gentropy config
+      step.features_list: null # Modify to change the list of default values from the Gentropy config
     prerequisites:
       - l2g_feature_matrix
   - id: l2g_predict
@@ -244,6 +244,6 @@ nodes:
       step.study_index_path: *valid_study_index
       step.colocalisation_path: gs://ot_orchestration/releases/24.10/colocalisation
       step.session.spark_uri: yarn
-      step.features_list: null  # Modify to change the list of default values from the Gentropy config
+      step.features_list: null # Modify to change the list of default values from the Gentropy config
     prerequisites:
       - l2g_train
