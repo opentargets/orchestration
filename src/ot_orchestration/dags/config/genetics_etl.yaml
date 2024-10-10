@@ -176,7 +176,7 @@ nodes:
     params:
       step: colocalisation
       step.credible_set_path: *valid_credible_set
-      step.coloc_path: gs://ot_orchestration/releases/24.10/colocalisation/ecaviar
+      step.coloc_path: gs://ot_orchestration/releases/24.10/colocalisation
       step.colocalisation_method: ECaviar
       step.session.spark_uri: yarn
       step.session.write_mode: overwrite
@@ -187,7 +187,7 @@ nodes:
     params:
       step: colocalisation
       step.credible_set_path: *valid_credible_set
-      step.coloc_path: gs://ot_orchestration/releases/24.10/colocalisation/coloc
+      step.coloc_path: gs://ot_orchestration/releases/24.10/colocalisation/
       step.colocalisation_method: Coloc
       step.session.spark_uri: yarn
       step.session.write_mode: overwrite
