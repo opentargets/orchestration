@@ -1,44 +1,47 @@
 """Airflow DAG that uses Google Cloud Batch to run the SuSie Finemapper step for UKB PPP."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
-from airflow.decorators import task
 from airflow.models.dag import DAG
 
-from ot_orchestration.templates.finemapping import (
+from ot_orchestration.operators.batch.finemapping import (
+    FinemappingBatchJobManifestOperator,
     FinemappingBatchOperator,
-    generate_manifests_for_finemapping,
 )
-from ot_orchestration.utils import common
-
-COLLECTED_LOCI = (
-    "gs://genetics-portal-dev-analysis/dc16/output/ukb_ppp/clean_loci.parquet"
+from ot_orchestration.utils import (
+    chain_dependencies,
+    find_node_in_config,
+    read_yaml_config,
 )
-MANIFEST_PREFIX = "gs://gentropy-tmp/ukb/manifest"
-OUTPUT_BASE_PATH = "gs://gentropy-tmp/ukb/output"
-STUDY_INDEX_PATH = "gs://ukb_ppp_eur_data/study_index"
+from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 
-
-@task
-def generate_manifests():
-    return generate_manifests_for_finemapping(
-        collected_loci=COLLECTED_LOCI,
-        manifest_prefix=MANIFEST_PREFIX,
-        output_path=OUTPUT_BASE_PATH,
-        max_records_per_chunk=100_000,
-    )
+config = read_yaml_config(
+    Path(__file__).parent / "config" / "ukb_ppp_eur_finemapping.yaml"
+)
 
 
 with DAG(
     dag_id=Path(__file__).stem,
-    description="Open Targets Genetics — finemap study loci with SuSie",
-    default_args=common.shared_dag_args,
-    **common.shared_dag_kwargs,
-) as dag:
-    (
-        FinemappingBatchOperator.partial(
-            task_id="finemapping_batch_job", study_index_path=STUDY_INDEX_PATH
-        ).expand(manifest=generate_manifests())
+    description="Open Targets Genetics — Susie Finemap UKB PPP (EUR)",
+    default_args=shared_dag_args,
+    **shared_dag_kwargs,
+):
+    tasks = {}
+
+    task_config = find_node_in_config(config["nodes"], "generate_manifests")
+    generate_manifests = FinemappingBatchJobManifestOperator(
+        task_id=task_config["id"],
+        **task_config["params"],
     )
+
+    task_config = find_node_in_config(config["nodes"], "finemapping_batch_job")
+    finemapping_job = FinemappingBatchOperator.partial(
+        task_id=task_config["id"],
+        study_index_path=task_config["params"]["study_index_path"],
+        google_batch=task_config["google_batch"],
+    ).expand(manifest=generate_manifests.output)
+
+    tasks[generate_manifests.task_id] = generate_manifests
+    tasks[finemapping_job.task_id] = finemapping_job
+
+    chain_dependencies(nodes=config["nodes"], tasks_or_task_groups=tasks)
