@@ -235,7 +235,7 @@ class ConvertVariantsToVcfOperator(BaseOperator):
         return OrderedDict(
             {
                 "#CHROM": str,
-                "POS": str,
+                "POS": int,
                 "ID": str,
                 "REF": str,
                 "ALT": str,
