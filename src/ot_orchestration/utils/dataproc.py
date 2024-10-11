@@ -67,7 +67,7 @@ def create_cluster(
         image_version=GCP_DATAPROC_IMAGE,
         enable_component_gateway=True,
         metadata=cluster_metadata,
-        # idle_delete_ttl=30 * 60,  # In seconds.
+        idle_delete_ttl=30 * 60,  # In seconds.
         init_actions_uris=[cluster_init_script] if cluster_init_script else None,
         autoscaling_policy=f"projects/{GCP_PROJECT_GENETICS}/regions/{GCP_REGION}/autoscalingPolicies/{autoscaling_policy}",
     ).make()

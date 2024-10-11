@@ -40,5 +40,4 @@ build-airflow-image: generate-requirements  ## build local airflow image for the
 		--no-cache
 
 upload-ukb-ppp-bucket-readme: ## Upload ukb_ppp_eur_data readme to the bucket
-	@gsutil cp docs/datasources/ukb_ppp_eur_data/README.md gs://ukb_ppp_eur_data/README.md
-	@gsutil cp docs/datasources/ukb_ppp_eur_data/finemapping.svg gs://ukb_ppp_eur_data/finemapping.svg
+	@gsutil rsync  docs/datasources/ukb_ppp_eur_data gs://ukb_ppp_eur_data/docs

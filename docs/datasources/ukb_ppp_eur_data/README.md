@@ -55,25 +55,34 @@ The configuration of the dataproc infrastructure and individual step parameters 
 
 #### ukb_ppp_eur_sumstat_preprocess
 
+![harmonisation dag](ukb_ppp_eur_harmonisation.svg)
+
 This process **harmonizes the raw pre-processed data** to the [SummaryStatistics](https://opentargets.github.io/gentropy/python_api/datasets/summary_statistics/) and creates the [StudyIndex](https://opentargets.github.io/gentropy/python_api/datasets/study_index/).
+The process is runs on **dataproc** cluster.
 
 The outputs are stored in:
 
 - `gs://ukb_ppp_eur_data/study_index` - study index
 - `gs://ukb_ppp_eur_data/harmonised_summary_statistics` - summary statistics
 
-### locus_breaker_clumping
+#### locus_breaker_clumping
 
-This process performs locus clumping on previously harmonised summary statistics and results in [StudyLocus](https://opentargets.github.io/gentropy/python_api/datasets/study_locus/) dataset stored under `gs://ukb_ppp_eur_data/study_locus_lb_clumped`
+This process performs locus clumping on previously harmonised summary statistics and results in [StudyLocus](https://opentargets.github.io/gentropy/python_api/datasets/study_locus/) dataset stored under `gs://ukb_ppp_eur_data/study_locus_lb_clumped`.
+
+#### Parametrization of dataproc preprocessing jobs
+
+To parametrize the dataproc cluster one need to update the logic inside the `dataproc` block in `ukb_ppp_eur_harmonisation.yaml` file.
 
 ### ukb_ppp_eur_finemapping dag
+
+![finemapping dag](ukb_ppp_eur_finemapping.svg)
 
 This dag performs fine mapping with SuSiE-inf algorithm on clumped study loci to obtain [Credible sets](https://opentargets.github.io/gentropy/python_api/datasets/study_locus/). This is expensive process and is run on google batch.
 
 Due to infrastructure, the fine mapping process is divided into a 2-step logic:
 
-- [x] Create input manifests - `FinemappingBatchJobManifestOperator`
-- [x] Execute Finemapping step for each manifest - `FinemappingBatchOperator`
+- [x] Generate manifests - `FinemappingBatchJobManifestOperator`
+- [x] Execute Finemapping batch job (finemapping step per each manifest) - `FinemappingBatchOperator`
 
 ![finemapping](finemapping.svg)
 
