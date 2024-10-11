@@ -3,9 +3,9 @@ harmonised_sumstat_list: gs://gwas_catalog_data/manifests/gwas_catalog_harmonise
 dataproc:
   cluster_name: otg-preprocess-gwascatalog
   autoscaling_policy: otg-preprocess-gwascatalog
-  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/szsz-update-package-for-dataproc-run/cli.py
+  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dev/cli.py
   cluster_metadata:
-    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/szsz-update-package-for-dataproc-run/gentropy-0.0.0-py3-none-any.whl
+    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/dev/gentropy-0.0.0-py3-none-any.whl
   cluster_init_script: gs://genetics_etl_python_playground/initialisation/0.0.0/install_dependencies_on_cluster.sh
   num_workers: 5
 

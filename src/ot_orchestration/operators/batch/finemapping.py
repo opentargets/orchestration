@@ -48,7 +48,7 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         """Property to get the IOManager to load and dump files."""
         return IOManager()
 
-    def _extract_study_locus_ids_from_blobs(self, collected_loci_path) -> list[str]:
+    def _extract_study_locus_ids_from_blobs(self) -> list[str]:
         """Get list of loci from the input Google Storage path.
 
         NOTE: This step requires the dataset to be partitioned only by StudyLocusId!!
@@ -128,9 +128,7 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         Return:
             list[(int, str, int)]: List of tuples, where the first value is index of the manifest, the second value is a path to manifest, and the third is the number of records in that manifest.
         """
-        all_study_locus_ids = self._extract_study_locus_ids_from_blobs(
-            self.collected_loci_path
-        )
+        all_study_locus_ids = self._extract_study_locus_ids_from_blobs()
         manifest_rows = self._generate_manifest_rows(all_study_locus_ids)
         manifest_chunks = self._partition_rows_by_range(manifest_rows)
         environments = self._prepare_batch_task_env(manifest_chunks)

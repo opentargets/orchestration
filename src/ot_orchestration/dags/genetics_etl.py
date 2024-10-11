@@ -15,7 +15,7 @@ from airflow.providers.google.cloud.operators.cloud_batch import (
 from airflow.providers.google.cloud.transfers.gcs_to_gcs import GCSToGCSOperator
 from airflow.utils.task_group import TaskGroup
 
-from ot_orchestration.operators.vep import (
+from ot_orchestration.operators.batch.vep import (
     ConvertVariantsToVcfOperator,
     VepAnnotateOperator,
 )

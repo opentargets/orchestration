@@ -4,7 +4,7 @@ from pathlib import Path
 
 from airflow.models.dag import DAG
 
-from ot_orchestration.operators.finemapping import (
+from ot_orchestration.operators.batch.finemapping import (
     FinemappingBatchJobManifestOperator,
     FinemappingBatchOperator,
 )

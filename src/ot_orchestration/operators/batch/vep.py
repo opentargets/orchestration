@@ -26,7 +26,7 @@ from ot_orchestration.utils.path import GCSPath
 
 
 class VepAnnotationPathManager:
-    """It is quite complicated to keep track of all the input/output buckets, the corresponding mounting points prefixes etc..."""
+    """Manager to keep track of all input and io paths required for VEP process to run."""
 
     def __init__(
         self,

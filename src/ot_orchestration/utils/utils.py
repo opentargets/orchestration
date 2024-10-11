@@ -138,7 +138,7 @@ def chain_dependencies(nodes: list[ConfigNode], tasks_or_task_groups: dict[str, 
 
 
 def convert_params_to_hydra_positional_arg(
-    params: dict[str, Any] | None, dataproc: bool = False
+    params: dict[str, str] | None, dataproc: bool = False
 ) -> list[str]:
     """Convert configuration parameters to form that can be passed to hydra step positional arguments.
 

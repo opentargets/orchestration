@@ -143,22 +143,25 @@ def create_batch_job(
     return job
 
 
-def create_task_env(var_list: list[dict[str, Any]]):
+def create_task_env(var_list: list[dict[str, str]]):
     """This function creates list of batch_v1.Environment objects from provided list of dictionaries."""
-    print(f"{var_list=}")
     environments = [Environment(variables=variables) for variables in var_list]
     return environments
 
 
 def create_task_commands(
-    commands: list[str] | None, params: dict[str, dict[str, Any] | None]
+    commands: list[str] | None, params: dict[str, str] | None
 ) -> list[str]:
     """This function prepares list of commands for google batch job from the step configuration."""
-    args = convert_params_to_hydra_positional_arg(params=params, dataproc=False)
     task_commands = []
+    args: list[str] = []
+    if params:
+        args = convert_params_to_hydra_positional_arg(params=params, dataproc=False)
     if commands:
         task_commands.extend(commands)
     task_commands.extend(args)
+    # ensure all are string values
+    task_commands = [str(t) for t in task_commands]
 
     if len(task_commands) > 1 and task_commands[0] == "-c":
         task_commands = ["-c", " ".join(task_commands[1:])]

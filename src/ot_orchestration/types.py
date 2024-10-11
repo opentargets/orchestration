@@ -50,6 +50,18 @@ class GoogleBatchSpecs(TypedDict):
     entrypoint: str
 
 
+class GoogleBatchIndexSpecs(TypedDict):
+    manifest_generator_label: str
+    max_task_count: int
+    manifest_generator_specs: ManifestGeneratorSpecs
+
+
+class ManifestGeneratorSpecs(TypedDict):
+    commands: list[str]  # job command line commands
+    options: dict[str, str]  # job command line options
+    manifest_kwargs: dict[str, str]  # generator specific keyword arguments
+
+
 class DataprocSpecs(TypedDict):
     python_main_module: str
     cluster_init_script: str
@@ -62,5 +74,6 @@ class ConfigNode(TypedDict):
     kind: Literal["Task", "TaskGroup"]
     prerequisites: list[str]
     params: dict[str, Any]
-    google_batch: GoogleBatchSpecs
+    google_batch_specs: GoogleBatchSpecs
     nodes: list[ConfigNode]
+    google_batch_index_specs: GoogleBatchIndexSpecs

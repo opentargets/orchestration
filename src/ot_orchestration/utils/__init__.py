@@ -1,6 +1,5 @@
 """Utilities for parsing and job orchestration."""
 
-from ot_orchestration.utils.manifest import extract_study_id_from_path
 from ot_orchestration.utils.path import (
     URI_PATTERN,
     GCSPath,
@@ -35,7 +34,6 @@ __all__ = [
     "to_hocon",
     "to_yaml",
     "strhash",
-    "extract_study_id_from_path",
     "URI_PATTERN",
     "convert_params_to_hydra_positional_arg",
     "find_node_in_config",

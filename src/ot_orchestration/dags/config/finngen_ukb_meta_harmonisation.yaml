@@ -1,7 +1,7 @@
 dataproc:
-  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/szsz-update-package-for-dataproc-run/cli.py
+  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dev/cli.py
   cluster_metadata:
-    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/szsz-update-package-for-dataproc-run/gentropy-0.0.0-py3-none-any.whl
+    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/dev/gentropy-0.0.0-py3-none-any.whl
   cluster_init_script: gs://genetics_etl_python_playground/initialisation/0.0.0/install_dependencies_on_cluster.sh
   cluster_name: otg-finngen-ukb-meta
 
@@ -10,6 +10,7 @@ nodes:
     king: Task
     prerequisites: []
     params:
+      step: finngen_ukb_meta_ingestion
       step.raw_study_index_path_from_tsv: gs://gentropy-tmp/batch/output/finngen_ukb_meta/study_index.tsv
       step.raw_summary_stats_path: gs://gentropy-tmp/batch/output/finngen_ukb_meta/summary_stats.parquet
       step.variant_annotation_path: gs://genetics_etl_python_playground/output/python_etl/parquet/XX.XX/variant_annotation

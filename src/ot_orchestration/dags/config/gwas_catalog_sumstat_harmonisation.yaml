@@ -1,0 +1,43 @@
+nodes:
+  - id: generate_sumstat_index
+    kind: Task
+    prerequisites: []
+    google_batch_index_specs:
+      manifest_generator_label: gwas_catalog_harmonisation
+      max_task_count: 100
+      manifest_generator_specs:
+        commands:
+          - -c
+          - ./harmonise-sumstats.sh
+          - $RAW
+          - $HARMONISED
+          - $QC
+          - 1.0e-8
+        options:
+        manifest_kwargs:
+          qc_output_pattern: gs://ot_orchestration/test/gwas_catalog_inputs/summary_statistics_qc/**_SUCCESS
+          harm_output_pattern:  gs://ot_orchestration/test/gwas_catalog_inputs/harmonised_summary_statistics/**_SUCCESS
+          raw_input_pattern: gs://ot_orchestration/test/gwas_catalog_inputs/raw_summary_statistics/**.h.tsv.gz
+          manifest_output_uri: gs://ot_orchestration/test/gwas_catalog_inputs/harmonisation_manifest.csv
+
+  - id: gwas_catalog_harmonisation
+    kind: Task
+    prerequisites:
+      - generate_sumstat_index
+    google_batch_specs:
+        entrypoint: /bin/sh
+        image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:orchestration
+        resource_specs:
+          cpu_milli: 8000
+          memory_mib: 30000
+          boot_disk_mib: 25000
+        task_specs:
+          max_retry_count: 1
+          max_run_duration: "1h"
+        policy_specs:
+          machine_type: n1-standard-8
+
+
+
+
+
