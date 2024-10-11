@@ -7,6 +7,9 @@ Data source comes from the `https://registry.opendata.aws/ukbppp/`
 Data stored under `gs://ukb_ppp_eur_data` bucket comes with following structure
 
 ```
+gs://ukb_ppp_eur_data/credible_set_datasets/susie
+gs://ukb_ppp_eur_data/docs/
+gs://ukb_ppp_eur_data/finemapping_logs/
 gs://ukb_ppp_eur_data/finemapping_manifests/
 gs://ukb_ppp_eur_data/harmonised_summary_statistics/
 gs://ukb_ppp_eur_data/study_index/
@@ -79,10 +82,11 @@ To parametrize the dataproc cluster one need to update the logic inside the `dat
 
 This dag performs fine mapping with SuSiE-inf algorithm on clumped study loci to obtain [Credible sets](https://opentargets.github.io/gentropy/python_api/datasets/study_locus/). This is expensive process and is run on google batch.
 
-Due to infrastructure, the fine mapping process is divided into a 2-step logic:
+Due to infrastructure, the fine mapping process is divided into a 3-step logic:
 
 - [x] Generate manifests - `FinemappingBatchJobManifestOperator`
 - [x] Execute Finemapping batch job (finemapping step per each manifest) - `FinemappingBatchOperator`
+- [x] Collect finemapping logs
 
 ![finemapping](finemapping.svg)
 
@@ -98,10 +102,13 @@ Due to infrastructure, the fine mapping process is divided into a 2-step logic:
 - Execute one google batch job per manifest with `n <= max_records_per_chunk` tasks.
 - Each task executes finemapping step on single `StudyLocus` record.
 
+3. Collect logs
+
 The output of finemapping can be found under the:
 
-- `gs://ukb_ppp_eur_data/credible_set_datasets/` - fine mapped study loci
+- `gs://ukb_ppp_eur_data/credible_set_datasets/susie/` - fine mapped study loci
 - `gs://ukb_ppp_eur_data/finemapping_manifests/` - manifests used during the fine mapping job
+- `gs://ukb_ppp_eur_data/finemapping_logs/` - logs from the individual finemapping tasks
 
 #### Parametrization of google batch finemapping job
 

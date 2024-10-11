@@ -26,3 +26,12 @@ nodes:
         max_run_duration: "7200s"
       policy_specs:
         machine_type: n1-highmem-4
+
+  - id: move_finemapping_logs
+    kind: Task
+    prerequisites:
+      - finemapping_batch_job
+    params:
+      log_files_in: gs://ukb_ppp_eur_data/credible_set_datasets/susie
+      log_files_out: gs://ukb_ppp_eur_data/finemapping_logs/
+      match_glob: "**.log"
