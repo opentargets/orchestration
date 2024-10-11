@@ -41,3 +41,6 @@ build-airflow-image: generate-requirements  ## build local airflow image for the
 
 upload-gwas-catalog-bucket-readme: ## Upload gwas_catalog_bucket readme to the bucket.
 	@gsutil cp docs/datasources/gwas_catalog_data/README.md gs://gwas_catalog_data/README.md
+
+build-gentropy-gcs-image: ## build image that overwrited gentropy with tools specific for orchestration and google cloud
+	@docker buildx build --platform=linux/amd64,linux/arm64 -t europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:orchestration  --push -f images/gentropy/Dockerfile .
