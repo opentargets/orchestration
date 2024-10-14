@@ -2,10 +2,10 @@ gwas_catalog_manifests_path: gs://gwas_catalog_data/manifests
 l2g_gold_standard_path: gs://genetics_etl_python_playground/input/l2g/gold_standard/curation.json
 release_dir: gs://ot_orchestration/releases/24.10
 dataproc:
-  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/ds_fix_coloc/cli.py
+  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dev/cli.py
   cluster_metadata:
-    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/ds_fix_coloc/gentropy-0.0.0-py3-none-any.whl
-  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/ds_fix_coloc/install_dependencies_on_cluster.sh
+    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/dev/gentropy-0.0.0-py3-none-any.whl
+  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/dev/install_dependencies_on_cluster.sh
   cluster_name: otg-etl
   autoscaling_policy: otg-etl
 
@@ -24,6 +24,7 @@ nodes:
     kind: Task
     prerequisites:
       - biosample_index
+      - gene_index
     params:
       step: study_validation
       step.study_index_path:
@@ -31,7 +32,7 @@ nodes:
         - gs://eqtl_catalogue_data/study_index
         - gs://ukb_ppp_eur_data/study_index
         - gs://finngen_data/r11/study_index
-      step.target_index_path: gs://genetics_etl_python_playground/releases/24.06/gene_index
+      step.target_index_path: gs://ot_orchestration/releases/24.10/gene_index
       step.disease_index_path: gs://open-targets-pre-data-releases/24.06/output/etl/parquet/diseases
       step.valid_study_index_path: &valid_study_index gs://ot_orchestration/releases/24.10/study_index
       step.invalid_study_index_path: gs://ot_orchestration/releases/24.10/invalid_study_index
@@ -57,7 +58,7 @@ nodes:
         - gs://gwas_catalog_sumstats_pics/credible_sets/
         - gs://gwas_catalog_sumstats_susie/credible_sets/
         - gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie/
-        - gs://ukb_ppp_eur_data/credible_set_datasets/ukb_ppp_eur_susie
+        - gs://ukb_ppp_eur_data/credible_set_datasets/susie/*
         - gs://finngen_data/r11/credible_set_datasets/susie/
       step.valid_study_locus_path: &valid_credible_set gs://ot_orchestration/releases/24.10/credible_set
       step.invalid_study_locus_path: gs://ot_orchestration/releases/24.10/invalid_credible_set
@@ -171,6 +172,7 @@ nodes:
       step.target_path: gs://genetics_etl_python_playground/static_assets/targets # OTP 23.12 data
       step.gene_index_path: gs://ot_orchestration/releases/24.10/gene_index
       step.session.spark_uri: yarn
+      step.session.write_mode: overwrite
   - id: colocalisation_ecaviar
     command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
     params:
@@ -182,7 +184,7 @@ nodes:
       step.session.write_mode: overwrite
     prerequisites:
       - credible_set_validation
-  - id: "colocalisation_coloc"
+  - id: colocalisation_coloc
     command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
     params:
       step: colocalisation
