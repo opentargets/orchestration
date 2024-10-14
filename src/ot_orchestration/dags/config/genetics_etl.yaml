@@ -18,6 +18,7 @@ nodes:
       step.cell_ontology_input_path: gs://open-targets-pre-data-releases/24.06dev-test/input/biosamples/cl.json
       step.uberon_input_path: gs://open-targets-pre-data-releases/24.06dev-test/input/biosamples/uberon.json
       step.biosample_index_path: gs://ot_orchestration/releases/24.10/biosample_index
+      step.session.spark_uri: yarn
       step.session.write_mode: overwrite
   - id: study_validation
     kind: Task
@@ -43,6 +44,8 @@ nodes:
         - DUPLICATED_STUDY
         - UNKNOWN_BIOSAMPLE
       step.session.write_mode: overwrite
+      step.session.spark_uri: yarn
+
   - id: credible_set_validation
     kind: Task
     prerequisites:
@@ -76,6 +79,7 @@ nodes:
         - WINDOW_CLUMPED
         - NON_MAPPED_VARIANT_FLAG
       step.session.write_mode: overwrite
+      step.session.spark_uri: yarn
   - id: variant_annotation
     kind: TaskGroup
     nodes:
@@ -157,6 +161,7 @@ nodes:
       step.vep_output_json_path: gs://ot_orchestration/releases/24.10/variants/annotated_variants
       step.gnomad_variant_annotations_path: gs://genetics_etl_python_playground/static_assets/gnomad_variants
       step.variant_index_path: gs://ot_orchestration/releases/24.10/variant_index
+      step.session.spark_uri: yarn
       step.session.write_mode: overwrite
     prerequisites:
       - variant_annotation
@@ -166,6 +171,7 @@ nodes:
       step: gene_index
       step.target_path: gs://genetics_etl_python_playground/static_assets/targets # OTP 23.12 data
       step.gene_index_path: gs://ot_orchestration/releases/24.10/gene_index
+      step.session.spark_uri: yarn
       step.session.write_mode: overwrite
   - id: colocalisation_ecaviar
     command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
@@ -174,6 +180,7 @@ nodes:
       step.credible_set_path: *valid_credible_set
       step.coloc_path: gs://ot_orchestration/releases/24.10/colocalisation
       step.colocalisation_method: ECaviar
+      step.session.spark_uri: yarn
       step.session.write_mode: overwrite
     prerequisites:
       - credible_set_validation
@@ -184,6 +191,7 @@ nodes:
       step.credible_set_path: *valid_credible_set
       step.coloc_path: gs://ot_orchestration/releases/24.10/colocalisation/
       step.colocalisation_method: Coloc
+      step.session.spark_uri: yarn
       step.session.write_mode: overwrite
     prerequisites:
       - credible_set_validation
@@ -197,6 +205,7 @@ nodes:
       step.study_index_path: *valid_study_index
       step.gene_index_path: gs://ot_orchestration/releases/24.10/gene_index
       step.feature_matrix_path: gs://ot_orchestration/releases/24.10/locus_to_gene_feature_matrix
+      step.session.spark_uri: yarn
     prerequisites:
       - colocalisation_coloc
       - colocalisation_ecaviar
@@ -220,6 +229,7 @@ nodes:
       step.hyperparameters.max_depth: 5
       step.hyperparameters.loss: log_loss
       step.download_from_hub: true
+      step.session.spark_uri: yarn
     prerequisites:
       - l2g_feature_matrix
   - id: l2g_predict
@@ -235,5 +245,6 @@ nodes:
       step.credible_set_path: *valid_credible_set
       step.study_index_path: *valid_study_index
       step.colocalisation_path: gs://ot_orchestration/releases/24.10/colocalisation
+      step.session.spark_uri: yarn
     prerequisites:
       - l2g_train
