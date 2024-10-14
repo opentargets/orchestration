@@ -24,26 +24,47 @@ def test_time_to_seconds(input: str, output: int) -> None:
 
 
 @pytest.mark.parametrize(
-    ["input", "output"],
+    ["input", "output", "is_dataproc_job"],
     [
         pytest.param(
             {"step": "some_step", "step.b": 2, "+step.c": 3},
             ["step=some_step", "step.b=2", "+step.c=3"],
+            False,
             id="step configuration",
         ),
         pytest.param(
             {"step": "some_step", "step.b": {"c": 2, "d": 3}},
             ["step=some_step", "step.b.c=2", "step.b.d=3"],
+            False,
             id="nested dict",
             marks=pytest.mark.xfail(
                 reason="Structured configuration not supported yet."
             ),
         ),
+        pytest.param(
+            {"step": "some_step", "step.b": 2, "+step.c": 3},
+            ["step=some_step", "step.b=2", "+step.c=3", "step.session.spark_uri=yarn"],
+            True,
+            id="Running with dataproc=True adds yarn as a parameter",
+        ),
+        pytest.param(
+            {
+                "step": "some_step",
+                "step.b": 2,
+                "+step.c": 3,
+                "step.session.spark_uri": "yarn",
+            },
+            ["step=some_step", "step.b=2", "+step.c=3", "step.session.spark_uri=yarn"],
+            True,
+            id="Running with dataproc=True and yarn present does not duplicate parameter",
+        ),
     ],
 )
-def test_convert_params_to_hydra_positional_arg(input: dict, output: list[str]) -> None:
+def test_convert_params_to_hydra_positional_arg(
+    input: dict, output: list[str], is_dataproc_job: bool
+) -> None:
     """Test conversion of dictionary to hydra positional arguments."""
-    assert convert_params_to_hydra_positional_arg(input) == output
+    assert convert_params_to_hydra_positional_arg(input, is_dataproc_job) == output
 
 
 def test_find_node_in_config() -> None:

@@ -138,7 +138,7 @@ def chain_dependencies(nodes: list[ConfigNode], tasks_or_task_groups: dict[str, 
 
 
 def convert_params_to_hydra_positional_arg(
-    params: dict[str, Any] | None,
+    params: dict[str, Any] | None, dataproc: bool = False
 ) -> list[str]:
     """Convert configuration parameters to form that can be passed to hydra step positional arguments.
 
@@ -148,6 +148,7 @@ def convert_params_to_hydra_positional_arg(
 
     Args:
         params (dict[str, Any]] | None): Parameters for the step to convert.
+        dataproc (bool): If true, adds the yarn as a session parameter.
 
     Raises:
         ValueError: When keys passed to the function params dict does not contain the `step.` prefix.
@@ -160,8 +161,13 @@ def convert_params_to_hydra_positional_arg(
     incorrect_param_keys = [key for key in params if "step" not in key]
     if incorrect_param_keys:
         raise ValueError(f"Passed incorrect param keys {incorrect_param_keys}")
-
-    return [f"{k}={v}" for k, v in params.items()]
+    positional_args = [f"{k}={v}" for k, v in params.items()]
+    if not dataproc:
+        return positional_args
+    yarn_session_config = "step.session.spark_uri=yarn"
+    if yarn_session_config not in positional_args:
+        positional_args.append(yarn_session_config)
+    return positional_args
 
 
 def find_node_in_config(config: list[ConfigNode], node_id: str) -> ConfigNode:
