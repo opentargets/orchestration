@@ -11,6 +11,7 @@ from ot_orchestration.utils.path import (
     GCSPath,
     IOManager,
     NativePath,
+    extract_partition_from_blob,
 )
 
 
@@ -188,3 +189,28 @@ class TestGCSPath:
         """Test GCSPath object bucket property."""
         gcs_path_obj = GCSPath(gcs_path)
         assert gcs_path_obj.bucket == bucket
+
+
+@pytest.mark.parametrize(
+    ["input_blob", "partition"],
+    [
+        pytest.param(
+            "gs://bucket/prefix/partition=123aa/file.parquet",
+            "partition=123aa",
+            id="single partition",
+        ),
+        pytest.param(
+            "gs://bucket/prefix/partition=123aa/otherPartition=123bbb/file.parquet",
+            "partition=123aa",
+            id="only first partition is checked",
+        ),
+        pytest.param(
+            "gs://bucket/prefix/partition=123aa/otherPartition=123bbb/file.parquet",
+            "partition=123aa",
+            id="only first partition is checked",
+        ),
+    ],
+)
+def test_extract_partition_from_blob(input_blob: str, partition: str) -> None:
+    """Test extracting partition from a blob."""
+    assert extract_partition_from_blob(input_blob) == partition

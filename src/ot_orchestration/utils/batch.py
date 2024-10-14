@@ -8,6 +8,7 @@ from google.cloud.batch_v1 import (
     ComputeResource,
     Environment,
     Job,
+    LifecyclePolicy,
     LogsPolicy,
     Runnable,
     TaskGroup,
@@ -51,6 +52,7 @@ def create_task_spec(
     commands: list[str],
     resource_specs: BatchResourceSpecs,
     task_specs: BatchTaskSpecs,
+    lifecycle_policies: list[LifecyclePolicy] | None = None,
     **kwargs: Any,
 ) -> TaskSpec:
     """Create a task for a Batch job.
@@ -60,22 +62,26 @@ def create_task_spec(
         commands (list[str]): The commands to run in the container.
         resource_specs (BatchResourceSpecs): The specification of the resources for the task.
         task_specs (BatchTaskSpecs): The specification of the task.
+        lifecycle_policies (list[LifecyclePolicy] | None) : Lifecycle policies.
         **kwargs (Any): Any additional parameter to pass to the container runnable
 
     Returns:
         TaskSpec: The task specification.
     """
     time_duration = time_to_seconds(task_specs["max_run_duration"])
-    task = TaskSpec(
-        runnables=[create_container_runnable(image, commands=commands, **kwargs)],
-        compute_resource=ComputeResource(
+    parameters = {
+        "runnables": [create_container_runnable(image, commands=commands, **kwargs)],
+        "compute_resource": ComputeResource(
             cpu_milli=resource_specs["cpu_milli"],
             memory_mib=resource_specs["memory_mib"],
             boot_disk_mib=resource_specs["boot_disk_mib"],
         ),
-        max_retry_count=task_specs["max_retry_count"],
-        max_run_duration=f"{time_duration}s",  # type: ignore
-    )
+        "max_retry_count": task_specs["max_retry_count"],
+        "max_run_duration": f"{time_duration}s",  # type: ignore
+    }
+    if lifecycle_policies:
+        parameters["lifecycle_policies"] = lifecycle_policies
+    task = TaskSpec(**parameters)
 
     return task
 
@@ -139,14 +145,16 @@ def create_batch_job(
 
 def create_task_env(var_list: list[dict[str, Any]]):
     """This function creates list of batch_v1.Environment objects from provided list of dictionaries."""
-    return [Environment(variables=variables) for variables in var_list]
+    print(f"{var_list=}")
+    environments = [Environment(variables=variables) for variables in var_list]
+    return environments
 
 
 def create_task_commands(
     commands: list[str] | None, params: dict[str, dict[str, Any] | None]
 ) -> list[str]:
     """This function prepares list of commands for google batch job from the step configuration."""
-    args = convert_params_to_hydra_positional_arg(params=params)
+    args = convert_params_to_hydra_positional_arg(params=params, dataproc=False)
     task_commands = []
     if commands:
         task_commands.extend(commands)
