@@ -41,3 +41,8 @@ build-airflow-image: generate-requirements  ## build local airflow image for the
 
 upload-ukb-ppp-bucket-readme: ## Upload ukb_ppp_eur_data readme to the bucket
 	@gsutil rsync  docs/datasources/ukb_ppp_eur_data gs://ukb_ppp_eur_data/docs
+
+upload-eqtl-catalogue-bucket-readme: ## Upload eqtl_catalogue_data readme to the bucket
+	@gsutil rsync  docs/datasources/eqtl_catalogue_data gs://eqtl_catalogue_data/docs
+
+update-bucket-docs: upload-eqtl-catalogue-bucket-readme upload-ukb-ppp-bucket-readme ## Upload readmes to the datasource buckets
