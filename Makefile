@@ -43,4 +43,4 @@ upload-ukb-ppp-bucket-readme: ## Upload ukb_ppp_eur_data readme to the bucket
 	@gsutil rsync  docs/datasources/ukb_ppp_eur_data gs://ukb_ppp_eur_data/docs
 
 upload-finngen-bucket-readme: ## Upload finngen_data readme to the bucket
-	@gsutil rsync docs/datasources/finngen_data gs://finngne_data/docs
+	@gsutil rsync docs/datasources/finngen_data gs://finngen_data/docs
