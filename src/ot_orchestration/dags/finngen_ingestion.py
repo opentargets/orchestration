@@ -39,10 +39,12 @@ with DAG(
 
     chain(
         create_cluster(
-            config["dataproc"]["cluster_name"],
+            cluster_name=config["dataproc"]["cluster_name"],
             autoscaling_policy=config["dataproc"]["autoscaling_policy"],
             master_disk_size=config["dataproc"]["master_disk_size"],
             num_workers=config["dataproc"]["num_workers"],
+            cluster_init_script=config["dataproc"]["cluster_init_script"],
+            cluster_metadata=config["dataproc"]["cluster_metadata"],
         ),
         [t for t in tasks.values()],
         delete_cluster(config["dataproc"]["cluster_name"]),
