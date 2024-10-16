@@ -180,6 +180,9 @@ nodes:
       step.credible_set_path: *valid_credible_set
       step.coloc_path: gs://ot_orchestration/releases/24.10/colocalisation
       step.colocalisation_method: ECaviar
+      step.priorc1: 1e-4 # TODO: to be removed
+      step.priorc2: 1e-4 # TODO: to be removed
+      step.priorc12: 1e-5 # TODO: to be removed
       step.session.spark_uri: yarn
       step.session.write_mode: overwrite
     prerequisites:
@@ -193,6 +196,9 @@ nodes:
       step.colocalisation_method: Coloc
       step.session.spark_uri: yarn
       step.session.write_mode: overwrite
+      step.priorc1: 1e-4
+      step.priorc2: 1e-4
+      step.priorc12: 1e-5
     prerequisites:
       - credible_set_validation
   - id: l2g_feature_matrix
@@ -205,7 +211,9 @@ nodes:
       step.study_index_path: *valid_study_index
       step.gene_index_path: gs://ot_orchestration/releases/24.10/gene_index
       step.feature_matrix_path: gs://ot_orchestration/releases/24.10/locus_to_gene_feature_matrix
+      +step.session.extended_spark_conf: "{spark.sql.autoBroadcastJoinThreshold:'-1'}"
       step.session.spark_uri: yarn
+      step.session.write_mode: overwrite
     prerequisites:
       - colocalisation_coloc
       - colocalisation_ecaviar
@@ -219,7 +227,6 @@ nodes:
       step.wandb_run_name: "24.10"
       step.hf_hub_repo_id: opentargets/locus_to_gene
       step.model_path: gs://ot_orchestration/releases/24.10/locus_to_gene_model/classifier.skops
-      step.predictions_path: gs://ot_orchestration/releases/24.10/locus_to_gene_predictions
       step.credible_set_path: *valid_credible_set
       step.variant_index_path: gs://ot_orchestration/releases/24.10/variant_index
       step.feature_matrix_path: gs://ot_orchestration/releases/24.10/locus_to_gene_feature_matrix
@@ -230,6 +237,7 @@ nodes:
       step.hyperparameters.loss: log_loss
       step.download_from_hub: true
       step.session.spark_uri: yarn
+      +step.session.extended_spark_conf: "{spark.kryoserializer.buffer.max:500m, spark.sql.autoBroadcastJoinThreshold:'-1'}"
     prerequisites:
       - l2g_feature_matrix
   - id: l2g_predict
@@ -237,14 +245,9 @@ nodes:
     params:
       step: locus_to_gene
       step.run_mode: predict
-      step.model_path: null
-      step.hf_hub_repo_id: opentargets/locus_to_gene
       step.predictions_path: gs://ot_orchestration/releases/24.10/locus_to_gene_predictions
-      step.variant_index_path: gs://ot_orchestration/releases/24.10/variant_index
       step.feature_matrix_path: gs://ot_orchestration/releases/24.10/locus_to_gene_feature_matrix
       step.credible_set_path: *valid_credible_set
-      step.study_index_path: *valid_study_index
-      step.colocalisation_path: gs://ot_orchestration/releases/24.10/colocalisation
       step.session.spark_uri: yarn
     prerequisites:
       - l2g_train
