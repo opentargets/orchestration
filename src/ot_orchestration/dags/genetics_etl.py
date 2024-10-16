@@ -146,11 +146,11 @@ DATA_TO_MOVE = {
 
 
 # This operator meant to fail the DAG if the release folder exists:
-# ensure_release_folder_not_exists = ShortCircuitOperator(
-#     task_id="test_release_folder_exists",
-#     python_callable=lambda bucket, path: not check_gcp_folder_exists(bucket, path),
-#     op_kwargs={"bucket": release_dir.bucket, "path": release_dir.path},
-# )
+ensure_release_folder_not_exists = ShortCircuitOperator(
+    task_id="test_release_folder_exists",
+    python_callable=lambda bucket, path: not check_gcp_folder_exists(bucket, path),
+    op_kwargs={"bucket": release_dir.bucket, "path": release_dir.path},
+)
 
 with DAG(
     dag_id=Path(__file__).stem,
@@ -200,7 +200,7 @@ with DAG(
     # DAG description:
     chain(
         # Test that the release folder doesn't exist:
-        # ensure_release_folder_not_exists,
+        ensure_release_folder_not_exists,
         # Run data transfer:
         data_transfer,
         # Once datasets are transferred, run the rest of the steps:
