@@ -45,4 +45,7 @@ upload-ukb-ppp-bucket-readme: ## Upload ukb_ppp_eur_data readme to the bucket
 upload-eqtl-catalogue-bucket-readme: ## Upload eqtl_catalogue_data readme to the bucket
 	@gsutil rsync  docs/datasources/eqtl_catalogue_data gs://eqtl_catalogue_data/docs
 
-update-bucket-docs: upload-eqtl-catalogue-bucket-readme upload-ukb-ppp-bucket-readme ## Upload readmes to the datasource buckets
+upload-finngen-bucket-readme: ## Upload finngen_data readme to the bucket
+	@gsutil rsync docs/datasources/finngen_data gs://finngen_data/docs
+
+update-bucket-docs: upload-eqtl-catalogue-bucket-readme upload-ukb-ppp-bucket-readme upload-finngen-bucket-readme ## Upload readmes to the datasource buckets
