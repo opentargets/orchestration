@@ -1,8 +1,8 @@
 dataproc:
-  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/szsz-update-package-for-dataproc-run/cli.py
+  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dev/cli.py
   cluster_metadata:
-    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/szsz-update-package-for-dataproc-run/gentropy-0.0.0-py3-none-any.whl
-  cluster_init_script: gs://genetics_etl_python_playground/initialisation/0.0.0/install_dependencies_on_cluster.sh
+    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/dev/gentropy-0.0.0-py3-none-any.whl
+  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/dev/install_dependencies_on_cluster.sh
   cluster_name: otg-ingestion-finngen
   autoscaling_policy: finngen-preprocess
   master_disk_size: 2000
@@ -13,20 +13,25 @@ nodes:
     kind: Task
     prerequisites: []
     params:
+      step: finngen_studies
       step.finngen_study_index_out: gs://finngen_data/r11/study_index
       step.finngen_phenotype_table_url: https://r11.finngen.fi/api/phenos
       step.finngen_release_prefix: FINNGEN_R11_
       step.finngen_summary_stats_url_prefix: gs://finngen-public-data-r11/summary_stats/finngen_R11_
       step.sample_size: 453733
       step.finngen_summary_stats_url_suffix: ".gz"
-      step.efo_mappings_path: https://raw.githubusercontent.com/opentargets/curation/24.09.1/mappings/disease/manual_string.tsv
+      step.efo_curation_mapping_url: https://raw.githubusercontent.com/opentargets/curation/24.09.1/mappings/disease/manual_string.tsv
       step.session.write_mode: overwrite
+      step.session.start_hail: true
   - id: finngen_finemapping_ingestion
     kind: Task
     prerequisites: []
     params:
-      step.finngen_finemapping_out: gs://finngen_data/r11/credible_set_datasets/finngen_r11_susie
+      step: finngen_finemapping_ingestion
+      step.finngen_finemapping_out: gs://finngen_data/r11/credible_set_datasets/susie
       step.finngen_susie_finemapping_snp_files: gs://finngen-public-data-r11/finemap/full/susie/*.snp.bgz
-      step.finngen_susie_finemapping_cs_summary_files: gs://finngen-public-data-r11/finemap/summary/*.cred.summary.tsv
+      # As directory contains also *.cred.summary.tsv, *_99.cred.summary.tsv enure only 99 credible sets are ingested,
+      step.finngen_susie_finemapping_cs_summary_files: gs://finngen-public-data-r11/finemap/summary/*_99.cred.summary.tsv
+      step.finngen_finemapping_lead_pvalue_threshold: 1e-5
       step.session.start_hail: true
       step.session.write_mode: overwrite
