@@ -52,7 +52,7 @@ def finemapping_batch_job(
                     "step.max_causal_snps=10 "
                     "step.primary_signal_pval_threshold=1 "
                     "step.secondary_signal_pval_threshold=1 "
-                    "step.purity_mean_r2_threshold=0 "
+                    "step.purity_mean_r2_threshold=0.25 "
                     "step.purity_min_r2_threshold=0 "
                     "step.cs_lbf_thr=2 step.sum_pips=0.99 "
                     "step.susie_est_tausq=False "
