@@ -3,12 +3,12 @@ eqtl_catalogue_decompressed_susie_path: gs://eqtl_catalogue_data/ebi_ftp/susie_d
 decompression_logs: gs://eqtl_catalogue_data/ebi_ftp/susie_decompressed_tmp/logs.log
 
 dataproc:
-  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/szsz-update-package-for-dataproc-run/cli.py
+  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dev/cli.py
   cluster_metadata:
-    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/szsz-update-package-for-dataproc-run/gentropy-0.0.0-py3-none-any.whl
-  cluster_init_script: gs://genetics_etl_python_playground/initialisation/0.0.0/install_dependencies_on_cluster.sh
+    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/dev/gentropy-0.0.0-py3-none-any.whl
+  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/dev/install_dependencies_on_cluster.sh
   cluster_name: otg-preprocess-eqtl
-  autoscaling_policy: otg-preprocess
+  autoscaling_policy: eqtl-preprocess
   num_workers: 4
   worker_machine_type: n1-highmem-8
 
@@ -17,9 +17,11 @@ nodes:
     kind: Task
     prerequisites: []
     params:
+      step: eqtl_catalogue
       step.eqtl_catalogue_paths_imported: gs://eqtl_catalogue_data/ebi_ftp/susie_decompressed_tmp
       step.eqtl_catalogue_study_index_out: gs://eqtl_catalogue_data/study_index
       step.eqtl_catalogue_credible_sets_out: gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie
       step.mqtl_quantification_methods_blacklist: []
+      step.eqtl_lead_pvalue_threshold: 1.0e-3
       step.session.write_mode: overwrite
       +step.session.extended_spark_conf: "{spark.sql.shuffle.partitions: '3200'}"

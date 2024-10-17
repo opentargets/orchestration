@@ -24,7 +24,7 @@ from ot_orchestration.utils.dataproc import (
 )
 from ot_orchestration.utils.path import GCSPath
 
-CONFIG_PATH = Path(__file__).parent / "config" / "eqtl_ingestion.yaml"
+CONFIG_PATH = Path(__file__).parent / "config" / "eqtl_catalogue_ingestion.yaml"
 config = read_yaml_config(CONFIG_PATH)
 
 with DAG(
@@ -68,6 +68,8 @@ with DAG(
             autoscaling_policy=config["dataproc"]["autoscaling_policy"],
             num_workers=config["dataproc"]["num_workers"],
             worker_machine_type=config["dataproc"]["worker_machine_type"],
+            cluster_init_script=config["dataproc"]["cluster_init_script"],
+            cluster_metadata=config["dataproc"]["cluster_metadata"],
         ),
         ingestion_job,
         [delete_decompressed_job, delete_cluster(config["dataproc"]["cluster_name"])],
