@@ -127,7 +127,7 @@ def submit_gentropy_step(
         task_id=step_name,
         python_main_module=python_main_module,
         trigger_rule=trigger_rule,
-        args=convert_params_to_hydra_positional_arg(params=params),
+        args=convert_params_to_hydra_positional_arg(params=params, dataproc=True),
     )
 
 
