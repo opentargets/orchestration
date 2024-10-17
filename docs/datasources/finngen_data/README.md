@@ -20,7 +20,7 @@ Raw data is fetched by the gentropy steps directly from the data source. No prep
 The fetching paths are:
 
 - snp files from `gs://finngen-public-data-r11/finemap/full/susie/*.snp.bgz`
-- credible_set files from `gs://finngen-public-data-r11/finemap/summary/*_99.cred.summary.tsv`
+- credible_set files from `gs://finngen-public-data-r11/finemap/summary/*SUSIE.cred.summary.tsv`
 
 ## Processing description
 
