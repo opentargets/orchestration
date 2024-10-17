@@ -14,7 +14,6 @@ from ot_orchestration.utils import (
     read_yaml_config,
 )
 from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
-from ot_orchestration.utils.path import GCSPath
 
 config = read_yaml_config(
     Path(__file__).parent / "config" / "ukb_ppp_eur_finemapping.yaml"
@@ -41,10 +40,6 @@ with DAG(
         study_index_path=task_config["params"]["study_index_path"],
         google_batch=task_config["google_batch"],
     ).expand(manifest=generate_manifests.output)
-
-    task_config = find_node_in_config(config["nodes"], "move_finemapping_logs")
-    source_file_path = GCSPath(task_config["params"]["log_files_in"])
-    destination_file_path = GCSPath(task_config["params"]["log_files_out"])
 
     tasks[generate_manifests.task_id] = generate_manifests
     tasks[finemapping_job.task_id] = finemapping_job
