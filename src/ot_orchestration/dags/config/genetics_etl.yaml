@@ -174,9 +174,6 @@ nodes:
       step.credible_set_path: *valid_credible_set
       step.coloc_path: gs://ot_orchestration/releases/24.10/colocalisation
       step.colocalisation_method: ECaviar
-      step.priorc1: 1e-4 # TODO: to be removed
-      step.priorc2: 1e-4 # TODO: to be removed
-      step.priorc12: 1e-5 # TODO: to be removed
       step.session.spark_uri: yarn
     prerequisites:
       - credible_set_validation
@@ -188,9 +185,7 @@ nodes:
       step.coloc_path: gs://ot_orchestration/releases/24.10/colocalisation/
       step.colocalisation_method: Coloc
       step.session.spark_uri: yarn
-      step.priorc1: 1e-4
-      step.priorc2: 1e-4
-      step.priorc12: 1e-5
+      +step.colocalisation_method_params: "{priorc1: 1e-4, priorc2: 1e-4, priorc12: 1e-5}"
     prerequisites:
       - credible_set_validation
   - id: l2g_feature_matrix
