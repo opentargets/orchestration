@@ -8,7 +8,6 @@ from pathlib import Path
 from airflow.decorators import task, task_group
 from airflow.models.baseoperator import chain
 from airflow.models.dag import DAG
-from airflow.operators.python import ShortCircuitOperator
 from airflow.providers.google.cloud.operators.cloud_batch import (
     CloudBatchSubmitJobOperator,
 )
@@ -22,7 +21,6 @@ from ot_orchestration.operators.batch.vep import (
 from ot_orchestration.utils import (
     GCSPath,
     chain_dependencies,
-    check_gcp_folder_exists,
     find_node_in_config,
     read_yaml_config,
 )
@@ -146,12 +144,6 @@ DATA_TO_MOVE = {
 
 
 # This operator meant to fail the DAG if the release folder exists:
-ensure_release_folder_not_exists = ShortCircuitOperator(
-    task_id="test_release_folder_exists",
-    python_callable=lambda bucket, path: not check_gcp_folder_exists(bucket, path),
-    op_kwargs={"bucket": release_dir.bucket, "path": release_dir.path},
-)
-
 with DAG(
     dag_id=Path(__file__).stem,
     description="Open Targets Genetics ETL workflow",
@@ -199,8 +191,6 @@ with DAG(
 
     # DAG description:
     chain(
-        # Test that the release folder doesn't exist:
-        ensure_release_folder_not_exists,
         # Run data transfer:
         data_transfer,
         # Once datasets are transferred, run the rest of the steps:
