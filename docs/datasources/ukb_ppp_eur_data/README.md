@@ -82,11 +82,10 @@ To parametrize the dataproc cluster one need to update the logic inside the `dat
 
 This dag performs fine mapping with SuSiE-inf algorithm on clumped study loci to obtain [Credible sets](https://opentargets.github.io/gentropy/python_api/datasets/study_locus/). This is expensive process and is run on google batch.
 
-Due to infrastructure, the fine mapping process is divided into a 3-step logic:
+Due to infrastructure, the fine mapping process is divided into a 2-step logic:
 
 - [x] Generate manifests - `FinemappingBatchJobManifestOperator`
 - [x] Execute Finemapping batch job (finemapping step per each manifest) - `FinemappingBatchOperator`
-- [x] Collect finemapping logs
 
 ![finemapping](finemapping.svg)
 
