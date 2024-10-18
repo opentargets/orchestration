@@ -49,3 +49,12 @@ upload-finngen-bucket-readme: ## Upload finngen_data readme to the bucket
 	@gsutil rsync docs/datasources/finngen_data gs://finngen_data/docs
 
 update-bucket-docs: upload-eqtl-catalogue-bucket-readme upload-ukb-ppp-bucket-readme upload-finngen-bucket-readme ## Upload readmes to the datasource buckets
+
+
+build-gentropy-gcs-image: ## build image that overwrited gentropy with tools specific for orchestration and google cloud
+	@docker buildx build \
+		--platform=linux/amd64,linux/arm64 \
+		-t europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/ot_gentropy:dev  \
+		--push \
+		-f images/gentropy/Dockerfile \
+		--no-cache .
