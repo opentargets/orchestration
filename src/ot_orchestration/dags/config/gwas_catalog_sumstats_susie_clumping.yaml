@@ -30,11 +30,11 @@ nodes:
       step.clumped_study_locus_output_path: gs://gwas_catalog_sumstats_susie/study_locus_lb_clumped
       step.lbc_baseline_pvalue: 1.0e-5
       step.lbc_distance_cutoff: 250_000
-      step.lbc_pvalue_threshold: 1.7e-11
+      step.lbc_pvalue_threshold: 1.0e-8
       step.lbc_flanking_distance: 100_000
       step.large_loci_size: 1_500_000
       step.wbc_clump_distance: 500_000
-      step.wbc_pvalue_threshold: 1.7e-11
+      step.wbc_pvalue_threshold: 1.0e-8
       step.collect_locus: True
       step.remove_mhc: True
       step.session.write_mode: overwrite
