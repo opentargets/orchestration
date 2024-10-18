@@ -24,4 +24,5 @@ nodes:
       step.mqtl_quantification_methods_blacklist: []
       step.eqtl_lead_pvalue_threshold: 1.0e-3
       step.session.write_mode: overwrite
+      step.session.spark_uri: yarn
       +step.session.extended_spark_conf: "{spark.sql.shuffle.partitions: '3200'}"
