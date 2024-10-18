@@ -29,19 +29,20 @@ with DAG(
     tasks = {}
 
     task_config = find_node_in_config(config["nodes"], "generate_manifests")
-    generate_manifests = FinemappingBatchJobManifestOperator(
-        task_id=task_config["id"],
-        **task_config["params"],
-    )
+    if task_config:
+        generate_manifests = FinemappingBatchJobManifestOperator(
+            task_id=task_config["id"],
+            **task_config["params"],
+        )
+        tasks[generate_manifests.task_id] = generate_manifests
 
     task_config = find_node_in_config(config["nodes"], "finemapping_batch_job")
-    finemapping_job = FinemappingBatchOperator.partial(
-        task_id=task_config["id"],
-        study_index_path=task_config["params"]["study_index_path"],
-        google_batch=task_config["google_batch"],
-    ).expand(manifest=generate_manifests.output)
-
-    tasks[generate_manifests.task_id] = generate_manifests
-    tasks[finemapping_job.task_id] = finemapping_job
+    if task_config:
+        finemapping_job = FinemappingBatchOperator.partial(
+            task_id=task_config["id"],
+            study_index_path=task_config["params"]["study_index_path"],
+            google_batch=task_config["google_batch"],
+        ).expand(manifest=generate_manifests.output)
+        tasks[finemapping_job.task_id] = finemapping_job
 
     chain_dependencies(nodes=config["nodes"], tasks_or_task_groups=tasks)

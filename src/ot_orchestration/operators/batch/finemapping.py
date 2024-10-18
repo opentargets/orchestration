@@ -102,7 +102,7 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         )
         for i in range(0, len(manifest_rows), self.max_records_per_chunk):
             chunk = manifest_rows[i : i + self.max_records_per_chunk]
-            lines = ["study_locus_input,study_locus_output", "log_path"] + chunk
+            lines = ["study_locus_input,study_locus_output,log_path"] + chunk
             manifest_chunks.append(lines)
             self.log.info("Example output %s", lines[0:2])
 
