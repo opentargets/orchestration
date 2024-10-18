@@ -55,3 +55,12 @@ upload-gwas-catalog-buckets-readme: ## Upload gwas_catalog readme to the bucket(
 	@gsutil rsync docs/datasources/gwas_catalog_data gs://gwas_catalog_top_hits/docs
 
 update-bucket-docs: upload-eqtl-catalogue-bucket-readme upload-ukb-ppp-bucket-readme upload-finngen-bucket-readme upload-gwas-catalog-buckets-readme ## Upload readmes to the datasource buckets
+
+
+build-gentropy-gcs-image: ## build image that overwrited gentropy with tools specific for orchestration and google cloud
+	@docker buildx build \
+		--platform=linux/amd64,linux/arm64 \
+		-t europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/ot_gentropy:dev  \
+		--push \
+		-f images/gentropy/Dockerfile \
+		--no-cache .
