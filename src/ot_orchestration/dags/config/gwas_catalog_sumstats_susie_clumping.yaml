@@ -26,7 +26,7 @@ nodes:
       - gwas_catalog_study_index
     params:
       step: locus_breaker_clumping
-      step.summary_statistics_input_path: gs://gwas_catalog_inputs/harmonised_summary_statistics
+      step.summary_statistics_input_path: gs://gwas_catalog_inputs/harmonised_summary_statistics/*/*.parquet
       step.clumped_study_locus_output_path: gs://gwas_catalog_sumstats_susie/study_locus_lb_clumped
       step.lbc_baseline_pvalue: 1.0e-5
       step.lbc_distance_cutoff: 250_000
@@ -37,4 +37,5 @@ nodes:
       step.wbc_pvalue_threshold: 1.0e-8
       step.collect_locus: True
       step.remove_mhc: True
+      +step.session.extended_spark_conf: "{spark.sql.shuffle.partitions: '7000'}"
       step.session.write_mode: overwrite
