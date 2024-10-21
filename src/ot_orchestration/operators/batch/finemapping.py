@@ -27,15 +27,18 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         collected_loci_path: str,
         manifest_prefix: str,
         output_path: str,
+        log_path: str,
         max_records_per_chunk: int = 100_000,
         **kwargs,
     ):
         self.log.info("Using collected loci from %s", collected_loci_path)
         self.log.info("Saving manifests to %s", manifest_prefix)
         self.log.info("The output of the finemapping will be in %s", output_path)
+        self.log.info("The logs of the finemapping will be in %s", log_path)
         self.collected_loci_path = GCSPath(collected_loci_path)
         self.manifest_prefix = manifest_prefix
         self.output_path = output_path
+        self.log_path = log_path
         self.max_records_per_chunk = max_records_per_chunk
         super().__init__(**kwargs)
 
@@ -48,7 +51,7 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         """Property to get the IOManager to load and dump files."""
         return IOManager()
 
-    def _extract_study_locus_ids_from_blobs(self, collected_loci_path) -> list[str]:
+    def _extract_study_locus_ids_from_blobs(self) -> list[str]:
         """Get list of loci from the input Google Storage path.
 
         NOTE: This step requires the dataset to be partitioned only by StudyLocusId!!
@@ -61,6 +64,7 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         bucket = client.get_bucket(self.collected_loci_path.bucket)
         blobs = bucket.list_blobs(prefix=self.collected_loci_path.path)
         all_study_locus_ids = [
+            # ensure that we do not retain the schema of the
             extract_partition_from_blob(blob.name)
             for blob in blobs
             if "studyLocusId" in blob.name
@@ -71,10 +75,16 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
     def _generate_manifest_rows(self, study_locus_ids: list[str]) -> list[str]:
         """This method generates a list containing all rows that will be used to generate the manifests."""
         self.log.info("Concatenating studyLocusId(s) to create manifest rows.")
-        manifest_rows = [
-            f"{self.collected_loci_path}/{locus},{self.output_path}/{locus}"
-            for locus in study_locus_ids
-        ]
+        manifest_rows: list[str] = []
+        for locus in study_locus_ids:
+            input_loci_path = f"{self.collected_loci_path}/{locus}"
+            # NOTE: make sure that outputs do not preserve the partitions inside output paths derived from the input loci paths.
+            output_loci_path = (
+                f"{self.output_path}/{locus.removeprefix('studyLocusId=')}"
+            )
+            log_path = f"{self.log_path}/{locus.removeprefix('studyLocusId=')}"
+            manifest_row = ",".join([input_loci_path, output_loci_path, log_path])
+            manifest_rows.append(manifest_row)
         return manifest_rows
 
     def _partition_rows_by_range(self, manifest_rows: list[str]) -> list[list[str]]:
@@ -92,7 +102,7 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         )
         for i in range(0, len(manifest_rows), self.max_records_per_chunk):
             chunk = manifest_rows[i : i + self.max_records_per_chunk]
-            lines = ["study_locus_input,study_locus_output"] + chunk
+            lines = ["study_locus_input,study_locus_output,log_output"] + chunk
             manifest_chunks.append(lines)
             self.log.info("Example output %s", lines[0:2])
 
@@ -128,9 +138,7 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         Return:
             list[(int, str, int)]: List of tuples, where the first value is index of the manifest, the second value is a path to manifest, and the third is the number of records in that manifest.
         """
-        all_study_locus_ids = self._extract_study_locus_ids_from_blobs(
-            self.collected_loci_path
-        )
+        all_study_locus_ids = self._extract_study_locus_ids_from_blobs()
         manifest_rows = self._generate_manifest_rows(all_study_locus_ids)
         manifest_chunks = self._partition_rows_by_range(manifest_rows)
         environments = self._prepare_batch_task_env(manifest_chunks)
@@ -192,7 +200,7 @@ class FinemappingBatchOperator(CloudBatchSubmitJobOperator):
                 "step.study_locus_index=$LOCUS_INDEX "
                 "step.max_causal_snps=10 "
                 "step.lead_pval_threshold=1e-5 "
-                "step.purity_mean_r2_threshold=0 "
+                "step.purity_mean_r2_threshold=0.25 "
                 "step.purity_min_r2_threshold=0.25 "
                 "step.cs_lbf_thr=2 step.sum_pips=0.99 "
                 "step.susie_est_tausq=False "
