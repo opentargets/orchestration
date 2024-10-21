@@ -1,54 +1,52 @@
 # GWAS Catalog data source
 
-This document was updated on 2024-09-11
+This document was updated on 2024-10-18
 
-Data stored under `gs://gwas_catalog_data` bucket comes with following structure:
+Data stored under 4 buckets:
+
+- `gs://gwas_catalog_inputs`
+- `gs://gwas_catalog_sumstats_pics`
+- `gs://gwas_catalog_sumstats_susie`
+- `gs://gwas_catalog_top_hits`
+
+## GWAS Catalog inputs
+
+Bucket `gs://gwas_catalog_inputs` contains:
 
 ```
-gs://gwas_catalog_data/credible_set_datasets/
-gs://gwas_catalog_data/curated_inputs/
-gs://gwas_catalog_data/harmonised_summary_statistics/
-gs://gwas_catalog_data/manifests/
-gs://gwas_catalog_data/raw_summary_statistics/
-gs://gwas_catalog_data/study_index/
-gs://gwas_catalog_data/study_locus_datasets/
+gs://gwas_catalog_inputs/gwas_catalog_associations_ontology_annotated.tsv
+gs://gwas_catalog_inputs/gwas_catalog_download_ancestries.tsv
+gs://gwas_catalog_inputs/gwas_catalog_download_studies.tsv
+gs://gwas_catalog_inputs/harmonisation_manifest.csv
+gs://gwas_catalog_inputs/harmonisation_summary/
+gs://gwas_catalog_inputs/harmonised_summary_statistics/
+gs://gwas_catalog_inputs/raw_summary_statistics/
+gs://gwas_catalog_inputs/summary_statistics_qc/
 ```
 
-## raw_summary_statistics
+### raw_summary_statistics
 
 This directory contains summary statistics in the form of harmonised (by GWAS Catalog) gzipped tsv files that are synced directly from the [GWAS Catalog FTP server](https://ftp.ebi.ac.uk/pub/databases/gwas/summary_statistics/) by a cron job.
 
-## curated_inputs
+### harmonised_summary_statistics
 
-This directory contains GWAS Catalog metadata input files required to create curation table. The source of the metadata comes from [release directory in GWAS Catalog FTP serve](https://ftp.ebi.ac.uk/pub/databases/gwas/releases/latest/). This include
+This directory contains outputs from the Open Targets inhouse ETL harmonisation process described in [GWAS Catalog harmonisation dag](https://github.com/opentargets/orchestration/blob/dev/src/ot_orchestration/dags/gwas_catalog_sumstat_harmonisation.py). The result is the [SummaryStatistics dataset](https://opentargets.github.io/gentropy/python_api/datasets/summary_statistics/) saved in parquet format per summary statistics input file.
 
-- study ancestries
-- study metadata
-- ontology associations
+### harmonisation_manifest.csv
+
+The `harmonisation_manifest.csv` is the file that is generated before the harmonisation is performed. This is the input file to all google batch jobs that are used to perform Harmonisation and Quality Checks on raw summary statistics.
+
+### curated_inputs
+
+Files derived from [release directory in GWAS Catalog FTP serve](https://ftp.ebi.ac.uk/pub/databases/gwas/releases/latest/). This include
+
+- study ancestries - `gwas_catalog_download_ancestries.tsv`
+- study metadata - `gwas_catalog_download_studies.tsv`
+- ontology associations - `gwas_catalog_associations_ontology_annotated.tsv`
+
+These files contain the metadata required to create the study index.
 
 All described in [downloads](https://www.ebi.ac.uk/gwas/docs/file-downloads)
-
-List of harmonised files comes from [summary statistics directory in GWAS Catalog FTP server](https://ftp.ebi.ac.uk/pub/databases/gwas/summary_statistics/harmonised_list.txt)
-
-All of the files used for the curation can be downloaded by [gentroutils](https://github.com/opentargets/gentroutils/blob/v0.1.5/src/gentroutils/commands/update_gwas_curation_metadata.py)
-
-## manifests
-
-This directory contains inputs and outputs of the [GWAS Curation update dag](https://github.com/opentargets/orchestration/blob/dev/src/ot_orchestration/dags/gwas_curation_update.py).
-
-### manual curation process
-
-The main output of the GWAS Curation update dag is the `GWAS_Catalog_study_curation.tsv` file that gets uploaded to the [curation repository](https://raw.githubusercontent.com/opentargets/curation/master/genetics/GWAS_Catalog_study_curation.tsv).
-
-When data release starts, the file mentioned above is downloaded to the `manifests/` directory and used as a cached input to the curation update dag which appends to it newly synced summary statistics from GWAS Catalog FTP with their metadata. After that the `updated GWAS_Catalog_study_curation.tsv` file is used to perform the manual curation of the new studies.
-
-The result of manual curation is used during the next release.
-
-The curation process runs per each release, the inputs to the curation process are the outputs from previous curation.
-
-## harmonised_summary_statistics
-
-This directory contains outputs from the Open Targets inhouse ETL harmonisation process described in [GWAS Catalog harmonisation dag](https://github.com/opentargets/orchestration/blob/dev/src/ot_orchestration/dags/gwas_catalog_harmonisation.py). The result is the [SummaryStatistics dataset](https://opentargets.github.io/gentropy/python_api/datasets/summary_statistics/) saved in parquet format per summary statistics input file.
 
 ## study_index
 
