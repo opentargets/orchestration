@@ -17,6 +17,7 @@ nodes:
       step: biosample_index
       step.cell_ontology_input_path: gs://open-targets-pre-data-releases/24.06dev-test/input/biosamples/cl.json
       step.uberon_input_path: gs://open-targets-pre-data-releases/24.06dev-test/input/biosamples/uberon.json
+      step.efo_input_path: gs://open-targets-pre-data-releases/24.06dev-test/input/biosamples/efo.json
       step.biosample_index_path: gs://ot_orchestration/releases/24.10/biosample_index
       step.session.spark_uri: yarn
   - id: study_validation
