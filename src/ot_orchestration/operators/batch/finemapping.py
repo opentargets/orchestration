@@ -1,7 +1,6 @@
 """Finemapping operators."""
 
 import time
-from functools import cached_property
 
 from airflow.models.baseoperator import BaseOperator
 from airflow.providers.google.cloud.operators.cloud_batch import (
@@ -16,7 +15,7 @@ from ot_orchestration.utils.batch import (
     create_task_spec,
 )
 from ot_orchestration.utils.common import GCP_PROJECT_GENETICS, GCP_REGION
-from ot_orchestration.utils.path import GCSPath, IOManager, extract_partition_from_blob
+from ot_orchestration.utils.path import GCSPath, extract_partition_from_blob
 
 
 class FinemappingBatchJobManifestOperator(BaseOperator):
@@ -45,11 +44,6 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
     def execute(self, context):
         """Execute the operator."""
         return self.generate_manifests_for_finemapping()
-
-    @cached_property
-    def io_manager(self) -> IOManager:
-        """Property to get the IOManager to load and dump files."""
-        return IOManager()
 
     def _extract_study_locus_ids_from_blobs(self) -> set[str]:
         """Get list of loci from the input Google Storage path.
@@ -138,21 +132,26 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         """Get the environment that will be used by batch tasks."""
         transfer_objects = []
         env_objects: list[tuple[int, str, int]] = []
+        manifest_generation_date = time.strftime("%Y%m%d%H%M%S")
         for i, lines in enumerate(manifest_chunks):
             self.log.info("Amending %s lines for %s manifest", len(lines) - 1, i)
             text = "\n".join(lines)
             manifest_path = (
-                f"{self.manifest_prefix}/{time.strftime('%Y%m%d%H%M%S')}/chunk_{i}"
+                f"{self.manifest_prefix}/{manifest_generation_date}/chunk_{i}"
             )
             self.log.info("Writing manifest to %s.", manifest_path)
             transfer_objects.append((manifest_path, text))
             env_objects.append((i, manifest_path, len(lines) - 1))
 
         self.log.info("Writing %s manifests", len(transfer_objects))
-        self.io_manager.dump_many(
-            paths=[t[0] for t in transfer_objects],
-            objects=[t[1] for t in transfer_objects],
-        )
+        for t in transfer_objects:
+            self.log.info("Writing manifest to %s.", t[0])
+            self.log.info("Example output %s", t[1].split("\n")[0:2])
+            GCSPath(t[0]).dump(t[1])
+        # self.io_manager.dump_many(
+        #     paths=[t[0] for t in transfer_objects],
+        #     objects=[t[1] for t in transfer_objects],
+        # )
         return env_objects
 
     def generate_manifests_for_finemapping(self) -> list[tuple[int, str, int]]:

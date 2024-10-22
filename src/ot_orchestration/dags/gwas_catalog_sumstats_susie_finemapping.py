@@ -6,7 +6,6 @@ from airflow.models.dag import DAG
 
 from ot_orchestration.operators.batch.finemapping import (
     FinemappingBatchJobManifestOperator,
-    FinemappingBatchOperator,
 )
 from ot_orchestration.utils import (
     chain_dependencies,
@@ -37,12 +36,12 @@ with DAG(
         tasks[generate_manifests.task_id] = generate_manifests
 
     task_config = find_node_in_config(config["nodes"], "finemapping_batch_job")
-    if task_config:
-        finemapping_job = FinemappingBatchOperator.partial(
-            task_id=task_config["id"],
-            study_index_path=task_config["params"]["study_index_path"],
-            google_batch=task_config["google_batch"],
-        ).expand(manifest=generate_manifests.output)
-        tasks[finemapping_job.task_id] = finemapping_job
+    # if task_config:
+    #     finemapping_job = FinemappingBatchOperator.partial(
+    #         task_id=task_config["id"],
+    #         study_index_path=task_config["params"]["study_index_path"],
+    #         google_batch=task_config["google_batch"],
+    #     ).expand(manifest=generate_manifests.output)
+    #     tasks[finemapping_job.task_id] = finemapping_job
 
     chain_dependencies(nodes=config["nodes"], tasks_or_task_groups=tasks)
