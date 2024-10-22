@@ -7,7 +7,7 @@ nodes:
       manifest_prefix: gs://gwas_catalog_sumstats_susie/finemapping_manifests
       output_path: gs://gwas_catalog_sumstats_susie/credible_set_datasets
       log_path: gs://gwas_catalog_sumstats_susie/finemapping_logs
-      max_records_per_chunk: 100_000
+      max_records_per_chunk: 40_000
 
   - id: finemapping_batch_job
     kind: Task

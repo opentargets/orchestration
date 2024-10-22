@@ -37,7 +37,7 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         self.log.info("The logs of the finemapping will be in %s", log_path)
         self.collected_loci_path = GCSPath(collected_loci_path)
         self.manifest_prefix = manifest_prefix
-        self.output_path = output_path
+        self.output_path = GCSPath(output_path)
         self.log_path = log_path
         self.max_records_per_chunk = max_records_per_chunk
         super().__init__(**kwargs)
@@ -51,7 +51,7 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         """Property to get the IOManager to load and dump files."""
         return IOManager()
 
-    def _extract_study_locus_ids_from_blobs(self) -> list[str]:
+    def _extract_study_locus_ids_from_blobs(self) -> set[str]:
         """Get list of loci from the input Google Storage path.
 
         NOTE: This step requires the dataset to be partitioned only by StudyLocusId!!
@@ -63,13 +63,39 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         client = self.collected_loci_path.client
         bucket = client.get_bucket(self.collected_loci_path.bucket)
         blobs = bucket.list_blobs(prefix=self.collected_loci_path.path)
-        all_study_locus_ids = [
+        # Use set to avoid duplicates that comes from the
+        # multiple parquet files and directory.
+        all_study_locus_ids = {
             # ensure that we do not retain the schema of the
-            extract_partition_from_blob(blob.name)
+            extract_partition_from_blob(blob.name, with_prefix=False)
             for blob in blobs
             if "studyLocusId" in blob.name
-        ]
+        }
         self.log.info("Found %s studyLocusId(s)", len(all_study_locus_ids))
+        return all_study_locus_ids
+
+    def _extract_finemapped_loci(self) -> set[str]:
+        """Get list of loci from the output Google Storage path."""
+        self.log.info(
+            "Extracting studyLocusId from partition names in %s.", self.output_path
+        )
+        client = self.output_path.client
+        bucket = client.get_bucket(self.output_path.bucket)
+        blobs = bucket.list_blobs(prefix=self.output_path.path)
+        self.log.info("prefix: %s", self.output_path.path)
+
+        # NOTE: these blobs are not partitioned, so we need to retain only the StudyLocusId.
+        # The blobs should be following this convention `credible_set_datasets/${studyLocusId}/_SUCCESS`
+        all_study_locus_ids = {
+            blob.name.removeprefix(self.output_path.path)
+            .removesuffix("_SUCCESS")
+            .replace("/", "")
+            for blob in blobs
+            if blob.name.endswith("_SUCCESS")
+        }
+        self.log.info(
+            "Found %s studyLocusId(s) that were finemapped.", len(all_study_locus_ids)
+        )
         return all_study_locus_ids
 
     def _generate_manifest_rows(self, study_locus_ids: list[str]) -> list[str]:
@@ -77,12 +103,10 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         self.log.info("Concatenating studyLocusId(s) to create manifest rows.")
         manifest_rows: list[str] = []
         for locus in study_locus_ids:
-            input_loci_path = f"{self.collected_loci_path}/{locus}"
+            input_loci_path = f"{self.collected_loci_path}/studyLocusId={locus}"
             # NOTE: make sure that outputs do not preserve the partitions inside output paths derived from the input loci paths.
-            output_loci_path = (
-                f"{self.output_path}/{locus.removeprefix('studyLocusId=')}"
-            )
-            log_path = f"{self.log_path}/{locus.removeprefix('studyLocusId=')}"
+            output_loci_path = f"{self.output_path}/{locus}"
+            log_path = f"{self.log_path}/{locus}"
             manifest_row = ",".join([input_loci_path, output_loci_path, log_path])
             manifest_rows.append(manifest_row)
         return manifest_rows
@@ -117,7 +141,9 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         for i, lines in enumerate(manifest_chunks):
             self.log.info("Amending %s lines for %s manifest", len(lines) - 1, i)
             text = "\n".join(lines)
-            manifest_path = f"{self.manifest_prefix}/chunk_{i}"
+            manifest_path = (
+                f"{self.manifest_prefix}/{time.strftime('%Y%m%d%H%M%S')}/chunk_{i}"
+            )
             self.log.info("Writing manifest to %s.", manifest_path)
             transfer_objects.append((manifest_path, text))
             env_objects.append((i, manifest_path, len(lines) - 1))
@@ -139,7 +165,9 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
             list[(int, str, int)]: List of tuples, where the first value is index of the manifest, the second value is a path to manifest, and the third is the number of records in that manifest.
         """
         all_study_locus_ids = self._extract_study_locus_ids_from_blobs()
-        manifest_rows = self._generate_manifest_rows(all_study_locus_ids)
+        finemapped_study_locus_ids = self._extract_finemapped_loci()
+        study_locus_ids = list(all_study_locus_ids - finemapped_study_locus_ids)
+        manifest_rows = self._generate_manifest_rows(study_locus_ids)
         manifest_chunks = self._partition_rows_by_range(manifest_rows)
         environments = self._prepare_batch_task_env(manifest_chunks)
         return environments
