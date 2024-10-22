@@ -1,6 +1,6 @@
 gwas_catalog_manifests_path: gs://gwas_catalog_data/manifests
 l2g_gold_standard_path: gs://genetics_etl_python_playground/input/l2g/gold_standard/curation.json
-release_dir: gs://ot_orchestration/releases/24.10
+release_dir: gs://ot_orchestration/releases/24.10_freeze4
 dataproc:
   python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dev/cli.py
   cluster_metadata:
@@ -17,6 +17,7 @@ nodes:
       step: biosample_index
       step.cell_ontology_input_path: gs://open-targets-pre-data-releases/24.06dev-test/input/biosamples/cl.json
       step.uberon_input_path: gs://open-targets-pre-data-releases/24.06dev-test/input/biosamples/uberon.json
+      step.efo_input_path: gs://open-targets-pre-data-releases/24.06dev-test/input/biosamples/efo.json
       step.biosample_index_path: gs://ot_orchestration/releases/24.10/biosample_index
       step.session.spark_uri: yarn
   - id: study_validation
@@ -118,7 +119,6 @@ nodes:
           step.source_format: $SOURCE_FORMAT
           step.vcf_path: gs://ot_orchestration/releases/24.10/variants/raw_variants/$SOURCE_NAME
           +step.session.extended_spark_conf: "{spark.jars:https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop3-latest.jar,spark.driver.memory:26g}"
-
       - id: list_nonannotated_vcfs
         kind: Task
         params:
@@ -237,3 +237,15 @@ nodes:
       step.session.spark_uri: yarn
     prerequisites:
       - l2g_train
+  - id: l2g_evidence
+    command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
+    params:
+      step: locus_to_gene
+      step.evidence_output_path: gs://ot_orchestration/releases/24.10/locus_to_gene_evidence
+      step.locus_to_gene_predictions_path: gs://ot_orchestration/releases/24.10/locus_to_gene_predictions
+      step.credible_set_path: *valid_credible_set
+      step.study_index_path: *valid_study_index
+      step.locus_to_gene_threshold: 0.05
+      step.session.spark_uri: yarn
+    prerequisites:
+      - l2g_predict
