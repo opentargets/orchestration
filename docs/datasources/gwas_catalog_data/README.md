@@ -259,7 +259,9 @@ The step that performs [PICS finemapping](https://opentargets.github.io/gentropy
 Bucket `gs://gwas_catalog_sumstats_susie` contains:
 
 ```
-gs://gwas_catalog_sumstats_susie/credible_sets/
+gs://gwas_catalog_sumstats_susie/credible_set_datasets/
+gs://gwas_catalog_sumstats_susie/finemapping_logs/
+gs://gwas_catalog_sumstats_susie/finemapping_manifests/
 gs://gwas_catalog_sumstats_susie/study_index/
 gs://gwas_catalog_sumstats_susie/study_locus_lb_clumped/
 ```
@@ -267,4 +269,65 @@ gs://gwas_catalog_sumstats_susie/study_locus_lb_clumped/
 Data is produced by 2 dags:
 
 - **gwas_catalog_sumstats_susie_clumping**
+
+![gwas_catalog_sumstat_susie_clumping](gwas_catalog_sumstats_susie_clumping.svg)
+
+### gwas_catalog_study_index
+
+The step runs on the dataproc cluster that is used to generate the [study_index dataset](https://opentargets.github.io/gentropy/python_api/datasets/study_index/) that is saved under the `gs://gwas_catalog_sumstats_susie/study_index/`.
+
+This step requires following resources to reason about the inclusion or exclusion of the
+gwas studies that were harmonised.
+
+- harmonisation qc results
+- manual curation of the gwas studies (not provided by default)
+
+The reasoning is captured in the study index metadata fields.
+
+### locus_breaker_clumping
+
+This process performs locus clumping on previously harmonised summary statistics and results in [StudyLocus](https://opentargets.github.io/gentropy/python_api/datasets/study_locus/) dataset stored under `gs://gwas_catalog_sumstats_susie/study_locus_lb_clumped`.
+
 - **gwas_catalog_sumstats_susie_finemapping**
+
+![gwas_catalog_sumstat_susie_clumping](gwas_catalog_sumstats_susie_finemapping.svg)
+
+This dag performs fine mapping with SuSiE-inf algorithm on clumped study loci to obtain [Credible sets](https://opentargets.github.io/gentropy/python_api/datasets/study_locus/). This is expensive process and is run on google batch.
+
+Due to infrastructure, the fine mapping process is divided into a 2-step logic:
+
+- [x] Generate manifests - `FinemappingBatchJobManifestOperator`
+- [x] Execute Finemapping batch job (finemapping step per each manifest) - `FinemappingBatchOperator`
+
+1. Tasks performed by `FinemappingBatchJobManifestOperator`
+
+- Collect all individual loci parquet files
+- Partition collected loci into batches with with `max_records_per_chunk` as a limit of the batch size.
+- For each batch create a manifest file that will be imputed to the fine mapping gentropy step
+- Save the batch manifests to google cloud storage.
+
+2. Tasks performed by `FinemappingBatchOperator`
+
+- Execute one google batch job per manifest with `n <= max_records_per_chunk` tasks.
+- Each task executes finemapping step on single `StudyLocus` record.
+
+> [!WARNING]
+> For the GWAS Catalog sumstats susie dataset the number of tasks can not exceed 40k due to the
+> size of the environment payload that is send to each batch task.
+> `400 Request payload size exceeds the limit: 10485760 bytes`
+
+3. Collect logs
+
+The output of finemapping can be found under the:
+
+- `gs://gwas_catalog_sumstats_susie/credible_set_datasets/` - fine mapped study loci
+- `gs://gwas_catalog_sumstats_susie/finemapping_manifests/` - manifests used during the fine mapping job
+- `gs://gwas_catalog_sumstats_susie/finemapping_logs/` - logs from the individual finemapping tasks
+
+#### Parametrization of google batch finemapping job
+
+The configuration of the google batch infrastructure and individual step parameters can be found in `gwas_catalog_sumstats_susie_finemapping.yaml` file.
+To adjust the parameters for google batch infrastructure refer to the `google_batch` block in the node configuration.
+
+> [!WARNING]
+> After running the google batch fine mapping job, ensure that the job tasks have succeeded, otherwise the job requires manual curation.
