@@ -37,5 +37,9 @@ nodes:
       step.wbc_pvalue_threshold: 1.0e-8
       step.collect_locus: True
       step.remove_mhc: True
-      +step.session.extended_spark_conf: "{spark.sql.shuffle.partitions: '7000'}"
+      # More memory on driver to speed up the partition discovery
+      # Added spark.sql.sources.parallelPartitionDiscovery.parallelism to allow for discovering ~70k processed sumstats
+      # FIXME: This step is still not performing smoothly. Most likely due to the fact that the input dataset
+      # is not read with recursiveFileLookup=True in gentropy, rather glob patterns.
+      +step.session.extended_spark_conf: "{spark.sql.sources.parallelPartitionDiscovery.parallelism: '100000', spark.driver.memory: '10g'}"
       step.session.write_mode: overwrite
