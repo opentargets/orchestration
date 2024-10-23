@@ -1,6 +1,6 @@
 gwas_catalog_manifests_path: gs://gwas_catalog_data/manifests
 l2g_gold_standard_path: gs://genetics_etl_python_playground/input/l2g/gold_standard/curation.json
-release_dir: gs://ot_orchestration/releases/24.10
+release_dir: gs://ot_orchestration/releases/24.10_freeze4
 dataproc:
   python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dev/cli.py
   cluster_metadata:
