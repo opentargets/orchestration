@@ -240,7 +240,7 @@ nodes:
   - id: l2g_evidence
     command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
     params:
-      step: locus_to_gene
+      step: locus_to_gene_evidence
       step.evidence_output_path: gs://ot_orchestration/releases/24.10/locus_to_gene_evidence
       step.locus_to_gene_predictions_path: gs://ot_orchestration/releases/24.10/locus_to_gene_predictions
       step.credible_set_path: *valid_credible_set
