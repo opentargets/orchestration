@@ -1,0 +1,29 @@
+nodes:
+  - id: generate_manifests
+    kind: Task
+    prerequisites: []
+    params:
+      collected_loci_path: gs://gwas_catalog_sumstats_susie/study_locus_lb_clumped
+      manifest_prefix: gs://gwas_catalog_sumstats_susie/finemapping_manifests
+      output_path: gs://gwas_catalog_sumstats_susie/credible_set_datasets
+      log_path: gs://gwas_catalog_sumstats_susie/finemapping_logs
+      max_records_per_chunk: 40_000
+
+  - id: finemapping_batch_job
+    kind: Task
+    prerequisites:
+      - generate_manifests
+    params:
+      study_index_path: gs://gwas_catalog_sumstats_susie/study_index
+    google_batch:
+      entrypoint: /bin/sh
+      image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:dev
+      resource_specs:
+        cpu_milli: 4000
+        memory_mib: 25000
+        boot_disk_mib: 20_000
+      task_specs:
+        max_retry_count: 5
+        max_run_duration: "7200s"
+      policy_specs:
+        machine_type: n1-highmem-4

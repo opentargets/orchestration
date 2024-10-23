@@ -1,0 +1,45 @@
+dataproc:
+  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dsdo_top_hits_step/cli.py
+  cluster_metadata:
+    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/dsdo_top_hits_step/gentropy-0.0.0-py3-none-any.whl
+  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/dsdo_top_hits_step/install_dependencies_on_cluster.sh
+  cluster_name: otg-gwas-catalog-sumstat-susie-clumping
+  autoscaling_policy: otg-etl
+
+nodes:
+  - id: gwas_catalog_study_index
+    kind: Task
+    prerequisites: []
+    params:
+      step: gwas_catalog_study_index
+      step.catalog_study_files:
+        - gs://gwas_catalog_inputs/gwas_catalog_download_studies.tsv
+      step.catalog_ancestry_files:
+        - gs://gwas_catalog_inputs/gwas_catalog_download_ancestries.tsv
+      step.study_index_path: gs://gwas_catalog_sumstats_susie/study_index
+      step.gwas_catalog_study_curation_file: gs://genetics-portal-dev-analysis/yt4/gwas_catalog_curation/20241004_output_curation.tsv
+      step.sumstats_qc_path: gs://gwas_catalog_inputs/summary_statistics_qc
+      step.session.write_mode: overwrite
+  - id: locus_breaker_clumping
+    kind: Task
+    prerequisites:
+      - gwas_catalog_study_index
+    params:
+      step: locus_breaker_clumping
+      step.summary_statistics_input_path: gs://gwas_catalog_inputs/harmonised_summary_statistics/*/*.parquet
+      step.clumped_study_locus_output_path: gs://gwas_catalog_sumstats_susie/study_locus_lb_clumped
+      step.lbc_baseline_pvalue: 1.0e-5
+      step.lbc_distance_cutoff: 250_000
+      step.lbc_pvalue_threshold: 1.0e-8
+      step.lbc_flanking_distance: 100_000
+      step.large_loci_size: 1_500_000
+      step.wbc_clump_distance: 500_000
+      step.wbc_pvalue_threshold: 1.0e-8
+      step.collect_locus: True
+      step.remove_mhc: True
+      # More memory on driver to speed up the partition discovery
+      # Added spark.sql.sources.parallelPartitionDiscovery.parallelism to allow for discovering ~70k processed sumstats
+      # FIXME: This step is still not performing smoothly. Most likely due to the fact that the input dataset
+      # is not read with recursiveFileLookup=True in gentropy, rather glob patterns.
+      +step.session.extended_spark_conf: "{spark.sql.sources.parallelPartitionDiscovery.parallelism: '100000', spark.driver.memory: '10g'}"
+      step.session.write_mode: overwrite

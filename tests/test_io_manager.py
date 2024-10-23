@@ -192,25 +192,36 @@ class TestGCSPath:
 
 
 @pytest.mark.parametrize(
-    ["input_blob", "partition"],
+    ["input_blob", "partition", "with_prefix"],
     [
         pytest.param(
             "gs://bucket/prefix/partition=123aa/file.parquet",
             "partition=123aa",
+            True,
             id="single partition",
         ),
         pytest.param(
             "gs://bucket/prefix/partition=123aa/otherPartition=123bbb/file.parquet",
             "partition=123aa",
+            True,
             id="only first partition is checked",
         ),
         pytest.param(
             "gs://bucket/prefix/partition=123aa/otherPartition=123bbb/file.parquet",
             "partition=123aa",
+            True,
             id="only first partition is checked",
+        ),
+        pytest.param(
+            "gs://bucket/prefix/partition=123aa/otherPartition=123bbb/file.parquet",
+            "123aa",
+            False,
+            id="Return without prefix",
         ),
     ],
 )
-def test_extract_partition_from_blob(input_blob: str, partition: str) -> None:
+def test_extract_partition_from_blob(
+    input_blob: str, partition: str, with_prefix: bool
+) -> None:
     """Test extracting partition from a blob."""
-    assert extract_partition_from_blob(input_blob) == partition
+    assert extract_partition_from_blob(input_blob, with_prefix) == partition
