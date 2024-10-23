@@ -95,7 +95,7 @@ class VepAnnotateOperator(CloudBatchSubmitJobOperator):
         )
         self.vcf_files = self._get_vcf_partition_basenames()
         environments = [
-            {"INPUT_FILE": file, "OUTPUT_FILE": file} for file in self.vcf_files
+            {"INPUT_FILE": file, "OUTPUT_FILE": file.replace(".vcf", ".json")} for file in self.vcf_files
         ]
 
         batch_job = create_batch_job(
