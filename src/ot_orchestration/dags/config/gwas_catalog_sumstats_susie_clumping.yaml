@@ -1,8 +1,8 @@
 dataproc:
-  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dsdo_top_hits_step/cli.py
+  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dev/cli.py
   cluster_metadata:
-    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/dsdo_top_hits_step/gentropy-0.0.0-py3-none-any.whl
-  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/dsdo_top_hits_step/install_dependencies_on_cluster.sh
+    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/dev/gentropy-0.0.0-py3-none-any.whl
+  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/dev/install_dependencies_on_cluster.sh
   cluster_name: otg-gwas-catalog-sumstat-susie-clumping
   autoscaling_policy: otg-etl
 
