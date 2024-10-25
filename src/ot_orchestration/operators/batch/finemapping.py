@@ -28,6 +28,7 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         output_path: str,
         log_path: str,
         max_records_per_chunk: int = 100_000,
+        chunk_limit: int = 2,
         **kwargs,
     ):
         self.log.info("Using collected loci from %s", collected_loci_path)
@@ -35,10 +36,11 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         self.log.info("The output of the finemapping will be in %s", output_path)
         self.log.info("The logs of the finemapping will be in %s", log_path)
         self.collected_loci_path = GCSPath(collected_loci_path)
-        self.manifest_prefix = manifest_prefix
+        self.manifest_prefix = GCSPath(manifest_prefix)
         self.output_path = GCSPath(output_path)
-        self.log_path = log_path
+        self.log_path = GCSPath(log_path)
         self.max_records_per_chunk = max_records_per_chunk
+        self.chunk_limit = chunk_limit
         super().__init__(**kwargs)
 
     def execute(self, context):
@@ -68,24 +70,24 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         self.log.info("Found %s studyLocusId(s)", len(all_study_locus_ids))
         return all_study_locus_ids
 
-    def _extract_finemapped_loci(self) -> set[str]:
+    def _extract_loci_from_logfiles(self) -> set[str]:
         """Get list of loci from the output Google Storage path."""
         self.log.info(
-            "Extracting studyLocusId from partition names in %s.", self.output_path
+            "Extracting studyLocusId from partition names in %s.", self.log_path
         )
-        client = self.output_path.client
-        bucket = client.get_bucket(self.output_path.bucket)
-        blobs = bucket.list_blobs(prefix=self.output_path.path)
-        self.log.info("prefix: %s", self.output_path.path)
+        client = self.log_path.client
+        bucket = client.get_bucket(self.log_path.bucket)
+        blobs = bucket.list_blobs(prefix=self.log_path.path)
+        self.log.info("prefix: %s", self.log_path.path)
 
         # NOTE: these blobs are not partitioned, so we need to retain only the StudyLocusId.
         # The blobs should be following this convention `credible_set_datasets/${studyLocusId}/_SUCCESS`
         all_study_locus_ids = {
-            blob.name.removeprefix(self.output_path.path)
-            .removesuffix("_SUCCESS")
+            blob.name.removeprefix(self.log_path.path)
+            .removesuffix(".log")
             .replace("/", "")
             for blob in blobs
-            if blob.name.endswith("_SUCCESS")
+            if blob.name.endswith(".log")
         }
         self.log.info(
             "Found %s studyLocusId(s) that were finemapped.", len(all_study_locus_ids)
@@ -123,7 +125,8 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
             lines = ["study_locus_input,study_locus_output,log_output"] + chunk
             manifest_chunks.append(lines)
             self.log.info("Example output %s", lines[0:2])
-
+        if self.chunk_limit:
+            manifest_chunks = manifest_chunks[: self.chunk_limit]
         return manifest_chunks
 
     def _prepare_batch_task_env(
@@ -148,10 +151,6 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
             self.log.info("Writing manifest to %s.", t[0])
             self.log.info("Example output %s", t[1].split("\n")[0:2])
             GCSPath(t[0]).dump(t[1])
-        # self.io_manager.dump_many(
-        #     paths=[t[0] for t in transfer_objects],
-        #     objects=[t[1] for t in transfer_objects],
-        # )
         return env_objects
 
     def generate_manifests_for_finemapping(self) -> list[tuple[int, str, int]]:
@@ -164,7 +163,7 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
             list[(int, str, int)]: List of tuples, where the first value is index of the manifest, the second value is a path to manifest, and the third is the number of records in that manifest.
         """
         all_study_locus_ids = self._extract_study_locus_ids_from_blobs()
-        finemapped_study_locus_ids = self._extract_finemapped_loci()
+        finemapped_study_locus_ids = self._extract_loci_from_logfiles()
         study_locus_ids = list(all_study_locus_ids - finemapped_study_locus_ids)
         manifest_rows = self._generate_manifest_rows(study_locus_ids)
         manifest_chunks = self._partition_rows_by_range(manifest_rows)

@@ -23,7 +23,7 @@ nodes:
         memory_mib: 25000
         boot_disk_mib: 20_000
       task_specs:
-        max_retry_count: 5
+        max_retry_count: 1
         max_run_duration: "7200s"
       policy_specs:
-        machine_type: n1-highmem-4
+        machine_type: n2-highmem-4
