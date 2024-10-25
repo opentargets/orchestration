@@ -260,6 +260,7 @@ Bucket `gs://gwas_catalog_sumstats_susie` contains:
 
 ```
 gs://gwas_catalog_sumstats_susie/credible_set_datasets/
+gs://gwas_catalog_sumstats_susie/credible_sets_clean/
 gs://gwas_catalog_sumstats_susie/finemapping_logs/
 gs://gwas_catalog_sumstats_susie/finemapping_manifests/
 gs://gwas_catalog_sumstats_susie/study_index/
@@ -323,6 +324,11 @@ The output of finemapping can be found under the:
 - `gs://gwas_catalog_sumstats_susie/credible_set_datasets/` - fine mapped study loci
 - `gs://gwas_catalog_sumstats_susie/finemapping_manifests/` - manifests used during the fine mapping job
 - `gs://gwas_catalog_sumstats_susie/finemapping_logs/` - logs from the individual finemapping tasks
+
+### Credible set qc
+
+After the finemapping is performed, the qc dag is run. For more detail see [credible set qc dag](../../credible_set_qc/README.md)
+The final credible sets are collected in the `gs://gwas_catalog_sumstats_susie/credible_set_clean/`
 
 #### Parametrization of google batch finemapping job
 
