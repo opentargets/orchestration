@@ -1,0 +1,34 @@
+dataproc:
+  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dev/cli.py
+  cluster_metadata:
+    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/dev/gentropy-0.0.0-py3-none-any.whl
+  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/dev/install_dependencies_on_cluster.sh
+  cluster_name: otg-credible-set-qc
+  autoscaling_policy: otg-etl
+
+nodes:
+  - id: gwas_catalog_sumstats_susie_credible_set_qc
+    kind: Task
+    prerequisites: []
+    params:
+      step: credible_set_qc
+      step.credible_sets_path: gs://gwas_catalog_sumstats_susie/credible_set_datasets
+      step.output_path: gs://gwas_catalog_sumstats_susie/credible_set_clean
+      step.p_value_threshold: 1.0e-5
+      step.purity_min_r2: 0.01
+      step.n_partitions: 200
+      step.session.write_mode: overwrite
+      step.session.start_hail: true
+
+  - id: ukb_ppp_eur_data_credible_set_qc
+    kind: Task
+    prerequisites: []
+    params:
+      step: credible_set_qc
+      step.credible_sets_path: gs://ukb_ppp_eur_data/credible_set_datasets/susie
+      step.output_path: gs://ukb_ppp_eur_data/credible_set_clean
+      step.p_value_threshold: 1.0e-5
+      step.purity_min_r2: 0.01
+      step.n_partitions: 50
+      step.session.write_mode: overwrite
+      step.session.start_hail: true

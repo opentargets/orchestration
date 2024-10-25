@@ -8,6 +8,7 @@ Data stored under `gs://ukb_ppp_eur_data` bucket comes with following structure
 
 ```
 gs://ukb_ppp_eur_data/credible_set_datasets/susie
+gs://ukb_ppp_eur_data/credible_set_clean/
 gs://ukb_ppp_eur_data/docs/
 gs://ukb_ppp_eur_data/finemapping_logs/
 gs://ukb_ppp_eur_data/finemapping_manifests/
@@ -108,6 +109,11 @@ The output of finemapping can be found under the:
 - `gs://ukb_ppp_eur_data/credible_set_datasets/susie/` - fine mapped study loci
 - `gs://ukb_ppp_eur_data/finemapping_manifests/` - manifests used during the fine mapping job
 - `gs://ukb_ppp_eur_data/finemapping_logs/` - logs from the individual finemapping tasks
+
+### Credible set qc
+
+After the finemapping is performed, the qc dag is run. For more detail see [credible set qc dag](../../credible_set_qc/README.md).
+The final credible sets are collected in the `gs://ukb_ppp_eur_data/credible_set_clean/`.
 
 #### Parametrization of google batch finemapping job
 
