@@ -17,7 +17,7 @@ from requests.adapters import HTTPAdapter
 CHUNK_SIZE = 1024 * 256
 MAX_N_THREADS = 32
 URI_PATTERN = r"^^((?P<protocol>.*)://)?(?P<root>[(\w)-]+)/(?P<path>([(\w)-/])+)"
-PARTITION_REGEX = r"\w*=\w*"
+PARTITION_REGEX = r"\w*=(\w*)"
 
 
 class PathSegments(TypedDict):
@@ -461,11 +461,14 @@ class ThreadSafetyError(Exception):
     pass
 
 
-def extract_partition_from_blob(blob: storage.Blob | str) -> str:
+def extract_partition_from_blob(
+    blob: storage.Blob | str, with_prefix: bool = True
+) -> str:
     """Extract partition prefix from a Google Cloud Storage Blob.
 
     Args:
         blob (storage.Blob): Google Cloud Storage Blob.
+        with_prefix (bool): Include prefix in the partition. Defaults to True.
 
     Returns:
         str: Partition prefix.
@@ -479,4 +482,6 @@ def extract_partition_from_blob(blob: storage.Blob | str) -> str:
     _match = re.search(PARTITION_REGEX, name)
     if not _match:
         raise ValueError("No partition found in %s", name)
-    return _match.group(0)
+    if with_prefix:
+        return _match.group(0)
+    return _match.group(1)
