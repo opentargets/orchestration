@@ -67,7 +67,9 @@ class BatchIndexOperator(BaseOperator):
         return rows
 
 
-class GeneticsBatchJobOperator(CloudBatchSubmitJobOperator):
+class BatchJobOperator(CloudBatchSubmitJobOperator):
+    """Generic Batch Job operator."""
+
     def __init__(
         self,
         job_name: str,

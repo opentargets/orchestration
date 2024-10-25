@@ -9,9 +9,9 @@ from airflow.decorators import task
 from airflow.models.baseoperator import chain
 from airflow.models.dag import DAG
 
-from ot_orchestration.operators.batch.harmonisation import (
+from ot_orchestration.operators.batch.generic import (
     BatchIndexOperator,
-    GeneticsBatchJobOperator,
+    BatchJobOperator,
 )
 from ot_orchestration.utils import (
     find_node_in_config,
@@ -50,7 +50,7 @@ with DAG(
         batch_index_specs=node_config["google_batch_index_specs"],
     )
     node_config = find_node_in_config(config["nodes"], "gwas_catalog_harmonisation")
-    harmonisation_batch_job = GeneticsBatchJobOperator.partial(
+    harmonisation_batch_job = BatchJobOperator.partial(
         task_id=node_config["id"],
         job_name="harmonisation",
         google_batch=node_config["google_batch"],
