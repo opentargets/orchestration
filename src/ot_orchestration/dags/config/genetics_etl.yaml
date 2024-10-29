@@ -1,4 +1,3 @@
-gwas_catalog_manifests_path: gs://gwas_catalog_data/manifests
 l2g_gold_standard_path: gs://genetics_etl_python_playground/input/l2g/gold_standard/curation.json
 release_dir: gs://ot_orchestration/releases/24.10_freeze5
 dataproc:
@@ -34,7 +33,7 @@ nodes:
         - gs://finngen_data/r11/study_index
       step.target_index_path: gs://ot_orchestration/releases/24.10_freeze5/gene_index
       step.disease_index_path: gs://open-targets-pre-data-releases/24.06/output/etl/parquet/diseases
-      step.valid_study_index_path: &valid_study_index gs://ot_orchestration/releases/24.10_freeze5/study_index
+      step.valid_study_index_path: gs://ot_orchestration/releases/24.10_freeze5/study_index
       step.invalid_study_index_path: gs://ot_orchestration/releases/24.10_freeze5/invalid_study_index
       step.biosample_index_path: gs://ot_orchestration/releases/24.10_freeze5/biosample_index
       step.invalid_qc_reasons:
@@ -51,7 +50,7 @@ nodes:
       - study_validation
     params:
       step: credible_set_validation
-      step.study_index_path: *valid_study_index
+      step.study_index_path: gs://ot_orchestration/releases/24.10_freeze5/study_index
       step.study_locus_path:
         - gs://gwas_catalog_top_hits/credible_sets/
         - gs://gwas_catalog_sumstats_pics/credible_sets/
@@ -59,7 +58,7 @@ nodes:
         - gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie/
         - gs://ukb_ppp_eur_data/credible_set_clean/
         - gs://finngen_data/r11/credible_set_datasets/susie/
-      step.valid_study_locus_path: &valid_credible_set gs://ot_orchestration/releases/24.10_freeze5/credible_set
+      step.valid_study_locus_path: gs://ot_orchestration/releases/24.10_freeze5/credible_set
       step.invalid_study_locus_path: gs://ot_orchestration/releases/24.10_freeze5/invalid_credible_set
       step.invalid_qc_reasons:
         - DUPLICATED_STUDYLOCUS_ID
@@ -171,7 +170,7 @@ nodes:
     command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
     params:
       step: colocalisation
-      step.credible_set_path: *valid_credible_set
+      step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze5/credible_set
       step.coloc_path: gs://ot_orchestration/releases/24.10_freeze5/colocalisation
       step.colocalisation_method: ECaviar
       step.session.spark_uri: yarn
@@ -181,7 +180,7 @@ nodes:
     command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
     params:
       step: colocalisation
-      step.credible_set_path: *valid_credible_set
+      step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze5/credible_set
       step.coloc_path: gs://ot_orchestration/releases/24.10_freeze5/colocalisation/
       step.colocalisation_method: Coloc
       step.session.spark_uri: yarn
@@ -192,10 +191,10 @@ nodes:
     command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
     params:
       step: locus_to_gene_feature_matrix
-      step.credible_set_path: *valid_credible_set
+      step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze5/credible_set
       step.variant_index_path: gs://ot_orchestration/releases/24.10_freeze5/variant_index
       step.colocalisation_path: gs://ot_orchestration/releases/24.10_freeze5/colocalisation
-      step.study_index_path: *valid_study_index
+      step.study_index_path: gs://ot_orchestration/releases/24.10_freeze5/study_index
       step.gene_index_path: gs://ot_orchestration/releases/24.10_freeze5/gene_index
       step.feature_matrix_path: gs://ot_orchestration/releases/24.10_freeze5/locus_to_gene_feature_matrix
       +step.session.extended_spark_conf: "{spark.sql.autoBroadcastJoinThreshold:'-1'}"
@@ -213,7 +212,7 @@ nodes:
       step.wandb_run_name: "24.10"
       step.hf_hub_repo_id: opentargets/locus_to_gene
       step.model_path: gs://ot_orchestration/releases/24.10_freeze5/locus_to_gene_model/classifier.skops
-      step.credible_set_path: *valid_credible_set
+      step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze5/credible_set
       step.variant_index_path: gs://ot_orchestration/releases/24.10_freeze5/variant_index
       step.feature_matrix_path: gs://ot_orchestration/releases/24.10_freeze5/locus_to_gene_feature_matrix
       step.gold_standard_curation_path: gs://ot_orchestration/releases/24.10_freeze5/locus_to_gene_gold_standard.json
@@ -233,7 +232,7 @@ nodes:
       step.run_mode: predict
       step.predictions_path: gs://ot_orchestration/releases/24.10_freeze5/locus_to_gene_predictions
       step.feature_matrix_path: gs://ot_orchestration/releases/24.10_freeze5/locus_to_gene_feature_matrix
-      step.credible_set_path: *valid_credible_set
+      step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze5/credible_set
       step.session.spark_uri: yarn
     prerequisites:
       - l2g_train
@@ -243,8 +242,8 @@ nodes:
       step: locus_to_gene_evidence
       step.evidence_output_path: gs://ot_orchestration/releases/24.10_freeze5/locus_to_gene_evidence
       step.locus_to_gene_predictions_path: gs://ot_orchestration/releases/24.10_freeze5/locus_to_gene_predictions
-      step.credible_set_path: *valid_credible_set
-      step.study_index_path: *valid_study_index
+      step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze5/credible_set
+      step.study_index_path: gs://ot_orchestration/releases/24.10_freeze5/study_index
       step.locus_to_gene_threshold: 0.05
       step.session.spark_uri: yarn
     prerequisites:
