@@ -6,13 +6,13 @@ import time
 from collections import OrderedDict
 from functools import cached_property
 from pathlib import Path
-from typing import Set, Type
+from typing import Sequence, Set, Type
 
 import pandas as pd
 from airflow.models import BaseOperator
-from airflow.providers.google.cloud.operators.cloud_batch import (
-    CloudBatchSubmitJobOperator,
-)
+from airflow.providers.google.cloud.hooks.cloud_batch import CloudBatchHook
+from airflow.providers.google.cloud.operators.cloud_base import GoogleCloudBaseOperator
+from google.cloud.batch_v1 import Job
 from google.cloud.storage import Blob, Client
 
 from ot_orchestration.types import GCSMountObject, GoogleBatchSpecs
@@ -74,52 +74,88 @@ class VepAnnotationPathManager:
         return list(self.path_registry.values())
 
 
-class VepAnnotateOperator(CloudBatchSubmitJobOperator):
+class VepAnnotateOperator(GoogleCloudBaseOperator):
+    """Annotate vcf files in batch job.
+
+    This operator performs the VEP annotation of vcf files provided in the `vcf_input_path`.
+    The annotation command is custom to OTG needs. The number of batch tasks is inferred by listing the number of
+    vcf files introduced in the `vcf_input_path`. Each input file will result in a single vep task.
+
+    """
+
     def __init__(
         self,
-        task_id: str,
         vcf_input_path: str,
         vep_output_path: str,
         vep_cache_path: str,
         google_batch: GoogleBatchSpecs,
         mount_dir_root: str = "/mnt/disks/share",
+        gcp_region: str = GCP_REGION,
         project_id: str = GCP_PROJECT_GENETICS,
+        gcp_conn_id: str = "google_cloud_default",
+        impersonation_chain: str | Sequence[str] | None = None,
+        polling_period_seconds: float = 10,
+        timeout_seconds: float | None = None,
         **kwargs,
     ):
+        super().__init__(**kwargs)
         self.project_id = project_id
+        self.job_name = f"vep-job-{time.strftime('%Y%m%d-%H%M%S')}"
+        self.region = gcp_region
+
+        self.vcf_input_path = vcf_input_path
+        self.vep_output_path = vep_output_path
+        self.vep_cache_path = vep_cache_path
+        self.google_batch = google_batch
+        self.mount_dir_root = mount_dir_root
+        self.gcp_conn_id = gcp_conn_id
+        self.impersonation_chain = impersonation_chain
+        self.polling_period_seconds = polling_period_seconds
+        self.timeout_seconds = timeout_seconds
+
+    def execute(self, context) -> dict:
+        """Execute the operator."""
+        vcf_files = self._get_vcf_partition_basenames()
         self.pm = VepAnnotationPathManager(
-            vcf_input_path=vcf_input_path,
-            vep_output_path=vep_output_path,
-            vep_cache_path=vep_cache_path,
-            mount_dir_root=mount_dir_root,
+            vcf_input_path=self.vcf_input_path,
+            vep_output_path=self.vep_output_path,
+            vep_cache_path=self.vep_cache_path,
+            mount_dir_root=self.mount_dir_root,
         )
-        self.vcf_files = self._get_vcf_partition_basenames()
         environments = [
-            {"INPUT_FILE": file, "OUTPUT_FILE": file.replace(".vcf", ".json")} for file in self.vcf_files
+            {"INPUT_FILE": file, "OUTPUT_FILE": file.replace(".vcf", ".json")}
+            for file in vcf_files
         ]
 
-        batch_job = create_batch_job(
+        job_def = create_batch_job(
             task=create_task_spec(
-                image=google_batch["image"],
+                image=self.google_batch["image"],
                 commands=self._vep_command,
-                resource_specs=google_batch["resource_specs"],
-                task_specs=google_batch["task_specs"],
-                entrypoint=google_batch["entrypoint"],
+                resource_specs=self.google_batch["resource_specs"],
+                task_specs=self.google_batch["task_specs"],
+                entrypoint=self.google_batch["entrypoint"],
             ),
             task_env=create_task_env(environments),
-            policy_specs=google_batch["policy_specs"],
+            policy_specs=self.google_batch["policy_specs"],
             mounting_points=self.pm.get_mount_config(),
         )
-        self.log.info(batch_job)
-        super().__init__(
-            task_id=task_id,
-            project_id=self.project_id,
-            region=GCP_REGION,
-            job_name=f"vep-job-{time.strftime('%Y%m%d-%H%M%S')}",
-            job=batch_job,
-            deferrable=False,
-            **kwargs,
+        self.log.info(job_def)
+        hook: CloudBatchHook = CloudBatchHook(
+            self.gcp_conn_id, self.impersonation_chain
         )
+        job = hook.submit_batch_job(
+            job_name=self.job_name,
+            job=job_def,
+            region=self.region,
+            project_id=self.project_id,
+        )
+        completed_job = hook.wait_for_job(
+            job_name=job.name,
+            polling_period_seconds=self.polling_period_seconds,
+            timeout=self.timeout_seconds,
+        )
+
+        return Job.to_dict(completed_job)  # type: ignore
 
     def _get_vcf_partition_basenames(self) -> Set[str]:
         """Based on listed vcf file partition extract their basenames.
