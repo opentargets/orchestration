@@ -176,10 +176,8 @@ with DAG(
         # chain prerequisites
         chain_dependencies(nodes=config["nodes"], tasks_or_task_groups=node_map)
         generate_dataproc_task_chain(
-            cluster_name=dataproc_specs["cluster_name"],
-            cluster_metadata=dataproc_specs["cluster_metadata"],
-            cluster_init_script=dataproc_specs["cluster_init_script"],
             tasks=list(node_map.values()),  # type: ignore
+            **config["dataproc"],
         )
 
     # DAG description:
