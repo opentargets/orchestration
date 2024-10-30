@@ -134,7 +134,8 @@ def chain_dependencies(nodes: list[ConfigNode], tasks_or_task_groups: dict[str, 
         for label, node in tasks_or_task_groups.items():
             print(node_dependencies)
             for dependency in node_dependencies[label]:
-                node.set_upstream(tasks_or_task_groups[dependency])
+                if dependency in tasks_or_task_groups:
+                    node.set_upstream(tasks_or_task_groups[dependency])
 
 
 def convert_params_to_hydra_positional_arg(

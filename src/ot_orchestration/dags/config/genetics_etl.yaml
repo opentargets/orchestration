@@ -6,7 +6,9 @@ dataproc:
     PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/dev/gentropy-0.0.0-py3-none-any.whl
   cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/dev/install_dependencies_on_cluster.sh
   cluster_name: otg-etl
-  autoscaling_policy: otg-etl
+  autoscaling_policy: otg-efm
+  allow_efm: true
+  num_workers: 10
 
 nodes:
   - id: biosample_index
