@@ -30,6 +30,8 @@ nodes:
       step: study_validation
       step.study_index_path:
         - gs://gwas_catalog_top_hits/study_index
+        - gs://gwas_catalog_sumstats_susie/study_index
+        - gs://gwas_catalog_sumstats_pics/study_index
         - gs://eqtl_catalogue_data/study_index
         - gs://ukb_ppp_eur_data/study_index
         - gs://finngen_data/r11/study_index
@@ -47,6 +49,7 @@ nodes:
         - FAILED_MEAN_BETA_CHECK
         - FAILED_PZ_CHECK
         - FAILED_GC_LAMBDA_CHECK
+        - NO_OT_CURATION
       step.session.spark_uri: yarn
 
   - id: credible_set_validation
@@ -83,7 +86,6 @@ nodes:
         - INVALID_VARIANT_IDENTIFIER
         - INVALID_CHROMOSOME
         - SUMMARY_STATISTICS_AVAILABLE
-        - ABNORMAL_PIPS
       step.session.spark_uri: yarn
   - id: variant_annotation
     kind: TaskGroup
