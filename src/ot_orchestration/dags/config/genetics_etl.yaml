@@ -250,3 +250,14 @@ nodes:
       step.session.spark_uri: yarn
     prerequisites:
       - l2g_predict
+  - id: l2g_associations
+    command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
+    params:
+      step: locus_to_gene_associations
+      step.evidence_input_path: gs://ot_orchestration/releases/24.10_freeze5/locus_to_gene_evidence
+      step.disease_index_path: gs://open-targets-pre-data-releases/24.06/output/etl/parquet/diseases
+      step.direct_associations_output_path: gs://ot_orchestration/releases/24.10_freeze5/locus_to_gene_associations/direct_associations
+      step.indirect_associations_output_path: gs://ot_orchestration/releases/24.10_freeze5/locus_to_gene_associations/indirect_associations
+      step.session.spark_uri: yarn
+    prerequisites:
+      - l2g_evidence
