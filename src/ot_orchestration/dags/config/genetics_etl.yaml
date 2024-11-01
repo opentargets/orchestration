@@ -6,7 +6,9 @@ dataproc:
     PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/dev/gentropy-0.0.0-py3-none-any.whl
   cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/dev/install_dependencies_on_cluster.sh
   cluster_name: otg-etl
-  autoscaling_policy: otg-etl
+  autoscaling_policy: otg-efm
+  allow_efm: true
+  num_workers: 10
 
 nodes:
   - id: biosample_index
@@ -215,7 +217,7 @@ nodes:
     params:
       step: locus_to_gene
       step.run_mode: train
-      step.wandb_run_name: "24.10"
+      step.wandb_run_name: 24.10_freeze5
       step.hf_hub_repo_id: opentargets/locus_to_gene
       step.model_path: gs://ot_orchestration/releases/24.10_freeze5/locus_to_gene_model/classifier.skops
       step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze5/credible_set
@@ -226,7 +228,6 @@ nodes:
       step.hyperparameters.n_estimators: 100
       step.hyperparameters.max_depth: 5
       step.hyperparameters.loss: log_loss
-      step.download_from_hub: true
       step.session.spark_uri: yarn
       +step.session.extended_spark_conf: "{spark.kryoserializer.buffer.max:500m, spark.sql.autoBroadcastJoinThreshold:'-1'}"
     prerequisites:
@@ -239,6 +240,7 @@ nodes:
       step.predictions_path: gs://ot_orchestration/releases/24.10_freeze5/locus_to_gene_predictions
       step.feature_matrix_path: gs://ot_orchestration/releases/24.10_freeze5/locus_to_gene_feature_matrix
       step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze5/credible_set
+      step.download_from_hub: true
       step.session.spark_uri: yarn
     prerequisites:
       - l2g_train
@@ -254,3 +256,14 @@ nodes:
       step.session.spark_uri: yarn
     prerequisites:
       - l2g_predict
+  - id: l2g_associations
+    command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
+    params:
+      step: locus_to_gene_associations
+      step.evidence_input_path: gs://ot_orchestration/releases/24.10_freeze5/locus_to_gene_evidence
+      step.disease_index_path: gs://open-targets-pre-data-releases/24.06/output/etl/parquet/diseases
+      step.direct_associations_output_path: gs://ot_orchestration/releases/24.10_freeze5/locus_to_gene_associations/direct_associations
+      step.indirect_associations_output_path: gs://ot_orchestration/releases/24.10_freeze5/locus_to_gene_associations/indirect_associations
+      step.session.spark_uri: yarn
+    prerequisites:
+      - l2g_evidence

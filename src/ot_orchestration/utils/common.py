@@ -16,6 +16,7 @@ GCP_REGION = "europe-west1"
 GCP_ZONE = "europe-west1-d"
 GCP_DATAPROC_IMAGE = "2.1"
 GCP_AUTOSCALING_POLICY = "otg-etl"
+GCP_EFM_AUTOSCALING_POLICY = "otg-efm"
 
 # Image configuration.
 GENTROPY_DOCKER_IMAGE = (
