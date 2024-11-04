@@ -194,7 +194,6 @@ nodes:
       step.hyperparameters.n_estimators: 100
       step.hyperparameters.max_depth: 5
       step.hyperparameters.loss: log_loss
-      step.download_from_hub: true
       +step.session.extended_spark_conf: "{spark.kryoserializer.buffer.max:500m, spark.sql.autoBroadcastJoinThreshold:'-1'}"
 
   - id: l2g_predict
@@ -206,6 +205,7 @@ nodes:
       step.predictions_path: gs://ot_orchestration/releases/24.10_freeze6/locus_to_gene_predictions
       step.feature_matrix_path: gs://ot_orchestration/releases/24.10_freeze6/locus_to_gene_feature_matrix
       step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze6/credible_set
+      step.download_from_hub: true
 
   - id: l2g_evidence
     prerequisites:
