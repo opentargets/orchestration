@@ -85,7 +85,7 @@ nodes:
         - NON_MAPPED_VARIANT_FLAG
         - INVALID_VARIANT_IDENTIFIER
         - INVALID_CHROMOSOME
-        - SUMMARY_STATISTICS_AVAILABLE
+        - TOP_HIT_AND_SUMMARY_STATS
       step.session.spark_uri: yarn
   - id: variant_annotation
     kind: TaskGroup
