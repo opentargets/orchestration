@@ -7,8 +7,10 @@ from functools import cached_property
 from pathlib import Path
 from typing import Sequence, Set
 
+from airflow.exceptions import AirflowException
 from airflow.providers.google.cloud.hooks.cloud_batch import CloudBatchHook
 from airflow.providers.google.cloud.operators.cloud_base import GoogleCloudBaseOperator
+from google.cloud.batch import JobStatus
 from google.cloud.batch_v1 import Job
 from google.cloud.storage import Client
 
@@ -92,6 +94,10 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
     This operator performs the VEP annotation of vcf files provided in the `vcf_input_path`.
     The annotation command is custom to OTG needs. The number of batch tasks is inferred by listing the number of
     vcf files introduced in the `vcf_input_path`. Each input file will result in a single vep task.
+
+    The operator tries to list the tasks after they are completed, in case of any failures in the task, the
+    operator throws AirflowException and stops the execution of the DAG. The defails of the failed job can be
+    retrieved from the logs.
     """
 
     def __init__(
@@ -123,23 +129,23 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
         self.impersonation_chain = impersonation_chain
         self.polling_period_seconds = polling_period_seconds
         self.timeout_seconds = timeout_seconds
-
-    def execute(self, context) -> dict:
-        """Execute the operator."""
         self.pm = VepAnnotationPathManager(
             vcf_input_path=self.vcf_input_path,
             vep_output_path=self.vep_output_path,
             vep_cache_path=self.vep_cache_path,
             mount_dir_root=self.mount_dir_root,
         )
-        hook: CloudBatchHook = CloudBatchHook(
-            self.gcp_conn_id, self.impersonation_chain
-        )
 
-        vcf_files = self._get_vcf_partition_basenames()
+    @cached_property
+    def hook(self) -> CloudBatchHook:
+        """Get the cloud batch hook."""
+        return CloudBatchHook(self.gcp_conn_id, self.impersonation_chain)
 
+    def execute(self, context) -> dict:
+        """Execute the operator."""
+        vcf_files = self._get_vcf_partition_basenames(self.pm.paths["input"])
         environments = [
-            {"INPUT_FILE": file, "OUTPUT_FILE": file.replace(".vcf", ".json")}
+            {"INPUT_FILE": file, "OUTPUT_FILE": file.replace(".csv", ".json")}
             for file in vcf_files
         ]
 
@@ -155,27 +161,40 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
             policy_specs=self.google_batch["policy_specs"],
             mounting_points=self.pm.mount_config,
         )
-        self.log.info(job_def)
-
-        job = hook.submit_batch_job(
+        self.log.debug(job_def)
+        job = self.hook.submit_batch_job(
             job_name=self.job_name,
             job=job_def,
             region=self.region,
             project_id=self.project_id,
         )
-        completed_job = hook.wait_for_job(
+        completed_job = self.hook.wait_for_job(
             job_name=job.name,
             polling_period_seconds=self.polling_period_seconds,
             timeout=self.timeout_seconds,
         )
-        print(
-            hook.list_tasks(
-                region=self.region, job_name=job.name, project_id=self.project_id
+        self.log.debug(completed_job)
+
+        # Retrieve the job status
+        _filter = f"name:projects/{self.project_id}/locations/{self.region}/jobs/{self.job_name}*"
+        jobs = list(
+            self.hook.list_jobs(
+                region=self.region, project_id=self.project_id, filter=_filter
             )
         )
-        return Job.to_dict(completed_job)  # type: ignore
+        if len(jobs) != 1:
+            raise AirflowException(f"Found more then one job for id {self.job_name}")
 
-    def _get_vcf_partition_basenames(self) -> Set[str]:
+        job_status = jobs[0].status
+        job_state = job_status.state
+
+        if job_state != JobStatus.State.SUCCEEDED:
+            self.log.error(job_status)
+            raise AirflowException(f"Job {self.job_name} failed.")
+
+        return Job.to_dict(jobs[0])  # type: ignore
+
+    def _get_vcf_partition_basenames(self, input_path: GCSPath) -> Set[str]:
         """Based on listed vcf file partition extract their basenames.
 
         NOTE: Do not reconstruct full path to the mount, as it will
@@ -186,16 +205,10 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
         Returns:
             Set[str]: set of basenames to pass to the task environments.
         """
-        input_path = self.pm.paths["input"]
         c = Client(project=self.project_id)
         b = c.bucket(bucket_name=input_path.bucket)
         blobs = b.list_blobs(prefix=input_path.path, match_glob="**.csv")
-        _blobs = []
-        i = 0
-        while i < 1:
-            i += 1
-            _blobs.append(next(blobs))
-        vcf_paths = {Path(blob.name).name for blob in _blobs}
+        vcf_paths = {Path(blob.name).name for blob in blobs}
         # FIXME: Apparently this operator logs are not appearing in the airflow UI.
         self.log.info("Found %s vcf files", len(vcf_paths))
         return vcf_paths
@@ -204,11 +217,18 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
     def _vep_command(self) -> list[str]:
         return [
             "-c",
-            rf"vep --cache --offline --format vcf --force_overwrite \
+            # NOTE: Ensure the CHROM column is replaced with #CHROM
+            rf"sed -i '0,/CHROM/s/CHROM/#CHROM/' {self.pm.input_dir}/$INPUT_FILE && \
+                 vep \
+                --cache \
+                --offline \
+                --format vcf \
+                --force_overwrite \
                 --no_stats \
                 --dir_cache {self.pm.cache_dir} \
                 --input_file {self.pm.input_dir}/$INPUT_FILE \
-                --output_file {self.pm.output_dir}/$OUTPUT_FILE --json \
+                --output_file {self.pm.output_dir}/$OUTPUT_FILE \
+                --json \
                 --dir_plugins {self.pm.cache_dir}/VEP_plugins \
                 --sift b \
                 --polyphen b \

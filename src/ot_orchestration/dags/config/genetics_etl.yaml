@@ -1,10 +1,10 @@
 l2g_gold_standard_path: gs://genetics_etl_python_playground/input/l2g/gold_standard/curation.json
 release_dir: gs://ot_orchestration/releases/24.10_freeze5
 dataproc:
-  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dev/cli.py
+  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/chr-quotes/cli.py
   cluster_metadata:
-    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/dev/gentropy-0.0.0-py3-none-any.whl
-  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/dev/install_dependencies_on_cluster.sh
+    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/chr-quotes/gentropy-0.0.0-py3-none-any.whl
+  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/chr-quotes/install_dependencies_on_cluster.sh
   cluster_name: otg-etl
   autoscaling_policy: otg-efm
   allow_efm: true
@@ -87,97 +87,67 @@ nodes:
         - INVALID_CHROMOSOME
         - TOP_HIT_AND_SUMMARY_STATS
       step.session.spark_uri: yarn
-  - id: variant_annotation
-    kind: TaskGroup
-    nodes:
-      - id: variant_to_vcf
-        kind: Task
-        google_batch:
-          entrypoint: /bin/sh
-          commands:
-            - -c
-            - poetry
-            - run
-            - gentropy
-          image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:dev
-          environment:
-            - SOURCE_NAME: uniprot
-              SOURCE_PATH: gs://open-targets-pre-data-releases/24.09/input/evidence-files/uniprot.json.gz
-              SOURCE_FORMAT: json
-            - SOURCE_NAME: clinvar
-              SOURCE_PATH: gs://open-targets-pre-data-releases/24.09/input/evidence-files/eva.json.gz
-              SOURCE_FORMAT: json
-            - SOURCE_NAME: pharmgkb
-              SOURCE_PATH: gs://open-targets-pre-data-releases/24.09/input/pharmacogenomics-inputs/pharmacogenomics.json.gz
-              SOURCE_FORMAT: json
-            - SOURCE_NAME: gentropy_credible_sets
-              SOURCE_PATH: gs://ot_orchestration/releases/24.10_freeze5/credible_set
-              SOURCE_FORMAT: parquet
-          resource_specs:
-            cpu_milli: 2000
-            memory_mib: 26_000
-            boot_disk_mib: 25000
-          task_specs:
-            max_retry_count: 4
-            max_run_duration: "2h"
-          policy_specs:
-            machine_type: n1-highmem-4
-        params:
-          step: variant_to_vcf
-          step.source_path: $SOURCE_PATH
-          step.source_format: $SOURCE_FORMAT
-          step.vcf_path: gs://ot_orchestration/releases/24.10_freeze5/variants/raw_variants/$SOURCE_NAME
-          +step.session.extended_spark_conf: "{spark.jars:https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop3-latest.jar,spark.driver.memory:26g}"
-      - id: list_nonannotated_vcfs
-        kind: Task
-        params:
-          # the extension after saving from pyspark csv is going to be the .csv
-          input_vcf_glob: gs://ot_orchestration/releases/24.10_freeze5/variants/raw_variants/**.csv
-          output_path: gs://ot_orchestration/releases/24.10_freeze5/variants/merged_variants
-          chunk_size: 2000
-        prerequisites:
-          - variant_to_vcf
-      - id: vep_annotation
-        kind: Task
-        google_batch:
-          entrypoint: /bin/sh
-          image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/custom_ensembl_vep:dev
-          resource_specs:
-            cpu_milli: 2000
-            memory_mib: 2000
-            boot_disk_mib: 10000
-          task_specs:
-            max_retry_count: 4
-            max_run_duration: "2h"
-          policy_specs:
-            machine_type: n1-standard-4
-        params:
-          vep_cache_path: gs://genetics_etl_python_playground/vep/cache
-          vcf_input_path: gs://ot_orchestration/releases/24.10_freeze5/variants/merged_variants
-          vep_output_path: gs://ot_orchestration/releases/24.10_freeze5/variants/annotated_variants
-        prerequisites:
-          - list_nonannotated_vcfs
+
+  - id: convert_variants_to_vcf
+    kind: Task
+    params:
+      step: variant_to_vcf
+      step.source_paths:
+        - gs://open-targets-pre-data-releases/24.09/input/evidence-files/uniprot.json.gz
+        - gs://open-targets-pre-data-releases/24.09/input/evidence-files/eva.json.gz
+        - gs://open-targets-pre-data-releases/24.09/input/pharmacogenomics-inputs/pharmacogenomics.json.gz
+        - gs://ot_orchestration/releases/24.10_freeze5/credible_set
+      step.source_formats:
+        - json
+        - json
+        - json
+        - parquet
+      step.output_path: gs://ot_orchestration/releases/24.10_freeze5/variants/partitioned_variants
+      step.partition_size: 2_000 # approximate num of variants per partition!
     prerequisites:
       - credible_set_validation
+
+  - id: variant_annotation
+    kind: Task
+    google_batch:
+      entrypoint: /bin/sh
+      image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/custom_ensembl_vep:dev
+      resource_specs:
+        cpu_milli: 2000
+        memory_mib: 2000
+        boot_disk_mib: 10000
+      task_specs:
+        max_retry_count: 1
+        max_run_duration: "2h"
+      policy_specs:
+        machine_type: n1-standard-4
+    params:
+      vep_cache_path: gs://genetics_etl_python_playground/vep/cache
+      vcf_input_path: gs://ot_orchestration/releases/24.10_freeze5/variants/partitioned_variants
+      vep_output_path: gs://ot_orchestration/releases/24.10_freeze5/variants/annotated_variants
+    prerequisites:
+      - convert_variants_to_vcf
+
   - id: variant_index
-    command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
     params:
       step: variant_index
       step.vep_output_json_path: gs://ot_orchestration/releases/24.10_freeze5/variants/annotated_variants
       step.gnomad_variant_annotations_path: gs://genetics_etl_python_playground/static_assets/gnomad_variants
-      step.variant_index_path: gs://ot_orchestration/releases/24.10_freeze5/variant_index
+      step.variant_index_path: gs://ot_orchestration/test/releases/24.10_freeze5/variant_index
       step.session.spark_uri: yarn
+      step.session.write_mode: overwrite
     prerequisites:
       - variant_annotation
+
   - id: gene_index
-    command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
     params:
       step: gene_index
       step.target_path: gs://genetics_etl_python_playground/static_assets/targets # OTP 23.12 data
       step.gene_index_path: gs://ot_orchestration/releases/24.10_freeze5/gene_index
       step.session.spark_uri: yarn
+    prerequisites: []
+
   - id: colocalisation_ecaviar
-    command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
     params:
       step: colocalisation
       step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze5/credible_set
@@ -186,8 +156,8 @@ nodes:
       step.session.spark_uri: yarn
     prerequisites:
       - credible_set_validation
+
   - id: colocalisation_coloc
-    command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
     params:
       step: colocalisation
       step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze5/credible_set
@@ -197,8 +167,8 @@ nodes:
       +step.colocalisation_method_params: "{priorc1: 1e-4, priorc2: 1e-4, priorc12: 1e-5}"
     prerequisites:
       - credible_set_validation
+
   - id: l2g_feature_matrix
-    command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
     params:
       step: locus_to_gene_feature_matrix
       step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze5/credible_set
@@ -214,8 +184,8 @@ nodes:
       - colocalisation_ecaviar
       - variant_index
       - gene_index
+
   - id: l2g_train
-    command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
     params:
       step: locus_to_gene
       step.run_mode: train
@@ -225,7 +195,7 @@ nodes:
       step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze5/credible_set
       step.variant_index_path: gs://ot_orchestration/releases/24.10_freeze5/variant_index
       step.feature_matrix_path: gs://ot_orchestration/releases/24.10_freeze5/locus_to_gene_feature_matrix
-      step.gold_standard_curation_path: gs://ot_orchestration/releases/24.10_freeze5/locus_to_gene_gold_standard.json
+      step.gold_standard_curation_path: gs://genetics_etl_python_playground/input/l2g/gold_standard/curation.json
       step.gene_interactions_path: gs://genetics_etl_python_playground/static_assets/interaction # OTP 23.12 data
       step.hyperparameters.n_estimators: 100
       step.hyperparameters.max_depth: 5
@@ -234,8 +204,8 @@ nodes:
       +step.session.extended_spark_conf: "{spark.kryoserializer.buffer.max:500m, spark.sql.autoBroadcastJoinThreshold:'-1'}"
     prerequisites:
       - l2g_feature_matrix
+
   - id: l2g_predict
-    command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
     params:
       step: locus_to_gene
       step.run_mode: predict
@@ -246,8 +216,8 @@ nodes:
       step.session.spark_uri: yarn
     prerequisites:
       - l2g_train
+
   - id: l2g_evidence
-    command: gs://genetics_etl_python_playground/initialisation/0.0.0/cli.py
     params:
       step: locus_to_gene_evidence
       step.evidence_output_path: gs://ot_orchestration/releases/24.10_freeze5/locus_to_gene_evidence
