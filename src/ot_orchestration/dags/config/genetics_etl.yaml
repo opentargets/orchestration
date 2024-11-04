@@ -54,6 +54,10 @@ nodes:
         - UNKNOWN_STUDY_TYPE
         - DUPLICATED_STUDY
         - UNKNOWN_BIOSAMPLE
+        - FAILED_MEAN_BETA_CHECK
+        - FAILED_PZ_CHECK
+        - FAILED_GC_LAMBDA_CHECK
+        - NO_OT_CURATION
 
   - id: credible_set_validation
     kind: Task
@@ -86,6 +90,9 @@ nodes:
         - EXPLAINED_BY_SUSIE
         - WINDOW_CLUMPED
         - NON_MAPPED_VARIANT_FLAG
+        - INVALID_VARIANT_IDENTIFIER
+        - INVALID_CHROMOSOME
+        - TOP_HIT_AND_SUMMARY_STATS
 
   - id: convert_variants_to_vcf
     kind: Task
