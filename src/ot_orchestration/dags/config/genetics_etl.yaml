@@ -30,6 +30,8 @@ nodes:
       step: study_validation
       step.study_index_path:
         - gs://gwas_catalog_top_hits/study_index
+        - gs://gwas_catalog_sumstats_susie/study_index
+        - gs://gwas_catalog_sumstats_pics/study_index
         - gs://eqtl_catalogue_data/study_index
         - gs://ukb_ppp_eur_data/study_index
         - gs://finngen_data/r11/study_index
@@ -44,6 +46,10 @@ nodes:
         - UNKNOWN_STUDY_TYPE
         - DUPLICATED_STUDY
         - UNKNOWN_BIOSAMPLE
+        - FAILED_MEAN_BETA_CHECK
+        - FAILED_PZ_CHECK
+        - FAILED_GC_LAMBDA_CHECK
+        - NO_OT_CURATION
       step.session.spark_uri: yarn
 
   - id: credible_set_validation
@@ -65,7 +71,6 @@ nodes:
       step.invalid_qc_reasons:
         - DUPLICATED_STUDYLOCUS_ID
         - AMBIGUOUS_STUDY
-        - FAILED_STUDY
         - MISSING_STUDY
         - NO_GENOMIC_LOCATION_FLAG
         - COMPOSITE_FLAG
@@ -78,6 +83,9 @@ nodes:
         - EXPLAINED_BY_SUSIE
         - WINDOW_CLUMPED
         - NON_MAPPED_VARIANT_FLAG
+        - INVALID_VARIANT_IDENTIFIER
+        - INVALID_CHROMOSOME
+        - TOP_HIT_AND_SUMMARY_STATS
       step.session.spark_uri: yarn
   - id: variant_annotation
     kind: TaskGroup
