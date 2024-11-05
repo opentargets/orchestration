@@ -207,6 +207,7 @@ nodes:
       step.feature_matrix_path: gs://ot_orchestration/releases/24.10_freeze6/locus_to_gene_feature_matrix
       step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze6/credible_set
       step.download_from_hub: true
+      step.hf_hub_repo_id: opentargets/locus_to_gene
 
   - id: l2g_evidence
     prerequisites:
