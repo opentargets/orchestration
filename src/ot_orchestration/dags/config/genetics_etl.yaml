@@ -1,10 +1,10 @@
 l2g_gold_standard_path: gs://genetics_etl_python_playground/input/l2g/gold_standard/curation.json
 release_dir: gs://ot_orchestration/releases/24.10_freeze6
 dataproc:
-  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/chr-quotes/cli.py
+  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dev/cli.py
   cluster_metadata:
-    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/chr-quotes/gentropy-0.0.0-py3-none-any.whl
-  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/chr-quotes/install_dependencies_on_cluster.sh
+    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/dev/gentropy-0.0.0-py3-none-any.whl
+  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/dev/install_dependencies_on_cluster.sh
   cluster_name: otg-etl
   autoscaling_policy: otg-efm
   allow_efm: true
@@ -142,7 +142,7 @@ nodes:
       step: variant_index
       step.vep_output_json_path: gs://ot_orchestration/releases/24.10_freeze6/variants/annotated_variants
       step.gnomad_variant_annotations_path: gs://genetics_etl_python_playground/static_assets/gnomad_variants
-      step.variant_index_path: gs://ot_orchestration/test/releases/24.10_freeze6/variant_index
+      step.variant_index_path: gs://ot_orchestration/releases/24.10_freeze6/variant_index
 
   - id: colocalisation_ecaviar
     prerequisites:
@@ -184,7 +184,7 @@ nodes:
     params:
       step: locus_to_gene
       step.run_mode: train
-      step.wandb_run_name: 24.10_freeze5
+      step.wandb_run_name: 24.10_freeze6
       step.hf_hub_repo_id: opentargets/locus_to_gene
       step.model_path: gs://ot_orchestration/releases/24.10_freeze6/locus_to_gene_model/classifier.skops
       step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze6/credible_set
@@ -222,10 +222,10 @@ nodes:
   - id: l2g_associations
     params:
       step: locus_to_gene_associations
-      step.evidence_input_path: gs://ot_orchestration/releases/24.10_freeze5/locus_to_gene_evidence
+      step.evidence_input_path: gs://ot_orchestration/releases/24.10_freeze6/locus_to_gene_evidence
       step.disease_index_path: gs://open-targets-pre-data-releases/24.06/output/etl/parquet/diseases
-      step.direct_associations_output_path: gs://ot_orchestration/releases/24.10_freeze5/locus_to_gene_associations/direct_associations
-      step.indirect_associations_output_path: gs://ot_orchestration/releases/24.10_freeze5/locus_to_gene_associations/indirect_associations
+      step.direct_associations_output_path: gs://ot_orchestration/releases/24.10_freeze6/locus_to_gene_associations/direct_associations
+      step.indirect_associations_output_path: gs://ot_orchestration/releases/24.10_freeze6/locus_to_gene_associations/indirect_associations
       step.session.spark_uri: yarn
     prerequisites:
       - l2g_evidence

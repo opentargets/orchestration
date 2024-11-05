@@ -1,10 +1,11 @@
-"""Test DAG to prototype data transfer."""
+"""Genetics ETL dag."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
 from airflow.decorators import task
+from airflow.models.baseoperator import BaseOperator
 from airflow.models.dag import DAG
 from airflow.utils.task_group import TaskGroup
 
@@ -26,7 +27,7 @@ from ot_orchestration.utils.dataproc import (
 SOURCE_CONFIG_FILE_PATH = Path(__file__).parent / "config" / "genetics_etl.yaml"
 config = read_yaml_config(SOURCE_CONFIG_FILE_PATH)
 nodes = config["nodes"]
-node_map = {}
+node_map: dict[str, BaseOperator] = {}
 
 
 # This operator meant to fail the DAG if the release folder exists:
@@ -59,11 +60,11 @@ with DAG(
                 python_main_module=dataproc_specs["python_main_module"],
                 params=task["params"],
             )
-            node_map[task["id"]] = this_task  # type: ignore
+            node_map[task["id"]] = this_task
 
         # chain prerequisites
         chain_dependencies(nodes=config["nodes"], tasks_or_task_groups=node_map)
         generate_dataproc_task_chain(
-            tasks=list(node_map.values()),  # type: ignore
+            tasks=list(node_map.values()),
             **config["dataproc"],
         )
