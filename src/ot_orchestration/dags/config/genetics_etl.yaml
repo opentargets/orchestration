@@ -13,6 +13,7 @@ dataproc:
 nodes:
 
   - id: gene_index
+    kind: Task
     prerequisites: []
     params:
       step: gene_index
@@ -154,7 +155,7 @@ nodes:
 
   - id: colocalisation_coloc
     prerequisites:
-      - credible_set_validation
+      - colocalisation_ecaviar
     params:
       step: colocalisation
       step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze6/credible_set
