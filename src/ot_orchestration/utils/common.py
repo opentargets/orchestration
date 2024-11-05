@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pendulum
 
 from ot_orchestration.utils import strhash
+
+if TYPE_CHECKING:
+    from typing import Any, Callable
 
 GENTROPY_VERSION = "0.0.0"
 
@@ -41,19 +46,19 @@ CONFIG_NAME = "ot_config"
 PYTHON_CLI = "cli.py"
 
 # Shared DAG construction parameters.
-shared_dag_args = {
+shared_dag_args: dict[str, Any] = {
     "owner": "Open Targets Data Team",
     "retries": 0,
 }
 
-shared_dag_kwargs = {
+shared_dag_kwargs: dict[str, Any] = {
     "tags": ["genetics_etl", "experimental"],
     "start_date": pendulum.now(tz="Europe/London").subtract(days=1),
     "schedule": "@once",
     "catchup": False,
 }
 
-unified_pipeline_dag_kwargs = {
+unified_pipeline_dag_kwargs: dict[str, Any] = {
     "dag_id": "unified_pipeline",
     "description": "Open Targets unified data generation pipeline",
     "catchup": False,
@@ -63,7 +68,7 @@ unified_pipeline_dag_kwargs = {
     "user_defined_filters": {"strhash": strhash},
 }
 
-shared_labels = lambda project: {
+shared_labels: Callable[[str], dict[str, str]] = lambda project: {
     "team": "open-targets",
     "subteam": "backend",
     "environment": "development" if "dev" in project else "production",

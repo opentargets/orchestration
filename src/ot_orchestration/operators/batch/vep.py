@@ -3,17 +3,16 @@
 from __future__ import annotations
 
 import time
-from collections import OrderedDict
 from functools import cached_property
 from pathlib import Path
-from typing import Sequence, Set, Type
+from typing import Sequence, Set
 
-import pandas as pd
-from airflow.models import BaseOperator
+from airflow.exceptions import AirflowException
 from airflow.providers.google.cloud.hooks.cloud_batch import CloudBatchHook
 from airflow.providers.google.cloud.operators.cloud_base import GoogleCloudBaseOperator
+from google.cloud.batch import JobStatus
 from google.cloud.batch_v1 import Job
-from google.cloud.storage import Blob, Client
+from google.cloud.storage import Client
 
 from ot_orchestration.types import GCSMountObject, GoogleBatchSpecs
 from ot_orchestration.utils.batch import (
@@ -26,7 +25,7 @@ from ot_orchestration.utils.path import GCSPath
 
 
 class VepAnnotationPathManager:
-    """It is quite complicated to keep track of all the input/output buckets, the corresponding mounting points prefixes etc..."""
+    """Manager class for setting correct mounting points for VEP google batch tasks."""
 
     def __init__(
         self,
@@ -35,29 +34,28 @@ class VepAnnotationPathManager:
         vep_cache_path: str,
         mount_dir_root: str,
     ):
+        self._mount_dir_root = mount_dir_root
         self.paths = {
             "input": GCSPath(vcf_input_path),
             "output": GCSPath(vep_output_path),
             "cache": GCSPath(vep_cache_path),
         }
-        self.mount_dir_root = mount_dir_root
 
-        self._validate_mount_dir()
-        self.path_registry = self._prepare_path_registry()
-        # explicitly set the properties
-        self.cache_dir = self.path_registry["cache"]["mount_point"]
-        self.input_dir = self.path_registry["input"]["mount_point"]
-        self.output_dir = self.path_registry["output"]["mount_point"]
-
-    def _validate_mount_dir(self) -> VepAnnotationPathManager:
-        if not self.mount_dir_root.startswith("/"):
+    @cached_property
+    def mount_dir_root(self) -> str:
+        """Get the mount directory root."""
+        if not self._mount_dir_root.startswith("/"):
             raise ValueError("Mount dir has to be an absolute path.")
-        return self
+        if self._mount_dir_root.endswith("/"):
+            return str(Path(self._mount_dir_root))
+        return self._mount_dir_root
 
-    def _prepare_path_registry(self) -> dict[str, GCSMountObject]:
+    @cached_property
+    def path_registry(self) -> dict[str, GCSMountObject]:
+        """Get the path registry."""
         return {
             key: {
-                # NOTE: remote_path has to start from the bucket_name
+                # NOTE: remote_path has to start from the bucket_name but without the gs://
                 # see https://cloud.google.com/batch/docs/create-run-job-storage#gcloud_2:~:text=BUCKET_PATH%3A%20the%20path,the%20subdirectory%20subdirectory.
                 "remote_path": f"{value.bucket}/{value.path}",
                 "mount_point": f"{self.mount_dir_root}/{key}",
@@ -65,7 +63,23 @@ class VepAnnotationPathManager:
             for key, value in self.paths.items()
         }
 
-    def get_mount_config(self) -> list[GCSMountObject]:
+    @cached_property
+    def cache_dir(self) -> str:
+        """Get cache dir."""
+        return self.path_registry["cache"]["mount_point"]
+
+    @cached_property
+    def input_dir(self) -> str:
+        """Get input dir."""
+        return self.path_registry["input"]["mount_point"]
+
+    @cached_property
+    def output_dir(self) -> str:
+        """Get output dir."""
+        return self.path_registry["output"]["mount_point"]
+
+    @cached_property
+    def mount_config(self) -> list[GCSMountObject]:
         """Return the mount configuration.
 
         Returns:
@@ -81,6 +95,9 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
     The annotation command is custom to OTG needs. The number of batch tasks is inferred by listing the number of
     vcf files introduced in the `vcf_input_path`. Each input file will result in a single vep task.
 
+    The operator tries to list the tasks after they are completed, in case of any failures in the task, the
+    operator throws AirflowException and stops the execution of the DAG. The defails of the failed job can be
+    retrieved from the logs.
     """
 
     def __init__(
@@ -112,18 +129,23 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
         self.impersonation_chain = impersonation_chain
         self.polling_period_seconds = polling_period_seconds
         self.timeout_seconds = timeout_seconds
-
-    def execute(self, context) -> dict:
-        """Execute the operator."""
-        vcf_files = self._get_vcf_partition_basenames()
         self.pm = VepAnnotationPathManager(
             vcf_input_path=self.vcf_input_path,
             vep_output_path=self.vep_output_path,
             vep_cache_path=self.vep_cache_path,
             mount_dir_root=self.mount_dir_root,
         )
+
+    @cached_property
+    def hook(self) -> CloudBatchHook:
+        """Get the cloud batch hook."""
+        return CloudBatchHook(self.gcp_conn_id, self.impersonation_chain)
+
+    def execute(self, context) -> dict:
+        """Execute the operator."""
+        vcf_files = self._get_vcf_partition_basenames(self.pm.paths["input"])
         environments = [
-            {"INPUT_FILE": file, "OUTPUT_FILE": file.replace(".vcf", ".json")}
+            {"INPUT_FILE": file, "OUTPUT_FILE": file.replace(".csv", ".json")}
             for file in vcf_files
         ]
 
@@ -137,41 +159,55 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
             ),
             task_env=create_task_env(environments),
             policy_specs=self.google_batch["policy_specs"],
-            mounting_points=self.pm.get_mount_config(),
+            mounting_points=self.pm.mount_config,
         )
-        self.log.info(job_def)
-        hook: CloudBatchHook = CloudBatchHook(
-            self.gcp_conn_id, self.impersonation_chain
-        )
-        job = hook.submit_batch_job(
+        self.log.debug(job_def)
+        job = self.hook.submit_batch_job(
             job_name=self.job_name,
             job=job_def,
             region=self.region,
             project_id=self.project_id,
         )
-        completed_job = hook.wait_for_job(
+        completed_job = self.hook.wait_for_job(
             job_name=job.name,
             polling_period_seconds=self.polling_period_seconds,
             timeout=self.timeout_seconds,
         )
+        self.log.debug(completed_job)
 
-        return Job.to_dict(completed_job)  # type: ignore
+        # Retrieve the job status
+        _filter = f"name:projects/{self.project_id}/locations/{self.region}/jobs/{self.job_name}*"
+        jobs = list(
+            self.hook.list_jobs(
+                region=self.region, project_id=self.project_id, filter=_filter
+            )
+        )
+        if len(jobs) != 1:
+            raise AirflowException(f"Found more then one job for id {self.job_name}")
 
-    def _get_vcf_partition_basenames(self) -> Set[str]:
+        job_status = jobs[0].status
+        job_state = job_status.state
+
+        if job_state != JobStatus.State.SUCCEEDED:
+            self.log.error(job_status)
+            raise AirflowException(f"Job {self.job_name} failed.")
+
+        return Job.to_dict(jobs[0])  # type: ignore
+
+    def _get_vcf_partition_basenames(self, input_path: GCSPath) -> Set[str]:
         """Based on listed vcf file partition extract their basenames.
 
-        # NOTE: Do not reconstruct full path to the mount, as it will
-        # reduce the payload send to the google batch job. The mount
-        # name is the same at every task command, the basename is
-        # different.
+        NOTE: Do not reconstruct full path to the mount, as it will
+        reduce the payload send to the google batch job. The mount
+        name is the same at every task command, the basename is
+        different.
 
         Returns:
             Set[str]: set of basenames to pass to the task environments.
         """
-        input_path = self.pm.paths["input"]
         c = Client(project=self.project_id)
         b = c.bucket(bucket_name=input_path.bucket)
-        blobs = b.list_blobs(prefix=input_path.path, match_glob="**.vcf")
+        blobs = b.list_blobs(prefix=input_path.path, match_glob="**.csv")
         vcf_paths = {Path(blob.name).name for blob in blobs}
         # FIXME: Apparently this operator logs are not appearing in the airflow UI.
         self.log.info("Found %s vcf files", len(vcf_paths))
@@ -181,11 +217,18 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
     def _vep_command(self) -> list[str]:
         return [
             "-c",
-            rf"vep --cache --offline --format vcf --force_overwrite \
+            # NOTE: Ensure the CHROM column is replaced with #CHROM
+            rf"sed -i '0,/CHROM/s/CHROM/#CHROM/' {self.pm.input_dir}/$INPUT_FILE && \
+                 vep \
+                --cache \
+                --offline \
+                --format vcf \
+                --force_overwrite \
                 --no_stats \
                 --dir_cache {self.pm.cache_dir} \
                 --input_file {self.pm.input_dir}/$INPUT_FILE \
-                --output_file {self.pm.output_dir}/$OUTPUT_FILE --json \
+                --output_file {self.pm.output_dir}/$OUTPUT_FILE \
+                --json \
                 --dir_plugins {self.pm.cache_dir}/VEP_plugins \
                 --sift b \
                 --polyphen b \
@@ -205,134 +248,3 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
                 --plugin AlphaMissense,file={self.pm.cache_dir}/AlphaMissense_hg38.tsv.gz,transcript_match=1 \
                 --plugin CADD,snv={self.pm.cache_dir}/CADD_GRCh38_whole_genome_SNVs.tsv.gz",
         ]
-
-
-class ConvertVariantsToVcfOperator(BaseOperator):
-    def __init__(
-        self,
-        tsv_files_glob: str,
-        output_path: str,
-        *args,
-        chunk_size: int = 2000,
-        project_id: str = GCP_PROJECT_GENETICS,
-        **kwargs,
-    ) -> None:
-        """Custom operator to merge vcf header based tab separated files found under given pattern.
-
-        This operator merges vcf files by:
-        - "#CHROM": str, '#' as a first column row name after header
-        - "POS": int,
-        - "ID": str,
-        - "REF": str,
-        - "ALT": str,
-        - "QUAL": str,
-        - "FILTER": str,
-        - "INFO": str,
-        header fields, performs deduplication and sorting if requested and
-        partitions the output file by the partitions with `chunk_size` number
-        of variants in each.
-
-        """
-        super().__init__(*args, **kwargs)
-        self.project_id = project_id
-        self.tsv_files_glob = tsv_files_glob
-        self.output_path = output_path
-        self.chunk_size = chunk_size
-        self.sep = "\t"
-        self.output_files: list[str] = []
-
-    def _list_input_files(self) -> Set[str]:
-        gcs_path = GCSPath(self.tsv_files_glob)
-        c = Client(project=self.project_id)
-        b = c.bucket(bucket_name=gcs_path.bucket)
-        blobs = b.list_blobs(
-            prefix=gcs_path.segments["prefix"],
-            match_glob=gcs_path.segments["filename"],
-        )
-        files = {f"gs://{gcs_path.bucket}/{blob.name}" for blob in blobs}
-        self.log.info("Found %s files", files)
-        return files
-
-    def _cleanup_output_dir(self):
-        gcs_path = GCSPath(self.output_path)
-        client_object = Client(project=self.project_id)
-        bucket_object = client_object.bucket(bucket_name=gcs_path.bucket)
-        output_path_blob = Blob(name=gcs_path.path, bucket=bucket_object)
-        if output_path_blob.exists(client=client_object):
-            self.log.warning("Output path %s exists, will attempt to drop it", gcs_path)
-            blobs_to_delete = list(
-                bucket_object.list_blobs(prefix=gcs_path.segments["prefix"])
-            )
-            bucket_object.delete_blobs(blobs=blobs_to_delete)
-        return self
-
-    @property
-    def _vcf_columns(self) -> OrderedDict[str, Type]:
-        return OrderedDict(
-            {
-                "#CHROM": str,
-                "POS": int,
-                "ID": str,
-                "REF": str,
-                "ALT": str,
-                "QUAL": str,
-                "FILTER": str,
-                "INFO": str,
-            }
-        )
-
-    @property
-    def _sort_columns(self) -> list[str]:
-        return ["#CHROM", "POS"]
-
-    @property
-    def _deduplicate_columns(self) -> list[str]:
-        return ["#CHROM", "POS", "REF", "ALT"]
-
-    def _read_input_files(self) -> ConvertVariantsToVcfOperator:
-        raw_dfs = [
-            pd.read_csv(file, sep=self.sep, dtype=self._vcf_columns)
-            for file in self._list_input_files()
-        ]
-        for raw_df in raw_dfs:
-            self.log.info("Size of variants df from source: %s", raw_df.shape[0])
-
-        self.df = (
-            pd.concat(raw_dfs)
-            .drop_duplicates(subset=self._deduplicate_columns)
-            .sort_values(by=self._sort_columns)
-            .reset_index(drop=True)
-        )
-        self.log.info("Size of variants df after merge: %s", self.df.shape[0])
-        return self
-
-    def _write_output_files(self) -> ConvertVariantsToVcfOperator:
-        chunks = 0
-        self.output_files = []
-        self.log.info("")
-        for i in range(0, self.df.shape[0], self.chunk_size):
-            partial_df = self.df[i : i + self.chunk_size]
-            filename = f"{self.output_path}/chunk_{i + 1}-{i + self.chunk_size}.vcf"
-            self.log.info(
-                "Outputting chunk %s with variant range %s-%s to %s",
-                chunks,
-                i,
-                i + self.chunk_size - 1,  # last element is not contained in the list
-                filename,
-            )
-            partial_df.to_csv(filename, index=False, header=True, sep=self.sep)
-            chunks += 1
-            self.output_files.append(filename)
-        expected_chunk_count = len(self.df) // self.chunk_size + 1
-        if not (chunks == expected_chunk_count):
-            raise ValueError("Expected %s, got %s chunks", expected_chunk_count, chunks)
-        return self
-
-    def execute(self, **_) -> list[str]:
-        """Execute the operator."""
-        return (
-            self._cleanup_output_dir()
-            ._read_input_files()
-            ._write_output_files()
-            .output_files
-        )

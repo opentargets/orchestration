@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from airflow.models.baseoperator import BaseOperator
 from airflow.providers.google.cloud.operators.dataproc import (
     ClusterGenerator,
     DataprocCreateClusterOperator,
@@ -38,7 +39,7 @@ def create_cluster(
     cluster_init_script: str | None = None,
     cluster_metadata: dict[str, str] | None = None,
     allow_efm: bool = False,
-    **kwargs,
+    **kwargs: Any,
 ) -> DataprocCreateClusterOperator:
     """Generate an Airflow task to create a Dataproc cluster. Common parameters are reused, and varying parameters can be specified as needed.
 
@@ -262,49 +263,36 @@ def delete_cluster(cluster_name: str) -> DataprocDeleteClusterOperator:
 
 
 def generate_dataproc_task_chain(
-    tasks: list[DataprocSubmitJobOperator],
-    **kwargs,
-) -> Any:
+    tasks: list[BaseOperator],
+    *,
+    create: bool = True,
+    delete: bool = True,
+    **kwargs: Any,
+) -> list[BaseOperator]:
     """For a list of Dataproc tasks, generate a complete chain of tasks.
 
     This function adds create_cluster, install_dependencies to the task that does not have any upstream tasks (first one in the DAG)
     and adds delete_cluster tasks to the task that does not have any downstream tasks (last one in the DAG)
 
     Args:
-        tasks (list[DataprocSubmitJobOperator]): List of tasks to execute.
-        **kwargs (Any): keyword arguments passed to the `create_cluster`.
+        tasks (list[BaseOperator]): List of tasks to execute.
+        create (bool): Indicate if the cluster should be created prior the first dataproc task. Defaults to True.
+        delete (bool): Indicate if the cluster should be deleted after the last dataproc task. Defaults to True.
+        **kwargs (Any): keyword arguments passed to the `create_cluster`. Should always contain the cluster_name.
 
     Returns:
-        list[DataprocSubmitJobOperator]: list of input tasks with muted chain.
+        list[BaseOperator]: list of input tasks with muted chain.
     """
-    create_cluster_task = create_cluster(**kwargs)
-    delete_cluster_task = delete_cluster(kwargs["cluster_name"])
-    for task in tasks:
-        if not task.get_direct_relatives(upstream=True):
-            task.set_upstream(create_cluster_task)
-        if not task.get_direct_relatives(upstream=False):
-            task.set_downstream(delete_cluster_task)
-
-    return tasks
-
-
-def generate_dag(cluster_name: str, tasks: list[DataprocSubmitJobOperator]) -> Any:
-    """For a list of tasks, generate a complete DAG.
-
-    Args:
-        cluster_name (str): Name of the cluster.
-        tasks (list[DataprocSubmitJobOperator]): List of tasks to execute.
-
-    Returns:
-        Any: Airflow DAG.
-    """
-    create_cluster_task = create_cluster(cluster_name)
-    delete_cluster_task = delete_cluster(cluster_name)
-    for task in tasks:
-        if not task.get_direct_relatives(upstream=True):
-            task.set_upstream(create_cluster_task)
-        if not task.get_direct_relatives(upstream=False):
-            task.set_downstream(delete_cluster_task)
+    if create:
+        create_cluster_task = create_cluster(**kwargs)
+        for task in tasks:
+            if not task.get_direct_relatives(upstream=True):
+                task.set_upstream(create_cluster_task)
+    if delete:
+        delete_cluster_task = delete_cluster(kwargs["cluster_name"])
+        for task in tasks:
+            if not task.get_direct_relatives(upstream=False):
+                task.set_downstream(delete_cluster_task)
 
     return tasks
 
