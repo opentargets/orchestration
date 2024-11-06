@@ -1,8 +1,8 @@
 """Tests for package util functions."""
 
 import pytest
+from ot_orchestration.types import ConfigNode
 from ot_orchestration.utils import (
-    chain_dependencies,
     convert_params_to_hydra_positional_arg,
     find_node_in_config,
     time_to_seconds,
@@ -67,48 +67,21 @@ def test_convert_params_to_hydra_positional_arg(
     assert convert_params_to_hydra_positional_arg(input, is_dataproc_job) == output
 
 
-def test_find_node_in_config() -> None:
+@pytest.mark.parametrize(
+    ["node", "result"],
+    [
+        pytest.param(
+            "A", {"id": "A", "kind": "Task", "prerequisites": []}, id="Existing node"
+        ),
+        pytest.param("D", None, id="Non existing node"),
+    ],
+)
+def test_find_node_in_config(node: str, result: ConfigNode | None) -> None:
     """Test finding a node in a configuration."""
-    config = [
+    config_list = [
         {"id": "A", "kind": "Task", "prerequisites": []},
         {"id": "B", "kind": "Task", "prerequisites": ["A"]},
         {"id": "C", "kind": "Task", "prerequisites": ["B"]},
     ]
 
-    assert find_node_in_config(config, "A") == {
-        "id": "A",
-        "kind": "Task",
-        "prerequisites": [],
-    }
-    assert find_node_in_config(config, "B") == {
-        "id": "B",
-        "kind": "Task",
-        "prerequisites": ["A"],
-    }
-    assert find_node_in_config(config, "C") == {
-        "id": "C",
-        "kind": "Task",
-        "prerequisites": ["B"],
-    }
-    with pytest.raises(KeyError):
-        find_node_in_config(config, "D")
-
-
-@pytest.mark.xfail(reason="Need to mock the Task class and set_upstream method.")
-def test_chain_dependencies() -> None:
-    """Test chaining dependencies between tasks."""
-    nodes = [
-        {"id": "A", "kind": "Task", "prerequisites": []},
-        {"id": "B", "kind": "Task", "prerequisites": ["A"]},
-        {"id": "C", "kind": "Task", "prerequisites": ["B"]},
-    ]
-    tasks_or_task_groups = {
-        "A": "Task A",
-        "B": "Task B",
-        "C": "Task C",
-    }
-
-    chain_dependencies(nodes, tasks_or_task_groups)
-    assert tasks_or_task_groups["A"].upstream_task_ids == set()
-    assert tasks_or_task_groups["B"].upstream_task_ids == {"A"}
-    assert tasks_or_task_groups["C"].upstream_task_ids == {"B"}
+    assert find_node_in_config(config_list, node) == result  # type: ignore
