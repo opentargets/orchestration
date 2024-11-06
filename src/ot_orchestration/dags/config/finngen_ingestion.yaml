@@ -30,8 +30,8 @@ nodes:
       step: finngen_finemapping_ingestion
       step.finngen_finemapping_out: gs://finngen_data/r11/credible_set_datasets/susie
       step.finngen_susie_finemapping_snp_files: gs://finngen-public-data-r11/finemap/full/susie/*.snp.bgz
-      # As directory contains SUSIE.cred.summary.tsv, SUSIE_99.cred.summary.tsv enure only non 99 credible sets are ingested,
-      step.finngen_susie_finemapping_cs_summary_files: gs://finngen-public-data-r11/finemap/summary/*SUSIE.cred.summary.tsv
+      # As directory contains SUSIE.cred.summary.tsv, SUSIE_99.cred.summary.tsv ensure only non 99 credible sets are ingested,
+      step.finngen_susie_finemapping_cs_summary_files: gs://finngen-public-data-r11/finemap/summary/*SUSIE_99.cred.summary.tsv
       step.finngen_finemapping_lead_pvalue_threshold: 1e-5
       step.finngen_release_prefix: FINNGEN_R11
       step.session.start_hail: true
