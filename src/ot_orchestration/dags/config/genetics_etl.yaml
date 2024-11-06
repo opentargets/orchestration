@@ -177,6 +177,7 @@ nodes:
       step.gene_index_path: gs://ot_orchestration/releases/24.10_freeze6/gene_index
       step.feature_matrix_path: gs://ot_orchestration/releases/24.10_freeze6/locus_to_gene_feature_matrix
       +step.session.extended_spark_conf: "{spark.sql.autoBroadcastJoinThreshold:'-1'}"
+      step.session.write_mode: overwrite
 
   - id: l2g_train
     prerequisites:
@@ -208,6 +209,7 @@ nodes:
       step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze6/credible_set
       step.download_from_hub: true
       step.hf_hub_repo_id: opentargets/locus_to_gene
+      step.session.write_mode: overwrite
 
   - id: l2g_evidence
     prerequisites:
@@ -219,6 +221,7 @@ nodes:
       step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze6/credible_set
       step.study_index_path: gs://ot_orchestration/releases/24.10_freeze6/study_index
       step.locus_to_gene_threshold: 0.05
+      step.session.write_mode: overwrite
 
   - id: l2g_associations
     params:
@@ -228,5 +231,7 @@ nodes:
       step.direct_associations_output_path: gs://ot_orchestration/releases/24.10_freeze6/locus_to_gene_associations/direct_associations
       step.indirect_associations_output_path: gs://ot_orchestration/releases/24.10_freeze6/locus_to_gene_associations/indirect_associations
       step.session.spark_uri: yarn
+      step.session.write_mode: overwrite
+
     prerequisites:
       - l2g_evidence
