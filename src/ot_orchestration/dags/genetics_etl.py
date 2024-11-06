@@ -39,16 +39,17 @@ with DAG(
 ):
     with TaskGroup(group_id="genetics_etl") as genetics_etl:
         task_config = find_node_in_config(nodes, "variant_annotation")
-        task_config_params = task_config["params"]
-        variant_annotation = VepAnnotateOperator(
-            task_id=task_config["id"],
-            vcf_input_path=task_config_params["vcf_input_path"],
-            vep_output_path=task_config_params["vep_output_path"],
-            vep_cache_path=task_config_params["vep_cache_path"],
-            google_batch=task_config["google_batch"],
-        )
+        if task_config:
+            task_config_params = task_config["params"]
+            variant_annotation = VepAnnotateOperator(
+                task_id=task_config["id"],
+                vcf_input_path=task_config_params["vcf_input_path"],
+                vep_output_path=task_config_params["vep_output_path"],
+                vep_cache_path=task_config_params["vep_cache_path"],
+                google_batch=task_config["google_batch"],
+            )
 
-        node_map["variant_annotation"] = variant_annotation
+            node_map["variant_annotation"] = variant_annotation
 
         tasks = [node for node in nodes if "google_batch" not in node]
         # Build individual tasks and register them as nodes.

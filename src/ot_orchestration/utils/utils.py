@@ -171,9 +171,9 @@ def convert_params_to_hydra_positional_arg(
     return positional_args
 
 
-def find_node_in_config(config: list[ConfigNode], node_id: str) -> ConfigNode:
+def find_node_in_config(config: list[ConfigNode], node_id: str) -> ConfigNode | None:
     """Find node config list."""
     for node_config in config:
         if node_config["id"] == node_id:
             return node_config
-    raise KeyError(f"Config for {node_id} was not found")
+    return None
