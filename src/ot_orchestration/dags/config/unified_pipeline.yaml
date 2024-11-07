@@ -100,3 +100,4 @@ etl_steps:
   - name: search
     depends_on:
       - etl_association
+      - genetics_variant_index

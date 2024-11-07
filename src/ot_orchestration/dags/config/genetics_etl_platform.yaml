@@ -55,7 +55,7 @@ dataproc:
   num_workers: 10
 
 nodes:
-  - id: gene_index
+  - id: genetics_gene_index
     kind: Task
     prerequisites:
       - etl_target # ETL step required
@@ -64,7 +64,7 @@ nodes:
       step.target_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/targets
       step.gene_index_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/gene_index
 
-  - id: biosample_index
+  - id: genetics_biosample_index
     kind: Task
     prerequisites:
       - pis_biosample # PIS step required
@@ -75,13 +75,13 @@ nodes:
       step.efo_input_path: gs://open-targets-pre-data-releases/${release}/input/biosamples/efo.json
       step.biosample_index_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/biosample_index
 
-  - id: study_validation
+  - id: genetics_study_validation
     kind: Task
     prerequisites:
       - pis_target
       - etl_diseases
-      - biosample_index
-      - gene_index
+      - genetics_biosample_index
+      - genetics_gene_index
     params:
       step: study_validation
       step.study_index_path:
@@ -107,10 +107,10 @@ nodes:
         - FAILED_GC_LAMBDA_CHECK
         - NO_OT_CURATION
 
-  - id: credible_set_validation
+  - id: genetics_credible_set_validation
     kind: Task
     prerequisites:
-      - study_validation
+      - genetics_study_validation
     params:
       step: credible_set_validation
       step.study_index_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/study_index
@@ -142,12 +142,12 @@ nodes:
         - INVALID_CHROMOSOME
         - TOP_HIT_AND_SUMMARY_STATS
 
-  - id: convert_variants_to_vcf
+  - id: genetics_variant_conversion
     kind: Task
     prerequisites:
       - pis_evidence
       - pis_pharmacogenomics
-      - credible_set_validation
+      - genetics_credible_set_validation
     params:
       step: variant_to_vcf
       step.source_paths:
@@ -163,10 +163,10 @@ nodes:
       step.output_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/partitioned_variants
       step.partition_size: 2_000 # approximate num of variants per partition!
 
-  - id: variant_annotation
+  - id: genetics_variant_annotation
     kind: Task
     prerequisites:
-      - convert_variants_to_vcf
+      - genetics_variant_conversion
     google_batch:
       entrypoint: /bin/sh
       image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/custom_ensembl_vep:dev
@@ -184,27 +184,27 @@ nodes:
       vcf_input_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/partitioned_variants
       vep_output_path: gs://open-targets-pre-data-releases/${release}/output/genetics/json/annotated_variants
 
-  - id: variant_index
+  - id: genetics_variant_index
     prerequisites:
-      - variant_annotation
+      - genetics_variant_annotation
     params:
       step: variant_index
       step.vep_output_json_path: gs://open-targets-pre-data-releases/${release}/output/genetics/json/annotated_variants
       step.gnomad_variant_annotations_path: gs://genetics_etl_python_playground/static_assets/gnomad_variants
       step.variant_index_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/variant_index
 
-  - id: colocalisation_ecaviar
+  - id: genetics_colocalisation_ecaviar
     prerequisites:
-      - credible_set_validation
+      - genetics_credible_set_validation
     params:
       step: colocalisation
       step.credible_set_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/credible_set
       step.coloc_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/colocalisation
       step.colocalisation_method: ECaviar
 
-  - id: colocalisation_coloc
+  - id: genetics_colocalisation_coloc
     prerequisites:
-      - credible_set_validation
+      - genetics_credible_set_validation
     params:
       step: colocalisation
       step.credible_set_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/credible_set
@@ -212,14 +212,14 @@ nodes:
       step.colocalisation_method: Coloc
       +step.colocalisation_method_params: "{priorc1: 1e-4, priorc2: 1e-4, priorc12: 1e-5}"
 
-  - id: l2g_feature_matrix
+  - id: genetics_l2g_feature_matrix
     prerequisites:
-      - credible_set_validation
-      - variant_index
-      - colocalisation_coloc
-      - colocalisation_ecaviar
-      - study_validation
-      - gene_index
+      - genetics_credible_set_validation
+      - genetics_variant_index
+      - genetics_colocalisation_coloc
+      - genetics_colocalisation_ecaviar
+      - genetics_study_validation
+      - genetics_gene_index
 
     params:
       step: locus_to_gene_feature_matrix
@@ -232,12 +232,12 @@ nodes:
       +step.session.extended_spark_conf: "{spark.sql.autoBroadcastJoinThreshold:'-1'}"
       step.session.write_mode: overwrite
 
-  - id: l2g_train
+  - id: genetics_l2g_train
     prerequisites:
       - etl_interactions
-      - l2g_feature_matrix
-      - credible_set_validation
-      - variant_index
+      - genetics_l2g_feature_matrix
+      - genetics_credible_set_validation
+      - genetics_variant_index
     params:
       step: locus_to_gene
       step.run_mode: train
@@ -254,11 +254,11 @@ nodes:
       step.hyperparameters.loss: log_loss
       +step.session.extended_spark_conf: "{spark.kryoserializer.buffer.max:500m, spark.sql.autoBroadcastJoinThreshold:'-1'}"
 
-  - id: l2g_predict
+  - id: genetics_l2g_predict
     prerequisites:
-      - l2g_train
-      - l2g_feature_matrix
-      - credible_set_validation
+      - genetics_l2g_train
+      - genetics_l2g_feature_matrix
+      - genetics_credible_set_validation
     params:
       step: locus_to_gene
       step.run_mode: predict
@@ -269,11 +269,11 @@ nodes:
       step.hf_hub_repo_id: opentargets/locus_to_gene
       step.session.write_mode: overwrite
 
-  - id: l2g_evidence
+  - id: genetics_l2g_evidence
     prerequisites:
-      - l2g_predict
-      - study_validation
-      - credible_set_validation
+      - genetics_l2g_predict
+      - genetics_study_validation
+      - genetics_credible_set_validation
     params:
       step: locus_to_gene_evidence
       step.evidence_output_path: gs://open-targets-ppp-releases/${release}/input/evidence-files/l2g.json.gz
