@@ -44,11 +44,12 @@
 # gs://open-targets-ppp-releases/${release}/input/evidence-files/l2g.json.gz
 
 release: 24.12
+commit: 93de44855840d30bf4bfd5a7dce444adf739ace0
 dataproc:
-  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dev/cli.py
+  python_main_module: gs://open-targets-pre-data-releases/24.09/gentropy/${commit}/gentropy/dev/cli.py
   cluster_metadata:
-    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/dev/gentropy-0.0.0-py3-none-any.whl
-  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/dev/install_dependencies_on_cluster.sh
+    PACKAGE: gs://open-targets-pre-data-releases/24.09/gentropy/${commit}/gentropy-0.0.0-py3-none-any.whl
+  cluster_init_script: gs://open-targets-pre-data-releases/24.09/gentropy/${commit}/install_dependencies_on_cluster.sh
   cluster_name: otg-etl
   autoscaling_policy: otg-efm
   allow_efm: true
