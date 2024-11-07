@@ -187,6 +187,7 @@ nodes:
       step.run_mode: train
       step.wandb_run_name: 24.10_freeze6
       step.hf_hub_repo_id: opentargets/locus_to_gene
+      step.hf_model_commit_message: "chore: update model based on 24.10_freeze6 run"
       step.model_path: gs://ot_orchestration/releases/24.10_freeze6/locus_to_gene_model/classifier.skops
       step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze6/credible_set
       step.variant_index_path: gs://ot_orchestration/releases/24.10_freeze6/variant_index
