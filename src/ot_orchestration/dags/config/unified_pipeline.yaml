@@ -83,6 +83,7 @@ etl_steps:
       - etl_literature
     depends_on_ppp: # this extra dependency is added in ppp runs
       - pis_ppp_evidence
+      - genetics_l2g_evidence
 
   - name: association
     depends_on:
@@ -90,6 +91,7 @@ etl_steps:
   - name: associationOTF
     depends_on:
       - etl_evidence
+
   - name: knownDrug
     depends_on:
       - etl_evidence
@@ -100,3 +102,5 @@ etl_steps:
   - name: search
     depends_on:
       - etl_association
+    depends_on_ppp:
+      - genetics_variant_index

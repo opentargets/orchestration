@@ -14,6 +14,17 @@ steps:
       source: gs://otar000-evidence_input/BaselineExpression/json
       destination: expression-inputs/baseline_expression.json.gz
 
+  biosample:
+    - name: download cell ontology
+      source: https://github.com/obophenotype/cell-ontology/releases/latest/download/cl.json
+      destination: biosamples/cl.json
+    - name: download uberon
+      source: https://github.com/obophenotype/uberon/releases/latest/download/uberon.json
+      destination: biosamples/uberon.json
+    - name: download efo
+      source: https://github.com/EBISPOT/efo/releases/download/${efo_version}/efo.json
+      destination: biosamples/efo.json
+
   disease:
     - name: download efo otar_slim
       source: https://github.com/EBISPOT/efo/releases/download/${efo_release_version}/efo_otar_slim.owl
