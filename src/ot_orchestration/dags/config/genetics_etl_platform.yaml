@@ -1,4 +1,4 @@
-# Inputs:
+# PIS & ETL Inputs:
 # gs://open-targets-pre-data-releases/${release}/output/etl/parquet/targets (etl_target)
 # gs://open-targets-pre-data-releases/${release}/input/biosamples/cl.json (pis_biosamples)
 # gs://open-targets-pre-data-releases/${release}/input/biosamples/efo.json (pis_biosamples) https://github.com/javfg/platform-input-support/pull/17
@@ -7,10 +7,10 @@
 # gs://open-targets-pre-data-releases/${release}/input/evidence-files/uniprot.json.gz (pis_evidence)
 # gs://open-targets-pre-data-releases/${release}/input/evidence-files/eva.json.gz (pis_evidence)
 # gs://open-targets-pre-data-releases/${release}/input/pharmacogenomics-inputs/pharmacogenomics.json.gz (pis_pharmacogenomics)
-# gs://open-targets-pre-data-releases/${release}/output/etl/parquet/interaction (etl_interaction) - not sure
+# gs://open-targets-pre-data-releases/${release}/output/etl/parquet/interaction (etl_interaction)
 #
 # Gentropy inputs:
-# gs://genetics_etl_python_playground/input/l2g/gold_standard/curation.json -> this could be copeid by PIS (it's L2G Gold Standard)
+# gs://genetics_etl_python_playground/input/l2g/gold_standard/curation.json
 # gs://gwas_catalog_top_hits/study_index
 # gs://gwas_catalog_sumstats_susie/study_index
 # gs://gwas_catalog_sumstats_pics/study_index
@@ -24,23 +24,24 @@
 # s://ukb_ppp_eur_data/credible_set_clean/
 # gs://finngen_data/r11/credible_set_datasets/susie/
 # gs://genetics_etl_python_playground/vep/cache (VEP CACHE)
-# gs://genetics_etl_python_playground/static_assets/gnomad_variants (GNOMAD variant Index) 22 GB
+# gs://genetics_etl_python_playground/static_assets/gnomad_variants
 #
-# Outputs
-# gs://open-targets-pre-data-releases/${release}/output/etl/parquet/gene_index
-# gs://open-targets-pre-data-releases/${release}/output/etl/parquet/biosample_index
-# gs://open-targets-pre-data-releases/${release}/output/etl/parquet/study_index/valid
-# gs://open-targets-pre-data-releases/${release}/output/etl/parquet/study_index/invalid
-# gs://open-targets-pre-data-releases/${release}/output/etl/parquet/credible_set/valid
-# gs://open-targets-pre-data-releases/${release}/output/etl/parquet/credible_set/invalid
-# gs://open-targets-pre-data-releases/${release}/output/etl/parquet/partitioned_variants
-# gs://open-targets-pre-data-releases/${release}/output/etl/json/annotated_variants
-# gs://open-targets-pre-data-releases/${release}/output/etl/parquet/variant_index
-# gs://open-targets-pre-data-releases/${release}/output/etl/parquet/colocalisation/coloc
-# gs://open-targets-pre-data-releases/${release}/output/etl/parquet/colocalisation/ecaviar
-# gs://open-targets-pre-data-releases/${release}/output/etl/parquet/l2g_feature_matrix
-# gs://open-targets-pre-data-releases/${release}/output/etl/models/locus_to_gene_model/classifier.skops
-# gs://open-targets-pre-data-releases/${release}/output/etl/parquet/l2g_predictions
+# Gentropy Outputs:
+# gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/gene_index
+# gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/biosample_index
+# gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/study_index
+# gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/invalid_study_index
+# gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/credible_set
+# gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/invalid_credible_set
+# gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/partitioned_variants
+# gs://open-targets-pre-data-releases/${release}/output/genetics/json/annotated_variants
+# gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/variant_index
+# gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/colocalisation/coloc
+# gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/colocalisation/ecaviar
+# gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/l2g_feature_matrix
+# gs://open-targets-pre-data-releases/${release}/output/genetics/models/locus_to_gene_model/classifier.skops
+# gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/l2g_predictions
+# gs://open-targets-ppp-releases/${release}/input/evidence-files/l2g.json.gz
 
 release: 24.12
 dataproc:
@@ -61,7 +62,7 @@ nodes:
     params:
       step: gene_index
       step.target_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/targets
-      step.gene_index_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/gene_index
+      step.gene_index_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/gene_index
 
   - id: biosample_index
     kind: Task
@@ -72,7 +73,7 @@ nodes:
       step.cell_ontology_input_path: gs://open-targets-pre-data-releases/${release}/input/biosamples/cl.json
       step.uberon_input_path: gs://open-targets-pre-data-releases/${release}/input/biosamples/uberon.json
       step.efo_input_path: gs://open-targets-pre-data-releases/${release}/input/biosamples/efo.json
-      step.biosample_index_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/biosample_index
+      step.biosample_index_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/biosample_index
 
   - id: study_validation
     kind: Task
@@ -90,11 +91,11 @@ nodes:
         - gs://eqtl_catalogue_data/study_index
         - gs://ukb_ppp_eur_data/study_index
         - gs://finngen_data/r11/study_index
-      step.target_index_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/gene_index
+      step.target_index_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/gene_index
       step.disease_index_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/diseases
-      step.valid_study_index_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/study_index/valid
-      step.invalid_study_index_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/study_index/invalid
-      step.biosample_index_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/biosample_index
+      step.valid_study_index_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/study_index
+      step.invalid_study_index_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/invalid_study_index
+      step.biosample_index_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/biosample_index
       step.invalid_qc_reasons:
         - UNRESOLVED_TARGET
         - UNRESOLVED_DISEASE
@@ -112,7 +113,7 @@ nodes:
       - study_validation
     params:
       step: credible_set_validation
-      step.study_index_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/study_index/valid
+      step.study_index_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/study_index
       step.study_locus_path:
         - gs://gwas_catalog_top_hits/credible_sets/
         - gs://gwas_catalog_sumstats_pics/credible_sets/
@@ -120,8 +121,8 @@ nodes:
         - gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie/
         - gs://ukb_ppp_eur_data/credible_set_clean/
         - gs://finngen_data/r11/credible_set_datasets/susie/
-      step.valid_study_locus_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/credible_set/valid
-      step.invalid_study_locus_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/credible_set/invalid
+      step.valid_study_locus_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/credible_set
+      step.invalid_study_locus_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/invalid_credible_set
       step.invalid_qc_reasons:
         - DUPLICATED_STUDYLOCUS_ID
         - AMBIGUOUS_STUDY
@@ -153,13 +154,13 @@ nodes:
         - gs://open-targets-pre-data-releases/${release}/input/evidence-files/uniprot.json.gz
         - gs://open-targets-pre-data-releases/${release}/input/evidence-files/eva.json.gz
         - gs://open-targets-pre-data-releases/${release}/input/pharmacogenomics-inputs/pharmacogenomics.json.gz
-        - gs://open-targets-pre-data-releases/${release}/output/etl/parquet/credible_set/valid
+        - gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/credible_set
       step.source_formats:
         - json
         - json
         - json
         - parquet
-      step.output_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/partitioned_variants
+      step.output_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/partitioned_variants
       step.partition_size: 2_000 # approximate num of variants per partition!
 
   - id: variant_annotation
@@ -180,25 +181,25 @@ nodes:
         machine_type: n1-standard-4
     params:
       vep_cache_path: gs://genetics_etl_python_playground/vep/cache
-      vcf_input_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/partitioned_variants
-      vep_output_path: gs://open-targets-pre-data-releases/${release}/output/etl/json/annotated_variants
+      vcf_input_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/partitioned_variants
+      vep_output_path: gs://open-targets-pre-data-releases/${release}/output/genetics/json/annotated_variants
 
   - id: variant_index
     prerequisites:
       - variant_annotation
     params:
       step: variant_index
-      step.vep_output_json_path: gs://open-targets-pre-data-releases/${release}/output/etl/json/annotated_variants
+      step.vep_output_json_path: gs://open-targets-pre-data-releases/${release}/output/genetics/json/annotated_variants
       step.gnomad_variant_annotations_path: gs://genetics_etl_python_playground/static_assets/gnomad_variants
-      step.variant_index_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/variant_index
+      step.variant_index_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/variant_index
 
   - id: colocalisation_ecaviar
     prerequisites:
       - credible_set_validation
     params:
       step: colocalisation
-      step.credible_set_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/credible_set/valid
-      step.coloc_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/colocalisation
+      step.credible_set_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/credible_set
+      step.coloc_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/colocalisation
       step.colocalisation_method: ECaviar
 
   - id: colocalisation_coloc
@@ -206,8 +207,8 @@ nodes:
       - credible_set_validation
     params:
       step: colocalisation
-      step.credible_set_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/credible_set/valid
-      step.coloc_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/colocalisation # the path has to be the same as ecaviar
+      step.credible_set_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/credible_set
+      step.coloc_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/colocalisation # the path has to be the same as ecaviar
       step.colocalisation_method: Coloc
       +step.colocalisation_method_params: "{priorc1: 1e-4, priorc2: 1e-4, priorc12: 1e-5}"
 
@@ -222,12 +223,12 @@ nodes:
 
     params:
       step: locus_to_gene_feature_matrix
-      step.credible_set_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/credible_set/valid
-      step.variant_index_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/variant_index
-      step.colocalisation_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/colocalisation
-      step.study_index_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/study_index/valid
-      step.gene_index_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/gene_index
-      step.feature_matrix_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/l2g_feature_matrix
+      step.credible_set_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/credible_set
+      step.variant_index_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/variant_index
+      step.colocalisation_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/colocalisation
+      step.study_index_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/study_index
+      step.gene_index_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/gene_index
+      step.feature_matrix_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/l2g_feature_matrix
       +step.session.extended_spark_conf: "{spark.sql.autoBroadcastJoinThreshold:'-1'}"
       step.session.write_mode: overwrite
 
@@ -242,10 +243,10 @@ nodes:
       step.run_mode: train
       step.wandb_run_name: 24.10_freeze6
       step.hf_hub_repo_id: opentargets/locus_to_gene
-      step.model_path: gs://open-targets-pre-data-releases/${release}/output/etl/models/locus_to_gene_model/classifier.skops
-      step.credible_set_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/credible_set/valid
-      step.variant_index_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/variant_index
-      step.feature_matrix_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/l2g_feature_matrix
+      step.model_path: gs://open-targets-pre-data-releases/${release}/output/genetics/models/locus_to_gene_model/classifier.skops
+      step.credible_set_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/credible_set
+      step.variant_index_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/variant_index
+      step.feature_matrix_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/l2g_feature_matrix
       step.gold_standard_curation_path: gs://genetics_etl_python_playground/input/l2g/gold_standard/curation.json
       step.gene_interactions_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/interaction
       step.hyperparameters.n_estimators: 100
@@ -261,9 +262,9 @@ nodes:
     params:
       step: locus_to_gene
       step.run_mode: predict
-      step.predictions_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/l2g_predictions
-      step.feature_matrix_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/l2g_feature_matrix
-      step.credible_set_path: gs://open-targets-pre-data-releases/${release}/output/etl/parquet/credible_set/valid
+      step.predictions_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/l2g_predictions
+      step.feature_matrix_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/l2g_feature_matrix
+      step.credible_set_path: gs://open-targets-pre-data-releases/${release}/output/genetics/parquet/credible_set
       step.download_from_hub: true
       step.hf_hub_repo_id: opentargets/locus_to_gene
       step.session.write_mode: overwrite
@@ -271,24 +272,12 @@ nodes:
   - id: l2g_evidence
     prerequisites:
       - l2g_predict
+      - study_validation
+      - credible_set_validation
     params:
       step: locus_to_gene_evidence
-      step.evidence_output_path: gs://ot_orchestration/releases/24.10_freeze6/locus_to_gene_evidence
-      step.locus_to_gene_predictions_path: gs://ot_orchestration/releases/24.10_freeze6/locus_to_gene_predictions
-      step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze6/credible_set
-      step.study_index_path: gs://ot_orchestration/releases/24.10_freeze6/study_index
+      step.evidence_output_path: gs://open-targets-ppp-releases/${release}/input/evidence-files/l2g.json.gz
+      step.locus_to_gene_predictions_path: gs://open-targets-ppp-releases/${release}/output/etl/parquet/l2g_predictions
+      step.credible_set_path: gs://open-targets-ppp-releases/${release}/output/etl/parquet/credible_set/valid
+      step.study_index_path: gs://open-targets-ppp-releases/${release}/output/etl/parquet/study_index/valid
       step.locus_to_gene_threshold: 0.05
-      step.session.write_mode: overwrite
-
-  - id: l2g_associations
-    params:
-      step: locus_to_gene_associations
-      step.evidence_input_path: gs://ot_orchestration/releases/24.10_freeze6/locus_to_gene_evidence
-      step.disease_index_path: gs://open-targets-pre-data-releases/24.06/output/etl/parquet/diseases
-      step.direct_associations_output_path: gs://ot_orchestration/releases/24.10_freeze6/locus_to_gene_associations/direct_associations
-      step.indirect_associations_output_path: gs://ot_orchestration/releases/24.10_freeze6/locus_to_gene_associations/indirect_associations
-      step.session.spark_uri: yarn
-      step.session.write_mode: overwrite
-
-    prerequisites:
-      - l2g_evidence
