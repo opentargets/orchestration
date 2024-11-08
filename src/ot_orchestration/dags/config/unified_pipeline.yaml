@@ -122,3 +122,61 @@ steps:
       - etl_association
     depends_on_ppp:
       - genetics_variant_index
+
+genetics_steps:
+  - genetics_biosample_index:
+    depends_on:
+      - pis_biosample
+  - genetics_gene_index:
+    depends_on:
+      - etl_target
+
+  - genetics_study_validation:
+    depends_on:
+      - pis_target
+      - etl_diseases
+      - genetics_biosample_index
+      - genetics_gene_index
+
+  - genetics_credible_set_validation:
+    depends_on:
+      - genetics_study_validation
+
+  - genetics_variant_conversion:
+    depends_on:
+      - pis_evidence
+      - pis_pharmacogenomics
+      - genetics_credible_set_validation
+  - genetics_colocalisation_coloc:
+    depends_on:
+      - genetics_credible_set_validation
+  - genetics_colocalisation_ecaviar:
+    depends_on:
+      - genetics_credible_set_validation
+
+  - genetics_variant_annotation:
+    depends_on:
+      - genetics_variant_conversion
+
+  - genetics_variant_index:
+    depends_on:
+      - genetics_variant_annotation
+
+  - genetics_l2g_feature_matrix:
+    depends_on:
+      - genetics_colocalisation_coloc
+      - genetics_colocalisation_ecaviar
+      - genetics_variant_index
+
+  - genetics_l2g_train:
+    depends_on:
+      - etl_interactions
+      - genetics_l2g_feature_matrix
+
+  - genetics_l2g_predict:
+    depends_on:
+      - genetics_l2g_train
+
+  - genetics_l2g_evidence:
+    depends_on:
+      - genetics_l2g_predict
