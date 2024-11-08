@@ -62,7 +62,7 @@ with DAG(
     def pis_stage() -> None:
         for step_name in config.pis_step_list:
 
-            @task_group(group_id=f"pis_{step_name}")
+            @task_group(group_id=step_name)
             def pis_step(step_name: str) -> None:
                 config_gcs_url = config.pis_config_gcs_url(step_name)
                 vm_name = f"uo-pis-{clean_name(step_name)}-{{{{ run_id | strhash }}}}"
@@ -118,7 +118,7 @@ with DAG(
                 )
 
                 # add the run task to the step registry
-                steps[f"pis_{step_name}"] = j
+                steps[step_name] = j
                 # here we define the task dependencies for both branches
                 chain(c, Label("invalid previous run"), u, r, d, j)
                 chain(c, Label("valid previous run exists, skip run"), j)
@@ -165,20 +165,15 @@ with DAG(
             step_name = step["name"]
             labels_etl_step = labels_etl.clone({"step": step_name})
 
-            pis_dependencies = [p for p in step.get("depends_on", []) if "pis_" in p]
-            etl_dependencies = [p for p in step.get("depends_on", []) if "etl_" in p]
-
             r = PlatformETLSubmitJobOperator(
                 task_id=f"run_{step_name}",
-                step_name=step_name,
+                step_name=step_name.replace("etl_", ""),  # remove the etl prefix
                 cluster_name=cluster_name,
                 jar_file_uri=config.etl_jar_gcs_uri,
                 config_file_uri=config.etl_config_gcs_uri,
                 labels=labels_etl_step,
             )
-            r.set_upstream([steps[dep] for dep in pis_dependencies])
-            r.set_upstream([steps[dep] for dep in etl_dependencies])
-            steps[f"etl_{step_name}"] = r
+            steps[step_name] = r
 
     r = etl_stage()
 

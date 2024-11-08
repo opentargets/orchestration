@@ -1,105 +1,122 @@
+# The bucket where the pipeline will work in
 gcs_url: gs://open-targets-pre-data-releases/24.06dev-test-config
 
+# Versions of the pipeline components
 pis_version: 24.6.0
 etl_version: 24.1.0
 
+# Versions of the data sources
 chembl_version: '34'
-efo_version: v3.68.0
+efo_version: v3.70.0
 ensembl_version: '112'
 
+# Whether this is a PPP run of the pipeline
 is_ppp: false
 
-# At the moment, there is no way to determine the dependencies
-# of the different steps in the ETL stage. The ETL config file
-# (see https://github.com/opentargets/platform-etl-backend/blob/master/src/main/resources/reference.conf)
-# lacks an explicit definition of dependencies in the step definition.
-# This is the next best option, but it is far from ideal.
+# Dependency graph
+# ----------------
+# The following section defines the dependencies between the different steps in
+# the pipeline. PIS steps are not here, as they have no dependencies.
 #
-# Any dependency change has to be reflected here _manually_.
-etl_steps:
-  - name: go
+# IMPORTANT: any dependency change has to be reflected here _manually_.
+#
+# Note: steps that can run in parallel are separated in blocks by a blank line
+#      which effectively means blocks depend on the previous block.
+#
+# IMPORTANT NOTE: only direct dependencies are defined. Take care when removing
+#      one, and always double check if instead of just deleting, you have to
+#      change it for another step that is further upstream.
+#
+# It could be possible to generate this automatically from the file input for
+# each step, but given the current fast pace of changes throughout the whole
+# pipeline, it is not worth the effort to implement this until things have
+# stabilised.
+#
+steps:
+  # ETL STEPS
+  etl_go:
     depends_on:
       - pis_go
-  - name: disease
+  etl_disease:
     depends_on:
       - pis_disease
-  - name: expression
+  etl_expression:
     depends_on:
       - pis_expression
-  - name: reactome
+  etl_reactome:
     depends_on:
       - pis_reactome
 
-  - name: otar
+  etl_otar:
     depends_on:
       - etl_disease
-    depends_on_ppp:
-      - pis_otar # this extra dependency is added in ppp runs
-  - name: target
+    depends_on_ppp: # this extra dependency is added in ppp runs
+      - pis_otar
+  etl_target:
     depends_on:
       - pis_target
       - pis_homologues
       - etl_reactome
 
-  - name: drug
+  etl_drug:
     depends_on:
       - pis_drug
       - etl_target
       - etl_disease
-  - name: facetsearch
+  etl_facetsearch:
     depends_on:
       - etl_target
       - etl_disease
       - etl_go
-  - name: interactions
+  etl_interactions:
     depends_on:
       - pis_interactions
       - etl_target
-  - name: targetValidation
+  etl_targetValidation:
     depends_on:
       - pis_mouse_phenotypes
       - etl_target
 
-  - name: fda
+  etl_fda:
     depends_on:
       - pis_openfda
       - etl_drug
-  - name: literature
+  etl_literature:
     depends_on:
       - pis_literature
       - etl_drug
-  - name: pharmacogenomics
+  etl_pharmacogenomics:
     depends_on:
       - pis_pharmacogenomics
       - etl_drug
-  - name: targetengine
+  etl_targetengine:
     depends_on:
       - pis_target_engine
       - etl_drug
 
-  - name: evidence
+  etl_evidence:
     depends_on:
       - pis_evidence
       - etl_literature
-    depends_on_ppp: # this extra dependency is added in ppp runs
+    depends_on_ppp:
       - pis_ppp_evidence
       - genetics_l2g_evidence
 
-  - name: association
+  etl_association:
     depends_on:
       - etl_evidence
-  - name: associationOTF
-    depends_on:
-      - etl_evidence
-
-  - name: knownDrug
+  etl_associationOTF:
     depends_on:
       - etl_evidence
 
-  - name: ebisearch
+  etl_knownDrug:
+    depends_on:
+      - etl_evidence
+
+  etl_ebisearch:
     depends_on:
       - etl_association
-  - name: search
+  etl_search:
     depends_on:
       - etl_association
     depends_on_ppp:

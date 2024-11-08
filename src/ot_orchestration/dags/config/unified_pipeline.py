@@ -54,6 +54,7 @@ class PlatformConfig:
         self.efo_version = settings["efo_version"]
         self.ensembl_version = settings["ensembl_version"]
         self.is_ppp = settings["is_ppp"]
+        self.steps = settings["steps"]
 
         # PIS-specific settings.
         self.pis_config = self.init_pis_config()
@@ -61,7 +62,7 @@ class PlatformConfig:
         # The base image for PIS, the version tag will be appended from the config file.
         pis_image_base = "europe-west1-docker.pkg.dev/open-targets-eu-dev/platform-input-support-test/platform-input-support-test"
         self.pis_image = f"{pis_image_base}:{pis_version}"
-        self.pis_step_list = self.pis_config["steps"].keys()
+        self.pis_step_list = [f"pis_{s}" for s in self.pis_config["steps"].keys()]
         self.pis_pool = 16  # number of parallel workers inside of each PIS step
 
         # ETL-specific settings.
@@ -72,7 +73,7 @@ class PlatformConfig:
         etl_jar_base = "https://github.com/opentargets/platform-etl-backend/releases/download/v{version}/etl-backend-{version}.jar"
         self.etl_jar_origin_url = f"{etl_jar_base.format(version=etl_version)}"
         self.etl_jar_gcs_uri = f"{self.gcs_url}/output/etl-backend-{etl_version}.jar"  # fmt: skip
-        self.etl_step_list = settings["etl_steps"]
+        self.etl_step_list = [s for s in settings["steps"].keys() if s.startswith("etl_")]
 
     def pis_config_gcs_url(self, step_name: str) -> str:
         """Return the google cloud url of the PIS configuration file for a step."""
