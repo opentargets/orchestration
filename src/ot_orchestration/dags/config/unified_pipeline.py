@@ -84,6 +84,9 @@ class UnifiedPipelineConfig:
         self.etl_jar_gcs_uri = f"{self.gcs_url}/output/etl-backend-{etl_version}.jar"  # fmt: skip
         self.etl_step_list = [s for s in settings["steps"].keys() if s.startswith("etl_")]
 
+        # GENTROPY-specific settings.
+        self.gentropy_step_list = [s for s in settings["steps"].keys() if s.startswith("gentropy_")]
+
     def pis_config_gcs_url(self, step_name: str) -> str:
         """Return the google cloud url of the PIS configuration file for a step."""
         return f"{self.gcs_url}/input/pis-config-{step_name}.yaml"

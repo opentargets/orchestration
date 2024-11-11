@@ -39,6 +39,7 @@ from ot_orchestration.utils.common import (
     shared_dag_args,
     unified_pipeline_dag_kwargs,
 )
+from ot_orchestration.utils.dataproc import create_cluster, delete_cluster
 from ot_orchestration.utils.labels import StepLabels
 
 with DAG(
@@ -213,6 +214,25 @@ with DAG(
     )
 
     chain(p, r, d)
+
+    # Gentropy stage of the DAG.
+    gentropy_cluster_name = create_cluster_name("gentropy")
+
+    c = create_cluster(gentropy_cluster_name)
+
+    @task_group(group_id="gentropy_stage")
+    def gentropy_stage() -> None:
+        for step_name in config.gentropy_step_list:
+            labels = StepLabels("gentropy", step_name, config.is_ppp)
+
+            r = EmptyOperator(task_id=f"run_{step_name}")
+            steps[step_name] = r
+
+    r = gentropy_stage()
+
+    d = delete_cluster(gentropy_cluster_name)
+
+    chain(c, r, d)
 
     # After creating all the tasks, we tie them together by creating dependencies.
     for step_name in steps:
