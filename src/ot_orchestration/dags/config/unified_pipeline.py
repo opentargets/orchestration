@@ -27,6 +27,7 @@ class UnifiedPipelineConfig:
     def __init__(self) -> None:
         self.config_path = Path(__file__).parent / "unified_pipeline.yaml"
         self.pis_config_local_path = Path(__file__).parent / "pis.yaml"
+        self.ontoform_config_local_path = Path(__file__).parent / "ontoform.yaml"
         self.etl_config_local_path = Path(__file__).parent / "etl.conf"
 
         # These are hardcoded config values that are not meant to change often.
@@ -64,6 +65,14 @@ class UnifiedPipelineConfig:
         self.pis_image = f"{pis_image_base}:{pis_version}"
         self.pis_step_list = [f"pis_{s}" for s in self.pis_config["steps"].keys()]
         self.pis_pool = 16  # number of parallel workers inside of each PIS step
+
+        # ONTOFORM-specific settings.
+        self.ontoform_config = read_yaml_config(self.ontoform_config_local_path)
+        ontoform_version = settings["ontoform_version"]
+        self.ontoform_step_list = [f"ontoform_{s}" for s in self.ontoform_config["steps"].keys()]
+        # The base image for ONTOFORM, the version tag will be appended from the config file.
+        ontoform_image_base = "europe-west1-docker.pkg.dev/open-targets-eu-dev/ontoform/ontoform"
+        self.ontoform_image = f"{ontoform_image_base}:{ontoform_version}"
 
         # ETL-specific settings.
         self.etl_config = self.init_etl_config()
@@ -113,6 +122,14 @@ class UnifiedPipelineConfig:
             "PIS_CONFIG_FILE": "/config.yaml",
             "PIS_POOL": self.pis_pool,
         }
+
+    def get_ontoform_args(self, step_name: str) -> dict[str, Any]:
+        """Return the arguments for the ONTOFORM step."""
+        real_step_name = step_name.replace("ontoform_", "")
+        paths = self.ontoform_config["steps"][real_step_name].values()
+        urls = [f"{self.gcs_url}/{p}" for p in paths]
+
+        return [real_step_name, *urls]
 
     # pyhocon returns a ConfigTree, but we can treat it as a dict
     def init_etl_config(self) -> Any:

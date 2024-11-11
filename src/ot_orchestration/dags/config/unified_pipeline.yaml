@@ -3,6 +3,7 @@ gcs_url: gs://open-targets-pre-data-releases/24.06dev-test-config
 
 # Versions of the pipeline components
 pis_version: 24.6.0
+ontoform_version: 24.0.0-alpha.2
 etl_version: 24.1.0
 
 # Versions of the data sources

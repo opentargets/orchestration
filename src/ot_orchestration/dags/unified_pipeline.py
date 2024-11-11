@@ -121,6 +121,39 @@ with DAG(
 
     pis_stage()
 
+    # ONTOFORM stage of the DAG.
+    # This stage will run the ONTOFORM steps in parallel by replicating the following pattern for each:
+    # r. Run the step in a Compute Engine VM, waiting for it to produce an exit code
+    # d. Delete the VM
+    @task_group(group_id="ontoform_stage")
+    def ontoform_stage() -> None:
+        for step_name in config.ontoform_step_list:
+            labels = StepLabels("ontoform", step_name, config.is_ppp)
+            vm_name = create_vm_name(step_name)
+
+            r = ComputeEngineRunContainerizedWorkloadSensor(
+                task_id=f"run_{step_name}",
+                instance_name=vm_name,
+                labels=labels,
+                container_image=config.ontoform_image,
+                container_service_account=config.service_account,
+                container_scopes=config.service_account_scopes,
+                container_args=config.get_ontoform_args(step_name),
+                deferrable=True,
+            )
+
+            d = ComputeEngineDeleteInstanceOperator(
+                task_id=f"delete_vm_{step_name}",
+                project_id=GCP_PROJECT_PLATFORM,
+                zone=GCP_ZONE,
+                resource_id=vm_name,
+            )
+
+            steps[step_name] = r
+            chain(r, d)
+
+    ontoform_stage()
+
     # ETL stage of the DAG.
     # p. Prepare the Dataproc cluster
     #   c. Creation

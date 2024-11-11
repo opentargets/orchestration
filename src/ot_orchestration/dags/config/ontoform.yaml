@@ -1,0 +1,8 @@
+steps:
+  disease:
+    input: input/ontology-inputs/ontology-efo.json
+    output: output/etl/diseases.parquet
+
+  so:
+    input: input/so-inputs/so.json
+    output: output/etl/so
