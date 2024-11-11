@@ -6,7 +6,7 @@ from typing import Any
 from ot_orchestration.utils import read_hocon_config, read_yaml_config
 
 
-class PlatformConfig:
+class UnifiedPipelineConfig:
     """Configuration class for the platform part of the unified pipeline.
 
     This class reads the configuration files for both the platform part of the
@@ -25,7 +25,7 @@ class PlatformConfig:
     """
 
     def __init__(self) -> None:
-        self.platform_config_path = Path(__file__).parent / "unified_pipeline.yaml"
+        self.config_path = Path(__file__).parent / "unified_pipeline.yaml"
         self.pis_config_local_path = Path(__file__).parent / "pis.yaml"
         self.etl_config_local_path = Path(__file__).parent / "etl.conf"
 
@@ -48,7 +48,7 @@ class PlatformConfig:
         self.service_account_scopes = ["https://www.googleapis.com/auth/drive"]
 
         # Pipeline settings.
-        settings = read_yaml_config(self.platform_config_path)
+        settings = read_yaml_config(self.config_path)
         self.gcs_url = settings["gcs_url"]
         self.chembl_version = settings["chembl_version"]
         self.efo_version = settings["efo_version"]
@@ -87,7 +87,7 @@ class PlatformConfig:
         """Initialize the PIS configuration.
 
         This method reads the PIS configuration file, replaces the fields defined
-        in the orchestrator config, and returns the resulting configuration.
+        in the pipeline orchestrator config, and returns the resulting configuration.
         """
         pis_raw_conf = read_yaml_config(self.pis_config_local_path)
 
@@ -111,7 +111,7 @@ class PlatformConfig:
         """Initialize the ETL configuration.
 
         This method reads the ETL configuration file, replaces the fields defined
-        in the orchestrator config, and returns the resulting configuration.
+        in the pipeline orchestrator config, and returns the resulting configuration.
         """
         etl_raw_conf = read_hocon_config(self.etl_config_local_path)
 

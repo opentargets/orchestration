@@ -15,7 +15,7 @@ from airflow.providers.google.cloud.operators.dataproc import (
 )
 from airflow.utils.edgemodifier import Label
 
-from ot_orchestration.dags.config.unified_pipeline import PlatformConfig
+from ot_orchestration.dags.config.unified_pipeline import UnifiedPipelineConfig
 from ot_orchestration.operators.dataproc import (
     PlatformETLCreateClusterOperator,
     PlatformETLSubmitJobOperator,
@@ -53,7 +53,7 @@ with DAG(
         ),
     },
 ) as dag:
-    config = PlatformConfig()
+    config = UnifiedPipelineConfig()
     steps = {}  # this is a registry of tasks, it is used to build dependencies
 
     # PIS stage of the DAG.
