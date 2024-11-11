@@ -170,7 +170,7 @@ class PlatformETLSubmitJobOperator(DataprocSubmitJobOperator):
         *,
         project_id: str = GCP_PROJECT_PLATFORM,
         region: str = GCP_REGION,
-        cluster_name: str = "uo-etl-{{ run_id | strhash }}",
+        cluster_name: str,
         step_name: str,
         jar_file_uri: str,
         config_file_uri: str,

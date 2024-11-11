@@ -37,9 +37,14 @@ def clean_name(name: str) -> str:
     return re.sub(r"[^a-z0-9-]", "-", name.lower())
 
 
-def create_name(prefix: str, suffix: str) -> str:
-    """Create a clean name meeting google cloud naming conventions."""
-    return re.sub(r"[^a-z0-9-]", "-", f"{prefix}-{suffix}".lower())
+def create_vm_name(step_name: str) -> str:
+    """Create a VM name for a given step name."""
+    return f"uo-{clean_name(step_name)}-{{{{ run_id | strhash }}}}"
+
+
+def create_cluster_name(task_group_name: str) -> str:
+    """Create a cluster name for a given task group name."""
+    return f"uo-{clean_name(task_group_name)}-{{{{ run_id | strhash }}}}"
 
 
 def read_yaml_config(config_path: Path | str) -> Any:

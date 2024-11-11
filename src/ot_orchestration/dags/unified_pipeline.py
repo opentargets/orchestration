@@ -26,7 +26,12 @@ from ot_orchestration.operators.gcs import (
     UploadStringOperator,
 )
 from ot_orchestration.operators.unified_pipeline import PISDiffComputeOperator
-from ot_orchestration.utils import clean_name, to_hocon, to_yaml
+from ot_orchestration.utils import (
+    create_cluster_name,
+    create_vm_name,
+    to_hocon,
+    to_yaml,
+)
 from ot_orchestration.utils.common import (
     GCP_PROJECT_PLATFORM,
     GCP_REGION,
@@ -66,6 +71,7 @@ with DAG(
             def pis_step(step_name: str) -> None:
                 config_gcs_url = config.pis_config_gcs_url(step_name)
                 labels = StepLabels("pis", step_name, config.is_ppp)
+                vm_name = create_vm_name(step_name)
 
                 c = PISDiffComputeOperator(
                     task_id=f"diff_{step_name}",
@@ -123,8 +129,7 @@ with DAG(
     # r. The ETL steps are run in parallel, as soon as their prerequisites are met.
     #    The required PIS and ETL run tasks are added as upstream dependencies to each step task.
     # d. Delete the Dataproc cluster
-    cluster_name = "uo-etl-{{ run_id | strhash }}"
-    labels_etl = Labels({"tool": "etl"})
+    etl_cluster_name = create_cluster_name("etl")
 
     @task_group(group_id=f"etl_cluster_prepare")
     def etl_cluster_prepare() -> None:
@@ -132,7 +137,7 @@ with DAG(
 
         c = PlatformETLCreateClusterOperator(
             task_id="cluster_create",
-            cluster_name=cluster_name,
+            cluster_name=etl_cluster_name,
             labels=labels,
         )
         uc = UploadStringOperator(
@@ -157,7 +162,7 @@ with DAG(
             r = PlatformETLSubmitJobOperator(
                 task_id=f"run_{step_name}",
                 step_name=step_name.replace("etl_", ""),  # remove the etl prefix
-                cluster_name=cluster_name,
+                cluster_name=etl_cluster_name,
                 jar_file_uri=config.etl_jar_gcs_uri,
                 config_file_uri=config.etl_config_gcs_uri,
                 labels=labels,
@@ -170,7 +175,7 @@ with DAG(
         task_id="etl_cluster_delete",
         project_id=GCP_PROJECT_PLATFORM,
         region=GCP_REGION,
-        cluster_name=cluster_name,
+        cluster_name=etl_cluster_name,
         trigger_rule="all_success",
     )
 
