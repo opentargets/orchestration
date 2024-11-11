@@ -106,6 +106,14 @@ class UnifiedPipelineConfig:
 
         return pis_raw_conf
 
+    def get_pis_env_vars(self, step_name: str) -> dict[str, str]:
+        """Return the environment variables for a PIS step."""
+        return {
+            "PIS_STEP": step_name.replace("pis_", ""),
+            "PIS_CONFIG_FILE": "/config.yaml",
+            "PIS_POOL": self.pis_pool,
+        }
+
     # pyhocon returns a ConfigTree, but we can treat it as a dict
     def init_etl_config(self) -> Any:
         """Initialize the ETL configuration.

@@ -91,7 +91,7 @@ with DAG(
                     instance_name=vm_name,
                     labels=labels,
                     container_image=config.pis_image,
-                    container_env=vm_env,
+                    container_env=config.get_pis_env_vars(step_name),
                     container_service_account=config.service_account,
                     container_scopes=config.service_account_scopes,
                     container_files={config_gcs_url: "/config.yaml"},
