@@ -34,7 +34,7 @@ from ot_orchestration.utils.common import (
     shared_dag_args,
     unified_pipeline_dag_kwargs,
 )
-from ot_orchestration.utils.labels import Labels
+from ot_orchestration.utils.labels import StepLabels
 
 with DAG(
     default_args=shared_dag_args,
@@ -65,19 +65,7 @@ with DAG(
             @task_group(group_id=step_name)
             def pis_step(step_name: str) -> None:
                 config_gcs_url = config.pis_config_gcs_url(step_name)
-                vm_name = f"uo-pis-{clean_name(step_name)}-{{{{ run_id | strhash }}}}"
-                vm_env = {
-                    "PIS_STEP": step_name,
-                    "PIS_CONFIG_FILE": "/config.yaml",
-                    "PIS_POOL": config.pis_pool,
-                }
-                labels = Labels(
-                    {
-                        "tool": "pis",
-                        "step": step_name,
-                        "product": "ppp" if config.is_ppp else "platform",
-                    }
-                )
+                labels = StepLabels("pis", step_name, config.is_ppp)
 
                 c = PISDiffComputeOperator(
                     task_id=f"diff_{step_name}",
@@ -140,10 +128,12 @@ with DAG(
 
     @task_group(group_id=f"etl_cluster_prepare")
     def etl_cluster_prepare() -> None:
+        labels = StepLabels("etl", is_ppp=config.is_ppp)
+
         c = PlatformETLCreateClusterOperator(
             task_id="cluster_create",
             cluster_name=cluster_name,
-            labels=labels_etl,
+            labels=labels,
         )
         uc = UploadStringOperator(
             task_id=f"upload_config",
@@ -161,9 +151,8 @@ with DAG(
 
     @task_group(group_id="etl_stage")
     def etl_stage() -> None:
-        for step in config.etl_step_list:
-            step_name = step["name"]
-            labels_etl_step = labels_etl.clone({"step": step_name})
+        for step_name in config.etl_step_list:
+            labels = StepLabels("etl", step_name, config.is_ppp)
 
             r = PlatformETLSubmitJobOperator(
                 task_id=f"run_{step_name}",
@@ -171,7 +160,7 @@ with DAG(
                 cluster_name=cluster_name,
                 jar_file_uri=config.etl_jar_gcs_uri,
                 config_file_uri=config.etl_config_gcs_uri,
-                labels=labels_etl_step,
+                labels=labels,
             )
             steps[step_name] = r
 

@@ -55,3 +55,24 @@ class Labels:
         """Return a copy with additional labels."""
         extra = extra or {}
         return Labels({**self.label_dict, **extra}, self.project)
+
+
+class StepLabels(Labels):
+    """A collection of labels with additional step-specific labels."""
+
+    def __init__(
+        self,
+        tool: str,
+        step_name: str | None = None,
+        is_ppp: bool = False,
+        project: str = GCP_PROJECT_PLATFORM,
+    ) -> None:
+        extra = {
+            "tool": tool,
+            "product": "ppp" if is_ppp else "platform",
+        }
+
+        if step_name:
+            extra["step"] = step_name.replace(f"{tool}_", "")
+
+        super().__init__(extra, project)
