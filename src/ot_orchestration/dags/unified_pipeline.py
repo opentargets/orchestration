@@ -214,5 +214,14 @@ with DAG(
 
     chain(p, r, d)
 
+    # After creating all the tasks, we tie them together by creating dependencies.
+    for step_name in steps:
+        if step_config := config.steps.get(step_name):
+            for dep in step_config.get("depends_on", []):
+                steps[step_name].set_upstream(steps[dep])
+            if config.is_ppp:
+                for ppp_dep in step_config.get("depends_on_ppp", []):
+                    steps[step_name].set_upstream(steps[ppp_dep])
+
 if __name__ == "__main__":
     dag.test()
