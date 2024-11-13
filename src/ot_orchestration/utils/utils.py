@@ -43,15 +43,25 @@ def create_vm_name(step_name: str) -> str:
 
 
 def create_cluster_name(task_group_name: str) -> str:
-    """Create a cluster name for a given task group name."""
+    """Create a cluster name for a given task group name.
+
+    The name will include our prefix `uo-` and the task group name, so for the
+    gentropy stage of run `3beef`, the cluster name will be:
+
+    `uo-gentropy-3beef`
+    """
     return f"uo-{clean_name(task_group_name)}-{{{{ run_id | strhash }}}}"
 
 
-def read_yaml_config(config_path: Path | str) -> Any:
-    """Parse a YAMl config file and do all necessary checks.
+def read_yaml_config(
+    config_path: Path | str,
+    sentinels: dict[str, str] | None = None,
+) -> Any:
+    """Parse a YAMl config file replacing sentinels.
 
     Args:
         config_path (Path | str): Path to the YAML config file.
+        sentinels (dict[str, str] | None): Sentinels to replace in the config file.
 
     Returns:
         Any: Parsed YAML config file.
@@ -59,7 +69,12 @@ def read_yaml_config(config_path: Path | str) -> Any:
     config_path = config_path if isinstance(config_path, Path) else Path(config_path)
     assert config_path.exists(), f"YAML config path {config_path} does not exists"
     with open(config_path) as config_file:
-        return yaml.safe_load(config_file)
+        raw_config = config_file.read()
+        if sentinels:
+            for sentinel, replacement in sentinels.items():
+                raw_config = raw_config.replace(f"{{{sentinel}}}", replacement)
+
+        return yaml.safe_load(raw_config)
 
 
 def to_yaml(config: dict) -> str:
