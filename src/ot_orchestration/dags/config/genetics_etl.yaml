@@ -36,11 +36,11 @@ nodes:
     params:
       step: locus_to_gene
       step.run_mode: predict
-      step.predictions_path: gs://ot_orchestration/benchmarks/l2g/fm0/gs_v5/locus_to_gene_predictions
+      step.predictions_path: gs://ot_orchestration/benchmarks/l2g/fm0/gs_v1/locus_to_gene_predictions
       step.feature_matrix_path: gs://ot-team/irene/l2g/13112024/feature_matrix
       step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze6/credible_set
       step.download_from_hub: false
       step.l2g_threshold: 0.05
-      step.model_path: gs://ot_orchestration/benchmarks/l2g/gold_standards/fm_v0_training_v5/classifier.skops
+      step.model_path: gs://ot_orchestration/benchmarks/l2g/gold_standards/fm_v0_training_v1/classifier.skops
       step.hf_hub_repo_id: opentargets/locus_to_gene
       step.session.write_mode: overwrite
