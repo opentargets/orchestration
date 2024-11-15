@@ -12,19 +12,19 @@ dataproc:
 
 nodes:
   # Models were manually trained by Jack
-  - id: l2g_predict_v6
-    prerequisites: l2g_train_training_v6
-    params:
-      step: locus_to_gene
-      step.run_mode: predict
-      step.predictions_path: gs://ot_orchestration/benchmarks/l2g/fm0/gs_v6/locus_to_gene_predictions
-      step.feature_matrix_path: gs://ot-team/irene/l2g/13112024/feature_matrix
-      step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze6/credible_set
-      step.download_from_hub: false
-      step.l2g_threshold: 0.05
-      step.model_path: gs://genetics-portal-dev-analysis/xg1/Chembl_l2g_goldstandards/Models/14_11_manual_egl_xg1_freeze7_scaled_distributionn_unbiased_stringent.skops
-      step.hf_hub_repo_id: opentargets/locus_to_gene
-      step.session.write_mode: overwrite
+  # - id: l2g_predict_v6
+  #   prerequisites: l2g_train_training_v6
+  #   params:
+  #     step: locus_to_gene
+  #     step.run_mode: predict
+  #     step.predictions_path: gs://ot_orchestration/benchmarks/l2g/fm0/gs_v6/locus_to_gene_predictions
+  #     step.feature_matrix_path: gs://ot-team/irene/l2g/13112024/feature_matrix
+  #     step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze6/credible_set
+  #     step.download_from_hub: false
+  #     step.l2g_threshold: 0.05
+  #     step.model_path: gs://genetics-portal-dev-analysis/xg1/Chembl_l2g_goldstandards/Models/14_11_manual_egl_xg1_freeze7_scaled_distributionn_unbiased_stringent.skops
+  #     step.hf_hub_repo_id: opentargets/locus_to_gene
+  #     step.session.write_mode: overwrite
 
   - id: l2g_predict_v7
     prerequisites: l2g_train_training_v7
