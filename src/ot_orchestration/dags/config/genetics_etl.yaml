@@ -12,18 +12,18 @@ dataproc:
 
 nodes:
 
-  - id: l2g_train_training_v2
+  - id: l2g_train_training_v8
     params:
       step: locus_to_gene
       step.run_mode: train
-      step.wandb_run_name: fm_v0_training_v2
+      step.wandb_run_name: fm_v0_training_v8
       step.hf_hub_repo_id: opentargets/locus_to_gene
-      step.hf_model_commit_message: "experimental: fm_v0_training_v2"
-      step.model_path: gs://ot_orchestration/benchmarks/l2g/gold_standards/fm_v0_training_v2/classifier.skops
+      step.hf_model_commit_message: "experimental: fm_v0_training_v8"
+      step.model_path: gs://ot_orchestration/benchmarks/l2g/gold_standards/fm_v0_training_v8/classifier.skops
       step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze6/credible_set
       step.variant_index_path: gs://ot_orchestration/releases/24.10_freeze6/variant_index
       step.feature_matrix_path: gs://ot-team/irene/l2g/13112024/feature_matrix
-      step.gold_standard_curation_path: gs://genetics-portal-dev-analysis/yt4/20241024_EGL_playground/training_set/training_v2_dist_sum.json
+      step.gold_standard_curation_path: gs://genetics-portal-dev-analysis/yt4/20241024_EGL_playground/training_set/training_v8_all_not_filtered.json
       step.gene_interactions_path: gs://genetics_etl_python_playground/static_assets/interaction # OTP 23.12 data
       step.hyperparameters.n_estimators: 100
       step.hyperparameters.max_depth: 5
@@ -31,16 +31,16 @@ nodes:
       +step.session.extended_spark_conf: "{spark.kryoserializer.buffer.max:500m, spark.sql.autoBroadcastJoinThreshold:'-1'}"
       step.session.write_mode: overwrite
 
-  - id: l2g_predict_v2
-    prerequisites: l2g_train_training_v2
+  - id: l2g_predict_v8
+    prerequisites: l2g_train_training_v8
     params:
       step: locus_to_gene
       step.run_mode: predict
-      step.predictions_path: gs://ot_orchestration/benchmarks/l2g/fm0/gs_v2/locus_to_gene_predictions
+      step.predictions_path: gs://ot_orchestration/benchmarks/l2g/fm0/gs_v8/locus_to_gene_predictions
       step.feature_matrix_path: gs://ot-team/irene/l2g/13112024/feature_matrix
       step.credible_set_path: gs://ot_orchestration/releases/24.10_freeze6/credible_set
       step.download_from_hub: false
       step.l2g_threshold: 0.05
-      step.model_path: gs://ot_orchestration/benchmarks/l2g/gold_standards/fm_v0_training_v2/classifier.skops
+      step.model_path: gs://ot_orchestration/benchmarks/l2g/gold_standards/fm_v0_training_v8/classifier.skops
       step.hf_hub_repo_id: opentargets/locus_to_gene
       step.session.write_mode: overwrite
