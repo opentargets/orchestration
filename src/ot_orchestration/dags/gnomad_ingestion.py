@@ -17,7 +17,7 @@ config = read_yaml_config(
 
 with DAG(
     dag_id=Path(__file__).stem,
-    description="Open Targets Genetics — Ingest UKB PPP (EUR)",
+    description="Open Targets Genetics — Gnomad Ingestion",
     default_args=shared_dag_args,
     **shared_dag_kwargs,
 ):

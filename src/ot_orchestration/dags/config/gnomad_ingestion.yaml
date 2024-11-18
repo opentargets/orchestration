@@ -1,8 +1,8 @@
 dataproc:
-  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/ds_3623_variant_description/cli.py
+  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dev/cli.py
   cluster_metadata:
-    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/ds_3623_variant_description/gentropy-0.0.0-py3-none-any.whl
-  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/ds_3623_variant_description/install_dependencies_on_cluster.sh
+    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/dev/gentropy-0.0.0-py3-none-any.whl
+  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/dev/install_dependencies_on_cluster.sh
   cluster_name: gnomad-preprocess
   autoscaling_policy: otg-etl
   allow_efm: false
@@ -18,8 +18,8 @@ nodes:
       step.use_version_from_input: false
   - id: gnomad_variants
     kind: Task
-    prerequisites: []
+    prerequisites: [ld_index]
     params:
       step: gnomad_variants
-      step.variant_annotation_path: gs://ot-team/dsuveges/gnomad_variants
+      step.variant_annotation_path: gs://genetics_etl_python_playground/static_assets/gnomad_variants
       step.use_version_from_input: false
