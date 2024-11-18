@@ -12,7 +12,7 @@ from ot_orchestration.utils.dataproc import (
 )
 
 config = read_yaml_config(
-    Path(__file__).parent / "config" / "gnomad_ingestion.yaml"
+    Path(__file__).parent / "config" / "ukb_ppp_eur_harmonisation.yaml"
 )
 
 with DAG(
@@ -33,8 +33,6 @@ with DAG(
     chain_dependencies(nodes=config["nodes"], tasks_or_task_groups=tasks)
 
     dag = generate_dataproc_task_chain(
-        cluster_name=config["dataproc"]["cluster_name"],
-        cluster_init_script=config["dataproc"]["cluster_init_script"],
-        cluster_metadata=config["dataproc"]["cluster_metadata"],
         tasks=[t for t in tasks.values()],
+        **config["dataproc"]
     )
