@@ -239,6 +239,8 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
                 --pick_order  mane_select,canonical \
                 --per_gene \
                 --uniprot \
+                --symbol \
+                --biotype \
                 --check_existing \
                 --exclude_null_alleles \
                 --canonical \
