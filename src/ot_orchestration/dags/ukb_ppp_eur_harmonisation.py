@@ -12,7 +12,7 @@ from ot_orchestration.utils.dataproc import (
 )
 
 config = read_yaml_config(
-    Path(__file__).parent / "config" / "ukb_ppp_eur_harmonisation.yaml"
+    Path(__file__).parent / "config" / "gnomad_ingestion.yaml"
 )
 
 with DAG(
