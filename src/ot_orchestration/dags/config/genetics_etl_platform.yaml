@@ -142,6 +142,7 @@ nodes:
         - INVALID_VARIANT_IDENTIFIER
         - INVALID_CHROMOSOME
         - TOP_HIT_AND_SUMMARY_STATS
+        - NOT_QUALIFYING_LD_BLOCK
 
   - id: genetics_variant_conversion
     kind: Task
