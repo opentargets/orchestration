@@ -33,8 +33,6 @@ with DAG(
     chain_dependencies(nodes=config["nodes"], tasks_or_task_groups=tasks)
 
     dag = generate_dataproc_task_chain(
-        cluster_name=config["dataproc"]["cluster_name"],
-        cluster_init_script=config["dataproc"]["cluster_init_script"],
-        cluster_metadata=config["dataproc"]["cluster_metadata"],
         tasks=[t for t in tasks.values()],
+        **config["dataproc"]
     )

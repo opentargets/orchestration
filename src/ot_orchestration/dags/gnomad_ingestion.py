@@ -1,6 +1,4 @@
-"""Airflow DAG for the Preprocess part of the pipeline."""
-
-from __future__ import annotations
+"""Airflow DAG to ingest GnomAD variant and LD data."""
 
 from pathlib import Path
 
@@ -13,8 +11,9 @@ from ot_orchestration.utils.dataproc import (
     submit_gentropy_step,
 )
 
-CONFIG_FILE_PATH = Path(__file__).parent / "config" / "gnomad_ingestion.yaml"
-config = read_yaml_config(CONFIG_FILE_PATH)
+config = read_yaml_config(
+    Path(__file__).parent / "config" / "gnomad_ingestion.yaml"
+)
 
 with DAG(
     dag_id=Path(__file__).stem,
@@ -31,11 +30,9 @@ with DAG(
             params=step["params"],
         )
         tasks[step["id"]] = task
-
     chain_dependencies(nodes=config["nodes"], tasks_or_task_groups=tasks)
+
     dag = generate_dataproc_task_chain(
-        cluster_name=config["dataproc"]["cluster_name"],
-        cluster_init_script=config["dataproc"]["cluster_init_script"],
-        cluster_metadata=config["dataproc"]["cluster_metadata"],
         tasks=[t for t in tasks.values()],
+        **config["dataproc"]
     )
