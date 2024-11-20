@@ -63,18 +63,22 @@ def read_yaml_config(
         config_path (Path | str): Path to the YAML config file.
         sentinels (dict[str, str] | None): Sentinels to replace in the config file.
 
+    Sentinels in yaml files are in the form:
+
+    `{variable_name}`
+
     Returns:
         Any: Parsed YAML config file.
     """
     config_path = config_path if isinstance(config_path, Path) else Path(config_path)
     assert config_path.exists(), f"YAML config path {config_path} does not exists"
-    with open(config_path) as config_file:
-        raw_config = config_file.read()
-        if sentinels:
-            for sentinel, replacement in sentinels.items():
-                raw_config = raw_config.replace(f"{{{sentinel}}}", replacement)
 
-        return yaml.safe_load(raw_config)
+    raw_config = config_path.read_text()
+    if sentinels:
+        for sentinel, replacement in sentinels.items():
+            raw_config = raw_config.replace(f"{{{sentinel}}}", replacement)
+
+    return yaml.safe_load(raw_config)
 
 
 def to_yaml(config: dict) -> str:
@@ -82,19 +86,35 @@ def to_yaml(config: dict) -> str:
     return yaml.dump(config)
 
 
-def read_hocon_config(config_path: Path | str) -> Any:
-    """Parse a HOCON config file and do all necessary checks.
+def read_hocon_config(
+    config_path: Path | str,
+    sentinels: dict[str, str] | None = None,
+) -> Any:
+    """Parse a HOCON config file replacing sentinels.
+
+    Sentinels in hocon files are in the form:
+
+    `{{variable_name}}`
+
+    they are doubly enclosed in curly braces because hocon files use a single
+    curly brace to denote a variable.
 
     Args:
         config_path (Path | str): Path to the HOCON config file.
+        sentinels (dict[str, str] | None): Sentinels to replace in the config file.
 
     Returns:
         Any: Parsed HOCON config file.
     """
     config_path = config_path if isinstance(config_path, Path) else Path(config_path)
     assert config_path.exists(), f"HOCON config path {config_path} does not exists"
-    with open(config_path) as config_file:
-        return pyhocon.ConfigFactory.parse_string(config_file.read())
+
+    raw_config = config_path.read_text()
+    if sentinels:
+        for sentinel, replacement in sentinels.items():
+            raw_config = raw_config.replace(f"{{{{{sentinel}}}}}", replacement)
+
+    return pyhocon.ConfigFactory.parse_string(raw_config)
 
 
 def to_hocon(config: pyhocon.ConfigTree) -> str:
