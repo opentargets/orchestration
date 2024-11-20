@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from airflow.models.baseoperator import BaseOperator
@@ -26,9 +27,12 @@ from ot_orchestration.utils.common import (
 )
 from ot_orchestration.utils.path import GCSPath
 
+log: logging.Logger = logging.getLogger(__name__)
+
 
 def create_cluster(
     cluster_name: str,
+    project_id: str = GCP_PROJECT_GENETICS,
     master_machine_type: str = "n1-highmem-16",
     worker_machine_type: str = "n1-standard-16",
     num_workers: int = 1,
@@ -45,6 +49,7 @@ def create_cluster(
 
     Args:
         cluster_name (str): Name of the cluster.
+        project_id (str): Project ID. Defaults to GCP_PROJECT_GENETICS.
         master_machine_type (str): Machine type for the master node. Defaults to "n1-highmem-8".
         worker_machine_type (str): Machine type for the worker nodes. Defaults to "n1-standard-16".
         num_workers (int): Number of worker nodes. Defaults to 2.
@@ -82,7 +87,7 @@ def create_cluster(
         num_masters=3
         if allow_efm
         else 1,  # allows to run the dataproc cluster in HA mode.
-        project_id=GCP_PROJECT_GENETICS,
+        project_id=project_id,
         zone=GCP_ZONE,
         master_machine_type=master_machine_type,
         worker_machine_type=worker_machine_type,
@@ -96,7 +101,10 @@ def create_cluster(
         metadata=cluster_metadata,
         idle_delete_ttl=30 * 60,  # In seconds.
         init_actions_uris=[cluster_init_script] if cluster_init_script else None,
-        autoscaling_policy=get_autoscaling_policy(policy_name=autoscaling_policy),
+        autoscaling_policy=get_autoscaling_policy(
+            policy_name=autoscaling_policy,
+            project=project_id,
+        ),
         properties=properties,
         **kwargs,
     ).make()
@@ -114,7 +122,7 @@ def create_cluster(
     # Return the cluster creation operator.
     return DataprocCreateClusterOperator(
         task_id="create_cluster",
-        project_id=GCP_PROJECT_GENETICS,
+        project_id=project_id,
         cluster_config=cluster_config,
         region=GCP_REGION,
         cluster_name=cluster_name,
@@ -139,6 +147,7 @@ def submit_gentropy_step(
     cluster_name: str,
     step_name: str,
     python_main_module: str,
+    project_id: str = GCP_PROJECT_GENETICS,
     trigger_rule: TriggerRule = TriggerRule.ALL_SUCCESS,
     params: dict[str, Any] | None = None,
 ) -> DataprocSubmitJobOperator:
@@ -147,8 +156,9 @@ def submit_gentropy_step(
     Args:
         cluster_name (str): Name of the cluster.
         step_name (str): Name of the gentropy step to run.
-        trigger_rule (TriggerRule): Trigger rule for the task. Defaults to TriggerRule.ALL_SUCCESS.
         python_main_module (str): GCS path to the gentropy CLI wrapper script.
+        project_id (str): Project ID. Defaults to GCP_PROJECT_GENETICS.
+        trigger_rule (TriggerRule): Trigger rule for the task. Defaults to TriggerRule.ALL_SUCCESS.
         params (list[str]): Optional parameters to append to the gentropy step, must be in key:value.
 
     Returns:
@@ -164,9 +174,12 @@ def submit_gentropy_step(
     * step.session.write_mode: "overwrite"
     * +step.session.extended_spark_conf: "{spark.jars:https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop3-latest.jar}"
     """
+    log.info(f"Sending {step_name} to {cluster_name} with {params}")
+
     return submit_pyspark_job(
         cluster_name=cluster_name,
         task_id=step_name,
+        project_id=project_id,
         python_main_module=python_main_module,
         trigger_rule=trigger_rule,
         args=convert_params_to_hydra_positional_arg(params=params, dataproc=True),
@@ -178,6 +191,7 @@ def submit_pyspark_job(
     task_id: str,
     python_main_module: str,
     args: list[str],
+    project_id: str = GCP_PROJECT_GENETICS,
     trigger_rule: TriggerRule = TriggerRule.ALL_SUCCESS,
 ) -> DataprocSubmitJobOperator:
     """Submit a PySpark job to a Dataproc cluster.
@@ -187,6 +201,7 @@ def submit_pyspark_job(
         task_id (str): Name of the task.
         python_main_module (str): Path to the Python module to run.
         args (list[str]): Arguments to pass to the Python module.
+        project_id (str): Project ID. Defaults to GCP_PROJECT_GENETICS.
         trigger_rule (TriggerRule): Trigger rule for the task. Defaults to TriggerRule.ALL_SUCCESS.
 
     Returns:
@@ -208,6 +223,7 @@ def submit_pyspark_job(
                 "spark.kryo.registrator": "is.hail.kryo.HailKryoRegistrator",
             },
         },
+        project_id=project_id,
     )
 
 
@@ -216,6 +232,7 @@ def submit_job(
     task_id: str,
     job_type: str,
     job_specification: dict[str, Any],
+    project_id: str = GCP_PROJECT_GENETICS,
     trigger_rule: TriggerRule = TriggerRule.ALL_SUCCESS,
 ) -> DataprocSubmitJobOperator:
     """Submit an arbitrary job to a Dataproc cluster.
@@ -225,6 +242,7 @@ def submit_job(
         task_id (str): Name of the task.
         job_type (str): Type of the job to submit.
         job_specification (dict[str, Any]): Specification of the job to submit.
+        project_id (str): Project ID. Defaults to GCP_PROJECT_GENETICS.
         trigger_rule (TriggerRule): Trigger rule for the task. Defaults to TriggerRule.ALL_SUCCESS.
 
     Returns:
@@ -233,10 +251,10 @@ def submit_job(
     return DataprocSubmitJobOperator(
         task_id=task_id,
         region=GCP_REGION,
-        project_id=GCP_PROJECT_GENETICS,
+        project_id=project_id,
         job={
             "job_uuid": f"airflow-{task_id}",
-            "reference": {"project_id": GCP_PROJECT_GENETICS},
+            "reference": {"project_id": project_id},
             "placement": {"cluster_name": cluster_name},
             job_type: job_specification,
         },
@@ -244,18 +262,22 @@ def submit_job(
     )
 
 
-def delete_cluster(cluster_name: str) -> DataprocDeleteClusterOperator:
+def delete_cluster(
+    cluster_name: str,
+    project_id: str = GCP_PROJECT_GENETICS,
+) -> DataprocDeleteClusterOperator:
     """Generate an Airflow task to delete a Dataproc cluster.
 
     Args:
         cluster_name (str): Name of the cluster.
+        project_id (str): Project ID. Defaults to GCP_PROJECT_GENETICS.
 
     Returns:
         DataprocDeleteClusterOperator: Airflow task to delete a Dataproc cluster.
     """
     return DataprocDeleteClusterOperator(
         task_id="delete_cluster",
-        project_id=GCP_PROJECT_GENETICS,
+        project_id=project_id,
         cluster_name=cluster_name,
         region=GCP_REGION,
         trigger_rule=TriggerRule.ALL_SUCCESS,
