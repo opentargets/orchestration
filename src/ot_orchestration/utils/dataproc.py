@@ -31,7 +31,7 @@ def create_cluster(
     cluster_name: str,
     master_machine_type: str = "n1-highmem-16",
     worker_machine_type: str = "n1-standard-16",
-    num_workers: int = 1,
+    num_workers: int = 2,
     num_preemptible_workers: int = 0,
     num_local_ssds: int = 1,
     autoscaling_policy: str = GCP_AUTOSCALING_POLICY,
@@ -66,16 +66,29 @@ def create_cluster(
         DataprocCreateClusterOperator: Airflow task to create a Dataproc cluster.
     """
     # Create base cluster configuration.
-    properties = None
+    properties = {
+        "spark:spark.sql.adaptive.enabled": "true",
+    }
     if allow_efm:
         properties = {
             "dataproc:efm.spark.shuffle": "primary-worker",
+            "spark:spark.sql.adaptive.enabled": "true",
             "spark:spark.sql.files.maxPartitionBytes": "1073741824",  # value proposed by the Dataproc documentation. See EFM in docstring.
-            "spark:spark.sql.shuffle.partitions": "100",
-            "yarn:spark.shuffle.io.serverThreads": "50",  # ensure more threads can write default for n-standard-16 is 2 * (16 cores) threads
+            "yarn:spark.shuffle.io.serverThreads": "128",  # ensure more threads can write default for n-standard-16 is 2 * (16 cores) threads
+            "spark:spark.shuffle.io.backlog": "8192",
+            "spark:spark.shuffle.io.maxRetries": "50",
             "spark:spark.shuffle.io.numConnectionsPerPeer": "5",
+            "spark:spark.shuffle.io.retryWait": "30s",
+            "spark:spark.shuffle.io.connectionTimeout": "1m",
+            "spark:spark.io.compression.lz4.blockSize": "512KB",
+            "spark:spark.shuffle.service.enabled": "true",
+            "spark:spark.sql.shuffle.partitions": "100",
             "spark:spark.stage.maxConsecutiveAttempts": "10",  # defaults to 4, this is in case the master was lost
             "spark:spark.task.maxFailures": "10",
+            "spark:dynamicAllocationEnabled": "true",
+            "spark:spark.rpc.io.serverThreads": "50",
+            "spark:spark.shuffle.service.index.cache.size": "2048m",
+            "spark:spark.shuffle.service.removeShuffle": "true",
         }
 
     cluster_config = ClusterGenerator(
@@ -86,9 +99,9 @@ def create_cluster(
         zone=GCP_ZONE,
         master_machine_type=master_machine_type,
         worker_machine_type=worker_machine_type,
-        worker_disk_type="pd-ssd" if allow_efm else "pd-standard",
+        worker_disk_type="pd-ssd",
         master_disk_size=master_disk_size,
-        worker_disk_size=1024 if allow_efm else 500,
+        worker_disk_size=1024 * 2,
         num_preemptible_workers=num_preemptible_workers,
         num_workers=num_workers,
         image_version=GCP_DATAPROC_IMAGE,
