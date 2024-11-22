@@ -48,4 +48,10 @@ upload-eqtl-catalogue-bucket-readme: ## Upload eqtl_catalogue_data readme to the
 upload-finngen-bucket-readme: ## Upload finngen_data readme to the bucket
 	@gsutil rsync docs/datasources/finngen_data gs://finngen_data/docs
 
-update-bucket-docs: upload-eqtl-catalogue-bucket-readme upload-ukb-ppp-bucket-readme upload-finngen-bucket-readme ## Upload readmes to the datasource buckets
+upload-gwas-catalog-buckets-readme: ## Upload gwas_catalog readme to the bucket(s)
+	@gsutil rsync docs/datasources/gwas_catalog_data gs://gwas_catalog_inputs/docs
+	@gsutil rsync docs/datasources/gwas_catalog_data gs://gwas_catalog_sumstats_pics/docs
+	@gsutil rsync docs/datasources/gwas_catalog_data gs://gwas_catalog_sumstats_susie/docs
+	@gsutil rsync docs/datasources/gwas_catalog_data gs://gwas_catalog_top_hits/docs
+
+update-bucket-docs: upload-eqtl-catalogue-bucket-readme upload-ukb-ppp-bucket-readme upload-finngen-bucket-readme upload-gwas-catalog-buckets-readme ## Upload readmes to the datasource buckets
