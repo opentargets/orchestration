@@ -209,8 +209,9 @@ nodes:
       step.predictions_path: gs://ot_orchestration/releases/24.11_freeze10/locus_to_gene_predictions
       step.feature_matrix_path: gs://ot_orchestration/releases/24.11_freeze10/locus_to_gene_feature_matrix
       step.credible_set_path: gs://ot_orchestration/releases/24.11_freeze10/credible_set
-      step.download_from_hub: true
+      step.download_from_hub: false
       step.l2g_threshold: 0.05
+      step.model_path: gs://ot_orchestration/benchmarks/l2g/fm0/v5.1_best_cv/locus_to_gene_model/classifier.skops
       step.hf_hub_repo_id: opentargets/locus_to_gene
       step.session.write_mode: overwrite
 
