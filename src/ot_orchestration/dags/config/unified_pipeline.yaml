@@ -1,16 +1,17 @@
+---
 # The bucket where the pipeline will work in
-gcs_url: gs://open-targets-pre-data-releases/24.06dev-test-ontoform
+gcs_url: gs://open-targets-pre-data-releases/24.12-uo_test
 
 # Versions of the pipeline components
-pis_version: 24.6.0
-ontoform_version: 24.0.0-alpha.2
-etl_version: 24.1.0
-gentropy_commit: 93de448
+pis_version: 24.6.4
+ontoform_version: 24.1.0-alpha.7
+etl_version: 24.2.0-alpha.3
+gentropy_version: EMPTY_FOR_NOW
 
 # Versions of the data sources
 chembl_version: '34'
 efo_version: v3.70.0
-ensembl_version: '112'
+ensembl_version: '113'
 
 # Whether this is a PPP run of the pipeline
 is_ppp: false
@@ -18,16 +19,16 @@ is_ppp: false
 # Dependency graph
 # ----------------
 # The following section defines the dependencies between the different steps in
-# the pipeline. PIS steps are not here, as they have no dependencies.
+# the pipeline.
 #
 # IMPORTANT: any dependency change has to be reflected here _manually_.
 #
-# Note: steps that can run in parallel are separated in blocks by a blank line
-#      which effectively means blocks depend on the previous block.
+# IMPORTANT: only direct dependencies are defined. Take care when removing one,
+#      and always double check if instead of just deleting, you have to change
+#      it for another step that is further upstream.
 #
-# IMPORTANT NOTE: only direct dependencies are defined. Take care when removing
-#      one, and always double check if instead of just deleting, you have to
-#      change it for another step that is further upstream.
+# Note: steps that can run in parallel are separated in blocks by a blank line,
+#      which means each block depends on the previous block.
 #
 # It could be possible to generate this automatically from the file input for
 # each step, but given the current fast pace of changes throughout the whole
@@ -35,6 +36,29 @@ is_ppp: false
 # stabilised.
 #
 steps:
+  # PIS STEPS
+  pis_baseline_expression:
+  pis_biosample:
+  pis_disease:
+  pis_drug:
+  pis_evidence:
+  pis_expression:
+  pis_go:
+  pis_homologue:
+  pis_interaction:
+  pis_literature:
+  pis_mouse_phenotypes:
+  pis_openfda:
+  pis_otar:
+    ppp_only: true
+  pis_pharmacogenomics:
+  pis_ppp_evidence:
+    ppp_only: true
+  pis_reactome:
+  pis_so:
+  pis_target:
+  pis_target_engine:
+
   # ONTOFORM STEPS
   ontoform_disease:
     depends_on:
@@ -70,9 +94,10 @@ steps:
       - pis_reactome
 
   etl_otar:
+    ppp_only: true
     depends_on:
       - etl_disease
-    depends_on_ppp: # this extra dependency is added in ppp runs
+    depends_on_ppp:
       - pis_otar
   etl_target:
     depends_on:
@@ -90,9 +115,9 @@ steps:
       - etl_target
       - etl_disease
       - etl_go
-  etl_interactions:
+  etl_interaction:
     depends_on:
-      - pis_interactions
+      - pis_interaction
       - etl_target
   etl_targetValidation:
     depends_on:
@@ -190,7 +215,7 @@ steps:
 
   gentropy_l2g_train:
     depends_on:
-      - etl_interactions
+      - etl_interaction
       - gentropy_l2g_feature_matrix
 
   gentropy_l2g_predict:

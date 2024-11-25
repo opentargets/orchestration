@@ -27,8 +27,8 @@ class UnifiedPipelineConfig:
     def __init__(self) -> None:
         self.config_path = Path(__file__).parent / "unified_pipeline.yaml"
         self.pis_config_local_path = Path(__file__).parent / "pis.yaml"
-        self.ontoform_config_local_path = Path(__file__).parent / "ontoform.yaml"
         self.etl_config_local_path = Path(__file__).parent / "etl.conf"
+        self.gentropy_config_local_path = Path(__file__).parent / "gentropy.yaml"
 
         # These are hardcoded config values that are not meant to change often.
         # It is safe to extract them from here into the config file in case they
@@ -36,12 +36,6 @@ class UnifiedPipelineConfig:
         # are available.
 
         # fmt: off
-        # The disk size for PIS vms, in GB.
-        # Note: although not all steps need this much space, it is easier to have a
-        # single value for all steps, and the machines are so short-lived that it
-        # doesn't matter much with respect to cost.
-        self.pis_disk_size = 150
-
         # The service account and scopes to use (only used by PIS so far).
         # The drive scope is needed to download spreadsheets from Google Drive
         # for the PIS otar step.
@@ -51,11 +45,13 @@ class UnifiedPipelineConfig:
         # Pipeline settings.
         settings = read_yaml_config(self.config_path)
         self.gcs_url = settings["gcs_url"]
+        self.release = self.gcs_url.split("/")[-1]
         self.chembl_version = settings["chembl_version"]
         self.efo_version = settings["efo_version"]
         self.ensembl_version = settings["ensembl_version"]
         self.is_ppp = settings["is_ppp"]
         self.steps = settings["steps"]
+        self.ppp_steps = [s for s, d in self.steps.items() if d and d.get('ppp_only', False)]
 
         # PIS-specific settings.
         self.pis_config = self.init_pis_config()
@@ -63,13 +59,17 @@ class UnifiedPipelineConfig:
         # The base image for PIS, the version tag will be appended from the config file.
         pis_image_base = "europe-west1-docker.pkg.dev/open-targets-eu-dev/platform-input-support-test/platform-input-support-test"
         self.pis_image = f"{pis_image_base}:{pis_version}"
-        self.pis_step_list = [f"pis_{s}" for s in self.pis_config["steps"].keys()]
+        self.pis_step_list = [s for s in settings["steps"].keys() if s.startswith("pis_")]
         self.pis_pool = 16  # number of parallel workers inside of each PIS step
+        self.pis_disk_size = 150 # The disk size for PIS vms, in GB.
+        # Note: although not all steps need this much space, it is easier to have a
+        # single value for all steps, and the machines are so short-lived that it
+        # doesn't matter much with respect to cost.
 
         # ONTOFORM-specific settings.
-        self.ontoform_config = read_yaml_config(self.ontoform_config_local_path)
         ontoform_version = settings["ontoform_version"]
-        self.ontoform_step_list = [f"ontoform_{s}" for s in self.ontoform_config["steps"].keys()]
+        self.ontoform_step_list = [s for s in settings["steps"].keys() if s.startswith("ontoform_")]
+        self.ontoform_machine_type = 'n1-standard-32'
         # The base image for ONTOFORM, the version tag will be appended from the config file.
         ontoform_image_base = "europe-west1-docker.pkg.dev/open-targets-eu-dev/ontoform/ontoform"
         self.ontoform_image = f"{ontoform_image_base}:{ontoform_version}"
@@ -85,7 +85,12 @@ class UnifiedPipelineConfig:
         self.etl_step_list = [s for s in settings["steps"].keys() if s.startswith("etl_")]
 
         # GENTROPY-specific settings.
+        self.gentropy_config = self.init_gentropy_settings()
+        self.gentropy_version = settings["gentropy_version"]
+        self.gentropy_dataproc_cluster_settings = self.gentropy_config["dataproc_cluster_settings"]
+
         self.gentropy_step_list = [s for s in settings["steps"].keys() if s.startswith("gentropy_")]
+        self.gentropy_python_main_module = self.gentropy_config["python_main_module"]
 
     def pis_config_gcs_url(self, step_name: str) -> str:
         """Return the google cloud url of the PIS configuration file for a step."""
@@ -118,7 +123,7 @@ class UnifiedPipelineConfig:
 
         return pis_raw_conf
 
-    def get_pis_env_vars(self, step_name: str) -> dict[str, str]:
+    def pis_env_vars(self, step_name: str) -> dict[str, str]:
         """Return the environment variables for a PIS step."""
         return {
             "PIS_STEP": step_name.replace("pis_", ""),
@@ -126,30 +131,27 @@ class UnifiedPipelineConfig:
             "PIS_POOL": self.pis_pool,
         }
 
-    def get_ontoform_args(self, step_name: str) -> dict[str, Any]:
+    def ontoform_args(self, step_name: str) -> dict[str, Any]:
         """Return the arguments for the ONTOFORM step."""
         real_step_name = step_name.replace("ontoform_", "")
-        paths = self.ontoform_config["steps"][real_step_name].values()
-        urls = [f"{self.gcs_url}/{p}" for p in paths]
-
-        return [real_step_name, *urls]
+        return ["--work-dir", self.gcs_url, real_step_name]
 
     # pyhocon returns a ConfigTree, but we can treat it as a dict
-    def init_etl_config(self) -> Any:
+    def init_etl_config(self) -> dict[str, Any]:
         """Initialize the ETL configuration.
 
         This method reads the ETL configuration file, replaces the fields defined
         in the pipeline orchestrator config, and returns the resulting configuration.
         """
-        etl_raw_conf = read_hocon_config(self.etl_config_local_path)
-
-        # set the work bucket paths
-        etl_raw_conf["common"]["input"] = f"{self.gcs_url}/input"
-        etl_raw_conf["common"]["output-base_path"] = f"{self.gcs_url}/output"
-
-        # fill in the input data versions
-        etl_raw_conf["chembl_version"] = self.chembl_version
-        etl_raw_conf["ensembl_version"] = self.ensembl_version
+        etl_raw_conf = read_hocon_config(
+            self.etl_config_local_path,
+            sentinels={
+                "gcs_url": self.gcs_url,
+                "release": self.release,
+                "chembl_version": self.chembl_version,
+                "ensembl_version": self.ensembl_version,
+            },
+        )
 
         # ppp - set the write mode to overwrite and remove the data sources
         if self.is_ppp:
@@ -157,3 +159,22 @@ class UnifiedPipelineConfig:
             etl_raw_conf["evidences"]["data-sources-exclude"] = []
 
         return etl_raw_conf
+
+    def init_gentropy_settings(self) -> dict[str, Any]:
+        """Initialize the gentropy configuration.
+
+        This method reads the gentropy configuration file, replaces the fields defined
+        in the pipeline orchestrator config, and returns the resulting configuration.
+        """
+        return read_yaml_config(
+            self.gentropy_config_local_path,
+            sentinels={"gcs_url": self.gcs_url},
+        )
+
+    def gentropy_step(self, step_name: str) -> dict[str, Any]:
+        """Return the config for the gentropy step."""
+        real_step_name = step_name.replace("gentropy_", "")
+        step = self.gentropy_config["steps"].get(real_step_name)
+        if not step:
+            raise ValueError(f"Step {real_step_name} not in gentropy config.")
+        return step
