@@ -30,7 +30,7 @@ from ot_orchestration.utils.path import GCSPath
 def create_cluster(
     cluster_name: str,
     master_machine_type: str = "n1-highmem-16",
-    worker_machine_type: str = "n1-standard-16",
+    worker_machine_type: str = "n1-highmem-16",
     num_workers: int = 2,
     num_preemptible_workers: int = 0,
     num_local_ssds: int = 1,
@@ -68,27 +68,17 @@ def create_cluster(
     # Create base cluster configuration.
     properties = {
         "spark:spark.sql.adaptive.enabled": "true",
+        "spark:spark.shuffle.service.enabled": "true",
     }
     if allow_efm:
         properties = {
             "dataproc:efm.spark.shuffle": "primary-worker",
             "spark:spark.sql.adaptive.enabled": "true",
             "spark:spark.sql.files.maxPartitionBytes": "1073741824",  # value proposed by the Dataproc documentation. See EFM in docstring.
-            "yarn:spark.shuffle.io.serverThreads": "128",  # ensure more threads can write default for n-standard-16 is 2 * (16 cores) threads
-            "spark:spark.shuffle.io.backlog": "8192",
-            "spark:spark.shuffle.io.maxRetries": "50",
+            "yarn:spark.shuffle.io.serverThreads": "50",  # ensure more threads can write default for n-standard-16 is 2 * (16 cores) threads
             "spark:spark.shuffle.io.numConnectionsPerPeer": "5",
-            "spark:spark.shuffle.io.retryWait": "30s",
-            "spark:spark.shuffle.io.connectionTimeout": "1m",
-            "spark:spark.io.compression.lz4.blockSize": "512KB",
-            "spark:spark.shuffle.service.enabled": "true",
-            "spark:spark.sql.shuffle.partitions": "100",
             "spark:spark.stage.maxConsecutiveAttempts": "10",  # defaults to 4, this is in case the master was lost
             "spark:spark.task.maxFailures": "10",
-            "spark:dynamicAllocationEnabled": "true",
-            "spark:spark.rpc.io.serverThreads": "50",
-            "spark:spark.shuffle.service.index.cache.size": "2048m",
-            "spark:spark.shuffle.service.removeShuffle": "true",
         }
 
     cluster_config = ClusterGenerator(
