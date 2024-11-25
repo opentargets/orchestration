@@ -342,7 +342,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
         container_service_account: str = "default",
         container_scopes: list[str] | None = None,
         container_files: dict[str, str] | None = None,
-        machine_type: str = "c3d-standard-8",
+        machine_type: str = "n1-standard-16",
         work_disk_size_gb: int = 0,
         gcp_conn_id: str = "google_cloud_default",
         impersonation_chain: str | Sequence[str] | None = None,

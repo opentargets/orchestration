@@ -108,11 +108,12 @@ class PlatformETLCreateClusterOperator(DataprocCreateClusterOperator):
         #   not deleted if any of the tasks fail.
         return ClusterGenerator(
             project_id=GCP_PROJECT_PLATFORM,
-            master_machine_type="n2-standard-4",
+            master_machine_type="n1-highmem-16",
+            enable_component_gateway=True,
             master_disk_size=512,
             master_disk_type="pd-ssd",
-            worker_machine_type="n2-highmem-64",
-            num_workers=2,
+            worker_machine_type="n1-highmem-64",
+            num_workers=4,
             worker_disk_size=2000,
             worker_disk_type="pd-ssd",
             image_version="2.0-debian10",

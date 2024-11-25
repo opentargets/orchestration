@@ -57,7 +57,7 @@ def read_yaml_config(
     config_path: Path | str,
     sentinels: dict[str, str] | None = None,
 ) -> Any:
-    """Parse a YAMl config file replacing sentinels.
+    """Parse a YAML config file replacing sentinels.
 
     Args:
         config_path (Path | str): Path to the YAML config file.
