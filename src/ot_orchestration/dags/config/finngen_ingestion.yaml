@@ -1,3 +1,4 @@
+---
 dataproc:
   python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dev/cli.py
   cluster_metadata:
@@ -19,7 +20,7 @@ nodes:
       step.finngen_release_prefix: FINNGEN_R11
       step.finngen_summary_stats_url_prefix: gs://finngen-public-data-r11/summary_stats/finngen_R11_
       step.sample_size: 453733
-      step.finngen_summary_stats_url_suffix: ".gz"
+      step.finngen_summary_stats_url_suffix: '.gz'
       step.efo_curation_mapping_url: https://raw.githubusercontent.com/opentargets/curation/24.09.1/mappings/disease/manual_string.tsv
       step.session.write_mode: overwrite
       step.session.start_hail: true

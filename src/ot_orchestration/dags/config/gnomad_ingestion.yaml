@@ -1,3 +1,4 @@
+---
 dataproc:
   python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dev/cli.py
   cluster_metadata:
