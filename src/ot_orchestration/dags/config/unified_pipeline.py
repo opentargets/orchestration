@@ -15,7 +15,7 @@ class UnifiedPipelineConfig:
 
     Some fields in PIS and ETL application configuration files are replaced with
     values from the pipeline dag configuration, which is the only one the user of
-    the orchestrator has to modify to run the pipeline.
+    the orchestrator has to modify to run the unified pipeline.
 
     The configuration files are expected to be in the same directory as this file.
     They are:
@@ -104,7 +104,7 @@ class UnifiedPipelineConfig:
         """Initialize the PIS configuration.
 
         This method reads the PIS configuration file, replaces the fields defined
-        in the pipeline orchestrator config, and returns the resulting configuration.
+        in the unified pipeline config, and returns the resulting configuration.
         """
         pis_raw_conf = read_yaml_config(self.pis_config_local_path)
 
@@ -141,7 +141,7 @@ class UnifiedPipelineConfig:
         """Initialize the ETL configuration.
 
         This method reads the ETL configuration file, replaces the fields defined
-        in the pipeline orchestrator config, and returns the resulting configuration.
+        in the unified pipeline config, and returns the resulting configuration.
         """
         etl_raw_conf = read_hocon_config(
             self.etl_config_local_path,
@@ -164,7 +164,7 @@ class UnifiedPipelineConfig:
         """Initialize the gentropy configuration.
 
         This method reads the gentropy configuration file, replaces the fields defined
-        in the pipeline orchestrator config, and returns the resulting configuration.
+        in the unified pipeline config, and returns the resulting configuration.
         """
         return read_yaml_config(
             self.gentropy_config_local_path,

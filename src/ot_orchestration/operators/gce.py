@@ -484,7 +484,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
 
         return compute_v1.Instance(
             name=self.instance_name,
-            description="unified orchestrator runner instance",
+            description="unified pipeline runner instance",
             machine_type=f"zones/{self.zone}/machineTypes/{self.machine_type}",
             disks=disks,
             labels=self.labels.get(),

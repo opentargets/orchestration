@@ -55,7 +55,7 @@ with DAG(
     **unified_pipeline_dag_kwargs,
     params={
         "run_label": Param(
-            default=f"uo-{datetime.now().strftime('%Y%m%d-%H%M')}",
+            default=f"up-{datetime.now().strftime('%Y%m%d-%H%M')}",
             description="""A label with key 'run' and the contents of this parameter
                            will be added to any infrastructure resources that this
                            pipeline creates in Google Cloud.""",

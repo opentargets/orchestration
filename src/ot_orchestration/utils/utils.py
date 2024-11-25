@@ -39,18 +39,18 @@ def clean_name(name: str) -> str:
 
 def create_vm_name(step_name: str) -> str:
     """Create a VM name for a given step name."""
-    return f"uo-{clean_name(step_name)}-{{{{ run_id | strhash }}}}"
+    return f"up-{clean_name(step_name)}-{{{{ run_id | strhash }}}}"
 
 
 def create_cluster_name(task_group_name: str) -> str:
     """Create a cluster name for a given task group name.
 
-    The name will include our prefix `uo-` and the task group name, so for the
+    The name will include our prefix `up-` and the task group name, so for the
     gentropy stage of run `3beef`, the cluster name will be:
 
-    `uo-gentropy-3beef`
+    `up-gentropy-3beef`
     """
-    return f"uo-{clean_name(task_group_name)}-{{{{ run_id | strhash }}}}"
+    return f"up-{clean_name(task_group_name)}-{{{{ run_id | strhash }}}}"
 
 
 def read_yaml_config(
@@ -168,9 +168,7 @@ def chain_dependencies(nodes: list[ConfigNode], tasks_or_task_groups: dict[str, 
 
     """
     if nodes:
-        node_dependencies = {
-            node["id"]: node.get("prerequisites", []) for node in nodes
-        }
+        node_dependencies = {node["id"]: node.get("prerequisites", []) for node in nodes}
         for label, node in tasks_or_task_groups.items():
             print(node_dependencies)
             for dependency in node_dependencies[label]:
@@ -178,9 +176,7 @@ def chain_dependencies(nodes: list[ConfigNode], tasks_or_task_groups: dict[str, 
                     node.set_upstream(tasks_or_task_groups[dependency])
 
 
-def convert_params_to_hydra_positional_arg(
-    params: dict[str, Any] | None, dataproc: bool = False
-) -> list[str]:
+def convert_params_to_hydra_positional_arg(params: dict[str, Any] | None, dataproc: bool = False) -> list[str]:
     """Convert configuration parameters to form that can be passed to hydra step positional arguments.
 
     This function parses to get the overwrite syntax used by hydra.
