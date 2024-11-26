@@ -1,13 +1,13 @@
 ---
-python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dev/cli.py
+python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/v2.0.0rc1/cli.py
 
 dataproc_cluster_settings:
   cluster_metadata:
-    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/dev/gentropy-0.0.0-py3-none-any.whl
-  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/dev/install_dependencies_on_cluster.sh
-  autoscaling_policy: otg-efm
-  allow_efm: true
-  num_workers: 10
+    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/v2.0.0rc1/gentropy-0.0.0-py3-none-any.whl
+  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/v2.0.0rc1/install_dependencies_on_cluster.sh
+  autoscaling_policy: otg-etl
+  allow_efm: false
+  num_workers: 2
 
 batch_settings: &batch_settings
   resource_specs:
@@ -74,7 +74,7 @@ steps:
         - gs://gwas_catalog_sumstats_susie/credible_set_clean/
         - gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie/
         - gs://ukb_ppp_eur_data/credible_set_clean/
-        - gs://finngen_data/r11/credible_set_datasets/susie/
+        - gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie_patched/
       step.valid_study_locus_path: '{gcs_url}/output/genetics/parquet/credible_set'
       step.invalid_study_locus_path: '{gcs_url}/output/genetics/parquet/invalid_credible_set'
       step.invalid_qc_reasons:
@@ -121,6 +121,7 @@ steps:
       step.coloc_path: '{gcs_url}/output/genetics/parquet/colocalisation' # the path has to be the same as ecaviar
       step.colocalisation_method: Coloc
       +step.colocalisation_method_params: '{priorc1: 1e-4, priorc2: 1e-4, priorc12: 1e-5}'
+      +step.session.extended_spark_conf: "{spark.sql.shuffle.partitions: '4000'}"
       step.session.write_mode: ignore
 
   colocalisation_ecaviar:
@@ -129,12 +130,13 @@ steps:
       step.credible_set_path: '{gcs_url}/output/genetics/parquet/credible_set'
       step.coloc_path: '{gcs_url}/output/genetics/parquet/colocalisation'
       step.colocalisation_method: ECaviar
+      +step.session.extended_spark_conf: "{spark.sql.shuffle.partitions: '4000', spark.executor.memory: '8g'}"
       step.session.write_mode: ignore
 
   variant_annotation:
     google-batch:
       <<: *batch_settings
-      image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/custom_ensembl_vep:dev
+      image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/custom_ensembl_vep:v2.0.0rc1
       entrypoint: /bin/sh
     params:
       vep_cache_path: gs://genetics_etl_python_playground/vep/cache
@@ -162,24 +164,6 @@ steps:
       step.session.write_mode: overwrite
       # step.session.write_mode: ignore
 
-  l2g_train:
-    params:
-      step: locus_to_gene
-      step.run_mode: train
-      step.wandb_run_name: 24.10_freeze6
-      step.hf_hub_repo_id: opentargets/locus_to_gene
-      step.model_path: '{gcs_url}/output/genetics/models/locus_to_gene_model/classifier.skops'
-      step.credible_set_path: '{gcs_url}/output/genetics/parquet/credible_set'
-      step.variant_index_path: '{gcs_url}/output/genetics/parquet/variant_index'
-      step.feature_matrix_path: '{gcs_url}/output/genetics/parquet/l2g_feature_matrix'
-      step.gold_standard_curation_path: gs://genetics_etl_python_playground/input/l2g/gold_standard/curation.json
-      step.gene_interactions_path: '{gcs_url}/output/etl/parquet/interaction'
-      step.hyperparameters.n_estimators: 100
-      step.hyperparameters.max_depth: 5
-      step.hyperparameters.loss: log_loss
-      +step.session.extended_spark_conf: "{spark.kryoserializer.buffer.max:500m, spark.sql.autoBroadcastJoinThreshold:'-1'}"
-      step.session.write_mode: ignore
-
   l2g_predict:
     params:
       step: locus_to_gene
@@ -187,7 +171,9 @@ steps:
       step.predictions_path: '{gcs_url}/output/genetics/parquet/l2g_predictions'
       step.feature_matrix_path: '{gcs_url}/output/genetics/parquet/l2g_feature_matrix'
       step.credible_set_path: '{gcs_url}/output/genetics/parquet/credible_set'
-      step.download_from_hub: true
+      step.download_from_hub: false
+      step.l2g_threshold: 0.05
+      step.model_path: gs://ot_orchestration/benchmarks/l2g/fm0/v5.1_best_cv/locus_to_gene_model/classifier.skops
       step.hf_hub_repo_id: opentargets/locus_to_gene
       step.session.write_mode: overwrite
       # step.session.write_mode: ignore
