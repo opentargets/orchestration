@@ -201,10 +201,9 @@ steps:
   gentropy_colocalisation_coloc:
     depends_on:
       - gentropy_variant_index
-
   gentropy_colocalisation_ecaviar:
     depends_on:
-      - gentropy_colocalisation_coloc
+      - gentropy_variant_index
 
   gentropy_l2g_feature_matrix:
     depends_on:
