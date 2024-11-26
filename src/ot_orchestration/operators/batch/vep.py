@@ -14,7 +14,6 @@ from google.cloud.batch_v1 import Job
 from google.cloud.storage import Client
 
 from ot_orchestration.types import GCSMountObject, GoogleBatchSpecs
-from ot_orchestration.utils import create_name
 from ot_orchestration.utils.batch import (
     create_batch_job,
     create_task_env,
@@ -103,6 +102,7 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
 
     def __init__(
         self,
+        job_name: str,
         vcf_input_path: str,
         vep_output_path: str,
         vep_cache_path: str,
@@ -119,7 +119,7 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
     ):
         super().__init__(**kwargs)
         self.project_id = project_id
-        self.job_name = create_name("variant_annotation")
+        self.job_name = job_name
         self.region = gcp_region
 
         self.vcf_input_path = vcf_input_path
@@ -138,6 +138,11 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
             vep_cache_path=self.vep_cache_path,
             mount_dir_root=self.mount_dir_root,
         )
+
+    template_fields: Sequence[str] = (
+        "job_name",
+        "labels",
+    )
 
     @cached_property
     def hook(self) -> CloudBatchHook:
@@ -165,7 +170,7 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
             task_env=create_task_env(environments),
             policy_specs=self.google_batch["policy_specs"],
             mounting_points=self.pm.mount_config,
-            labels=self.labels.get(),
+            labels=self.labels,
         )
         self.log.debug(job_def)
         job = self.hook.submit_batch_job(

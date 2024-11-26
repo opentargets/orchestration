@@ -285,6 +285,7 @@ with DAG(
                 match step_name:
                     case "gentropy_variant_annotation":
                         r = VepAnnotateOperator(
+                            job_name=create_name("variant_annotation"),
                             task_id=f"run_{step_name}",
                             project_id=GCP_PROJECT_PLATFORM,
                             **step_config["params"],
