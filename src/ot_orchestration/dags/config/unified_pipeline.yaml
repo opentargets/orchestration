@@ -6,7 +6,7 @@ gcs_url: gs://open-targets-pre-data-releases/24.12-uo_test
 pis_version: 24.6.4
 ontoform_version: 24.1.0-alpha.7
 etl_version: 24.2.0-alpha.3
-gentropy_version: EMPTY_FOR_NOW
+gentropy_version: v2.0.0rc1
 
 # Versions of the data sources
 chembl_version: '34'

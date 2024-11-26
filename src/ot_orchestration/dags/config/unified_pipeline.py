@@ -54,8 +54,8 @@ class UnifiedPipelineConfig:
         self.ppp_steps = [s for s, d in self.steps.items() if d and d.get('ppp_only', False)]
 
         # PIS-specific settings.
-        self.pis_config = self.init_pis_config()
         pis_version = settings["pis_version"]
+        self.pis_config = self.init_pis_config()
         # The base image for PIS, the version tag will be appended from the config file.
         pis_image_base = "europe-west1-docker.pkg.dev/open-targets-eu-dev/platform-input-support-test/platform-input-support-test"
         self.pis_image = f"{pis_image_base}:{pis_version}"
@@ -75,9 +75,9 @@ class UnifiedPipelineConfig:
         self.ontoform_image = f"{ontoform_image_base}:{ontoform_version}"
 
         # ETL-specific settings.
+        etl_version = settings["etl_version"]
         self.etl_config = self.init_etl_config()
         self.etl_config_gcs_uri = f"{self.gcs_url}/output/etl-config.conf"
-        etl_version = settings["etl_version"]
         # The base url for the ETL jar, the version will be replaced in from the config file.
         etl_jar_base = "https://github.com/opentargets/platform-etl-backend/releases/download/v{version}/etl-backend-{version}.jar"
         self.etl_jar_origin_url = f"{etl_jar_base.format(version=etl_version)}"
@@ -85,8 +85,8 @@ class UnifiedPipelineConfig:
         self.etl_step_list = [s for s in settings["steps"].keys() if s.startswith("etl_")]
 
         # GENTROPY-specific settings.
-        self.gentropy_config = self.init_gentropy_settings()
         self.gentropy_version = settings["gentropy_version"]
+        self.gentropy_config = self.init_gentropy_settings()
         self.gentropy_dataproc_cluster_settings = self.gentropy_config["dataproc_cluster_settings"]
 
         self.gentropy_step_list = [s for s in settings["steps"].keys() if s.startswith("gentropy_")]
@@ -168,7 +168,10 @@ class UnifiedPipelineConfig:
         """
         return read_yaml_config(
             self.gentropy_config_local_path,
-            sentinels={"gcs_url": self.gcs_url},
+            sentinels={
+                "gcs_url": self.gcs_url,
+                "gentropy_version": self.gentropy_version,
+            },
         )
 
     def gentropy_step(self, step_name: str) -> dict[str, Any]:

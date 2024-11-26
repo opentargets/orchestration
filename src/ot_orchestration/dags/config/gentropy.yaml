@@ -1,10 +1,10 @@
 ---
-python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/v2.0.0rc1/cli.py
+python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/{gentropy_version}/cli.py
 
 dataproc_cluster_settings:
   cluster_metadata:
-    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/v2.0.0rc1/gentropy-0.0.0-py3-none-any.whl
-  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/v2.0.0rc1/install_dependencies_on_cluster.sh
+    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/{gentropy_version}/gentropy-0.0.0-py3-none-any.whl
+  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/{gentropy_version}/install_dependencies_on_cluster.sh
   autoscaling_policy: otg-etl
   allow_efm: false
   num_workers: 2
@@ -84,7 +84,6 @@ steps:
         - NO_GENOMIC_LOCATION_FLAG
         - COMPOSITE_FLAG
         - INCONSISTENCY_FLAG
-        - PALINDROMIC_ALLELE_FLAG
         - SUBSIGNIFICANT_FLAG
         - LD_CLUMPED
         - IN_MHC
@@ -147,7 +146,7 @@ steps:
     params:
       step: variant_index
       step.vep_output_json_path: '{gcs_url}/output/genetics/json/annotated_variants'
-      step.gnomad_variant_annotations_path: gs://genetics_etl_python_playground/static_assets/gnomad_variants
+      step.gnomad_variant_annotations_path: gs://gnomad_data_2/v4.1/variant_index
       step.variant_index_path: '{gcs_url}/output/genetics/parquet/variant_index'
       step.session.write_mode: ignore
 
@@ -173,7 +172,7 @@ steps:
       step.credible_set_path: '{gcs_url}/output/genetics/parquet/credible_set'
       step.download_from_hub: false
       step.l2g_threshold: 0.05
-      step.model_path: gs://ot_orchestration/benchmarks/l2g/fm0/v5.1_best_cv/locus_to_gene_model/classifier.skops
+      step.model_path: '{gcs_url}/input/benchmarks_l2g_fm0_v5.1_best_cv_locus_to_gene_model_classifier.skops'
       step.hf_hub_repo_id: opentargets/locus_to_gene
       step.session.write_mode: overwrite
       # step.session.write_mode: ignore
@@ -181,9 +180,9 @@ steps:
   l2g_evidence:
     params:
       step: locus_to_gene_evidence
-      step.evidence_output_path: '{gcs_url}/input/evidence-files'
+      step.evidence_output_path: '{gcs_url}/input/evidence-files/gentropy'
       step.locus_to_gene_predictions_path: '{gcs_url}/output/genetics/parquet/l2g_predictions'
       step.credible_set_path: '{gcs_url}/output/genetics/parquet/credible_set'
       step.study_index_path: '{gcs_url}/output/genetics/parquet/study_index'
       step.locus_to_gene_threshold: 0.05
-      step.session.write_mode: ignore
+      step.session.write_mode: overwrite
