@@ -268,6 +268,7 @@ with DAG(
             cluster_name=gentropy_cluster_name,
             project_id=GCP_PROJECT_PLATFORM,
             **config.gentropy_dataproc_cluster_settings,
+            idle_delete_ttl=90 * 60,
         )
 
         d = delete_cluster(

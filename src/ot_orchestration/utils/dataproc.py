@@ -43,6 +43,7 @@ def create_cluster(
     cluster_init_script: str | None = None,
     cluster_metadata: dict[str, str] | None = None,
     allow_efm: bool = False,
+    idle_delete_ttl: int = 30 * 60,
     **kwargs: Any,
 ) -> DataprocCreateClusterOperator:
     """Generate an Airflow task to create a Dataproc cluster. Common parameters are reused, and varying parameters can be specified as needed.
@@ -60,6 +61,7 @@ def create_cluster(
         cluster_init_script (str | None): Cluster initialization scripts.
         cluster_metadata (str | None): Cluster METADATA.
         allow_efm (bool): Wether to allow for Enhanced Flexibility Mode in spark cluster to store the shuffle partitions in the primary workers only.
+        idle_delete_ttl (int): Time in seconds to wait before deleting the cluster after it becomes idle. Defaults to 30 minutes.
         **kwargs (Any): Other parameters to the ClusterGenerator.
 
         NOTE: When `allow_efm` is enabled, the autoscaling policy can not use the graceful decommissioning for primary workers!
@@ -102,7 +104,7 @@ def create_cluster(
         image_version=GCP_DATAPROC_IMAGE,
         enable_component_gateway=True,
         metadata=cluster_metadata,
-        idle_delete_ttl=30 * 60,  # In seconds.
+        idle_delete_ttl=idle_delete_ttl,
         init_actions_uris=[cluster_init_script] if cluster_init_script else None,
         autoscaling_policy=get_autoscaling_policy(
             policy_name=autoscaling_policy,
