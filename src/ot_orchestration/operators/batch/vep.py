@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import time
 from functools import cached_property
 from pathlib import Path
 from typing import Sequence, Set
@@ -15,12 +14,14 @@ from google.cloud.batch_v1 import Job
 from google.cloud.storage import Client
 
 from ot_orchestration.types import GCSMountObject, GoogleBatchSpecs
+from ot_orchestration.utils import create_name
 from ot_orchestration.utils.batch import (
     create_batch_job,
     create_task_env,
     create_task_spec,
 )
 from ot_orchestration.utils.common import GCP_PROJECT_GENETICS, GCP_REGION
+from ot_orchestration.utils.labels import Labels
 from ot_orchestration.utils.path import GCSPath
 
 
@@ -113,11 +114,12 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
         impersonation_chain: str | Sequence[str] | None = None,
         polling_period_seconds: float = 10,
         timeout_seconds: float | None = None,
+        labels: Labels | None = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.project_id = project_id
-        self.job_name = f"vep-job-{time.strftime('%Y%m%d-%H%M%S')}"
+        self.job_name = create_name("variant_annotation")
         self.region = gcp_region
 
         self.vcf_input_path = vcf_input_path
@@ -129,6 +131,7 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
         self.impersonation_chain = impersonation_chain
         self.polling_period_seconds = polling_period_seconds
         self.timeout_seconds = timeout_seconds
+        self.labels = labels or Labels()
         self.pm = VepAnnotationPathManager(
             vcf_input_path=self.vcf_input_path,
             vep_output_path=self.vep_output_path,
@@ -148,6 +151,8 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
             {"INPUT_FILE": file, "OUTPUT_FILE": file.replace(".csv", ".json")}
             for file in vcf_files
         ]
+        run = context.get("params", {}).get("run_label", context.get("dag_run").run_id)
+        self.labels.add({"run": run})
 
         job_def = create_batch_job(
             task=create_task_spec(
@@ -160,6 +165,7 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
             task_env=create_task_env(environments),
             policy_specs=self.google_batch["policy_specs"],
             mounting_points=self.pm.mount_config,
+            labels=self.labels.get(),
         )
         self.log.debug(job_def)
         job = self.hook.submit_batch_job(

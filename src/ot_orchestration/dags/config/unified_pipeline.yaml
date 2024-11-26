@@ -1,6 +1,6 @@
 ---
 # The bucket where the pipeline will work in
-gcs_url: gs://open-targets-pre-data-releases/24.12-uo_test
+gcs_url: gs://open-targets-pre-data-releases/24.12-uo_test-2
 
 # Versions of the pipeline components
 pis_version: 24.6.4

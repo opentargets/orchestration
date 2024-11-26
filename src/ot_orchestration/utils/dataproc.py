@@ -25,6 +25,7 @@ from ot_orchestration.utils.common import (
     GCP_REGION,
     GCP_ZONE,
 )
+from ot_orchestration.utils.labels import Labels
 from ot_orchestration.utils.path import GCSPath
 
 log: logging.Logger = logging.getLogger(__name__)
@@ -44,6 +45,7 @@ def create_cluster(
     cluster_metadata: dict[str, str] | None = None,
     allow_efm: bool = False,
     idle_delete_ttl: int = 30 * 60,
+    labels: Labels | None = None,
     **kwargs: Any,
 ) -> DataprocCreateClusterOperator:
     """Generate an Airflow task to create a Dataproc cluster. Common parameters are reused, and varying parameters can be specified as needed.
@@ -62,6 +64,7 @@ def create_cluster(
         cluster_metadata (str | None): Cluster METADATA.
         allow_efm (bool): Wether to allow for Enhanced Flexibility Mode in spark cluster to store the shuffle partitions in the primary workers only.
         idle_delete_ttl (int): Time in seconds to wait before deleting the cluster after it becomes idle. Defaults to 30 minutes.
+        labels (Labels): Optional labels to add to the cluster.
         **kwargs (Any): Other parameters to the ClusterGenerator.
 
         NOTE: When `allow_efm` is enabled, the autoscaling policy can not use the graceful decommissioning for primary workers!
@@ -72,6 +75,8 @@ def create_cluster(
     Returns:
         DataprocCreateClusterOperator: Airflow task to create a Dataproc cluster.
     """
+    labels = labels or Labels()
+
     # Create base cluster configuration.
     properties = {
         "spark:spark.sql.adaptive.enabled": "true",
@@ -132,6 +137,7 @@ def create_cluster(
         region=GCP_REGION,
         cluster_name=cluster_name,
         trigger_rule=TriggerRule.ALL_SUCCESS,
+        labels=labels.get(),
     )
 
 
@@ -155,6 +161,7 @@ def submit_gentropy_step(
     project_id: str = GCP_PROJECT_GENETICS,
     trigger_rule: TriggerRule = TriggerRule.ALL_SUCCESS,
     params: dict[str, Any] | None = None,
+    labels: Labels | None = None,
 ) -> DataprocSubmitJobOperator:
     """Submit a PySpark job from a gentropy step to execute a specific CLI step.
 
@@ -165,6 +172,7 @@ def submit_gentropy_step(
         project_id (str): Project ID. Defaults to GCP_PROJECT_GENETICS.
         trigger_rule (TriggerRule): Trigger rule for the task. Defaults to TriggerRule.ALL_SUCCESS.
         params (list[str]): Optional parameters to append to the gentropy step, must be in key:value.
+        labels (Labels): Optional labels to add to the job.
 
     Returns:
         DataprocSubmitJobOperator: Airflow task to submit a PySpark job to execute a specific CLI step.
@@ -179,6 +187,7 @@ def submit_gentropy_step(
     * step.session.write_mode: "overwrite"
     * +step.session.extended_spark_conf: "{spark.jars:https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop3-latest.jar}"
     """
+    labels = labels or Labels()
     log.info(f"Sending {step_name} to {cluster_name} with {params}")
 
     return submit_pyspark_job(
@@ -188,6 +197,7 @@ def submit_gentropy_step(
         python_main_module=python_main_module,
         trigger_rule=trigger_rule,
         args=convert_params_to_hydra_positional_arg(params=params, dataproc=True),
+        labels=labels,
     )
 
 
@@ -198,6 +208,7 @@ def submit_pyspark_job(
     args: list[str],
     project_id: str = GCP_PROJECT_GENETICS,
     trigger_rule: TriggerRule = TriggerRule.ALL_SUCCESS,
+    labels: Labels | None = None,
 ) -> DataprocSubmitJobOperator:
     """Submit a PySpark job to a Dataproc cluster.
 
@@ -208,6 +219,7 @@ def submit_pyspark_job(
         args (list[str]): Arguments to pass to the Python module.
         project_id (str): Project ID. Defaults to GCP_PROJECT_GENETICS.
         trigger_rule (TriggerRule): Trigger rule for the task. Defaults to TriggerRule.ALL_SUCCESS.
+        labels (Labels): Optional labels to add to the job.
 
     Returns:
         DataprocSubmitJobOperator: Airflow task to submit a PySpark job to a Dataproc cluster.
@@ -229,6 +241,7 @@ def submit_pyspark_job(
             },
         },
         project_id=project_id,
+        labels=labels,
     )
 
 
@@ -239,6 +252,7 @@ def submit_job(
     job_specification: dict[str, Any],
     project_id: str = GCP_PROJECT_GENETICS,
     trigger_rule: TriggerRule = TriggerRule.ALL_SUCCESS,
+    labels: Labels | None = None,
 ) -> DataprocSubmitJobOperator:
     """Submit an arbitrary job to a Dataproc cluster.
 
@@ -249,10 +263,13 @@ def submit_job(
         job_specification (dict[str, Any]): Specification of the job to submit.
         project_id (str): Project ID. Defaults to GCP_PROJECT_GENETICS.
         trigger_rule (TriggerRule): Trigger rule for the task. Defaults to TriggerRule.ALL_SUCCESS.
+        labels (Labels): Optional labels to add to the job.
 
     Returns:
         DataprocSubmitJobOperator: Airflow task to submit an arbitrary job to a Dataproc cluster.
     """
+    labels = labels or Labels()
+
     return DataprocSubmitJobOperator(
         task_id=task_id,
         region=GCP_REGION,
@@ -262,6 +279,7 @@ def submit_job(
             "reference": {"project_id": project_id},
             "placement": {"cluster_name": cluster_name},
             job_type: job_specification,
+            "labels": labels.get(),
         },
         trigger_rule=trigger_rule,
     )

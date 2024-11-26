@@ -37,8 +37,8 @@ def clean_name(name: str) -> str:
     return re.sub(r"[^a-z0-9-]", "-", name.lower())
 
 
-def create_vm_name(step_name: str) -> str:
-    """Create a VM name for a given step name."""
+def create_name(step_name: str) -> str:
+    """Create a google resource name for a given step name."""
     return f"up-{clean_name(step_name)}-{{{{ run_id | strhash }}}}"
 
 

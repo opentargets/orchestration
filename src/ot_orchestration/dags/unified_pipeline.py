@@ -32,7 +32,7 @@ from ot_orchestration.operators.gcs import (
 from ot_orchestration.operators.unified_pipeline import PISDiffComputeOperator
 from ot_orchestration.utils import (
     create_cluster_name,
-    create_vm_name,
+    create_name,
     to_hocon,
     to_yaml,
 )
@@ -85,7 +85,7 @@ with DAG(
             def pis_step(step_name: str) -> None:
                 config_gcs_url = config.pis_config_gcs_url(step_name)
                 labels = StepLabels("pis", step_name, config.is_ppp)
-                vm_name = create_vm_name(step_name)
+                vm_name = create_name(step_name)
 
                 c = PISDiffComputeOperator(
                     task_id=f"diff_{step_name}",
@@ -151,7 +151,7 @@ with DAG(
                 @task_group(group_id=step_name)
                 def ontoform_step(step_name: str) -> None:
                     labels = StepLabels("ontoform", step_name, config.is_ppp)
-                    vm_name = create_vm_name(step_name)
+                    vm_name = create_name(step_name)
 
                     r = ComputeEngineRunContainerizedWorkloadSensor(
                         task_id=f"run_{step_name}",
@@ -289,6 +289,7 @@ with DAG(
                             project_id=GCP_PROJECT_PLATFORM,
                             **step_config["params"],
                             google_batch=step_config["google-batch"],
+                            labels=labels,
                         )
                         clusterless_steps.append(r)
                     case _:
@@ -298,6 +299,7 @@ with DAG(
                             project_id=GCP_PROJECT_PLATFORM,
                             python_main_module=config.gentropy_python_main_module,
                             params=step_config["params"],
+                            labels=labels,
                         )
 
                 steps[step_name] = r
