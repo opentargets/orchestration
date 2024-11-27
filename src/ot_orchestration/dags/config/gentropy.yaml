@@ -29,6 +29,7 @@ steps:
       step.efo_input_path: '{gcs_url}/input/biosamples/efo.json'
       step.biosample_index_path: '{gcs_url}/output/genetics/parquet/biosample_index'
       step.session.write_mode: ignore
+      step.session.output_partitions: 1
 
   gene_index:
     params:
@@ -63,6 +64,7 @@ steps:
         - FAILED_GC_LAMBDA_CHECK
         - NO_OT_CURATION
       step.session.write_mode: ignore
+      step.session.output_partitions: 1
 
   credible_set_validation:
     params:
@@ -95,6 +97,7 @@ steps:
         - INVALID_CHROMOSOME
         - TOP_HIT_AND_SUMMARY_STATS
       step.session.write_mode: ignore
+      step.session.output_partitions: 25
 
   variant_conversion:
     params:
@@ -122,6 +125,7 @@ steps:
       +step.colocalisation_method_params: '{priorc1: 1e-4, priorc2: 1e-4, priorc12: 1e-5}'
       +step.session.extended_spark_conf: "{spark.sql.shuffle.partitions: '4000', spark.executor.memory: '16g', spark.sql.files.maxPartitionBytes: '25000000', spark.executor.cores: '2'}"
       step.session.write_mode: ignore
+      step.session.output_partitions: 25
 
   colocalisation_ecaviar:
     params:
@@ -131,6 +135,7 @@ steps:
       step.colocalisation_method: ECaviar
       +step.session.extended_spark_conf: "{spark.sql.shuffle.partitions: '3200', spark.executor.memory: '16g', spark.sql.files.maxPartitionBytes: '25000000', spark.executor.cores: '2'}"
       step.session.write_mode: ignore
+      step.session.output_partitions: 25
 
   variant_annotation:
     google-batch:
@@ -149,6 +154,7 @@ steps:
       step.gnomad_variant_annotations_path: gs://gnomad_data_2/v4.1/variant_index
       step.variant_index_path: '{gcs_url}/output/genetics/parquet/variant_index'
       step.session.write_mode: ignore
+      step.session.output_partitions: 1
 
   l2g_feature_matrix:
     params:
@@ -176,6 +182,7 @@ steps:
       step.hf_hub_repo_id: opentargets/locus_to_gene
       step.session.write_mode: overwrite
       # step.session.write_mode: ignore
+      step.session.output_partitions: 1
 
   l2g_evidence:
     params:
