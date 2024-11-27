@@ -246,6 +246,7 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
                 --canonical \
                 --plugin TSSDistance \
                 --distance 500000 \
+                --plugin Conservation,{self.pm.cache_dir}/gerp_conservation_scores.homo_sapiens.GRCh38.bw,MAX \
                 --plugin LoF,loftee_path:{self.pm.cache_dir}/VEP_plugins,gerp_bigwig:{self.pm.cache_dir}/gerp_conservation_scores.homo_sapiens.GRCh38.bw,human_ancestor_fa:{self.pm.cache_dir}/human_ancestor.fa.gz,conservation_file:/opt/vep/loftee.sql \
                 --plugin AlphaMissense,file={self.pm.cache_dir}/AlphaMissense_hg38.tsv.gz,transcript_match=1 \
                 --plugin CADD,snv={self.pm.cache_dir}/CADD_GRCh38_whole_genome_SNVs.tsv.gz",
