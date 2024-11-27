@@ -5,7 +5,7 @@ gcs_url: gs://open-targets-pre-data-releases/24.12-uo_test-2
 # Versions of the pipeline components
 pis_version: 24.6.4
 ontoform_version: 24.1.0-alpha.7
-etl_version: 24.2.0-alpha.3
+etl_version: 24.2.0-alpha.4
 gentropy_version: v2.0.0rc1
 vep_version: v2.0.0rc1
 
@@ -15,7 +15,7 @@ efo_version: v3.70.0
 ensembl_version: '113'
 
 # Whether this is a PPP run of the pipeline
-is_ppp: false
+is_ppp: true
 
 # Dependency graph
 # ----------------
@@ -95,7 +95,6 @@ steps:
     ppp_only: true
     depends_on:
       - ontoform_disease
-    depends_on_ppp:
       - pis_otar
   etl_target:
     depends_on:
