@@ -135,7 +135,7 @@ steps:
   variant_annotation:
     google-batch:
       <<: *batch_settings
-      image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/custom_ensembl_vep:v2.0.0rc1
+      image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/custom_ensembl_vep:{vep_version}
       entrypoint: /bin/sh
     params:
       vep_cache_path: gs://genetics_etl_python_playground/vep/cache

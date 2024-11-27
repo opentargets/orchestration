@@ -86,6 +86,7 @@ class UnifiedPipelineConfig:
 
         # GENTROPY-specific settings.
         self.gentropy_version = settings["gentropy_version"]
+        self.vep_version = settings["vep_version"]
         self.gentropy_config = self.init_gentropy_settings()
         self.gentropy_dataproc_cluster_settings = self.gentropy_config["dataproc_cluster_settings"]
 
@@ -171,6 +172,7 @@ class UnifiedPipelineConfig:
             sentinels={
                 "gcs_url": self.gcs_url,
                 "gentropy_version": self.gentropy_version,
+                "vep_version": self.vep_version,
             },
         )
 
