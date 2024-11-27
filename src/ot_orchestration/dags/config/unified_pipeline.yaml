@@ -1,13 +1,13 @@
 ---
 # The bucket where the pipeline will work in
-gcs_url: gs://open-targets-pre-data-releases/24.12-uo_test-2
+gcs_url: gs://open-targets-pre-data-releases/24.12-uo_test-3
 
 # Versions of the pipeline components
 pis_version: 24.6.4
 ontoform_version: 24.1.0-alpha.7
 etl_version: 24.2.0-alpha.4
-gentropy_version: v2.0.0rc1
-vep_version: v2.0.0rc1
+gentropy_version: v2.0.0rc3
+vep_version: v2.0.0rc3
 
 # Versions of the data sources
 chembl_version: '34'
