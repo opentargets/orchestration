@@ -44,7 +44,7 @@ class UnifiedPipelineConfig:
 
         # Pipeline settings.
         settings = read_yaml_config(self.config_path)
-        self.gcs_url = settings["gcs_url"]
+        self.gcs_url:str = settings["gcs_url"]
         self.release = self.gcs_url.split("/")[-1]
         self.chembl_version = settings["chembl_version"]
         self.efo_version = settings["efo_version"]
@@ -129,10 +129,10 @@ class UnifiedPipelineConfig:
         return {
             "PIS_STEP": step_name.replace("pis_", ""),
             "PIS_CONFIG_FILE": "/config.yaml",
-            "PIS_POOL": self.pis_pool,
+            "PIS_POOL": str(self.pis_pool),
         }
 
-    def ontoform_args(self, step_name: str) -> dict[str, Any]:
+    def ontoform_args(self, step_name: str) -> list[str]:
         """Return the arguments for the ONTOFORM step."""
         real_step_name = step_name.replace("ontoform_", "")
         return ["--work-dir", self.gcs_url, real_step_name]

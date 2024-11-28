@@ -94,9 +94,7 @@ def create_cluster(
         }
 
     cluster_config = ClusterGenerator(
-        num_masters=3
-        if allow_efm
-        else 1,  # allows to run the dataproc cluster in HA mode.
+        num_masters=3 if allow_efm else 1,  # allows to run the dataproc cluster in HA mode.
         project_id=project_id,
         zone=GCP_ZONE,
         master_machine_type=master_machine_type,
@@ -125,9 +123,7 @@ def create_cluster(
             # Create a disk config section if it does not exist.
             cluster_config[worker_section].setdefault("disk_config", {})
             # Specify the number of local SSDs.
-            cluster_config[worker_section]["disk_config"]["num_local_ssds"] = (
-                num_local_ssds
-            )
+            cluster_config[worker_section]["disk_config"]["num_local_ssds"] = num_local_ssds
 
     # Return the cluster creation operator.
     return DataprocCreateClusterOperator(
@@ -343,7 +339,8 @@ def generate_dataproc_task_chain(
 
 
 def reinstall_dependencies(
-    cluster_name: str, cluster_init_script: str
+    cluster_name: str,
+    cluster_init_script: str,
 ) -> DataprocSubmitJobOperator:
     """Force install dependencies on a Dataproc cluster.
 

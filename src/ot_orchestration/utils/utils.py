@@ -117,7 +117,7 @@ def read_hocon_config(
     return pyhocon.ConfigFactory.parse_string(raw_config)
 
 
-def to_hocon(config: pyhocon.ConfigTree) -> str:
+def to_hocon(config: dict[str, Any]) -> str:
     """Convert a ConfigTree to a HOCON string."""
     return pyhocon.HOCONConverter.to_hocon(config)
 
