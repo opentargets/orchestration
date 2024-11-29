@@ -9,17 +9,6 @@ dataproc_cluster_settings:
   allow_efm: false
   num_workers: 2
 
-batch_settings: &batch_settings
-  resource_specs:
-    cpu_milli: 2000
-    memory_mib: 2000
-    boot_disk_mib: 10000
-  task_specs:
-    max_retry_count: 1
-    max_run_duration: '2h'
-  policy_specs:
-    machine_type: n1-standard-4
-
 steps:
   biosample_index:
     params:
@@ -138,8 +127,16 @@ steps:
       step.session.output_partitions: 25
 
   variant_annotation:
-    google-batch:
-      <<: *batch_settings
+    google_batch:
+      resource_specs:
+        cpu_milli: 2000
+        memory_mib: 2000
+        boot_disk_mib: 10000
+      task_specs:
+        max_retry_count: 1
+        max_run_duration: '2h'
+      policy_specs:
+        machine_type: n1-standard-4
       image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/custom_ensembl_vep:{vep_version}
       entrypoint: /bin/sh
     params:
@@ -154,7 +151,7 @@ steps:
       step.gnomad_variant_annotations_path: gs://gnomad_data_2/v4.1/variant_index
       step.variant_index_path: '{gcs_url}/output/genetics/parquet/variant_index'
       step.session.write_mode: ignore
-      step.session.output_partitions: 1
+      step.session.output_partitions: 25
 
   l2g_feature_matrix:
     params:
@@ -166,8 +163,7 @@ steps:
       step.gene_index_path: '{gcs_url}/output/genetics/parquet/gene_index'
       step.feature_matrix_path: '{gcs_url}/output/genetics/parquet/l2g_feature_matrix'
       +step.session.extended_spark_conf: "{spark.sql.autoBroadcastJoinThreshold:'-1'}"
-      step.session.write_mode: overwrite
-      # step.session.write_mode: ignore
+      step.session.write_mode: ignore
 
   l2g_predict:
     params:
@@ -180,8 +176,7 @@ steps:
       step.l2g_threshold: 0.05
       step.model_path: '{gcs_url}/input/benchmarks_l2g_fm0_v5.1_best_cv_locus_to_gene_model_classifier.skops'
       step.hf_hub_repo_id: opentargets/locus_to_gene
-      step.session.write_mode: overwrite
-      # step.session.write_mode: ignore
+      step.session.write_mode: ignore
       step.session.output_partitions: 1
 
   l2g_evidence:
@@ -192,4 +187,4 @@ steps:
       step.credible_set_path: '{gcs_url}/output/genetics/parquet/credible_set'
       step.study_index_path: '{gcs_url}/output/genetics/parquet/study_index'
       step.locus_to_gene_threshold: 0.05
-      step.session.write_mode: overwrite
+      step.session.write_mode: ignore

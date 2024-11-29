@@ -289,7 +289,7 @@ with DAG(
                             task_id=f"run_{step_name}",
                             project_id=GCP_PROJECT_PLATFORM,
                             **step_config["params"],
-                            google_batch=step_config["google-batch"],
+                            google_batch=step_config["google_batch"],
                             labels=labels,
                         )
                         clusterless_steps.append(r)
