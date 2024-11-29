@@ -79,8 +79,7 @@ class UnifiedPipelineConfig:
         self.etl_config = self.init_etl_config()
         self.etl_config_gcs_uri = f"{self.gcs_url}/output/etl-config.conf"
         # The base url for the ETL jar, the version will be replaced in from the config file.
-        etl_jar_base = "https://github.com/opentargets/platform-etl-backend/releases/download/v{version}/etl-backend-{version}.jar"
-        self.etl_jar_origin_url = f"{etl_jar_base.format(version=etl_version)}"
+        self.etl_jar_origin_url = f"https://github.com/opentargets/platform-etl-backend/releases/download/v{etl_version}/etl-backend-{etl_version}.jar"
         self.etl_jar_gcs_uri = f"{self.gcs_url}/output/etl-backend-{etl_version}.jar"  # fmt: skip
         self.etl_step_list = [s for s in settings["steps"].keys() if s.startswith("etl_")]
 
@@ -181,5 +180,5 @@ class UnifiedPipelineConfig:
         real_step_name = step_name.replace("gentropy_", "")
         step = self.gentropy_config["steps"].get(real_step_name)
         if not step:
-            raise ValueError(f"Step {real_step_name} not in gentropy config.")
+            raise ValueError(f"Step {real_step_name} not in gentropy config ({self.gentropy_config_local_path}).")
         return step

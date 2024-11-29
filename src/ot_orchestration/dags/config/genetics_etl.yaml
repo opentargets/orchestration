@@ -162,7 +162,7 @@ nodes:
       step.credible_set_path: gs://ot_orchestration/releases/24.11_freeze10/credible_set
       step.coloc_path: gs://ot_orchestration/releases/24.11_freeze10/colocalisation
       step.colocalisation_method: ECaviar
-      +step.session.extended_spark_conf: "{spark.sql.shuffle.partitions: '3200', spark.executor.memory: '16g', spark.sql.files.maxPartitionBytes: '25000000', spark.executor.cores: '2'}"
+      +step.session.extended_spark_conf: "{spark.sql.shuffle.partitions: '4000', spark.executor.memory: '25g', spark.sql.files.maxPartitionBytes: '25000000', spark.executor.cores: '4'}"
 
   - id: l2g_feature_matrix
     prerequisites:
