@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 
 from airflow.decorators import task
@@ -47,6 +48,7 @@ with DAG(
                 vep_output_path=task_config_params["vep_output_path"],
                 vep_cache_path=task_config_params["vep_cache_path"],
                 google_batch=task_config["google_batch"],
+                job_name=f"vep-job-{time.strftime('%Y%m%d-%H%M%S')}",
             )
 
             node_map["variant_annotation"] = variant_annotation

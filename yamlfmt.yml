@@ -1,4 +1,6 @@
+---
 formatter:
   type: basic
   retain_line_breaks_single: true
   drop_merge_tag: true
+  include_document_start: true

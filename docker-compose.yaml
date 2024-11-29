@@ -1,3 +1,4 @@
+---
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -57,6 +58,7 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__FERNET_KEY: ""
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
     AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__MAX_ACTIVE_TASKS_PER_DAG: 32
     AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session"
     AIRFLOW__WEBSERVER__SECRET_KEY: "secretkey"
     # yamllint disable rule:line-length

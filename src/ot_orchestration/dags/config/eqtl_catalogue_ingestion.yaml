@@ -1,3 +1,4 @@
+---
 eqtl_catalogue_raw_susie_glob: gs://eqtl_catalogue_data/ebi_ftp/susie/**/*.gz
 eqtl_catalogue_decompressed_susie_path: gs://eqtl_catalogue_data/ebi_ftp/susie_decompressed_tmp
 decompression_logs: gs://eqtl_catalogue_data/ebi_ftp/susie_decompressed_tmp/logs.log

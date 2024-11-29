@@ -1,3 +1,4 @@
+---
 dataproc:
   cluster_name: otg-gwascatalog-sumstats-pics
   autoscaling_policy: otg-preprocess-gwascatalog

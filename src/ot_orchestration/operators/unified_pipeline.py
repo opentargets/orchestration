@@ -93,7 +93,7 @@ class PISDiffComputeOperator(BaseBranchOperator):
 
         if should_run:
             self.log.info("configuration differs, step %s will run", self.step_name)
-            return f"pis_stage.pis_{self.step_name}.upload_config_{self.step_name}"
+            return f"pis_stage.{self.step_name}.upload_config_{self.step_name}"
 
         self.log.info("configuration is equal, step %s will not run", self.step_name)
-        return f"pis_stage.pis_{self.step_name}.join_{self.step_name}"
+        return f"pis_stage.{self.step_name}.join_{self.step_name}"

@@ -37,24 +37,48 @@ def clean_name(name: str) -> str:
     return re.sub(r"[^a-z0-9-]", "-", name.lower())
 
 
-def create_name(prefix: str, suffix: str) -> str:
-    """Create a clean name meeting google cloud naming conventions."""
-    return re.sub(r"[^a-z0-9-]", "-", f"{prefix}-{suffix}".lower())
+def create_name(step_name: str) -> str:
+    """Create a google resource name for a given step name."""
+    return f"up-{clean_name(step_name)}-{{{{ run_id | strhash }}}}"
 
 
-def read_yaml_config(config_path: Path | str) -> Any:
-    """Parse a YAMl config file and do all necessary checks.
+def create_cluster_name(task_group_name: str) -> str:
+    """Create a cluster name for a given task group name.
+
+    The name will include our prefix `up-` and the task group name, so for the
+    gentropy stage of run `3beef`, the cluster name will be:
+
+    `up-gentropy-3beef`
+    """
+    return f"up-{clean_name(task_group_name)}-{{{{ run_id | strhash }}}}"
+
+
+def read_yaml_config(
+    config_path: Path | str,
+    sentinels: dict[str, str] | None = None,
+) -> Any:
+    """Parse a YAML config file replacing sentinels.
 
     Args:
         config_path (Path | str): Path to the YAML config file.
+        sentinels (dict[str, str] | None): Sentinels to replace in the config file.
+
+    Sentinels in yaml files are in the form:
+
+    `{variable_name}`
 
     Returns:
         Any: Parsed YAML config file.
     """
     config_path = config_path if isinstance(config_path, Path) else Path(config_path)
     assert config_path.exists(), f"YAML config path {config_path} does not exists"
-    with open(config_path) as config_file:
-        return yaml.safe_load(config_file)
+
+    raw_config = config_path.read_text()
+    if sentinels:
+        for sentinel, replacement in sentinels.items():
+            raw_config = raw_config.replace(f"{{{sentinel}}}", replacement)
+
+    return yaml.safe_load(raw_config)
 
 
 def to_yaml(config: dict) -> str:
@@ -62,22 +86,38 @@ def to_yaml(config: dict) -> str:
     return yaml.dump(config)
 
 
-def read_hocon_config(config_path: Path | str) -> Any:
-    """Parse a HOCON config file and do all necessary checks.
+def read_hocon_config(
+    config_path: Path | str,
+    sentinels: dict[str, str] | None = None,
+) -> Any:
+    """Parse a HOCON config file replacing sentinels.
+
+    Sentinels in hocon files are in the form:
+
+    `{{variable_name}}`
+
+    they are doubly enclosed in curly braces because hocon files use a single
+    curly brace to denote a variable.
 
     Args:
         config_path (Path | str): Path to the HOCON config file.
+        sentinels (dict[str, str] | None): Sentinels to replace in the config file.
 
     Returns:
         Any: Parsed HOCON config file.
     """
     config_path = config_path if isinstance(config_path, Path) else Path(config_path)
     assert config_path.exists(), f"HOCON config path {config_path} does not exists"
-    with open(config_path) as config_file:
-        return pyhocon.ConfigFactory.parse_string(config_file.read())
+
+    raw_config = config_path.read_text()
+    if sentinels:
+        for sentinel, replacement in sentinels.items():
+            raw_config = raw_config.replace(f"{{{{{sentinel}}}}}", replacement)
+
+    return pyhocon.ConfigFactory.parse_string(raw_config)
 
 
-def to_hocon(config: pyhocon.ConfigTree) -> str:
+def to_hocon(config: dict[str, Any]) -> str:
     """Convert a ConfigTree to a HOCON string."""
     return pyhocon.HOCONConverter.to_hocon(config)
 
@@ -128,9 +168,7 @@ def chain_dependencies(nodes: list[ConfigNode], tasks_or_task_groups: dict[str, 
 
     """
     if nodes:
-        node_dependencies = {
-            node["id"]: node.get("prerequisites", []) for node in nodes
-        }
+        node_dependencies = {node["id"]: node.get("prerequisites", []) for node in nodes}
         for label, node in tasks_or_task_groups.items():
             print(node_dependencies)
             for dependency in node_dependencies[label]:
@@ -138,9 +176,7 @@ def chain_dependencies(nodes: list[ConfigNode], tasks_or_task_groups: dict[str, 
                     node.set_upstream(tasks_or_task_groups[dependency])
 
 
-def convert_params_to_hydra_positional_arg(
-    params: dict[str, Any] | None, dataproc: bool = False
-) -> list[str]:
+def convert_params_to_hydra_positional_arg(params: dict[str, Any] | None, dataproc: bool = False) -> list[str]:
     """Convert configuration parameters to form that can be passed to hydra step positional arguments.
 
     This function parses to get the overwrite syntax used by hydra.

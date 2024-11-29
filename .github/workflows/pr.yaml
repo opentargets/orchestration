@@ -1,8 +1,9 @@
+---
 name: Checks
-"on":
+'on':
   pull_request:
 env:
-  PYTHON_VERSION_DEFAULT: "3.10.8"
+  PYTHON_VERSION_DEFAULT: '3.10.8'
 jobs:
   test:
     runs-on: ubuntu-latest

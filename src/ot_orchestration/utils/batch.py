@@ -26,6 +26,7 @@ from ot_orchestration.utils import (
     convert_params_to_hydra_positional_arg,
     time_to_seconds,
 )
+from ot_orchestration.utils.labels import Labels
 
 
 def create_container_runnable(
@@ -110,6 +111,7 @@ def create_batch_job(
     task_env: list[Environment],
     policy_specs: BatchPolicySpecs,
     mounting_points: list[GCSMountObject] | None = None,
+    labels: Labels | None = None,
 ) -> Job:
     """Create a Google Batch job.
 
@@ -118,10 +120,13 @@ def create_batch_job(
         task_env (list[Environment]): The environment variables for the task.
         policy_specs (BatchPolicySpecs): The policy specification for the task
         mounting_points (list[GCSMountObject] | None): List of mounting points.
+        labels (dict[str, str] | None): Labels for the job
 
     Returns:
         Job: The Batch job.
     """
+    labels = labels or Labels()
+
     if mounting_points:
         task.volumes = set_up_mounting_points(mounting_points)
 
@@ -138,6 +143,7 @@ def create_batch_job(
             ]
         ),
         logs_policy=LogsPolicy(destination=LogsPolicy.Destination.CLOUD_LOGGING),
+        labels=labels.get(),
     )
 
     return job

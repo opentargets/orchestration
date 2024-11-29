@@ -342,7 +342,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
         container_service_account: str = "default",
         container_scopes: list[str] | None = None,
         container_files: dict[str, str] | None = None,
-        machine_type: str = "c3d-standard-8",
+        machine_type: str = "n1-standard-16",
         work_disk_size_gb: int = 0,
         gcp_conn_id: str = "google_cloud_default",
         impersonation_chain: str | Sequence[str] | None = None,
@@ -363,7 +363,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
         self.container_env = container_env
         self.container_service_account = container_service_account
         self.container_scopes = container_scopes or []
-        self.container_files = container_files
+        self.container_files = container_files or {}
         self.machine_type = machine_type
         self.gcp_conn_id = gcp_conn_id
         self.impersonation_chain = impersonation_chain
@@ -373,12 +373,16 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
 
     def build_env_params(self):
         """Build the environment parameters for the docker run command."""
+        if not self.container_env:
+            return "\\"
         return ("\n").join(
             [f"    -e {k}={v} \\" for k, v in self.container_env.items()]
         )
 
     def build_volume_params(self):
         """Build the volume parameters for the docker run command."""
+        if self.container_files == {}:
+            return "\\"
         vs = [f"    -v /home/app/{p}:{p} \\" for p in self.container_files.values()]
         if self.work_disk_size_gb:
             vs.append("    -v /mnt/disks/work:/mnt/disks/work \\")
@@ -480,7 +484,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
 
         return compute_v1.Instance(
             name=self.instance_name,
-            description="unified orchestrator runner instance",
+            description="unified pipeline runner instance",
             machine_type=f"zones/{self.zone}/machineTypes/{self.machine_type}",
             disks=disks,
             labels=self.labels.get(),

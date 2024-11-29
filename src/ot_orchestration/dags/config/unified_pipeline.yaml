@@ -1,106 +1,221 @@
-gcs_url: gs://open-targets-pre-data-releases/24.06dev-test-config
+---
+# The bucket where the pipeline will work in
+gcs_url: gs://open-targets-pre-data-releases/24.12-uo_test-3
 
-pis_version: 24.6.0
-etl_version: 24.1.0
+# Versions of the pipeline components
+pis_version: 24.6.4
+ontoform_version: 24.1.0-alpha.7
+etl_version: 24.2.0-alpha.4
+gentropy_version: v2.0.0rc3
+vep_version: v2.0.0rc3
 
+# Versions of the data sources
 chembl_version: '34'
-efo_version: v3.68.0
-ensembl_version: '112'
+efo_version: v3.70.0
+ensembl_version: '113'
 
-is_ppp: false
+# Whether this is a PPP run of the pipeline
+is_ppp: true
 
-# At the moment, there is no way to determine the dependencies
-# of the different steps in the ETL stage. The ETL config file
-# (see https://github.com/opentargets/platform-etl-backend/blob/master/src/main/resources/reference.conf)
-# lacks an explicit definition of dependencies in the step definition.
-# This is the next best option, but it is far from ideal.
+# Dependency graph
+# ----------------
+# The following section defines the dependencies between the different steps in
+# the pipeline.
 #
-# Any dependency change has to be reflected here _manually_.
-etl_steps:
-  - name: go
-    depends_on:
-      - pis_go
-  - name: disease
+# IMPORTANT: any dependency change has to be reflected here _manually_.
+#
+# IMPORTANT: only direct dependencies are defined. Take care when removing one,
+#      and always double check if instead of just deleting, you have to change
+#      it for another step that is further upstream.
+#
+# Note: steps that can run in parallel are separated in blocks by a blank line,
+#      which means each block depends on the previous block.
+#
+# It could be possible to generate this automatically from the file input for
+# each step, but given the current fast pace of changes throughout the whole
+# pipeline, it is not worth the effort to implement this until things have
+# stabilised.
+#
+steps:
+  # PIS STEPS
+  pis_baseline_expression:
+  pis_biosample:
+  pis_disease:
+  pis_drug:
+  pis_evidence:
+  pis_expression:
+  pis_go:
+  pis_homologue:
+  pis_interaction:
+  pis_literature:
+  pis_mouse_phenotypes:
+  pis_openfda:
+  pis_otar:
+    ppp_only: true
+  pis_pharmacogenomics:
+  pis_ppp_evidence:
+    ppp_only: true
+  pis_reactome:
+  pis_so:
+  pis_target:
+  pis_target_engine:
+
+  # ONTOFORM STEPS
+  ontoform_disease:
     depends_on:
       - pis_disease
-  - name: expression
+  ontoform_expression:
     depends_on:
       - pis_expression
-  - name: reactome
+  ontoform_homologue:
+    depends_on:
+      - pis_homologue
+  ontoform_openfda:
+    depends_on:
+      - pis_openfda
+  ontoform_so:
+    depends_on:
+      - pis_so
+  ontoform_target:
+    depends_on:
+      - pis_target
+
+  # ETL STEPS
+  etl_go:
+    depends_on:
+      - pis_go
+  etl_expression:
+    depends_on:
+      - ontoform_expression
+  etl_reactome:
     depends_on:
       - pis_reactome
 
-  - name: otar
+  etl_otar:
+    ppp_only: true
     depends_on:
-      - etl_disease
-    depends_on_ppp:
-      - pis_otar # this extra dependency is added in ppp runs
-  - name: target
+      - ontoform_disease
+      - pis_otar
+  etl_target:
     depends_on:
-      - pis_target
-      - pis_homologues
+      - ontoform_homologue
+      - ontoform_target
       - etl_reactome
 
-  - name: drug
+  etl_drug:
     depends_on:
       - pis_drug
       - etl_target
-      - etl_disease
-  - name: facetsearch
+      - ontoform_disease
+  etl_facetsearch:
     depends_on:
       - etl_target
-      - etl_disease
+      - ontoform_disease
       - etl_go
-  - name: interactions
+  etl_interaction:
     depends_on:
-      - pis_interactions
+      - pis_interaction
       - etl_target
-  - name: targetValidation
+  etl_targetValidation:
     depends_on:
       - pis_mouse_phenotypes
       - etl_target
 
-  - name: fda
+  etl_fda:
     depends_on:
-      - pis_openfda
+      - ontoform_openfda
       - etl_drug
-  - name: literature
+  etl_literature:
     depends_on:
       - pis_literature
       - etl_drug
-  - name: pharmacogenomics
+  etl_pharmacogenomics:
     depends_on:
       - pis_pharmacogenomics
       - etl_drug
-  - name: targetengine
+  etl_targetengine:
     depends_on:
       - pis_target_engine
       - etl_drug
 
-  - name: evidence
+  etl_evidence:
     depends_on:
       - pis_evidence
       - etl_literature
-    depends_on_ppp: # this extra dependency is added in ppp runs
-      - pis_ppp_evidence
-      - genetics_l2g_evidence
-
-  - name: association
-    depends_on:
-      - etl_evidence
-  - name: associationOTF
-    depends_on:
-      - etl_evidence
-
-  - name: knownDrug
-    depends_on:
-      - etl_evidence
-
-  - name: ebisearch
-    depends_on:
-      - etl_association
-  - name: search
-    depends_on:
-      - etl_association
+      - gentropy_l2g_evidence
     depends_on_ppp:
-      - genetics_variant_index
+      - pis_ppp_evidence
+
+  etl_association:
+    depends_on:
+      - etl_evidence
+  etl_associationOTF:
+    depends_on:
+      - etl_evidence
+
+  etl_knownDrug:
+    depends_on:
+      - etl_evidence
+
+  etl_ebisearch:
+    depends_on:
+      - etl_association
+  etl_search:
+    depends_on:
+      - etl_association
+      - gentropy_variant_index
+
+  # GENTROPY STEPS
+  gentropy_biosample_index:
+    depends_on:
+      - pis_biosample
+  gentropy_gene_index:
+    depends_on:
+      - etl_target
+
+  gentropy_study_validation:
+    depends_on:
+      - ontoform_target
+      - ontoform_disease
+      - gentropy_biosample_index
+      - gentropy_gene_index
+
+  gentropy_credible_set_validation:
+    depends_on:
+      - gentropy_study_validation
+
+  gentropy_variant_conversion:
+    depends_on:
+      - pis_evidence
+      - pis_pharmacogenomics
+      - gentropy_credible_set_validation
+
+  gentropy_variant_annotation:
+    depends_on:
+      - gentropy_variant_conversion
+
+  gentropy_variant_index:
+    depends_on:
+      - gentropy_variant_annotation
+
+  gentropy_colocalisation_coloc:
+    depends_on:
+      - gentropy_variant_index
+  gentropy_colocalisation_ecaviar:
+    depends_on:
+      - gentropy_variant_index
+
+  gentropy_l2g_feature_matrix:
+    depends_on:
+      - gentropy_colocalisation_coloc
+      - gentropy_colocalisation_ecaviar
+      - gentropy_variant_index
+
+  gentropy_l2g_predict:
+    depends_on:
+      - etl_interaction
+      - gentropy_l2g_feature_matrix
+
+  gentropy_l2g_evidence:
+    depends_on:
+      - gentropy_l2g_predict

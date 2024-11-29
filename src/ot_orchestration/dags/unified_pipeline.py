@@ -14,8 +14,12 @@ from airflow.providers.google.cloud.operators.dataproc import (
     DataprocDeleteClusterOperator,
 )
 from airflow.utils.edgemodifier import Label
+from airflow.utils.trigger_rule import TriggerRule
 
-from ot_orchestration.dags.config.unified_pipeline import PlatformConfig
+from ot_orchestration.dags.config.unified_pipeline import (
+    UnifiedPipelineConfig,
+)
+from ot_orchestration.operators.batch.vep import VepAnnotateOperator
 from ot_orchestration.operators.dataproc import (
     PlatformETLCreateClusterOperator,
     PlatformETLSubmitJobOperator,
@@ -26,7 +30,12 @@ from ot_orchestration.operators.gcs import (
     UploadStringOperator,
 )
 from ot_orchestration.operators.unified_pipeline import PISDiffComputeOperator
-from ot_orchestration.utils import clean_name, to_hocon, to_yaml
+from ot_orchestration.utils import (
+    create_cluster_name,
+    create_name,
+    to_hocon,
+    to_yaml,
+)
 from ot_orchestration.utils.common import (
     GCP_PROJECT_PLATFORM,
     GCP_REGION,
@@ -34,50 +43,49 @@ from ot_orchestration.utils.common import (
     shared_dag_args,
     unified_pipeline_dag_kwargs,
 )
-from ot_orchestration.utils.labels import Labels
+from ot_orchestration.utils.dataproc import (
+    create_cluster,
+    delete_cluster,
+    submit_gentropy_step,
+)
+from ot_orchestration.utils.labels import StepLabels
 
 with DAG(
     default_args=shared_dag_args,
     **unified_pipeline_dag_kwargs,
     params={
         "run_label": Param(
-            default=f"pis-{datetime.now().strftime('%Y%m%d-%H%M')}",
+            default=f"up-{datetime.now().strftime('%Y%m%d-%H%M')}",
             description="""A label with key 'run' and the contents of this parameter
                            will be added to any infrastructure resources that this
                            pipeline creates in Google Cloud.""",
         ),
     },
 ) as dag:
-    config = PlatformConfig()
+    config = UnifiedPipelineConfig()
     steps = {}  # this is a registry of tasks, it is used to build dependencies
 
-    # PIS stage of the DAG.
-    # This stage will run the PIS steps in parallel by replicating the following pattern for each:
-    # c. Check if the step must be run, if not, jump to j
-    # u. Upload the step configuration to GCS
-    # r. Run the step in a Compute Engine VM, waiting for it to produce an exit code
-    # d. Delete the VM
-    # j. Join the parallel branches
+    # ==============================================================================================
+    # PIS stage of the DAG
+    #
+    # c. Check if the step must be run, if not, jump to j.
+    # u. Upload the step configuration to GCS.
+    # r. Run the step in a Compute Engine VM, waiting for it to produce an exit code.
+    # j. Join the parallel branches.
+    # d. Delete the VM.
+    # ==============================================================================================
     @task_group(group_id="pis_stage")
     def pis_stage() -> None:
         for step_name in config.pis_step_list:
+            # skip ppp steps if the pipeline is not running in ppp mode
+            if not config.is_ppp and step_name in config.ppp_steps:
+                continue
 
-            @task_group(group_id=f"pis_{step_name}")
+            @task_group(group_id=step_name)
             def pis_step(step_name: str) -> None:
                 config_gcs_url = config.pis_config_gcs_url(step_name)
-                vm_name = f"uo-pis-{clean_name(step_name)}-{{{{ run_id | strhash }}}}"
-                vm_env = {
-                    "PIS_STEP": step_name,
-                    "PIS_CONFIG_FILE": "/config.yaml",
-                    "PIS_POOL": config.pis_pool,
-                }
-                labels = Labels(
-                    {
-                        "tool": "pis",
-                        "step": step_name,
-                        "product": "ppp" if config.is_ppp else "platform",
-                    }
-                )
+                labels = StepLabels("pis", step_name, config.is_ppp)
+                vm_name = create_name(step_name)
 
                 c = PISDiffComputeOperator(
                     task_id=f"diff_{step_name}",
@@ -97,7 +105,7 @@ with DAG(
                     instance_name=vm_name,
                     labels=labels,
                     container_image=config.pis_image,
-                    container_env=vm_env,
+                    container_env=config.pis_env_vars(step_name),
                     container_service_account=config.service_account,
                     container_scopes=config.service_account_scopes,
                     container_files={config_gcs_url: "/config.yaml"},
@@ -105,45 +113,93 @@ with DAG(
                     deferrable=True,
                 )
 
+                j = EmptyOperator(
+                    task_id=f"join_{step_name}",
+                    trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
+                )
+                # add the final step to the step registry
+                steps[step_name] = j
+
                 d = ComputeEngineDeleteInstanceOperator(
                     task_id=f"delete_vm_{step_name}",
                     project_id=GCP_PROJECT_PLATFORM,
                     zone=GCP_ZONE,
                     resource_id=vm_name,
+                    trigger_rule=TriggerRule.NONE_SKIPPED,
                 )
 
-                j = EmptyOperator(
-                    task_id=f"join_{step_name}",
-                    trigger_rule="none_failed_min_one_success",
-                )
-
-                # add the run task to the step registry
-                steps[f"pis_{step_name}"] = j
                 # here we define the task dependencies for both branches
-                chain(c, Label("invalid previous run"), u, r, d, j)
+                chain(c, Label("invalid previous run"), u, r, (j, d))
                 chain(c, Label("valid previous run exists, skip run"), j)
 
             pis_step(step_name)
 
     pis_stage()
 
-    # ETL stage of the DAG.
-    # p. Prepare the Dataproc cluster
-    #   c. Creation
-    #   uc. Upload the ETL configuration to GCS
-    #   uj. Upload the ETL JAR to GCS
-    # r. The ETL steps are run in parallel, as soon as their prerequisites are met.
-    #    The required PIS and ETL run tasks are added as upstream dependencies to each step task.
-    # d. Delete the Dataproc cluster
-    cluster_name = "uo-etl-{{ run_id | strhash }}"
-    labels_etl = Labels({"tool": "etl"})
+    # ==============================================================================================
+    # ONTOFORM stage of the DAG
+    #
+    # r. Run the step in a Compute Engine VM, waiting for it to produce an exit code.
+    # d. Delete the VM.
+    # ==============================================================================================
+    if len(config.ontoform_step_list):
+
+        @task_group(group_id="ontoform_stage")
+        def ontoform_stage() -> None:
+            for step_name in config.ontoform_step_list:
+
+                @task_group(group_id=step_name)
+                def ontoform_step(step_name: str) -> None:
+                    labels = StepLabels("ontoform", step_name, config.is_ppp)
+                    vm_name = create_name(step_name)
+
+                    r = ComputeEngineRunContainerizedWorkloadSensor(
+                        task_id=f"run_{step_name}",
+                        instance_name=vm_name,
+                        labels=labels,
+                        container_image=config.ontoform_image,
+                        container_service_account=config.service_account,
+                        container_scopes=config.service_account_scopes,
+                        container_args=config.ontoform_args(step_name),
+                        machine_type=config.ontoform_machine_type,
+                        deferrable=True,
+                    )
+
+                    d = ComputeEngineDeleteInstanceOperator(
+                        task_id=f"delete_vm_{step_name}",
+                        project_id=GCP_PROJECT_PLATFORM,
+                        zone=GCP_ZONE,
+                        resource_id=vm_name,
+                        trigger_rule=TriggerRule.NONE_SKIPPED,
+                    )
+
+                    steps[step_name] = r
+                    chain(r, d)
+
+                ontoform_step(step_name)
+
+        ontoform_stage()
+
+    # ==============================================================================================
+    # ETL stage of the DAG
+    #
+    # p. Prepare the ETL Dataproc cluster.
+    #   c. Create the cluster.
+    #   uc. Upload the ETL configuration to GCS.
+    #   uj. Upload the ETL JAR to GCS.
+    # r. The ETL steps are run in parallel, as their prerequisites are met.
+    # d. Delete the Dataproc cluster.
+    # ==============================================================================================
+    etl_cluster_name = create_cluster_name("etl")
 
     @task_group(group_id=f"etl_cluster_prepare")
     def etl_cluster_prepare() -> None:
+        labels = StepLabels("etl", is_ppp=config.is_ppp)
+
         c = PlatformETLCreateClusterOperator(
             task_id="cluster_create",
-            cluster_name=cluster_name,
-            labels=labels_etl,
+            cluster_name=etl_cluster_name,
+            labels=labels,
         )
         uc = UploadStringOperator(
             task_id=f"upload_config",
@@ -161,36 +217,107 @@ with DAG(
 
     @task_group(group_id="etl_stage")
     def etl_stage() -> None:
-        for step in config.etl_step_list:
-            step_name = step["name"]
-            labels_etl_step = labels_etl.clone({"step": step_name})
+        for step_name in config.etl_step_list:
+            # skip ppp steps if the pipeline is not running in ppp mode
+            if not config.is_ppp and step_name in config.ppp_steps:
+                continue
 
-            pis_dependencies = [p for p in step.get("depends_on", []) if "pis_" in p]
-            etl_dependencies = [p for p in step.get("depends_on", []) if "etl_" in p]
+            labels = StepLabels("etl", step_name, config.is_ppp)
 
             r = PlatformETLSubmitJobOperator(
                 task_id=f"run_{step_name}",
-                step_name=step_name,
-                cluster_name=cluster_name,
+                step_name=step_name.replace("etl_", ""),  # remove the etl prefix
+                cluster_name=etl_cluster_name,
                 jar_file_uri=config.etl_jar_gcs_uri,
                 config_file_uri=config.etl_config_gcs_uri,
-                labels=labels_etl_step,
+                labels=labels,
             )
-            r.set_upstream([steps[dep] for dep in pis_dependencies])
-            r.set_upstream([steps[dep] for dep in etl_dependencies])
-            steps[f"etl_{step_name}"] = r
+            steps[step_name] = r
 
-    r = etl_stage()
+    s = etl_stage()
 
     d = DataprocDeleteClusterOperator(
         task_id="etl_cluster_delete",
         project_id=GCP_PROJECT_PLATFORM,
         region=GCP_REGION,
-        cluster_name=cluster_name,
-        trigger_rule="all_success",
+        cluster_name=etl_cluster_name,
+        trigger_rule=TriggerRule.ALL_SUCCESS,
     )
 
-    chain(p, r, d)
+    chain(p, s, d)
+
+    # ==============================================================================================
+    # Gentropy stage of the DAG.
+    #
+    # c. Prepare the Gentropy Dataproc cluster.
+    # r. The Gentropy steps are run in parallel, as their prerequisites are met.
+    #       There are different types of Gentropy steps. We match special cases by
+    #       name in the config to define custom tasks for them. Most are dataproc
+    #       jobs that require a cluster, and those are the default case in the match.
+    #       determine if the step is special and if so, we p
+    # d. Delete the Dataproc cluster
+    #
+    # Note: labels are generated but not used yet, pending refactor of cluster
+    #       management functions into operators.
+    # ==============================================================================================
+    if len(config.gentropy_step_list):
+        gentropy_cluster_name = create_cluster_name("gentropy")
+        clusterless_steps = []
+
+        c = create_cluster(
+            cluster_name=gentropy_cluster_name,
+            project_id=GCP_PROJECT_PLATFORM,
+            **config.gentropy_dataproc_cluster_settings,
+            idle_delete_ttl=90 * 60,
+        )
+
+        d = delete_cluster(
+            gentropy_cluster_name,
+            project_id=GCP_PROJECT_PLATFORM,
+        )
+
+        @task_group(group_id="gentropy_stage")
+        def gentropy_stage() -> None:
+            for step_name in config.gentropy_step_list:
+                step_config = config.gentropy_step(step_name)
+                labels = StepLabels("gentropy", step_name, config.is_ppp)
+
+                match step_name:
+                    case "gentropy_variant_annotation":
+                        r = VepAnnotateOperator(
+                            job_name=create_name("variant_annotation"),
+                            task_id=f"run_{step_name}",
+                            project_id=GCP_PROJECT_PLATFORM,
+                            **step_config["params"],
+                            google_batch=step_config["google-batch"],
+                            labels=labels,
+                        )
+                        clusterless_steps.append(r)
+                    case _:
+                        r = submit_gentropy_step(
+                            cluster_name=gentropy_cluster_name,
+                            step_name=step_name,
+                            project_id=GCP_PROJECT_PLATFORM,
+                            python_main_module=config.gentropy_python_main_module,
+                            params=step_config["params"],
+                            labels=labels,
+                        )
+
+                steps[step_name] = r
+                if r not in clusterless_steps:
+                    chain(c, r, d)
+
+        r = gentropy_stage()
+
+    # ==============================================================================================
+    # After creating all the tasks, we tie them together by creating dependencies.
+    for step_name in steps:
+        if step_config := config.steps.get(step_name):
+            for dep in step_config.get("depends_on", []):
+                steps[step_name].set_upstream(steps[dep])
+            if config.is_ppp:
+                for ppp_dep in step_config.get("depends_on_ppp", []):
+                    steps[step_name].set_upstream(steps[ppp_dep])
 
 if __name__ == "__main__":
     dag.test()

@@ -1,3 +1,4 @@
+---
 dataproc:
   cluster_name: otg-tophit-gwascatalog
   autoscaling_policy: otg-gwascatalog-tophit

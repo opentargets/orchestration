@@ -16,7 +16,6 @@ GENTROPY_VERSION = "0.0.0"
 # Cloud configuration.
 GCP_PROJECT_GENETICS = "open-targets-genetics-dev"
 GCP_PROJECT_PLATFORM = "open-targets-eu-dev"
-GCP_PROJECT_ZONE = "europe-west1-b"
 GCP_REGION = "europe-west1"
 GCP_ZONE = "europe-west1-d"
 GCP_DATAPROC_IMAGE = "2.1"
@@ -63,7 +62,6 @@ unified_pipeline_dag_kwargs: dict[str, Any] = {
     "description": "Open Targets unified data generation pipeline",
     "catchup": False,
     "schedule": None,
-    "start_date": pendulum.now(tz="Europe/London").subtract(days=1),
     "tags": [*shared_dag_kwargs["tags"], "platform", "unified_pipeline"],
     "user_defined_filters": {"strhash": strhash},
 }
@@ -72,5 +70,5 @@ shared_labels: Callable[[str], dict[str, str]] = lambda project: {
     "team": "open-targets",
     "subteam": "backend",
     "environment": "development" if "dev" in project else "production",
-    "created_by": "unified-orchestrator",
+    "created_by": "unified-pipeline",
 }
