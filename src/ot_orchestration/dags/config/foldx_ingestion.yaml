@@ -15,6 +15,6 @@ nodes:
     prerequisites: []
     params:
       step: foldx_integration
-      step.foldx_dataset_path: gs://genetics_etl_python_playground/static_assets/foldx_export.parquet
+      step.foldx_dataset_path: gs://otar013-ppp/OTAR2081_foldx/foldx_export.parquet
       step.plddt_threshold: 0.7
-      step.annotation_path: gs://genetics_etl_python_playground/static_assets/foldx_variant_annotation
+      step.annotation_path: gs://otar013-ppp/OTAR2081_foldx/foldx_variant_annotation
