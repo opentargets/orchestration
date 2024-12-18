@@ -150,6 +150,8 @@ steps:
       step.vep_output_json_path: '{gcs_url}/output/genetics/json/annotated_variants'
       step.gnomad_variant_annotations_path: gs://gnomad_data_2/v4.1/variant_index
       step.variant_index_path: '{gcs_url}/output/genetics/parquet/variant_index'
+      step.amino_acid_change_annotations:
+        - gs://genetics_etl_python_playground/static_assets/foldx_variant_annotation
       step.session.write_mode: ignore
       step.session.output_partitions: 25
 
