@@ -143,7 +143,7 @@ nodes:
       step.gnomad_variant_annotations_path: gs://genetics_etl_python_playground/static_assets/gnomad_variants
       step.variant_index_path: gs://ot_orchestration/releases/24.11_freeze10/variant_index
       step.amino_acid_change_annotations:
-       - gs://otar013-ppp/OTAR2081_foldx/foldx_variant_annotation
+        - gs://otar013-ppp/OTAR2081_foldx/foldx_variant_annotation
 
   - id: colocalisation_coloc
     prerequisites:
