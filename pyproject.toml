@@ -7,6 +7,9 @@ readme = "README.md"
 dynamic = ["dependencies", "requires-python"]
 packages = [{ include = "ot_orchestration", from = "src" }]
 
+[tool.poetry.requires-plugins]
+poetry-plugin-export = ">=1.8"
+
 [tool.poetry.dependencies]
 python = "^3.10, <3.11"
 apache-airflow = { extras = [
