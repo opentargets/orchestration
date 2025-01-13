@@ -62,7 +62,7 @@ repos:
       - id: python-check-mock-methods
       - id: python-check-blanket-noqa
   - repo: https://github.com/hadialqattan/pycln
-    rev: v2.4.0
+    rev: v2.5.0
     # Remove unused import statements.
     hooks:
       - id: pycln
