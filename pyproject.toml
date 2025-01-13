@@ -5,6 +5,8 @@ description = "Open Targets Genetics Orchestration Pipeline"
 authors = [{name = "Szymon Szyszkowski", email= "ss60@sanger.ac.uk"}]
 readme = "README.md"
 dynamic = ["dependencies", "requires-python"]
+
+[tool.poetry]
 packages = [{ include = "ot_orchestration", from = "src" }]
 
 [tool.poetry.requires-plugins]
