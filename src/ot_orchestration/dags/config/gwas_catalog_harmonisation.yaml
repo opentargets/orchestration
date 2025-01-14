@@ -1,3 +1,4 @@
+---
 nodes:
   - id: generate_sumstat_index
     kind: Task
