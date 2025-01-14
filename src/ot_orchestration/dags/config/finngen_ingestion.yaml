@@ -21,7 +21,7 @@ nodes:
       step.finngen_summary_stats_url_prefix: gs://finngen-public-data-r12/summary_stats/finngen_R12_
       step.sample_size: 500_348
       step.finngen_summary_stats_url_suffix: '.gz'
-      step.efo_curation_mapping_url: https://raw.githubusercontent.com/opentargets/curation/24.09.1/mappings/disease/manual_string.tsv
+      step.efo_curation_mapping_url: https://raw.githubusercontent.com/opentargets/curation/refs/tags/25.01/mappings/disease/manual_string.tsv
       step.session.write_mode: overwrite
       step.session.start_hail: true
   - id: finngen_finemapping_ingestion
