@@ -1,11 +1,14 @@
-[tool.poetry]
+[project]
 name = "ot_orchestration"
 version = "1.0.0"
 description = "Open Targets Genetics Orchestration Pipeline"
-authors = ["Szymon Szyszkowski <ss60@mib117351s.internal.sanger.ac.uk>"]
+authors = [{name = "Szymon Szyszkowski", email= "ss60@sanger.ac.uk"}]
 readme = "README.md"
-packages = [{ include = "ot_orchestration", from = "src" }]
+dynamic = ["dependencies", "requires-python"]
 
+[tool.poetry]
+packages = [{ include = "ot_orchestration", from = "src" }]
+requires-poetry = ">=2.0"
 
 [tool.poetry.dependencies]
 python = "^3.10, <3.11"
@@ -45,8 +48,6 @@ pytest-cov = "^5.0.0"
 pytest-sugar = "^1.0.0"
 pytest-xdist = "^3.6.1"
 deptry = "^0.16.1"
-[tool.poetry.scripts]
-generate-dotenv = "ot-orchestration.scripts:ot"
 
 [build-system]
 requires = ["poetry-core"]

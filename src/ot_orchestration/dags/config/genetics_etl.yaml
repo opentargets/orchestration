@@ -12,14 +12,6 @@ dataproc:
   num_workers: 2
 
 nodes:
-  - id: gene_index
-    kind: Task
-    prerequisites: []
-    params:
-      step: gene_index
-      step.target_path: gs://genetics_etl_python_playground/static_assets/targets # OTP 23.12 data
-      step.gene_index_path: gs://ot_orchestration/releases/24.11_freeze10/gene_index
-
   - id: biosample_index
     kind: Task
     prerequisites: []
@@ -34,7 +26,6 @@ nodes:
     kind: Task
     prerequisites:
       - biosample_index
-      - gene_index
     params:
       step: study_validation
       step.study_index_path:
@@ -44,7 +35,7 @@ nodes:
         - gs://eqtl_catalogue_data/study_index
         - gs://ukb_ppp_eur_data/study_index
         - gs://finngen_data/r12/study_index
-      step.target_index_path: gs://ot_orchestration/releases/24.11_freeze10/gene_index
+      step.target_index_path: gs://open-targets-pre-data-releases/24.12-uo_test-3/output/etl/parquet/targets
       step.disease_index_path: gs://open-targets-pre-data-releases/24.06/output/etl/parquet/diseases
       step.valid_study_index_path: gs://ot_orchestration/releases/24.11_freeze10/study_index
       step.invalid_study_index_path: gs://ot_orchestration/releases/24.11_freeze10/invalid_study_index
@@ -177,7 +168,7 @@ nodes:
       step.variant_index_path: gs://ot_orchestration/releases/24.11_freeze10/variant_index
       step.colocalisation_path: gs://ot_orchestration/releases/24.11_freeze10/colocalisation
       step.study_index_path: gs://ot_orchestration/releases/24.11_freeze10/study_index
-      step.gene_index_path: gs://ot_orchestration/releases/24.11_freeze10/gene_index
+      step.target_index_path: gs://open-targets-pre-data-releases/24.12-uo_test-3/output/etl/parquet/targets
       step.feature_matrix_path: gs://ot_orchestration/releases/24.11_freeze10/locus_to_gene_feature_matrix
       +step.session.extended_spark_conf: "{spark.sql.autoBroadcastJoinThreshold:'-1'}"
       step.session.write_mode: overwrite

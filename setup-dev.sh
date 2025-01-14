@@ -24,6 +24,7 @@ fi
 if ! command -v poetry &>/dev/null; then
     echo "Installing Poetry, a tool to manage Python dependencies..."
     curl -sSL https://install.python-poetry.org | python3 -
+    poetry self add poetry-plugin-export
 fi
 
 echo "Preparing the Poetry environment and installing dependencies..."

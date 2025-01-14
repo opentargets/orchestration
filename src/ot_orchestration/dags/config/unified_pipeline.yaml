@@ -169,16 +169,13 @@ steps:
   gentropy_biosample_index:
     depends_on:
       - pis_biosample
-  gentropy_gene_index:
-    depends_on:
-      - etl_target
 
   gentropy_study_validation:
     depends_on:
       - ontoform_target
       - ontoform_disease
       - gentropy_biosample_index
-      - gentropy_gene_index
+      - etl_target
 
   gentropy_credible_set_validation:
     depends_on:

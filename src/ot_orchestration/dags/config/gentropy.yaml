@@ -20,13 +20,6 @@ steps:
       step.session.write_mode: ignore
       step.session.output_partitions: 1
 
-  gene_index:
-    params:
-      step: gene_index
-      step.target_path: '{gcs_url}/output/etl/parquet/targets'
-      step.gene_index_path: '{gcs_url}/output/genetics/parquet/gene_index'
-      step.session.write_mode: ignore
-
   study_validation:
     params:
       step: study_validation
@@ -37,7 +30,7 @@ steps:
         - gs://eqtl_catalogue_data/study_index
         - gs://ukb_ppp_eur_data/study_index
         - gs://finngen_data/r11/study_index
-      step.target_index_path: '{gcs_url}/output/genetics/parquet/gene_index'
+      step.target_index_path: '{gcs_url}/output/etl/parquet/targets'
       step.disease_index_path: '{gcs_url}/output/etl/parquet/diseases'
       step.valid_study_index_path: '{gcs_url}/output/genetics/parquet/study_index'
       step.invalid_study_index_path: '{gcs_url}/output/genetics/parquet/invalid_study_index'
@@ -162,7 +155,7 @@ steps:
       step.variant_index_path: '{gcs_url}/output/genetics/parquet/variant_index'
       step.colocalisation_path: '{gcs_url}/output/genetics/parquet/colocalisation'
       step.study_index_path: '{gcs_url}/output/genetics/parquet/study_index'
-      step.gene_index_path: '{gcs_url}/output/genetics/parquet/gene_index'
+      step.target_index_path: '{gcs_url}/output/etl/parquet/targets'
       step.feature_matrix_path: '{gcs_url}/output/genetics/parquet/l2g_feature_matrix'
       +step.session.extended_spark_conf: "{spark.sql.autoBroadcastJoinThreshold:'-1'}"
       step.session.write_mode: ignore
