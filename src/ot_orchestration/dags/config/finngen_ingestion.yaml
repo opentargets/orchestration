@@ -15,11 +15,11 @@ nodes:
     prerequisites: []
     params:
       step: finngen_studies
-      step.finngen_study_index_out: gs://finngen_data/r11/study_index
-      step.finngen_phenotype_table_url: https://r11.finngen.fi/api/phenos
-      step.finngen_release_prefix: FINNGEN_R11
-      step.finngen_summary_stats_url_prefix: gs://finngen-public-data-r11/summary_stats/finngen_R11_
-      step.sample_size: 453733
+      step.finngen_study_index_out: gs://finngen_data/r12/study_index
+      step.finngen_phenotype_table_url: https://r12.finngen.fi/api/phenos
+      step.finngen_release_prefix: FINNGEN_R12
+      step.finngen_summary_stats_url_prefix: gs://finngen-public-data-r12/summary_stats/finngen_R12_
+      step.sample_size: 500_348
       step.finngen_summary_stats_url_suffix: '.gz'
       step.efo_curation_mapping_url: https://raw.githubusercontent.com/opentargets/curation/24.09.1/mappings/disease/manual_string.tsv
       step.session.write_mode: overwrite
@@ -29,10 +29,10 @@ nodes:
     prerequisites: []
     params:
       step: finngen_finemapping_ingestion
-      step.finngen_finemapping_out: gs://finngen_data/r11/credible_set_datasets/susie
-      step.finngen_susie_finemapping_snp_files: gs://finngen-public-data-r11/finemap/full/susie/*.snp.bgz
-      step.finngen_susie_finemapping_cs_summary_files: gs://finngen-public-data-r11/finemap/summary/*SUSIE.cred.summary.tsv
+      step.finngen_finemapping_out: gs://finngen_data/r12/credible_set_datasets/susie
+      step.finngen_susie_finemapping_snp_files: gs://finngen-public-data-r12/finemap/full/susie/*.snp.bgz
+      step.finngen_susie_finemapping_cs_summary_files: gs://finngen-public-data-r12/finemap/summary/*SUSIE.cred.summary.tsv
       step.finngen_finemapping_lead_pvalue_threshold: 1e-5
-      step.finngen_release_prefix: FINNGEN_R11
+      step.finngen_release_prefix: FINNGEN_R12
       step.session.start_hail: true
       step.session.write_mode: overwrite
