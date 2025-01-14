@@ -14,6 +14,9 @@ Make sure you have [Docker](https://docs.docker.com/get-docker/) and [Google Clo
 
 Run `make dev`. This command will install Pyenv, Python 3.10, Poetry, pre-commit, initialise the virtual environment, and build the Airflow image.
 
+> [!WARNING]
+> Orchestration requires poetry 2.0.X.
+
 ## 3. Set up Google Cloud access
 
 > [!WARNING]
