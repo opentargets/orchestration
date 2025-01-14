@@ -43,7 +43,7 @@ nodes:
         - gs://gwas_catalog_sumstats_pics/study_index
         - gs://eqtl_catalogue_data/study_index
         - gs://ukb_ppp_eur_data/study_index
-        - gs://finngen_data/r11/study_index
+        - gs://finngen_data/r12/study_index
       step.target_index_path: gs://ot_orchestration/releases/24.11_freeze10/gene_index
       step.disease_index_path: gs://open-targets-pre-data-releases/24.06/output/etl/parquet/diseases
       step.valid_study_index_path: gs://ot_orchestration/releases/24.11_freeze10/study_index
@@ -73,7 +73,7 @@ nodes:
         - gs://gwas_catalog_sumstats_susie/credible_set_clean/
         - gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie_patched/
         - gs://ukb_ppp_eur_data/credible_set_clean/
-        - gs://finngen_data/r11/credible_set_datasets/susie/
+        - gs://finngen_data/r12/credible_set_datasets/susie/
       step.valid_study_locus_path: gs://ot_orchestration/releases/24.11_freeze10/credible_set
       step.invalid_study_locus_path: gs://ot_orchestration/releases/24.11_freeze10/invalid_credible_set
       step.invalid_qc_reasons:
