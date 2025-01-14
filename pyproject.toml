@@ -8,6 +8,7 @@ dynamic = ["dependencies", "requires-python"]
 
 [tool.poetry]
 packages = [{ include = "ot_orchestration", from = "src" }]
+requires-poetry = ">=2.0"
 
 [tool.poetry.requires-plugins]
 poetry-plugin-export = ">=1.8"
