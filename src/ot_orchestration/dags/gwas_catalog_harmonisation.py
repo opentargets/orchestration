@@ -19,9 +19,7 @@ from ot_orchestration.utils import (
 )
 from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 
-SOURCE_CONFIG_FILE_PATH = (
-    Path(__file__).parent / "config" / "gwas_catalog_harmonisation.yaml"
-)
+SOURCE_CONFIG_FILE_PATH = Path(__file__).parent / "config" / "gwas_catalog_sumstat_harmonisation.yaml"
 config = read_yaml_config(SOURCE_CONFIG_FILE_PATH)
 
 
