@@ -9,7 +9,7 @@ RUN pip install --quiet --no-cache-dir --upgrade pip setuptools && \
 SHELL ["/bin/bash", "-o", "pipefail", "-e", "-u", "-x", "-c"]
 
 USER 0
-ARG CLOUD_SDK_VERSION=452.0.0
+ARG CLOUD_SDK_VERSION=506.0.0
 ENV GCLOUD_HOME=/home/google-cloud-sdk
 
 ENV PATH="${GCLOUD_HOME}/bin/:${PATH}"
