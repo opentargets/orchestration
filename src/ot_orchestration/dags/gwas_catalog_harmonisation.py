@@ -6,7 +6,6 @@ import logging
 from pathlib import Path
 
 from airflow.decorators import task
-from airflow.exceptions import AirflowSkipException
 from airflow.models.baseoperator import chain
 from airflow.models.dag import DAG
 
@@ -43,14 +42,6 @@ def end():
     logging.info("FINISHED")
 
 
-@task(task_id="test_cleanup")
-def test_cleanup(env: Environment):
-    """Cleanup test resources."""
-    if env != Environment.TEST:
-        AirflowSkipException("Skipping test cleanup in non-Test environment")
-    logging.info("Test cleanup")
-
-
 with DAG(
     dag_id=Path(__file__).stem,
     description="Open Targets Genetics — GWAS Catalog Sumstat Harmonisation",
@@ -74,7 +65,6 @@ with DAG(
     chain(
         begin(),
         batch_index,
-        # harmonisation_batch_job,
-        test_cleanup(env),
+        harmonisation_batch_job,
         end(),
     )

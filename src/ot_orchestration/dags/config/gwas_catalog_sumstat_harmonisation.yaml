@@ -7,7 +7,7 @@ environment_specs:
     vars:
       root_path: gs://gwas_catalog_inputs
 
-env: Prod
+env: Test
 
 nodes:
   - id: generate_sumstat_index
