@@ -1,5 +1,9 @@
 #!/bin/bash
 # Script for running harmonisation and qc steps by the google batch job
+# Requirements:
+# 1. Gentropy & poetry
+# 2. gsutil
+# 3. gzip
 
 # set -x
 
@@ -9,28 +13,29 @@ readonly QC_FILE=$3
 readonly QC_THRESHOLD=$4
 export HYDRA_FULL_ERROR=1
 
+logging() {
+    log_prompt="[$(date "+%Y.%m.%d %H:%M")]"
+    echo "${log_prompt} $@" | tee -a ${LOCAL_LOG_FILE}
+}
+
 # NOTE: Harmonised path contains ${output_path}/harmonised_sumstats/${study_id}
-HARMONISATION_DIR=`dirname $HARMONISED_FILE`
-OUTPUT_PATH=`dirname $HARMONISATION_DIR`
-STUDY_ID=`basename $HARMONISED_FILE`
+HARMONISATION_DIR=$(dirname $HARMONISED_FILE)
+OUTPUT_PATH=$(dirname $HARMONISATION_DIR)
+STUDY_ID=$(basename $HARMONISED_FILE)
 LOCAL_LOG_FILE="harmonisation.log"
 LOCAL_SUMMARY_FILE=harmonisation.csv
-RAW_LOCAL_FILE=`basename $RAW_FILE`
+RAW_LOCAL_FILE=$(basename $RAW_FILE)
 UNZIPPED_RAW_LOCAL_FILE="${RAW_LOCAL_FILE%.*}"
 
+# Make sure we start with clean setup
 if [ -f ${LOCAL_SUMMARY_FILE} ]; then
     rm -rf ${LOCAL_SUMMARY_FILE}
 fi
-echo "study,harmonisationExitCode,qcExitCode,rawSumstatFile,rawSumstatFileSize,rawUnzippedSumstatFileSize" > $LOCAL_SUMMARY_FILE
+echo "study,harmonisationExitCode,qcExitCode,rawSumstatFile,rawSumstatFileSize,rawUnzippedSumstatFileSize" >$LOCAL_SUMMARY_FILE
 
 if [ -f ${LOCAL_LOG_FILE} ]; then
     rm -rf ${LOCAL_LOG_FILE}
 fi
-logging(){
-    log_prompt="[$(date "+%Y.%m.%d %H:%M")]"
-    echo "${log_prompt} $@"  | tee -a  ${LOCAL_LOG_FILE}
-}
-
 
 logging "Copying raw summary statistics from ${RAW_FILE} to ${RAW_LOCAL_FILE}"
 gsutil cp $RAW_FILE $RAW_LOCAL_FILE
@@ -53,11 +58,10 @@ poetry run gentropy step=gwas_catalog_sumstat_preprocess \
     +step.session.extended_spark_conf="{spark.dynamicAllocation.enabled:false}" \
     +step.session.extended_spark_conf="{spark.driver.memory:16g}" \
     +step.session.extended_spark_conf="{spark.kryoserializer.buffer.max:500m}" \
-    +step.session.extended_spark_conf="{spark.driver.maxResultSize:5g}"  >> ${LOCAL_LOG_FILE}  2>&1
+    +step.session.extended_spark_conf="{spark.driver.maxResultSize:5g}" >>${LOCAL_LOG_FILE} 2>&1
 # NOTE: can not use tee to redirect, otherwise the exit code will always be 0
 HARMONISATION_EXIT_CODE=$?
 logging "Harmonisation exit code: ${HARMONISATION_EXIT_CODE}"
-
 
 logging "Running qc on ${HARMONISED_FILE} file"
 poetry run gentropy step=summary_statistics_qc \
@@ -69,15 +73,14 @@ poetry run gentropy step=summary_statistics_qc \
     +step.session.extended_spark_conf="{spark.dynamicAllocation.enabled:false}" \
     +step.session.extended_spark_conf="{spark.driver.memory:16g}" \
     +step.session.extended_spark_conf="{spark.kryoserializer.buffer.max:500m}" \
-    +step.session.extended_spark_conf="{spark.driver.maxResultSize:5g}" >> ${LOCAL_LOG_FILE}  2>&1
+    +step.session.extended_spark_conf="{spark.driver.maxResultSize:5g}" >>${LOCAL_LOG_FILE} 2>&1
 QC_EXIT_CODE=$?
 logging "QC exit code: ${QC_EXIT_CODE}"
 
-
-echo "$STUDY_ID,$HARMONISATION_EXIT_CODE,$QC_EXIT_CODE,$RAW_FILE,$RAW_FILE_SIZE,$UNZIPPED_FILE_SIZE" >> $LOCAL_SUMMARY_FILE
+echo "$STUDY_ID,$HARMONISATION_EXIT_CODE,$QC_EXIT_CODE,$RAW_FILE,$RAW_FILE_SIZE,$UNZIPPED_FILE_SIZE" >>$LOCAL_SUMMARY_FILE
 
 clean_up() {
-    # ensure the logs from the job and summary of harmonisation & qc are outputed and preserved (latest are overwrtitten and dated are maintained)
+    # ensure the logs from the job and summary of harmonisation & qc are preserved (latest are overwritten and dated are maintained)
     DATE=$(date "+%Y%m%d%H%M")
     REMOTE_LOG_FILE="${OUTPUT_PATH}/harmonisation_summary/${STUDY_ID}/${DATE}/harmonisation.log"
     LATEST_REMOTE_LOG_FILE="${OUTPUT_PATH}/harmonisation_summary/${STUDY_ID}/latest/harmonisation.log"
