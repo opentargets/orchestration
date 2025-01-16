@@ -198,7 +198,7 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
         # convert to list of dictionaries
         var_list = manifest.to_dict("records")
         if var_list:
-            logging.info("First row of var_list %s", var_list[0])
+            logging.info("Variable list is not empty!")
         else:
             AirflowSkipException("No environments to create")
         # NOTE: Ensure the types are correct, as Environment requires dict[str,str] types.

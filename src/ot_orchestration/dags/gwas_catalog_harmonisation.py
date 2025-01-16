@@ -27,7 +27,7 @@ config = read_yaml_config(SOURCE_CONFIG_FILE_PATH)
 env_spec: list[EnvironmentSpec] = config["environment_specs"]
 env: Environment = config["env"]
 sentinels = find_environment_vars(env_spec, env)
-config = read_yaml_config(config["config_path"], sentinels)
+config = read_yaml_config(SOURCE_CONFIG_FILE_PATH, sentinels)
 
 
 @task(task_id="begin")
