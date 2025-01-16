@@ -64,3 +64,9 @@ build-gentropy-gcs-image: ## build image that overwrited gentropy with tools spe
 		--push \
 		-f images/gentropy/Dockerfile \
 		--no-cache .
+
+setup-harmonisation-test: ## Prepare the test bucket with raw summary statistics for the harmonisation test.
+	@gsutil rm gs://ot_orchestration/test/gwas_catalog_inputs/harmonisation_manifest.csv
+	@gsutil -m rm -r gs://ot_orchestration/test/gwas_catalog_inputs/harmonisation_summary
+	@gsutil -m rm -r gs://ot_orchestration/test/gwas_catalog_inputs/harmonised_summary_statistics
+	@gsutil -m rm -r gs://ot_orchestration/test/gwas_catalog_inputs/summary_statistics_qc
