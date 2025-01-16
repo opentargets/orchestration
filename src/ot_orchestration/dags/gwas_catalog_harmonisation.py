@@ -6,6 +6,7 @@ import logging
 from pathlib import Path
 
 from airflow.decorators import task
+from airflow.exceptions import AirflowSkipException
 from airflow.models.baseoperator import chain
 from airflow.models.dag import DAG
 
@@ -13,7 +14,9 @@ from ot_orchestration.operators.batch.generic import (
     BatchIndexOperator,
     BatchJobOperator,
 )
+from ot_orchestration.types import Environment, EnvironmentSpec
 from ot_orchestration.utils import (
+    find_environment_vars,
     find_node_in_config,
     read_yaml_config,
 )
@@ -21,6 +24,10 @@ from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 
 SOURCE_CONFIG_FILE_PATH = Path(__file__).parent / "config" / "gwas_catalog_sumstat_harmonisation.yaml"
 config = read_yaml_config(SOURCE_CONFIG_FILE_PATH)
+env_spec: list[EnvironmentSpec] = config["environment_specs"]
+env: Environment = config["env"]
+sentinels = find_environment_vars(env_spec, env)
+config = read_yaml_config(config["config_path"], sentinels)
 
 
 @task(task_id="begin")
@@ -34,6 +41,14 @@ def begin():
 def end():
     """Finish the DAG execution."""
     logging.info("FINISHED")
+
+
+@task(task_id="test_cleanup")
+def test_cleanup(env: Environment):
+    """Cleanup test resources."""
+    if env != Environment.TEST:
+        AirflowSkipException("Skipping test cleanup in non-Test environment")
+    logging.info("Test cleanup")
 
 
 with DAG(
@@ -60,5 +75,6 @@ with DAG(
         begin(),
         batch_index,
         # harmonisation_batch_job,
+        test_cleanup(env),
         end(),
     )

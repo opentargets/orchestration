@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from typing import Any, Literal, TypedDict
 
 
@@ -77,3 +78,13 @@ class ConfigNode(TypedDict):
     google_batch: GoogleBatchSpecs
     nodes: list[ConfigNode]
     google_batch_index_specs: GoogleBatchIndexSpecs
+
+
+class Environment(Enum):
+    TEST = "Test"
+    PROD = "Prod"
+
+
+class EnvironmentSpec(TypedDict):
+    name: Environment
+    vars: dict[str, str]

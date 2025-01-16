@@ -13,7 +13,7 @@ import pyhocon
 import yaml
 from google.cloud.storage import Client
 
-from ot_orchestration.types import ConfigNode
+from ot_orchestration.types import ConfigNode, Environment, EnvironmentSpec
 
 
 def check_gcp_folder_exists(bucket_name: str, folder_path: str) -> bool:
@@ -213,3 +213,11 @@ def find_node_in_config(config: list[ConfigNode], node_id: str) -> ConfigNode | 
         if node_config["id"] == node_id:
             return node_config
     return None
+
+
+def find_environment_vars(env_spec: list[EnvironmentSpec], env: Environment) -> dict[str, str]:
+    """Get the environment variables for a given environment."""
+    for spec in env_spec:
+        if spec["name"] == env:
+            return spec["vars"]
+    raise ValueError(f"Environment {env} not found in the environment specs")

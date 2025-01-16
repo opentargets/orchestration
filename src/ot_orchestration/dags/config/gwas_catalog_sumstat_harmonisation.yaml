@@ -1,4 +1,14 @@
 ---
+environment_specs:
+  - name: Test
+    vars:
+      root_path: gs://ot_orchestration/test/gwas_catalog_inputs
+  - name: Prod
+    vars:
+      root_path: gs://gwas_catalog_inputs
+
+env: Test
+
 nodes:
   - id: generate_sumstat_index
     kind: Task
@@ -16,10 +26,10 @@ nodes:
           - 1.0e-8
         options:
         manifest_kwargs:
-          qc_output_pattern: gs://gwas_catalog_inputs/summary_statistics_qc/**_SUCCESS
-          harm_output_pattern: gs://gwas_catalog_inputs/harmonised_summary_statistics/**_SUCCESS
-          raw_input_pattern: gs://gwas_catalog_inputs/raw_summary_statistics/**.h.tsv.gz
-          manifest_output_uri: gs://gwas_catalog_inputs/harmonisation_manifest.csv
+          qc_output_pattern: '{root_path}/summary_statistics_qc/**_SUCCESS'
+          harm_output_pattern: '{root_path}/harmonised_summary_statistics/**_SUCCESS'
+          raw_input_pattern: '{root_path}/raw_summary_statistics/**.h.tsv.gz'
+          manifest_output_uri: '{root_path}/gwas_catalog_inputs/harmonisation_manifest.csv'
 
   - id: gwas_catalog_harmonisation
     kind: Task
