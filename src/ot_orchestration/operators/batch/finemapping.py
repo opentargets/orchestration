@@ -1,4 +1,4 @@
-"""Finemapping operators."""
+"""Finemapping operators. This module does not yet follow the `generic` batch job operators pattern."""
 
 import time
 
@@ -72,9 +72,7 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
 
     def _extract_loci_from_logfiles(self) -> set[str]:
         """Get list of loci from the output Google Storage path."""
-        self.log.info(
-            "Extracting studyLocusId from partition names in %s.", self.log_path
-        )
+        self.log.info("Extracting studyLocusId from partition names in %s.", self.log_path)
         client = self.log_path.client
         bucket = client.get_bucket(self.log_path.bucket)
         blobs = bucket.list_blobs(prefix=self.log_path.path)
@@ -83,15 +81,11 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         # NOTE: these blobs are not partitioned, so we need to retain only the StudyLocusId.
         # The blobs should be following this convention `credible_set_datasets/${studyLocusId}/_SUCCESS`
         all_study_locus_ids = {
-            blob.name.removeprefix(self.log_path.path)
-            .removesuffix(".log")
-            .replace("/", "")
+            blob.name.removeprefix(self.log_path.path).removesuffix(".log").replace("/", "")
             for blob in blobs
             if blob.name.endswith(".log")
         }
-        self.log.info(
-            "Found %s studyLocusId(s) that were finemapped.", len(all_study_locus_ids)
-        )
+        self.log.info("Found %s studyLocusId(s) that were finemapped.", len(all_study_locus_ids))
         return all_study_locus_ids
 
     def _generate_manifest_rows(self, study_locus_ids: list[str]) -> list[str]:
@@ -129,9 +123,7 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
             manifest_chunks = manifest_chunks[: self.chunk_limit]
         return manifest_chunks
 
-    def _prepare_batch_task_env(
-        self, manifest_chunks: list[list[str]]
-    ) -> list[tuple[int, str, int]]:
+    def _prepare_batch_task_env(self, manifest_chunks: list[list[str]]) -> list[tuple[int, str, int]]:
         """Get the environment that will be used by batch tasks."""
         transfer_objects = []
         env_objects: list[tuple[int, str, int]] = []
@@ -139,9 +131,7 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         for i, lines in enumerate(manifest_chunks):
             self.log.info("Amending %s lines for %s manifest", len(lines) - 1, i)
             text = "\n".join(lines)
-            manifest_path = (
-                f"{self.manifest_prefix}/{manifest_generation_date}/chunk_{i}"
-            )
+            manifest_path = f"{self.manifest_prefix}/{manifest_generation_date}/chunk_{i}"
             self.log.info("Writing manifest to %s.", manifest_path)
             transfer_objects.append((manifest_path, text))
             env_objects.append((i, manifest_path, len(lines) - 1))
@@ -202,11 +192,7 @@ class FinemappingBatchOperator(CloudBatchSubmitJobOperator):
                         )
                     ],
                 ),
-                task_env=create_task_env(
-                    var_list=[
-                        {"LOCUS_INDEX": str(idx)} for idx in range(0, manifest[2])
-                    ]
-                ),
+                task_env=create_task_env(var_list=[{"LOCUS_INDEX": str(idx)} for idx in range(0, manifest[2])]),
                 policy_specs=google_batch["policy_specs"],
             ),
             deferrable=False,

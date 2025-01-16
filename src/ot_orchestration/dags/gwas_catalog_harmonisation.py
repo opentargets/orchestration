@@ -43,16 +43,18 @@ with DAG(
     **shared_dag_kwargs,
 ):
     node_config = find_node_in_config(config["nodes"], "generate_sumstat_index")
-    batch_index = BatchIndexOperator(
-        task_id=node_config["id"],
-        batch_index_specs=node_config["google_batch_index_specs"],
-    )
+    if node_config:
+        batch_index = BatchIndexOperator(
+            task_id=node_config["id"],
+            batch_index_specs=node_config["google_batch_index_specs"],
+        )
     node_config = find_node_in_config(config["nodes"], "gwas_catalog_harmonisation")
-    harmonisation_batch_job = BatchJobOperator.partial(
-        task_id=node_config["id"],
-        job_name="harmonisation",
-        google_batch=node_config["google_batch"],
-    ).expand(batch_index_row=batch_index.output)
+    if node_config:
+        harmonisation_batch_job = BatchJobOperator.partial(
+            task_id=node_config["id"],
+            job_name="harmonisation",
+            google_batch=node_config["google_batch"],
+        ).expand(batch_index_row=batch_index.output)
 
     chain(
         begin(),

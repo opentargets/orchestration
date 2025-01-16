@@ -10,10 +10,8 @@ from ot_orchestration.types import ManifestGeneratorSpecs
 
 class ProtoManifestGenerator(Protocol):
     @classmethod
-    def from_generator_config(
-        cls, specs: ManifestGeneratorSpecs, max_task_count: int
-    ) -> ProtoManifestGenerator:
-        """Constructor for Manifest Generator."""
+    def from_generator_config(cls, specs: ManifestGeneratorSpecs) -> ProtoManifestGenerator:
+        """Constructor for Manifest Generator given the specification."""
         raise NotImplementedError("Implement it in subclasses")
 
     def generate_batch_index(self) -> BatchIndex:

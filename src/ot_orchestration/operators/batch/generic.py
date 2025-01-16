@@ -1,8 +1,7 @@
-"""Operators for batch job."""
+"""Batch Job main operators."""
 
 from __future__ import annotations
 
-import logging
 import time
 from typing import Type
 
@@ -24,11 +23,9 @@ from ot_orchestration.types import GoogleBatchIndexSpecs, GoogleBatchSpecs
 from ot_orchestration.utils.batch import create_batch_job, create_task_spec
 from ot_orchestration.utils.common import GCP_PROJECT_GENETICS, GCP_REGION
 
-logging.basicConfig(level=logging.DEBUG)
-
 
 class BatchIndexOperator(BaseOperator):
-    """Operator to prepare google batch job index.
+    """Operator to prepare google batch job index and partition it into the manifests.
 
     Each manifest prepared by the operator should create an environment for a single batch job.
     Each row of the individual manifest should represent individual batch task.
@@ -53,16 +50,17 @@ class BatchIndexOperator(BaseOperator):
     @classmethod
     def get_generator(cls, label: str) -> Type[ProtoManifestGenerator]:
         """Get the generator by it's label in the registry."""
-        return cls.manifest_generator_registry[label]
+        try:
+            return cls.manifest_generator_registry[label]
+        except KeyError:
+            raise KeyError(f"Manifest generator with label {label} not found in the manifest generator registry.")
 
-    def execute(self, context) -> list[BatchIndexRow]:
+    def execute(self, **kwargs) -> list[BatchIndexRow]:
         """Execute the operator."""
-        generator = self.manifest_generator.from_generator_config(
-            self.manifest_generator_specs, max_task_count=self.max_task_count
-        )
+        generator = self.manifest_generator.from_generator_config(self.manifest_generator_specs)
         index = generator.generate_batch_index()
         self.log.info(index)
-        partitioned_index = index.partition()
+        partitioned_index = index.partition(self.max_task_count)
         rows = partitioned_index.rows
         return rows
 
@@ -84,16 +82,12 @@ class BatchJobOperator(CloudBatchSubmitJobOperator):
             job=create_batch_job(
                 task=create_task_spec(
                     image=google_batch["image"],
-                    commands=BatchCommands.deserialize(
-                        batch_index_row["command"]
-                    ).construct(),
+                    commands=BatchCommands.deserialize(batch_index_row["command"]).construct(),
                     task_specs=google_batch["task_specs"],
                     resource_specs=google_batch["resource_specs"],
                     entrypoint=google_batch["entrypoint"],
                 ),
-                task_env=BatchEnvironments.deserialize(
-                    batch_index_row["environment"]
-                ).construct(),
+                task_env=BatchEnvironments.deserialize(batch_index_row["environment"]).construct(),
                 policy_specs=google_batch["policy_specs"],
             ),
             deferrable=False,

@@ -7,6 +7,7 @@ import re
 from typing import Literal
 
 import pandas as pd
+from airflow.exceptions import AirflowSkipException
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 
 from ot_orchestration.operators.batch.batch_index import BatchIndex
@@ -40,7 +41,6 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
         options: dict[str, str],
         manifest_kwargs: dict[str, str],
         gcp_conn_id: str = "google_cloud_default",
-        max_task_count: int = 100_000,
     ):
         self.commands = commands
         self.options = options
@@ -49,7 +49,6 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
         self.harm_output_pattern = GCSPath(manifest_kwargs["harm_output_pattern"])
         self.raw_input_pattern = GCSPath(manifest_kwargs["raw_input_pattern"])
 
-        self.max_task_count = max_task_count
         self.manifest_path = manifest_kwargs["manifest_output_uri"]
 
         self.data: dict[
@@ -59,31 +58,22 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
         self.manifest: pd.DataFrame | None = None
 
     @classmethod
-    def from_generator_config(
-        cls, specs: ManifestGeneratorSpecs, max_task_count: int
-    ) -> ProtoManifestGenerator:
+    def from_generator_config(cls, specs: ManifestGeneratorSpecs) -> ProtoManifestGenerator:
         """Construct generator from config."""
         return cls(
             commands=specs["commands"],
             options=specs["options"],
             manifest_kwargs=specs["manifest_kwargs"],
-            max_task_count=max_task_count,
         )
 
     def generate_batch_index(self) -> BatchIndex:
         """Generate harmonisation manifest."""
-        vars_list = (
-            self.get_manifest_data()
-            .generate_manifest()
-            .dump_manifest()
-            .convert_manifest_to_vars_list()
-        )
+        vars_list = self.get_manifest_data().generate_manifest().dump_manifest().convert_manifest_to_vars_list()
 
         index = BatchIndex(
             vars_list=vars_list,
             options=self.options,
             commands=self.commands,
-            max_task_count=self.max_task_count,
         )
 
         return index
@@ -115,6 +105,9 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
                 prefix=prefix + "/",
                 match_glob=match_glob,
             )
+            if len(files) == 0 and key == "raw_sumstat":
+                logging.warning("No %s files found", key)
+                raise AirflowSkipException(f"No {key} files found")
             logging.info("Found %s %s files", len(files), key)
             results[key] = {
                 "sumstat": [f"{protocol}://{root}/{s}" for s in files],
@@ -175,6 +168,16 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
         self.manifest.to_csv(self.manifest_path, index=False)
         return self
 
+    @staticmethod
+    def _validate_manifest_flags(manifest: pd.DataFrame) -> None:
+        """Sanity function to ensure that the manifest is correctly prepared for harmonisation."""
+        for flag in ["qcPerformed", "isHarmonised"]:
+            if flag not in manifest.columns:
+                raise ValueError(f"Flag {flag} is missing in manifest")
+            values = manifest[flag].drop_duplicates().values
+            # Expect the flag to be boolean False only
+            assert not values[0] and len(values) == 1, "All non harmonised studies should have qcPerformed set to False"
+
     def convert_manifest_to_vars_list(self) -> list[dict[str, str]]:
         """Deconstruct manifest to collect studies to harmonize as a variable list."""
         if not isinstance(self.manifest, pd.DataFrame):
@@ -183,23 +186,22 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
         manifest = self.manifest.copy()
         # NOTE: we want to have a var_list with only non harmonised data.
         manifest = manifest[~manifest["isHarmonised"]]
+        # Skip the execution if there is nothing new to harmonise
         logging.info("Shape of manifest %s", manifest.shape)
-        assert len(manifest["qcPerformed"].drop_duplicates().values) == 1
-        assert not manifest["qcPerformed"].drop_duplicates().values[0]
-        assert len(manifest["isHarmonised"].drop_duplicates().values) == 1
-        assert not manifest["isHarmonised"].drop_duplicates().values[0]
-
+        if manifest.empty:
+            raise AirflowSkipException("No new studies to harmonise")
+        self._validate_manifest_flags(manifest)
         # Extract only relevant keys
         manifest = manifest[["rawSumstatPath", "harmonisedSumstatPath", "qcPath"]]
         # Rename var_list so we have a clear names
         manifest.rename(columns=self.fields, inplace=True)
-        # convert to var_list
+        # convert to list of dictionaries
         var_list = manifest.to_dict("records")
         if var_list:
-            logging.info(var_list[0])
+            logging.info("First row of var_list %s", var_list[0])
         else:
-            logging.warning("No environments to create")
-        # NOTE: Ensure the types are correct, as Environment requires only str dictionaries.
+            AirflowSkipException("No environments to create")
+        # NOTE: Ensure the types are correct, as Environment requires dict[str,str] types.
         var_list = [{str(k): str(v) for k, v in row.items()} for row in var_list]
         return var_list
 
