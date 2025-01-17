@@ -21,7 +21,8 @@ from ot_orchestration.utils import (
 )
 from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 
-SOURCE_CONFIG_FILE_PATH = Path(__file__).parent / "config" / "gwas_catalog_sumstat_harmonisation.yaml"
+SOURCE_CONFIG_FILE_PATH = Path(
+    __file__).parent / "config" / "gwas_catalog_sumstat_harmonisation.yaml"
 config = read_yaml_config(SOURCE_CONFIG_FILE_PATH)
 env_spec: list[EnvironmentSpec] = config["environment_specs"]
 env: Environment = config["env"]
@@ -48,23 +49,24 @@ with DAG(
     default_args=shared_dag_args,
     **shared_dag_kwargs,
 ):
-    node_config = find_node_in_config(config["nodes"], "generate_sumstat_index")
-    if node_config:
+    index_config = find_node_in_config(
+        config["nodes"], "generate_sumstat_index")
+    harmonisation_config = find_node_in_config(
+        config["nodes"], "gwas_catalog_harmonisation")
+    if index_config and harmonisation_config:
         batch_index = BatchIndexOperator(
-            task_id=node_config["id"],
-            batch_index_specs=node_config["google_batch_index_specs"],
+            task_id=index_config["id"],
+            batch_index_specs=index_config["google_batch_index_specs"],
         )
-    node_config = find_node_in_config(config["nodes"], "gwas_catalog_harmonisation")
-    if node_config:
         harmonisation_batch_job = BatchJobOperator.partial(
-            task_id=node_config["id"],
+            task_id=harmonisation_config["id"],
             job_name="harmonisation",
-            google_batch=node_config["google_batch"],
+            google_batch=harmonisation_config["google_batch"],
         ).expand(batch_index_row=batch_index.output)
 
-    chain(
-        begin(),
-        batch_index,
-        harmonisation_batch_job,
-        end(),
-    )
+        chain(
+            begin(),
+            batch_index,
+            harmonisation_batch_job,
+            end(),
+        )
