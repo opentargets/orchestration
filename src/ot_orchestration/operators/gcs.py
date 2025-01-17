@@ -20,26 +20,26 @@ class UploadFileOperator(BaseOperator):
 
     Args:
         project_id: The GCP project ID. Defaults to the platform project.
-        src: The path to the file to upload.
-        dst: The destination path in GCS.
+        src_path: The path to the file to upload.
+        dst_uri: The destination URI in GCS.
     """
 
-    template_fields: Sequence[str] = ("src", "dst")
+    template_fields: Sequence[str] = ("src", "dst_uri")
 
     def __init__(
         self,
         *args,
         project_id: str = GCP_PROJECT_PLATFORM,
-        src: Path,
-        dst: str,
+        src_path: Path,
+        dst_uri: str,
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
         self.project_id = project_id
-        self.dst = GCSPath(dst)
-        self.src = src
+        self.dst_uri = GCSPath(dst_uri)
+        self.src_path = src_path
 
-        self.bucket_name, self.path = self.dst.split()
+        self.bucket_name, self.path = self.dst_uri.split()
 
     def execute(self, context) -> None:
         """Execute the Operator."""
@@ -50,8 +50,8 @@ class UploadFileOperator(BaseOperator):
             b.create()
 
         blob = b.blob(self.path)
-        blob.upload_from_filename(self.src)
-        self.log.info("uploaded file from %s to: %s", self.src, self.dst)
+        blob.upload_from_filename(self.src_path)
+        self.log.info("uploaded file from %s to: %s", self.src_path, self.dst_uri)
 
 
 class UploadRemoteFileOperator(BaseOperator):
@@ -62,34 +62,34 @@ class UploadRemoteFileOperator(BaseOperator):
 
     Args:
         project_id: The GCP project ID. Defaults to the platform project.
-        src: Source file URL.
-        dst: The destination path in GCS.
+        src_url: Source file URL.
+        dst_uri: The destination URI in GCS.
     """
 
-    template_fields: Sequence[str] = ("src", "dst")
+    template_fields: Sequence[str] = ("src_url", "dst_uri")
 
     def __init__(
         self,
         *args,
         project_id: str = GCP_PROJECT_PLATFORM,
-        src: str,
-        dst: str,
+        src_url: str,
+        dst_uri: str,
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
         self.project_id = project_id
-        self.dst = GCSPath(dst)
-        self.src = src
+        self.src_url = src_url
+        self.dst_uri = GCSPath(dst_uri)
 
-        self.bucket_name, self.path = self.dst.split()
+        self.bucket_name, self.path = self.dst_uri.split()
 
     def execute(self, context) -> None:
         """Execute the Operator."""
         c = Client(project=self.project_id)
         b = Bucket(client=c, name=self.bucket_name)
-        temp_file = Path("/tmp") / self.src.split("/")[-1]
+        temp_file = Path("/tmp") / self.src_url.split("/")[-1]
 
-        with requests.get(self.src, stream=True) as r:
+        with requests.get(self.src_url, stream=True) as r:
             r.raise_for_status()
             with open(temp_file, "wb") as f:
                 for chunk in r.iter_content(chunk_size=8192):
@@ -100,7 +100,7 @@ class UploadRemoteFileOperator(BaseOperator):
 
         blob = b.blob(self.path)
         blob.upload_from_filename(temp_file)
-        self.log.info("uploaded file from %s to: %s", self.src, self.dst)
+        self.log.info("uploaded file from %s to: %s", self.src_url, self.dst_uri)
 
 
 class UploadStringOperator(BaseOperator):
@@ -112,22 +112,22 @@ class UploadStringOperator(BaseOperator):
     Args:
         project_id: The GCP project ID. Defaults to the platform project.
         contents: The string to upload.
-        dst: The destination path in GCS.
+        dst_uri: The destination URI in GCS.
     """
 
-    template_fields: Sequence[str] = ("contents", "dst")
+    template_fields: Sequence[str] = ("contents", "dst_uri")
 
     def __init__(
         self,
         *args,
         project_id: str = GCP_PROJECT_PLATFORM,
         contents: str,
-        dst: str,
+        dst_uri: str,
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
         self.project_id = project_id
-        self.dst = GCSPath(dst)
+        self.dst_uri = GCSPath(dst_uri)
         self.contents = contents
 
         self.bucket_name, self.path = self.dst.split()
