@@ -29,7 +29,7 @@ nodes:
           qc_output_pattern: '{root_path}/summary_statistics_qc/**_SUCCESS'
           harm_output_pattern: '{root_path}/harmonised_summary_statistics/**_SUCCESS'
           raw_input_pattern: '{root_path}/raw_summary_statistics/**.h.tsv.gz'
-          manifest_output_uri: '{root_path}/gwas_catalog_inputs/harmonisation_manifest.csv'
+          manifest_output_uri: '{root_path}/harmonisation_manifest.csv'
 
   - id: gwas_catalog_harmonisation
     kind: Task

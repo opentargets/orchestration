@@ -165,6 +165,7 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
         """Perform dump of the manifest for downstream processing."""
         if not isinstance(self.manifest, pd.DataFrame):
             raise ValueError("Create manifest first.")
+        logging.info("Dumping manifest to %s", self.manifest_path)
         self.manifest.to_csv(self.manifest_path, index=False)
         return self
 
