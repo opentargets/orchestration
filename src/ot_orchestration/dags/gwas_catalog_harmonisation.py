@@ -21,8 +21,7 @@ from ot_orchestration.utils import (
 )
 from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 
-SOURCE_CONFIG_FILE_PATH = Path(
-    __file__).parent / "config" / "gwas_catalog_sumstat_harmonisation.yaml"
+SOURCE_CONFIG_FILE_PATH = Path(__file__).parent / "config" / "gwas_catalog_sumstat_harmonisation.yaml"
 config = read_yaml_config(SOURCE_CONFIG_FILE_PATH)
 env_spec: list[EnvironmentSpec] = config["environment_specs"]
 env: Environment = config["env"]
@@ -49,10 +48,8 @@ with DAG(
     default_args=shared_dag_args,
     **shared_dag_kwargs,
 ):
-    index_config = find_node_in_config(
-        config["nodes"], "generate_sumstat_index")
-    harmonisation_config = find_node_in_config(
-        config["nodes"], "gwas_catalog_harmonisation")
+    index_config = find_node_in_config(config["nodes"], "generate_sumstat_index")
+    harmonisation_config = find_node_in_config(config["nodes"], "gwas_catalog_harmonisation")
     if index_config and harmonisation_config:
         batch_index = BatchIndexOperator(
             task_id=index_config["id"],
