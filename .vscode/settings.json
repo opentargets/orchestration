@@ -1,0 +1,9 @@
+{
+  "python.analysis.typeCheckingMode": "basic",
+  "files.associations": {
+    "*.conf": "hocon",
+  },
+  "yaml.schemas": {
+    "https://raw.githubusercontent.com/opentargets/pis/refs/heads/sane-paths/.vscode/config-schema.json": "pis.yaml"
+  }
+}
