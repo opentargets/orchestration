@@ -25,10 +25,7 @@ from ot_orchestration.operators.dataproc import (
     PlatformETLSubmitJobOperator,
 )
 from ot_orchestration.operators.gce import ComputeEngineRunContainerizedWorkloadSensor
-from ot_orchestration.operators.gcs import (
-    UploadRemoteFileOperator,
-    UploadStringOperator,
-)
+from ot_orchestration.operators.gcs import CopyBlobOperator, UploadStringOperator
 from ot_orchestration.operators.unified_pipeline import PISDiffComputeOperator
 from ot_orchestration.utils import (
     create_cluster_name,
@@ -98,6 +95,7 @@ with DAG(
                     task_id=f"upload_config_{step_name}",
                     contents=to_yaml(config.pis_config),
                     dst_uri=config_uri,
+                    overwrite=True,
                 )
 
                 r = ComputeEngineRunContainerizedWorkloadSensor(
@@ -186,7 +184,7 @@ with DAG(
     # p. Prepare the ETL Dataproc cluster.
     #   c. Create the cluster.
     #   uc. Upload the ETL configuration to GCS.
-    #   uj. Upload the ETL JAR to GCS.
+    #   cj. Copy the ETL JAR.
     # r. The ETL steps are run in parallel, as their prerequisites are met.
     # d. Delete the Dataproc cluster.
     # ==============================================================================================
@@ -205,13 +203,16 @@ with DAG(
             task_id=f"upload_config",
             contents=to_hocon(config.etl_config),
             dst_uri=config.etl_config_uri,
+            overwrite=True,
         )
-        uj = UploadRemoteFileOperator(
+        cj = CopyBlobOperator(
             task_id=f"upload_jar",
             src_uri=config.etl_jar_origin_uri,
             dst_uri=config.etl_jar_uri,
+            overwrite=True,
         )
-        chain(c, uc, uj)
+
+        chain(c, uc, cj)
 
     p = etl_cluster_prepare()
 

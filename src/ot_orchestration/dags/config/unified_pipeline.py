@@ -79,8 +79,8 @@ class UnifiedPipelineConfig:
         self.etl_config = self.init_etl_config()
         self.etl_config_uri = f"{self.release_uri}/etc/config/etl.conf"
         # The base url for the ETL jar, the version will be replaced in from the config file.
-        self.etl_jar_origin_url = f"https://github.com/opentargets/platform-etl-backend/releases/download/v{etl_version}/etl-backend-{etl_version}.jar"
-        self.etl_jar_uri = f"{self.gcs_url}/output/etl-backend-{etl_version}.jar"  # fmt: skip
+        self.etl_jar_origin_uri = f"gs://opentargets-pipelines/up/etl/etl-{etl_version}.jar"
+        self.etl_jar_uri = f"{self.release_uri}/etc/bin/etl.jar"  # fmt: skip
         self.etl_step_list = [s for s in settings["steps"].keys() if s.startswith("etl_")]
 
         # GENTROPY-specific settings.
