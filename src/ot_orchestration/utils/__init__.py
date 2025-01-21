@@ -14,6 +14,7 @@ from ot_orchestration.utils.utils import (
     convert_params_to_hydra_positional_arg,
     create_cluster_name,
     create_name,
+    find_environment_vars,
     find_node_in_config,
     random_id,
     read_hocon_config,
@@ -44,4 +45,5 @@ __all__ = [
     "convert_params_to_hydra_positional_arg",
     "find_node_in_config",
     "chain_dependencies",
+    "find_environment_vars",
 ]
