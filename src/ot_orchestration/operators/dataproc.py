@@ -128,6 +128,7 @@ class PlatformETLCreateClusterOperator(DataprocCreateClusterOperator):
             default_run_label = dag_run.run_id
         run_label = context.get("params", {}).get("run_label", default_run_label)
         self.labels.add({"run": run_label})
+        self.labels = self.labels.as_dict()
 
         return super().execute(context)
 

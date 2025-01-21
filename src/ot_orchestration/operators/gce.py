@@ -31,6 +31,12 @@ from ot_orchestration.utils.labels import Labels
 CONTAINER_NAME = "workload_container"
 LOGGING_REQUEST_INTERVAL = 5
 
+## WARNING
+# After any change in deferrable operators, you must restart the airflow triggerer
+# container to apply the changes with:
+# docker compose restart airflow-trigger
+# hopefully this will save you some time debugging due to stupid airflow quirks
+
 
 def wait_for_extended_operation(
     operation: ExtendedOperation,
@@ -200,7 +206,7 @@ class CloudLoggingAsyncHook(GoogleBaseHook):
         self,
         project_name: str,
         instance_name: str,
-        initial_timestamp: datetime.datetime,
+        start_time: datetime.datetime,
     ) -> int | None:
         """Get the exit code of the startup script of a Google Compute Engine instance.
 
@@ -225,8 +231,8 @@ class CloudLoggingAsyncHook(GoogleBaseHook):
         Script "startup-script" failed with error: exit status 1
         """  # noqa: D301
         client = self.get_conn()
-        timestamp_str = initial_timestamp.isoformat()
-        query = f'resource.type="gce_instance" labels.instance_name="{instance_name}" timestamp>"{timestamp_str}" jsonPayload.message=~"startup-script[\w\\\":\s]*exit status [0-9]+"'  # fmt: skip
+        timestamp = start_time.isoformat()
+        query = f'resource.type="gce_instance" labels.instance_name="{instance_name}" timestamp>"{timestamp}" jsonPayload.message=~"startup-script[\w\\\":\s]*exit status [0-9]+"'  # fmt: skip
         log_pages = None
 
         while True:
@@ -659,7 +665,7 @@ class ComputeEngineExitCodeTrigger(BaseTrigger):
         self.gcp_conn_id = gcp_conn_id
         self.impersonation_chain = impersonation_chain
         self.poll_sleep = poll_sleep
-        self.timestamp = datetime.datetime.now(datetime.timezone.utc)
+        self.start_time = datetime.datetime.now(datetime.timezone.utc)
 
     def serialize(self) -> tuple[str, dict[str, Any]]:
         """Serialize class arguments and classpath."""
@@ -692,7 +698,7 @@ class ComputeEngineExitCodeTrigger(BaseTrigger):
                 exit_code = await self.hook.get_exit_code(
                     self.project,
                     self.instance_name,
-                    self.timestamp,
+                    self.start_time,
                 )
 
                 self.log.info(f"VM {self.instance_name} exit code is {exit_code}")
