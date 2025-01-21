@@ -57,7 +57,7 @@ class UnifiedPipelineConfig:
         pis_version = settings["pis_version"]
         self.pis_config = self.init_pis_config()
         # The base image for PIS, the version tag will be appended from the config file.
-        pis_image_base = "europe-west1-docker.pkg.dev/open-targets-eu-dev/platform-input-support-test/platform-input-support-test"
+        pis_image_base = "europe-west1-docker.pkg.dev/open-targets-eu-dev/pis/pis"
         self.pis_image = f"{pis_image_base}:{pis_version}"
         self.pis_step_list = [s for s in settings["steps"].keys() if s.startswith("pis_")]
         self.pis_pool = 16  # number of parallel workers inside of each PIS step
@@ -88,7 +88,6 @@ class UnifiedPipelineConfig:
         self.vep_version = settings["vep_version"]
         self.gentropy_config = self.init_gentropy_settings()
         self.gentropy_dataproc_cluster_settings = self.gentropy_config["dataproc_cluster_settings"]
-
         self.gentropy_step_list = [s for s in settings["steps"].keys() if s.startswith("gentropy_")]
         self.gentropy_python_main_module = self.gentropy_config["python_main_module"]
 
@@ -111,11 +110,6 @@ class UnifiedPipelineConfig:
         pis_raw_conf["scratchpad"]["chembl_version"] = self.chembl_version
         pis_raw_conf["scratchpad"]["efo_version"] = self.efo_version
         pis_raw_conf["scratchpad"]["ensembl_version"] = self.ensembl_version
-
-        # ppp - if not ppp, remove 'otar' and 'pppevidence' steps
-        if not self.is_ppp:
-            pis_raw_conf["steps"].pop("otar", None)
-            pis_raw_conf["steps"].pop("ppp_evidence", None)
 
         return pis_raw_conf
 
