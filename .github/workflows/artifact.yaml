@@ -1,12 +1,11 @@
 ---
 name: Build and Push to Artifact Registry
 
-"on":
+on:
   push:
-    branches: ["*"]
-    tags: ["*"]
     paths:
-      - images/**
+      - images/gentropy/scripts/harmonise-sumstats.sh
+      - images/gentropy/Dockerfile
 
 env:
   PROJECT_ID: open-targets-genetics-dev
