@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from typing import Any, Literal, TypedDict
 
 
@@ -57,6 +58,18 @@ class DataprocSpecs(TypedDict):
     cluster_name: str
 
 
+class GoogleBatchIndexSpecs(TypedDict):
+    manifest_generator_label: str
+    max_task_count: int
+    manifest_generator_specs: ManifestGeneratorSpecs
+
+
+class ManifestGeneratorSpecs(TypedDict):
+    commands: list[str]  # job command line commands
+    options: dict[str, str]  # job command line options
+    manifest_kwargs: dict[str, str]  # generator specific keyword arguments
+
+
 class ConfigNode(TypedDict):
     id: str
     kind: Literal["Task", "TaskGroup"]
@@ -64,3 +77,14 @@ class ConfigNode(TypedDict):
     params: dict[str, Any]
     google_batch: GoogleBatchSpecs
     nodes: list[ConfigNode]
+    google_batch_index_specs: GoogleBatchIndexSpecs
+
+
+class Environment(Enum):
+    TEST = "Test"
+    PROD = "Prod"
+
+
+class EnvironmentSpec(TypedDict):
+    name: Environment
+    vars: dict[str, str]
