@@ -3,6 +3,8 @@ name: Build and Push to Artifact Registry
 
 on:
   push:
+    branches:
+      - dev
     paths:
       - images/gentropy/scripts/harmonise-sumstats.sh
       - images/gentropy/Dockerfile
