@@ -29,9 +29,7 @@ from ot_orchestration.utils import (
 from ot_orchestration.utils.labels import Labels
 
 
-def create_container_runnable(
-    image: str, *, commands: list[str], **kwargs: Any
-) -> Runnable:
+def create_container_runnable(image: str, *, commands: list[str], **kwargs: Any) -> Runnable:
     """Create a container runnable for a Batch job with additional optional parameters.
 
     Args:
@@ -42,9 +40,7 @@ def create_container_runnable(
     Returns:
         Runnable: The container runnable.
     """
-    runnable = Runnable(
-        container=Runnable.Container(image_uri=image, commands=commands, **kwargs)
-    )
+    runnable = Runnable(container=Runnable.Container(image_uri=image, commands=commands, **kwargs))
     return runnable
 
 
@@ -143,7 +139,7 @@ def create_batch_job(
             ]
         ),
         logs_policy=LogsPolicy(destination=LogsPolicy.Destination.CLOUD_LOGGING),
-        labels=labels.get(),
+        labels=labels.as_dict(),
     )
 
     return job

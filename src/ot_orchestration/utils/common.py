@@ -11,8 +11,6 @@ from ot_orchestration.utils import strhash
 if TYPE_CHECKING:
     from typing import Any, Callable
 
-GENTROPY_VERSION = "0.0.0"
-
 # Cloud configuration.
 GCP_PROJECT_GENETICS = "open-targets-genetics-dev"
 GCP_PROJECT_PLATFORM = "open-targets-eu-dev"
@@ -21,23 +19,6 @@ GCP_ZONE = "europe-west1-d"
 GCP_DATAPROC_IMAGE = "2.1"
 GCP_AUTOSCALING_POLICY = "otg-etl"
 GCP_EFM_AUTOSCALING_POLICY = "otg-efm"
-
-# Image configuration.
-GENTROPY_DOCKER_IMAGE = (
-    "europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:dev"
-)
-
-# Cluster init configuration.
-INITIALISATION_BASE_PATH = (
-    f"gs://genetics_etl_python_playground/initialisation/{GENTROPY_VERSION}"
-)
-CONFIG_TAG = f"{INITIALISATION_BASE_PATH}/config.tar.gz"
-PACKAGE_WHEEL = (
-    f"{INITIALISATION_BASE_PATH}/gentropy-{GENTROPY_VERSION}-py3-none-any.whl"
-)
-INITIALISATION_EXECUTABLE_FILE = [
-    f"{INITIALISATION_BASE_PATH}/install_dependencies_on_cluster.sh"
-]
 
 # CLI configuration.
 CLUSTER_CONFIG_DIR = "/config"
