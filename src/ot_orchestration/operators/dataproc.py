@@ -123,9 +123,12 @@ class PlatformETLCreateClusterOperator(DataprocCreateClusterOperator):
 
     def execute(self, context) -> dict:
         """Execute the operator."""
-        run = context.get("params", {}).get("run_label", context.get("dag_run").run_id)
-        self.labels.add({"run": run})
-        self.labels = self.labels.get()
+        dag_run = context.get("dag_run")
+        if dag_run:
+            default_run_label = dag_run.run_id
+        run_label = context.get("params", {}).get("run_label", default_run_label)
+        self.labels.add({"run": run_label})
+        self.labels = self.labels.as_dict()
 
         return super().execute(context)
 
@@ -138,9 +141,9 @@ class PlatformETLSubmitJobOperator(DataprocSubmitJobOperator):
         region: Optional. The Cloud Dataproc region in which to handle the request.
         cluster_name: Required. The cluster to submit the job to.
         step_name: Required. The name of the job.
-        jar_file_uri: Required. The URL of the jar file for the job. Note it is named URL
+        jar_uri: Required. The URL of the jar file for the job. Note it is named URL
             and not URI.
-        config_file_uri: Required. The URL of the configuration file for the job. Note it is
+        config_uri: Required. The URL of the configuration file for the job. Note it is
             named URL and not URI.
         labels: Optional. The labels to associate with this job.
         gcp_conn_id:
@@ -159,8 +162,8 @@ class PlatformETLSubmitJobOperator(DataprocSubmitJobOperator):
         "region",
         "cluster_name",
         "step_name",
-        "jar_file_uri",
-        "config_file_uri",
+        "jar_uri",
+        "config_uri",
         "labels",
         "impersonation_chain",
         "request_id",
@@ -173,8 +176,8 @@ class PlatformETLSubmitJobOperator(DataprocSubmitJobOperator):
         region: str = GCP_REGION,
         cluster_name: str,
         step_name: str,
-        jar_file_uri: str,
-        config_file_uri: str,
+        jar_uri: str,
+        config_uri: str,
         labels: Labels | None = None,
         gcp_conn_id: str = "google_cloud_default",
         impersonation_chain: str | Sequence[str] | None = None,
@@ -184,8 +187,8 @@ class PlatformETLSubmitJobOperator(DataprocSubmitJobOperator):
         self.region = region
         self.cluster_name = cluster_name
         self.step_name = step_name
-        self.jar_file_uri = jar_file_uri
-        self.config_file_uri = config_file_uri
+        self.jar_uri = jar_uri
+        self.config_uri = config_uri
         self.labels = labels or Labels()
         self.gcp_conn_id = gcp_conn_id
         self.impersonation_chain = impersonation_chain
@@ -199,26 +202,29 @@ class PlatformETLSubmitJobOperator(DataprocSubmitJobOperator):
             **kwargs,
         )
 
-    def execute(self, context) -> dict:
+    def execute(self, context):
         """Execute the operator."""
-        config_filename = self.config_file_uri.split("/")[-1]
+        config_filename = self.config_uri.split("/")[-1]
         job_id = f"{self.cluster_name}-{self.step_name}-{random_id()}"
-        run = context.get("params", {}).get("run_label", context.get("dag_run").run_id)
-        self.labels.add({"run": run})
+        dag_run = context.get("dag_run")
+        if dag_run:
+            default_run_label = dag_run.run_id
+        run_label = context.get("params", {}).get("run_label", default_run_label)
+        self.labels.add({"run": run_label})
 
         self.job = Job(
             reference=JobReference(project_id=self.project_id, job_id=job_id),
             placement=JobPlacement(cluster_name=self.cluster_name),
             spark_job=SparkJob(
-                main_jar_file_uri=self.jar_file_uri,
-                file_uris=[self.config_file_uri],
+                main_jar_file_uri=self.jar_uri,
+                file_uris=[self.config_uri],
                 args=[self.step_name],
                 properties={
                     "spark.executor.extraJavaOptions": f"-Dconfig.file={config_filename} -XX:MaxPermSize=512m -XX:+UseCompressedOops",
                     "spark.driver.extraJavaOptions": f"-Dconfig.file={config_filename} -XX:MaxPermSize=512m -XX:+UseCompressedOops",
                 },
             ),
-            labels=self.labels.get(),
+            labels=self.labels.as_dict(),
         )
 
         return super().execute(context)

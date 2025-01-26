@@ -44,8 +44,8 @@ class UnifiedPipelineConfig:
 
         # Pipeline settings.
         settings = read_yaml_config(self.config_path)
-        self.gcs_url:str = settings["gcs_url"]
-        self.release = self.gcs_url.split("/")[-1]
+        release_name = settings["release_name"]
+        self.release_uri:str = f'gs://open-targets-pre-data-releases/{release_name}'
         self.chembl_version = settings["chembl_version"]
         self.efo_version = settings["efo_version"]
         self.ensembl_version = settings["ensembl_version"]
@@ -57,7 +57,7 @@ class UnifiedPipelineConfig:
         pis_version = settings["pis_version"]
         self.pis_config = self.init_pis_config()
         # The base image for PIS, the version tag will be appended from the config file.
-        pis_image_base = "europe-west1-docker.pkg.dev/open-targets-eu-dev/platform-input-support-test/platform-input-support-test"
+        pis_image_base = "europe-west1-docker.pkg.dev/open-targets-eu-dev/pis/pis"
         self.pis_image = f"{pis_image_base}:{pis_version}"
         self.pis_step_list = [s for s in settings["steps"].keys() if s.startswith("pis_")]
         self.pis_pool = 16  # number of parallel workers inside of each PIS step
@@ -77,10 +77,10 @@ class UnifiedPipelineConfig:
         # ETL-specific settings.
         etl_version = settings["etl_version"]
         self.etl_config = self.init_etl_config()
-        self.etl_config_gcs_uri = f"{self.gcs_url}/output/etl-config.conf"
+        self.etl_config_uri = f"{self.release_uri}/etc/config/etl.conf"
         # The base url for the ETL jar, the version will be replaced in from the config file.
-        self.etl_jar_origin_url = f"https://github.com/opentargets/platform-etl-backend/releases/download/v{etl_version}/etl-backend-{etl_version}.jar"
-        self.etl_jar_gcs_uri = f"{self.gcs_url}/output/etl-backend-{etl_version}.jar"  # fmt: skip
+        self.etl_jar_origin_uri = f"gs://opentargets-pipelines/up/etl/etl-{etl_version}.jar"
+        self.etl_jar_uri = f"{self.release_uri}/etc/bin/etl.jar"  # fmt: skip
         self.etl_step_list = [s for s in settings["steps"].keys() if s.startswith("etl_")]
 
         # GENTROPY-specific settings.
@@ -88,17 +88,12 @@ class UnifiedPipelineConfig:
         self.vep_version = settings["vep_version"]
         self.gentropy_config = self.init_gentropy_settings()
         self.gentropy_dataproc_cluster_settings = self.gentropy_config["dataproc_cluster_settings"]
-
         self.gentropy_step_list = [s for s in settings["steps"].keys() if s.startswith("gentropy_")]
         self.gentropy_python_main_module = self.gentropy_config["python_main_module"]
 
-    def pis_config_gcs_url(self, step_name: str) -> str:
+    def pis_config_uri(self, step_name: str) -> str:
         """Return the google cloud url of the PIS configuration file for a step."""
-        return f"{self.gcs_url}/input/pis-config-{step_name}.yaml"
-
-    def pis_config_docker_path(self, step_name: str) -> str:
-        """Return the path to the PIS configuration file for a step inside the docker container."""
-        return f"/pis-config-{step_name}.yaml"
+        return f"{self.release_uri}/etc/config/{step_name}.yaml"
 
     def init_pis_config(self) -> dict[str, Any]:
         """Initialize the PIS configuration.
@@ -109,17 +104,12 @@ class UnifiedPipelineConfig:
         pis_raw_conf = read_yaml_config(self.pis_config_local_path)
 
         # set the work bucket path
-        pis_raw_conf["gcs_url"] = f"{self.gcs_url}/input"
+        pis_raw_conf["remote_uri"] = f"{self.release_uri}/input"
 
         # fill in the scratchpad fields
         pis_raw_conf["scratchpad"]["chembl_version"] = self.chembl_version
         pis_raw_conf["scratchpad"]["efo_version"] = self.efo_version
         pis_raw_conf["scratchpad"]["ensembl_version"] = self.ensembl_version
-
-        # ppp - if not ppp, remove 'otar' and 'pppevidence' steps
-        if not self.is_ppp:
-            pis_raw_conf["steps"].pop("otar", None)
-            pis_raw_conf["steps"].pop("ppp_evidence", None)
 
         return pis_raw_conf
 
@@ -134,7 +124,7 @@ class UnifiedPipelineConfig:
     def ontoform_args(self, step_name: str) -> list[str]:
         """Return the arguments for the ONTOFORM step."""
         real_step_name = step_name.replace("ontoform_", "")
-        return ["--work-dir", self.gcs_url, real_step_name]
+        return ["--work-dir", self.release_uri, real_step_name]
 
     # pyhocon returns a ConfigTree, but we can treat it as a dict
     def init_etl_config(self) -> dict[str, Any]:
@@ -146,10 +136,7 @@ class UnifiedPipelineConfig:
         etl_raw_conf = read_hocon_config(
             self.etl_config_local_path,
             sentinels={
-                "gcs_url": self.gcs_url,
-                "release": self.release,
-                "chembl_version": self.chembl_version,
-                "ensembl_version": self.ensembl_version,
+                "remote_uri": self.release_uri,
             },
         )
 
@@ -169,7 +156,7 @@ class UnifiedPipelineConfig:
         return read_yaml_config(
             self.gentropy_config_local_path,
             sentinels={
-                "gcs_url": self.gcs_url,
+                "release_uri": self.release_uri,
                 "gentropy_version": self.gentropy_version,
                 "vep_version": self.vep_version,
             },

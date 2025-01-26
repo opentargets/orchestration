@@ -31,11 +31,17 @@ from ot_orchestration.utils.labels import Labels
 CONTAINER_NAME = "workload_container"
 LOGGING_REQUEST_INTERVAL = 5
 
+## WARNING
+# After any change in deferrable operators, you must restart the airflow triggerer
+# container to apply the changes with:
+# docker compose restart airflow-trigger
+# hopefully this will save you some time debugging due to stupid airflow quirks
+
 
 def wait_for_extended_operation(
     operation: ExtendedOperation,
     verbose_name: str = "operation",
-    timeout: int = 300,
+    timeout: int | None = 300,
     log: logging.Logger = logging.getLogger(__name__),
 ) -> Any:
     """Waits for the extended (long-running) operation to complete.
@@ -49,7 +55,7 @@ def wait_for_extended_operation(
         operation: a long-running operation you want to wait on.
         verbose_name: (optional) a more verbose name of the operation,
             used only during error and warning reporting.
-        timeout: how long (in seconds) to wait for operation to finish.
+        timeout: how long (timedelta) to wait for operation to finish.
             If None, wait indefinitely.
         log: (optional) a logger to use for logging.
 
@@ -200,8 +206,8 @@ class CloudLoggingAsyncHook(GoogleBaseHook):
         self,
         project_name: str,
         instance_name: str,
-        initial_timestamp: datetime.datetime,
-    ) -> int:
+        start_time: datetime.datetime,
+    ) -> int | None:
         """Get the exit code of the startup script of a Google Compute Engine instance.
 
         According to Google Cloud documentation in `viewing the output of a Linux startup script
@@ -225,8 +231,8 @@ class CloudLoggingAsyncHook(GoogleBaseHook):
         Script "startup-script" failed with error: exit status 1
         """  # noqa: D301
         client = self.get_conn()
-        timestamp_str = initial_timestamp.isoformat()
-        query = f'resource.type="gce_instance" labels.instance_name="{instance_name}" timestamp>"{timestamp_str}" jsonPayload.message=~"startup-script[\w\\\":\s]*exit status [0-9]+"'  # fmt: skip
+        timestamp = start_time.isoformat()
+        query = f'resource.type="gce_instance" labels.instance_name="{instance_name}" timestamp>"{timestamp}" jsonPayload.message=~"startup-script[\w\\\":\s]*exit status [0-9]+"'  # fmt: skip
         log_pages = None
 
         while True:
@@ -346,9 +352,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
         work_disk_size_gb: int = 0,
         gcp_conn_id: str = "google_cloud_default",
         impersonation_chain: str | Sequence[str] | None = None,
-        deferrable: bool = conf.getboolean(
-            "operators", "default_deferrable", fallback=False
-        ),
+        deferrable: bool = conf.getboolean("operators", "default_deferrable", fallback=False),
         poll_interval: int = 10,
         **kwargs,
     ) -> None:
@@ -375,9 +379,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
         """Build the environment parameters for the docker run command."""
         if not self.container_env:
             return "\\"
-        return ("\n").join(
-            [f"    -e {k}={v} \\" for k, v in self.container_env.items()]
-        )
+        return ("\n").join([f"    -e {k}={v} \\" for k, v in self.container_env.items()])
 
     def build_volume_params(self):
         """Build the volume parameters for the docker run command."""
@@ -465,7 +467,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
             boot=True,
             initialize_params=compute_v1.AttachedDiskInitializeParams(
                 disk_type=f"zones/{self.zone}/diskTypes/pd-ssd",
-                labels=self.labels.get(),
+                labels=self.labels.as_dict(),
                 source_image="projects/cos-cloud/global/images/cos-113-18244-151-50",
             ),
         )
@@ -475,7 +477,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
             device_name="work-disk",
             initialize_params=compute_v1.AttachedDiskInitializeParams(
                 disk_size_gb=self.work_disk_size_gb,
-                labels=self.labels.get(),
+                labels=self.labels.as_dict(),
                 disk_type=f"zones/{self.zone}/diskTypes/pd-ssd",
             ),
         )
@@ -487,7 +489,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
             description="unified pipeline runner instance",
             machine_type=f"zones/{self.zone}/machineTypes/{self.machine_type}",
             disks=disks,
-            labels=self.labels.get(),
+            labels=self.labels.as_dict(),
             metadata=types.Metadata(
                 items=[
                     {
@@ -533,7 +535,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
             ],
         )
 
-    def start(self) -> int:
+    def start(self):
         """Create a Google Compute Engine instance and run a containerized workload on it."""
         self.client = compute_v1.InstancesClient()
         i = self.declare_instance()
@@ -547,13 +549,11 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
             wait_for_extended_operation(
                 operation,
                 verbose_name="instance insertion",
-                timeout=self.execution_timeout,
+                timeout=int(self.execution_timeout.total_seconds()) if self.execution_timeout else None,
                 log=self.log,
             )
         except Exception as e:
-            raise AirflowException(
-                f"Failed to create instance {self.instance_name}"
-            ) from e
+            raise AirflowException(f"Failed to create instance {self.instance_name}") from e
 
         self.log.info(f"created vm {self.instance_name}")
 
@@ -574,10 +574,13 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
         # We must implement this if we want to run this sensor in a non-deferrable mode.
         return False
 
-    def execute(self, context: Context) -> bool:
+    def execute(self, context: Context):
         """Set up and execute the sensor, then start the trigger."""
-        run = context.get("params", {}).get("run_label", context.get("dag_run").run_id)
-        self.labels.add({"run": run})
+        dag_run = context.get("dag_run")
+        if dag_run:
+            default_run_label = dag_run.run_id
+        run_label = context.get("params", {}).get("run_label", default_run_label)
+        self.labels.add({"run": run_label})
         self.start()
 
         if not self.deferrable:
@@ -597,7 +600,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
                 method_name="execute_complete",
             )
 
-    def execute_complete(self, context: Context, event: dict[str, str | list]) -> None:
+    def execute_complete(self, context: Context, event: dict[str, str | list]) -> bool:
         """Continue task execution after the sensor has triggered.
 
         Returns True if the trigger returns an event with the success status, otherwise raises
@@ -662,7 +665,7 @@ class ComputeEngineExitCodeTrigger(BaseTrigger):
         self.gcp_conn_id = gcp_conn_id
         self.impersonation_chain = impersonation_chain
         self.poll_sleep = poll_sleep
-        self.timestamp = datetime.datetime.now(datetime.timezone.utc)
+        self.start_time = datetime.datetime.now(datetime.timezone.utc)
 
     def serialize(self) -> tuple[str, dict[str, Any]]:
         """Serialize class arguments and classpath."""
@@ -695,7 +698,7 @@ class ComputeEngineExitCodeTrigger(BaseTrigger):
                 exit_code = await self.hook.get_exit_code(
                     self.project,
                     self.instance_name,
-                    self.timestamp,
+                    self.start_time,
                 )
 
                 self.log.info(f"VM {self.instance_name} exit code is {exit_code}")

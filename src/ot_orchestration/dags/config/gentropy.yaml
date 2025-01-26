@@ -1,40 +1,32 @@
 ---
-python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/{gentropy_version}/cli.py
+python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/v{gentropy_version}/cli.py
 
 dataproc_cluster_settings:
   cluster_metadata:
-    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/{gentropy_version}/gentropy-0.0.0-py3-none-any.whl
-  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/{gentropy_version}/install_dependencies_on_cluster.sh
+    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/v{gentropy_version}/gentropy-{gentropy_version}-py3-none-any.whl
+  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/v{gentropy_version}/install_dependencies_on_cluster.sh
   autoscaling_policy: otg-etl
   allow_efm: false
   num_workers: 2
 
 steps:
-  biosample_index:
+  biosample:
     params:
       step: biosample_index
-      step.cell_ontology_input_path: '{gcs_url}/input/biosamples/cl.json'
-      step.uberon_input_path: '{gcs_url}/input/biosamples/uberon.json'
-      step.efo_input_path: '{gcs_url}/input/biosamples/efo.json'
-      step.biosample_index_path: '{gcs_url}/output/genetics/parquet/biosample_index'
       step.session.write_mode: ignore
       step.session.output_partitions: 1
+      # INPUTS
+      step.cell_ontology_input_path: '{release_uri}/input/biosample/cl.json'
+      step.uberon_input_path: '{release_uri}/input/biosample/uberon.json'
+      step.efo_input_path: '{release_uri}/input/biosample/efo.json'
+      # OUTPUTS
+      step.biosample_index_path: '{release_uri}/output/biosample'
 
-  study_validation:
+  study:
     params:
       step: study_validation
-      step.study_index_path:
-        - gs://gwas_catalog_top_hits/study_index
-        - gs://gwas_catalog_sumstats_susie/study_index
-        - gs://gwas_catalog_sumstats_pics/study_index
-        - gs://eqtl_catalogue_data/study_index
-        - gs://ukb_ppp_eur_data/study_index
-        - gs://finngen_data/r11/study_index
-      step.target_index_path: '{gcs_url}/output/etl/parquet/targets'
-      step.disease_index_path: '{gcs_url}/output/etl/parquet/diseases'
-      step.valid_study_index_path: '{gcs_url}/output/genetics/parquet/study_index'
-      step.invalid_study_index_path: '{gcs_url}/output/genetics/parquet/invalid_study_index'
-      step.biosample_index_path: '{gcs_url}/output/genetics/parquet/biosample_index'
+      step.session.write_mode: ignore
+      step.session.output_partitions: 1
       step.invalid_qc_reasons:
         - UNRESOLVED_TARGET
         - UNRESOLVED_DISEASE
@@ -45,22 +37,26 @@ steps:
         - FAILED_PZ_CHECK
         - FAILED_GC_LAMBDA_CHECK
         - NO_OT_CURATION
-      step.session.write_mode: ignore
-      step.session.output_partitions: 1
+      # INPUTS
+      step.study_index_path:
+        - gs://gwas_catalog_top_hits/study_index
+        - gs://gwas_catalog_sumstats_susie/study_index
+        - gs://gwas_catalog_sumstats_pics/study_index
+        - gs://eqtl_catalogue_data/study_index
+        - gs://ukb_ppp_eur_data/study_index
+        - gs://finngen_data/r11/study_index
+      step.target_index_path: '{release_uri}/output/target'
+      step.disease_index_path: '{release_uri}/output/disease'
+      step.biosample_index_path: '{release_uri}/output/biosample'
+      # OUTPUTS
+      step.valid_study_index_path: '{release_uri}/output/study'
+      step.invalid_study_index_path: '{release_uri}/log/study_failed'
 
-  credible_set_validation:
+  credible_set:
     params:
       step: credible_set_validation
-      step.study_index_path: '{gcs_url}/output/genetics/parquet/study_index'
-      step.study_locus_path:
-        - gs://gwas_catalog_top_hits/credible_sets/
-        - gs://gwas_catalog_sumstats_pics/credible_sets/
-        - gs://gwas_catalog_sumstats_susie/credible_set_clean/
-        - gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie_patched/
-        - gs://ukb_ppp_eur_data/credible_set_clean/
-        - gs://finngen_data/r11/credible_set_datasets/susie/
-      step.valid_study_locus_path: '{gcs_url}/output/genetics/parquet/credible_set'
-      step.invalid_study_locus_path: '{gcs_url}/output/genetics/parquet/invalid_credible_set'
+      step.session.write_mode: ignore
+      step.session.output_partitions: 25
       step.invalid_qc_reasons:
         - DUPLICATED_STUDYLOCUS_ID
         - AMBIGUOUS_STUDY
@@ -78,46 +74,37 @@ steps:
         - INVALID_VARIANT_IDENTIFIER
         - INVALID_CHROMOSOME
         - TOP_HIT_AND_SUMMARY_STATS
-      step.session.write_mode: ignore
-      step.session.output_partitions: 25
+      # INPUTS
+      step.study_locus_path:
+        - gs://gwas_catalog_top_hits/credible_sets/
+        - gs://gwas_catalog_sumstats_pics/credible_sets/
+        - gs://gwas_catalog_sumstats_susie/credible_set_clean/
+        - gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie_patched/
+        - gs://ukb_ppp_eur_data/credible_set_clean/
+        - gs://finngen_data/r11/credible_set_datasets/susie/
+      step.study_index_path: '{release_uri}/output/study'
+      # OUTPUTS
+      step.valid_study_locus_path: '{release_uri}/output/credible_set'
+      step.invalid_study_locus_path: '{release_uri}/log/credible_set_failed'
 
-  variant_conversion:
+  variant_partition:
     params:
       step: variant_to_vcf
+      step.partition_size: 2_000 # approximate num of variants per partition!
+      step.session.write_mode: ignore
+      # INPUTS
       step.source_paths:
-        - '{gcs_url}/input/evidence-files/uniprot.json.gz'
-        - '{gcs_url}/input/evidence-files/eva.json.gz'
-        - '{gcs_url}/input/pharmacogenomics-inputs/pharmacogenomics.json.gz'
-        - '{gcs_url}/output/genetics/parquet/credible_set'
+        - '{release_uri}/input/evidence/uniprot.json.gz'
+        - '{release_uri}/input/evidence/eva.json.gz'
+        - '{release_uri}/input/pharmacogenomics/pharmacogenomics.json.gz'
+        - '{release_uri}/output/credible_set'
       step.source_formats:
         - json
         - json
         - json
         - parquet
-      step.output_path: '{gcs_url}/output/genetics/parquet/partitioned_variants'
-      step.partition_size: 2_000 # approximate num of variants per partition!
-      step.session.write_mode: ignore
-
-  colocalisation_coloc:
-    params:
-      step: colocalisation
-      step.credible_set_path: '{gcs_url}/output/genetics/parquet/credible_set'
-      step.coloc_path: '{gcs_url}/output/genetics/parquet/colocalisation'
-      step.colocalisation_method: Coloc
-      +step.colocalisation_method_params: '{priorc1: 1e-4, priorc2: 1e-4, priorc12: 1e-5}'
-      +step.session.extended_spark_conf: "{spark.sql.shuffle.partitions: '4000', spark.executor.memory: '25g', spark.sql.files.maxPartitionBytes: '25000000', spark.executor.cores: '4'}"
-      step.session.write_mode: ignore
-      step.session.output_partitions: 25
-
-  colocalisation_ecaviar:
-    params:
-      step: colocalisation
-      step.credible_set_path: '{gcs_url}/output/genetics/parquet/credible_set'
-      step.coloc_path: '{gcs_url}/output/genetics/parquet/colocalisation'
-      step.colocalisation_method: ECaviar
-      +step.session.extended_spark_conf: "{spark.sql.shuffle.partitions: '4000', spark.executor.memory: '25g', spark.sql.files.maxPartitionBytes: '25000000', spark.executor.cores: '4'}"
-      step.session.write_mode: ignore
-      step.session.output_partitions: 25
+      # OUTPUTS
+      step.output_path: '{release_uri}/intermediate/variant_partition'
 
   variant_annotation:
     google_batch:
@@ -130,56 +117,92 @@ steps:
         max_run_duration: '2h'
       policy_specs:
         machine_type: n1-standard-4
-      image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/custom_ensembl_vep:{vep_version}
+      image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/custom_ensembl_vep:v{vep_version}
       entrypoint: /bin/sh
     params:
+      # INPUTS
       vep_cache_path: gs://genetics_etl_python_playground/vep/cache
-      vcf_input_path: '{gcs_url}/output/genetics/parquet/partitioned_variants'
-      vep_output_path: '{gcs_url}/output/genetics/json/annotated_variants'
+      vcf_input_path: '{release_uri}/intermediate/variant_partition'
+      # OUTPUTS
+      vep_output_path: '{release_uri}/intermediate/variant_annotation'
 
-  variant_index:
+  variant:
     params:
       step: variant_index
-      step.vep_output_json_path: '{gcs_url}/output/genetics/json/annotated_variants'
-      step.gnomad_variant_annotations_path: gs://gnomad_data_2/v4.1/variant_index
-      step.variant_index_path: '{gcs_url}/output/genetics/parquet/variant_index'
-      step.amino_acid_change_annotations:
-        - gs://genetics_etl_python_playground/static_assets/foldx_variant_annotation
       step.session.write_mode: ignore
       step.session.output_partitions: 25
+      # INPUTS
+      step.vep_output_json_path: '{release_uri}/intermediate/variant_annotation'
+      step.gnomad_variant_annotations_path: gs://gnomad_data_2/v4.1/variant_index
+      # TODO: Temporary disabled until gnetropy is updated
+      # step.amino_acid_change_annotations:
+      #   - gs://genetics_etl_python_playground/static_assets/foldx_variant_annotation
+      # OUTPUTS
+      step.variant_index_path: '{release_uri}/output/variant'
+
+  colocalisation_coloc:
+    params:
+      step: colocalisation
+      step.session.write_mode: ignore
+      step.session.output_partitions: 25
+      step.colocalisation_method: Coloc
+      +step.colocalisation_method_params: '{priorc1: 1e-4, priorc2: 1e-4, priorc12: 1e-5}'
+      +step.session.extended_spark_conf: "{spark.sql.shuffle.partitions: '4000', spark.executor.memory: '25g', spark.sql.files.maxPartitionBytes: '25000000', spark.executor.cores: '4'}"
+      # INPUTS
+      step.credible_set_path: '{release_uri}/output/credible_set'
+      # OUTPUTS
+      step.coloc_path: '{release_uri}/output/colocalisation'
+
+  colocalisation_ecaviar:
+    params:
+      step: colocalisation
+      step.session.write_mode: ignore
+      step.session.output_partitions: 25
+      step.colocalisation_method: ECaviar
+      +step.session.extended_spark_conf: "{spark.sql.shuffle.partitions: '4000', spark.executor.memory: '25g', spark.sql.files.maxPartitionBytes: '25000000', spark.executor.cores: '4'}"
+      # INPUTS
+      step.credible_set_path: '{release_uri}/output/credible_set'
+      # OUTPUTS
+      step.coloc_path: '{release_uri}/output/colocalisation'
 
   l2g_feature_matrix:
     params:
       step: locus_to_gene_feature_matrix
-      step.credible_set_path: '{gcs_url}/output/genetics/parquet/credible_set'
-      step.variant_index_path: '{gcs_url}/output/genetics/parquet/variant_index'
-      step.colocalisation_path: '{gcs_url}/output/genetics/parquet/colocalisation'
-      step.study_index_path: '{gcs_url}/output/genetics/parquet/study_index'
-      step.target_index_path: '{gcs_url}/output/etl/parquet/targets'
-      step.feature_matrix_path: '{gcs_url}/output/genetics/parquet/l2g_feature_matrix'
-      +step.session.extended_spark_conf: "{spark.sql.autoBroadcastJoinThreshold:'-1'}"
       step.session.write_mode: ignore
+      +step.session.extended_spark_conf: "{spark.sql.autoBroadcastJoinThreshold:'-1'}"
+      # INPUTS
+      step.credible_set_path: '{release_uri}/output/credible_set'
+      step.variant_index_path: '{release_uri}/output/variant'
+      step.colocalisation_path: '{release_uri}/output/colocalisation'
+      step.study_index_path: '{release_uri}/output/study'
+      step.target_index_path: '{release_uri}/output/target'
+      # OUTPUTS
+      step.feature_matrix_path: '{release_uri}/output/l2g_feature_matrix'
 
-  l2g_predict:
+  l2g_prediction:
     params:
       step: locus_to_gene
-      step.run_mode: predict
-      step.predictions_path: '{gcs_url}/output/genetics/parquet/l2g_predictions'
-      step.feature_matrix_path: '{gcs_url}/output/genetics/parquet/l2g_feature_matrix'
-      step.credible_set_path: '{gcs_url}/output/genetics/parquet/credible_set'
-      step.download_from_hub: false
-      step.l2g_threshold: 0.05
-      step.model_path: '{gcs_url}/input/benchmarks_l2g_fm0_v5.1_best_cv_locus_to_gene_model_classifier.skops'
-      step.hf_hub_repo_id: opentargets/locus_to_gene
       step.session.write_mode: ignore
       step.session.output_partitions: 1
+      step.run_mode: predict
+      step.l2g_threshold: 0.05
+      # INPUTS
+      step.download_from_hub: false
+      step.hf_hub_repo_id: opentargets/locus_to_gene
+      step.feature_matrix_path: '{release_uri}/output/l2g_feature_matrix'
+      step.credible_set_path: '{release_uri}/output/credible_set'
+      step.model_path: '{release_uri}/input/l2g_prediction/classifier.skops'
+      # OUTPUTS
+      step.predictions_path: '{release_uri}/output/l2g_prediction'
 
   l2g_evidence:
     params:
       step: locus_to_gene_evidence
-      step.evidence_output_path: '{gcs_url}/input/evidence-files/gentropy'
-      step.locus_to_gene_predictions_path: '{gcs_url}/output/genetics/parquet/l2g_predictions'
-      step.credible_set_path: '{gcs_url}/output/genetics/parquet/credible_set'
-      step.study_index_path: '{gcs_url}/output/genetics/parquet/study_index'
-      step.locus_to_gene_threshold: 0.05
       step.session.write_mode: ignore
+      step.locus_to_gene_threshold: 0.05
+      # INPUTS
+      step.credible_set_path: '{release_uri}/output/credible_set'
+      step.locus_to_gene_predictions_path: '{release_uri}/output/l2g_prediction'
+      step.study_index_path: '{release_uri}/output/genetics/parquet/study_index'
+      # OUTPUTS
+      step.evidence_output_path: '{release_uri}/intermediate/evidence/gentropy'

@@ -31,13 +31,13 @@ class PISDiffComputeOperator(BaseBranchOperator):
         project_id: The GCP project ID. Defaults to the platform project.
         step_name: The name of the PIS step to check.
         local_config: The local configuration.
-        remote_config_url: The URL of the remote configuration file.
+        remote_config_uri: The GCS URI of the remote configuration file.
     """
 
     template_fields: Sequence[str] = (
         "step_name",
         "local_config",
-        "remote_config_url",
+        "remote_config_uri",
     )
 
     def __init__(
@@ -46,19 +46,19 @@ class PISDiffComputeOperator(BaseBranchOperator):
         project_id: str = GCP_PROJECT_PLATFORM,
         step_name: str,
         local_config: dict[str, Any],
-        remote_config_url: str,
+        remote_config_uri: str,
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
         self.step_name = step_name
         self.project_id = project_id
         self.local_config = local_config
-        self.remote_config_url = remote_config_url
+        self.remote_config_uri = remote_config_uri
 
-    def get_remote_config(self, url: str) -> dict[str, Any]:
+    def get_remote_config(self, uri: str) -> dict[str, Any]:
         """Download the remote configuration file and return the relevant part."""
         c = Client(self.project_id)
-        bucket_name, bucket_path = GCSPath(url).split()
+        bucket_name, bucket_path = GCSPath(uri).split()
         b = Bucket(client=c, name=bucket_name)
         blob = b.blob(bucket_path)
         remote_config = blob.download_as_bytes()
@@ -68,7 +68,7 @@ class PISDiffComputeOperator(BaseBranchOperator):
         """Get the relevant part of the configuration for the current step."""
         return {
             "scratchpad": config.get("scratchpad", None),
-            "step": config.get("steps", {}).get(self.step_name, None),
+            "step": config.get("steps", {}).get(self.step_name.replace("pis_", ""), None),
         }
 
     def choose_branch(self, context: Context) -> str | Iterable[str]:
@@ -76,11 +76,11 @@ class PISDiffComputeOperator(BaseBranchOperator):
         remote_config = {}
 
         try:
-            remote_config = self.get_remote_config(self.remote_config_url)
+            remote_config = self.get_remote_config(self.remote_config_uri)
         except NotFound:
             self.log.info(
                 "remote configuration file not found, assuming first run, %s",
-                self.remote_config_url,
+                self.remote_config_uri,
             )
 
         lc = self.extract_relevant_config(self.local_config)

@@ -13,7 +13,7 @@ Data stored under 4 buckets:
 
 Bucket `gs://gwas_catalog_inputs` contains:
 
-```
+```bash
 gs://gwas_catalog_inputs/gwas_catalog_associations_ontology_annotated.tsv
 gs://gwas_catalog_inputs/gwas_catalog_download_ancestries.tsv
 gs://gwas_catalog_inputs/gwas_catalog_download_studies.tsv
@@ -61,7 +61,7 @@ as failing.
 <details>
   <summary>Expand to see the example of manifest file</summary>
 
-```
+```bash
 rawSumstatPath,study,harmonisedSumstatPath,isHarmonised,qcPath,qcPerformed
 gs://gwas_catalog_inputs/raw_summary_statistics/GCST000001-GCST001000/GCST000028/harmonised/17463246-GCST000028-EFO_0001360.h.tsv.gz,GCST000028,gs://gwas_catalog_inputs/harmonised_summary_statistics/GCST000028/,True,gs://gwas_catalog_inputs/summary_statistics_qc/GCST000028/,True
 ```
@@ -77,7 +77,7 @@ This is the dataset containing meta information about the status of finemapping.
 
 The files are stored under the per study directory in the form like below:
 
-```
+```bash
 gs://gwas_catalog_inputs/harmonisation_summary/GCST90077749/202410141529/harmonisation.csv
 gs://gwas_catalog_inputs/harmonisation_summary/GCST90077749/202410141529/harmonisation.log
 gs://gwas_catalog_inputs/harmonisation_summary/GCST90077749/latest/harmonisation.csv
@@ -102,7 +102,7 @@ The file reports following metrics:
 <details>
   <summary>Expand to see the example</summary>
 
-```
+```bash
 study,harmonisationExitCode,qcExitCode,rawSumstatFile,rawSumstatFileSize,rawUnzippedSumstatFileSize
 GCST90077749,0,1,gs://gwas_catalog_inputs/raw_summary_statistics/GCST90077001-GCST90078000/GCST90077749/harmonised/34662886-GCST90077749-EFO_1001919.h.tsv.gz,18M,62M
 ```
@@ -116,7 +116,7 @@ This file contains logs from the harmonisation script collected during it's exec
 <details>
   <summary>Expand to see the example</summary>
 
-```
+```bash
 [2024.10.14 15:33] Copying raw summary statistics from gs://gwas_catalog_inputs/raw_summary_statistics/GCST90078001-GCST90079000/GCST90079000/harmonised/GCST90079000.h.tsv.gz to GCST90079000.h.tsv.gz
 [2024.10.14 15:34] Raw file size 17M
 [2024.10.14 15:34] Unzipping GCST90079000.h.tsv.gz to GCST90079000.h.tsv
@@ -179,11 +179,40 @@ datasets: {}
 
 This directory contains various analysis performed on harmonisation results.
 
+## Gwas catalog harmonisation & qc dag
+
+The `gwas_catalog_harmonisation` dag is used to perform the harmonisation and quality checks on the raw summary statistics. The dag configuration and topology can be found in `gwas_catalog_harmonisation.yaml` file under the config directory. Since this task is computationally expensive, it is run in parallel by the google batch operators. The dag contains 2 steps:
+
+1. Harmonisation done by [gwas_catalog_sumstat_preprocess](https://opentargets.github.io/gentropy/python_api/steps/gwas_catalog_sumstat_preprocess/)
+2. Quality Control of the harmonised summary statistics done by [sumstat_qc_step](https://opentargets.github.io/gentropy/python_api/steps/summary_statistics_qc/)
+
+To run the dag, one need to prepare the input files and gentropy overwritten docker image.
+
+### Gentropy overwritten docker image
+
+The image in the `/images/gentropy/Dockerfile` is based on the [gentropy image](https://github.com/opentargets/gentropy/blob/dev/Dockerfile). The additional packages are added to the image to make it compatible with Open Targets infrastructure in google cloud, that include:
+
+- google cloud sdk (with gsutil)
+- bash script to run the gentropy harmonisation pipeline
+
+> [!WARNING]
+> Before running the harmonisation pipeline (`gwas_catalog_harmonisation` dag) it is necessary to update the base docker container to reflect the changes in the `gentropy` image. This is done by running the `make build-gentropy-gcs-image` command run in the root of the repository.
+
+## Gentropy image
+
+The image in this directory is based on the [gentropy image](https://github.com/opentargets/gentropy/blob/dev/Dockerfile). The additional packages are added to the image to make it compatible with the Open Targets Platform, that include:
+
+- google cloud sdk (with gsutil)
+- bash script to run the gentropy harmonisation pipeline
+
+> [!WARNING]
+> Before running the harmonisation pipeline (`gwas_catalog_harmonisation` dag) it is necessary to update the base docker container to reflect the changes in the `gentropy` image. This is done by running the `make build-gentropy-gcs-image` command run in the root of the repository.
+
 ## GWAS Catalog top hits
 
 Bucket `gs://gwas_catalog_top_hits` contains:
 
-```
+```bash
 gs://gwas_catalog_top_hits/credible_sets/
 gs://gwas_catalog_top_hits/study_index/
 gs://gwas_catalog_top_hits/study_locus_ld_clumped/
@@ -218,7 +247,7 @@ The step that performs [PICS finemapping](https://opentargets.github.io/gentropy
 
 Bucket `gs://gwas_catalog_sumstats_pics` contains:
 
-```
+```bash
 gs://gwas_catalog_sumstats_pics/credible_sets/
 gs://gwas_catalog_sumstats_pics/study_index/
 gs://gwas_catalog_sumstats_pics/study_locus_ld_clumped/
@@ -258,7 +287,7 @@ The step that performs [PICS finemapping](https://opentargets.github.io/gentropy
 
 Bucket `gs://gwas_catalog_sumstats_susie` contains:
 
-```
+```bash
 gs://gwas_catalog_sumstats_susie/credible_set_datasets/
 gs://gwas_catalog_sumstats_susie/credible_sets_clean/
 gs://gwas_catalog_sumstats_susie/finemapping_logs/
