@@ -105,6 +105,7 @@ def create_cluster(
         num_preemptible_workers=num_preemptible_workers,
         num_workers=num_workers,
         image_version=GCP_DATAPROC_IMAGE,
+        internal_ip_only=False,
         enable_component_gateway=True,
         metadata=cluster_metadata,
         idle_delete_ttl=idle_delete_ttl,
@@ -133,7 +134,7 @@ def create_cluster(
         region=GCP_REGION,
         cluster_name=cluster_name,
         trigger_rule=TriggerRule.ALL_SUCCESS,
-        labels=labels.get(),
+        labels=labels.as_dict(),
     )
 
 
@@ -229,8 +230,8 @@ def submit_pyspark_job(
             "main_python_file_uri": python_main_module,
             "args": args,
             "properties": {
-                "spark.jars": "/opt/conda/miniconda3/lib/python3.10/site-packages/hail/backend/hail-all-spark.jar",
-                "spark.driver.extraClassPath": "/opt/conda/miniconda3/lib/python3.10/site-packages/hail/backend/hail-all-spark.jar",
+                "spark.jars": "/opt/conda/miniconda3/lib/python3.11/site-packages/hail/backend/hail-all-spark.jar",
+                "spark.driver.extraClassPath": "/opt/conda/miniconda3/lib/python3.11/site-packages/hail/backend/hail-all-spark.jar",
                 "spark.executor.extraClassPath": "./hail-all-spark.jar",
                 "spark.serializer": "org.apache.spark.serializer.KryoSerializer",
                 "spark.kryo.registrator": "is.hail.kryo.HailKryoRegistrator",
@@ -275,7 +276,7 @@ def submit_job(
             "reference": {"project_id": project_id},
             "placement": {"cluster_name": cluster_name},
             job_type: job_specification,
-            "labels": labels.get(),
+            "labels": labels.as_dict(),
         },
         trigger_rule=trigger_rule,
     )

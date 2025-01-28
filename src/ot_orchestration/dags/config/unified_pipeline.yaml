@@ -1,21 +1,17 @@
 ---
-# The bucket where the pipeline will work in
-gcs_url: gs://open-targets-pre-data-releases/24.12-uo_test-3
+release_name: uo_test_paths
 
-# Versions of the pipeline components
-pis_version: 24.6.4
-ontoform_version: 24.1.0-alpha.7
-etl_version: 24.2.0-alpha.4
-gentropy_version: v2.0.0rc3
-vep_version: v2.0.0rc3
+pis_version: '25.0.0-rc.1'
+ontoform_version: '25.0.0-rc.5'
+etl_version: '25.0.0-rc.2'
+gentropy_version: '2.0.1'
+vep_version: '2.0.1'
 
-# Versions of the data sources
-chembl_version: '34'
-efo_version: v3.70.0
+chembl_version: '35'
+efo_version: '3.71.0'
 ensembl_version: '113'
 
-# Whether this is a PPP run of the pipeline
-is_ppp: true
+is_ppp: false
 
 # Dependency graph
 # ----------------
@@ -38,27 +34,25 @@ is_ppp: true
 #
 steps:
   # PIS STEPS
-  pis_baseline_expression:
   pis_biosample:
   pis_disease:
   pis_drug:
   pis_evidence:
+  pis_evidence_ppp:
+    ppp_only: true
   pis_expression:
   pis_go:
-  pis_homologue:
   pis_interaction:
   pis_literature:
-  pis_mouse_phenotypes:
   pis_openfda:
   pis_otar:
     ppp_only: true
   pis_pharmacogenomics:
-  pis_ppp_evidence:
-    ppp_only: true
   pis_reactome:
   pis_so:
   pis_target:
   pis_target_engine:
+  pis_target_validation:
 
   # ONTOFORM STEPS
   ontoform_disease:
@@ -67,26 +61,23 @@ steps:
   ontoform_expression:
     depends_on:
       - pis_expression
-  ontoform_homologue:
+  ontoform_target:
     depends_on:
-      - pis_homologue
+      - pis_target
   ontoform_openfda:
     depends_on:
       - pis_openfda
   ontoform_so:
     depends_on:
       - pis_so
-  ontoform_target:
-    depends_on:
-      - pis_target
 
   # ETL STEPS
-  etl_go:
-    depends_on:
-      - pis_go
   etl_expression:
     depends_on:
       - ontoform_expression
+  etl_go:
+    depends_on:
+      - pis_go
   etl_reactome:
     depends_on:
       - pis_reactome
@@ -94,34 +85,33 @@ steps:
   etl_otar:
     ppp_only: true
     depends_on:
-      - ontoform_disease
       - pis_otar
+      - ontoform_disease
   etl_target:
     depends_on:
-      - ontoform_homologue
       - ontoform_target
       - etl_reactome
 
   etl_drug:
     depends_on:
       - pis_drug
-      - etl_target
       - ontoform_disease
-  etl_facetsearch:
-    depends_on:
       - etl_target
+  etl_search_facet:
+    depends_on:
       - ontoform_disease
       - etl_go
+      - etl_target
   etl_interaction:
     depends_on:
       - pis_interaction
       - etl_target
-  etl_targetValidation:
+  etl_target_validation:
     depends_on:
-      - pis_mouse_phenotypes
       - etl_target
+      - pis_target_validation
 
-  etl_fda:
+  etl_openfda:
     depends_on:
       - ontoform_openfda
       - etl_drug
@@ -133,7 +123,7 @@ steps:
     depends_on:
       - pis_pharmacogenomics
       - etl_drug
-  etl_targetengine:
+  etl_target_engine:
     depends_on:
       - pis_target_engine
       - etl_drug
@@ -144,75 +134,74 @@ steps:
       - etl_literature
       - gentropy_l2g_evidence
     depends_on_ppp:
-      - pis_ppp_evidence
+      - pis_evidence_ppp
 
   etl_association:
     depends_on:
       - etl_evidence
-  etl_associationOTF:
+  etl_association_otf:
+    depends_on:
+      - etl_evidence
+  etl_known_drug:
     depends_on:
       - etl_evidence
 
-  etl_knownDrug:
-    depends_on:
-      - etl_evidence
-
-  etl_ebisearch:
-    depends_on:
-      - etl_association
   etl_search:
     depends_on:
       - etl_association
-      - gentropy_variant_index
+      - gentropy_variant
+  etl_search_ebi:
+    depends_on:
+      - etl_association
 
   # GENTROPY STEPS
-  gentropy_biosample_index:
+  gentropy_biosample:
     depends_on:
       - pis_biosample
 
-  gentropy_study_validation:
+  gentropy_study:
     depends_on:
       - ontoform_target
       - ontoform_disease
-      - gentropy_biosample_index
       - etl_target
+      - gentropy_biosample
 
-  gentropy_credible_set_validation:
+  gentropy_credible_set:
     depends_on:
-      - gentropy_study_validation
+      - gentropy_study
 
-  gentropy_variant_conversion:
+  gentropy_variant_partition:
     depends_on:
       - pis_evidence
       - pis_pharmacogenomics
-      - gentropy_credible_set_validation
+      - gentropy_credible_set
 
   gentropy_variant_annotation:
     depends_on:
-      - gentropy_variant_conversion
+      - gentropy_variant_partition
 
-  gentropy_variant_index:
+  gentropy_variant:
     depends_on:
       - gentropy_variant_annotation
 
   gentropy_colocalisation_coloc:
     depends_on:
-      - gentropy_variant_index
+      - gentropy_variant
   gentropy_colocalisation_ecaviar:
     depends_on:
-      - gentropy_variant_index
+      - gentropy_variant
 
   gentropy_l2g_feature_matrix:
     depends_on:
       - gentropy_colocalisation_coloc
       - gentropy_colocalisation_ecaviar
-      - gentropy_variant_index
+      - gentropy_variant
 
-  gentropy_l2g_predict:
+  gentropy_l2g_prediction:
     depends_on:
       - etl_interaction
       - gentropy_l2g_feature_matrix
 
   gentropy_l2g_evidence:
     depends_on:
-      - gentropy_l2g_predict
+      - gentropy_l2g_prediction
