@@ -134,7 +134,7 @@ def create_cluster(
         region=GCP_REGION,
         cluster_name=cluster_name,
         trigger_rule=TriggerRule.ALL_SUCCESS,
-        labels=labels.get(),
+        labels=labels.as_dict(),
     )
 
 
@@ -276,7 +276,7 @@ def submit_job(
             "reference": {"project_id": project_id},
             "placement": {"cluster_name": cluster_name},
             job_type: job_specification,
-            "labels": labels.get(),
+            "labels": labels.as_dict(),
         },
         trigger_rule=trigger_rule,
     )

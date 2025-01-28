@@ -1,6 +1,7 @@
 """Labels for resources in Google Cloud."""
 
 import re
+from typing import Any
 
 from ot_orchestration.utils.common import GCP_PROJECT_PLATFORM, shared_labels
 
@@ -43,11 +44,11 @@ class Labels:
         """
         return re.sub(r"[^a-z0-9-_]", "-", label.lower())[0:63]
 
-    def add(self, extra: dict[str, str]) -> None:
+    def add(self, extra: dict[str, Any]) -> None:
         """Add labels to a collection."""
         self.label_dict.update({k: self.clean_label(v) for k, v in extra.items()})
 
-    def get(self) -> dict[str, str]:
+    def as_dict(self) -> dict[str, str]:
         """Return a dict of clean labels."""
         return self.label_dict
 

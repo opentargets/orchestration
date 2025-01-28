@@ -25,10 +25,7 @@ from ot_orchestration.operators.dataproc import (
     PlatformETLSubmitJobOperator,
 )
 from ot_orchestration.operators.gce import ComputeEngineRunContainerizedWorkloadSensor
-from ot_orchestration.operators.gcs import (
-    UploadRemoteFileOperator,
-    UploadStringOperator,
-)
+from ot_orchestration.operators.gcs import CopyBlobOperator, UploadStringOperator
 from ot_orchestration.operators.unified_pipeline import PISDiffComputeOperator
 from ot_orchestration.utils import (
     create_cluster_name,
@@ -83,7 +80,7 @@ with DAG(
 
             @task_group(group_id=step_name)
             def pis_step(step_name: str) -> None:
-                config_gcs_url = config.pis_config_gcs_url(step_name)
+                config_uri = config.pis_config_uri(step_name)
                 labels = StepLabels("pis", step_name, config.is_ppp)
                 vm_name = create_name(step_name)
 
@@ -91,13 +88,14 @@ with DAG(
                     task_id=f"diff_{step_name}",
                     step_name=step_name,
                     local_config=config.pis_config,
-                    remote_config_url=config_gcs_url,
+                    remote_config_uri=config_uri,
                 )
 
                 u = UploadStringOperator(
                     task_id=f"upload_config_{step_name}",
                     contents=to_yaml(config.pis_config),
-                    dst=config_gcs_url,
+                    dst_uri=config_uri,
+                    overwrite=True,
                 )
 
                 r = ComputeEngineRunContainerizedWorkloadSensor(
@@ -108,7 +106,7 @@ with DAG(
                     container_env=config.pis_env_vars(step_name),
                     container_service_account=config.service_account,
                     container_scopes=config.service_account_scopes,
-                    container_files={config_gcs_url: "/config.yaml"},
+                    container_files={config_uri: "/config.yaml"},
                     work_disk_size_gb=config.pis_disk_size,
                     deferrable=True,
                 )
@@ -186,7 +184,7 @@ with DAG(
     # p. Prepare the ETL Dataproc cluster.
     #   c. Create the cluster.
     #   uc. Upload the ETL configuration to GCS.
-    #   uj. Upload the ETL JAR to GCS.
+    #   cj. Copy the ETL JAR.
     # r. The ETL steps are run in parallel, as their prerequisites are met.
     # d. Delete the Dataproc cluster.
     # ==============================================================================================
@@ -204,14 +202,17 @@ with DAG(
         uc = UploadStringOperator(
             task_id=f"upload_config",
             contents=to_hocon(config.etl_config),
-            dst=config.etl_config_gcs_uri,
+            dst_uri=config.etl_config_uri,
+            overwrite=True,
         )
-        uj = UploadRemoteFileOperator(
+        cj = CopyBlobOperator(
             task_id=f"upload_jar",
-            src=config.etl_jar_origin_url,
-            dst=config.etl_jar_gcs_uri,
+            src_uri=config.etl_jar_origin_uri,
+            dst_uri=config.etl_jar_uri,
+            overwrite=True,
         )
-        chain(c, uc, uj)
+
+        chain(c, uc, cj)
 
     p = etl_cluster_prepare()
 
@@ -228,8 +229,8 @@ with DAG(
                 task_id=f"run_{step_name}",
                 step_name=step_name.replace("etl_", ""),  # remove the etl prefix
                 cluster_name=etl_cluster_name,
-                jar_file_uri=config.etl_jar_gcs_uri,
-                config_file_uri=config.etl_config_gcs_uri,
+                jar_uri=config.etl_jar_uri,
+                config_uri=config.etl_config_uri,
                 labels=labels,
             )
             steps[step_name] = r
