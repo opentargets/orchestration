@@ -4,7 +4,7 @@ python_main_module: gs://genetics_etl_python_playground/initialisation/cli.py
 
 dataproc_cluster_settings:
   cluster_metadata:
-    GENTROPY_REF: {gentropy_version}
+    GENTROPY_REF: '{gentropy_version}'
   cluster_init_script: gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh
   autoscaling_policy: otg-etl
   allow_efm: false
