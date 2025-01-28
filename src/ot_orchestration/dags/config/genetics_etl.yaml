@@ -2,11 +2,11 @@
 l2g_gold_standard_path: gs://genetics_etl_python_playground/input/l2g/gold_standard/curation.json
 release_dir: gs://ot_orchestration/releases/24.11_freeze10
 dataproc:
-  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dev/cli.py
+  python_main_module: gs://genetics_etl_python_playground/initialisation/cli.py
   cluster_metadata:
-    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/dev/gentropy-0.0.0-py3-none-any.whl
-  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/dev/install_dependencies_on_cluster.sh
-  cluster_name: otg-etl
+    GENTROPY_REF: v2.0.1
+  cluster_init_script: gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh
+  cluster_name: test-dataproc
   autoscaling_policy: otg-etl
   allow_efm: false
   num_workers: 2
@@ -131,7 +131,7 @@ nodes:
     params:
       step: variant_index
       step.vep_output_json_path: gs://ot_orchestration/releases/24.11_freeze10/variants/annotated_variants
-      step.gnomad_variant_annotations_path: gs://genetics_etl_python_playground/static_assets/gnomad_variants
+      step.gnomad_variant_annotations_path: gs://gnomad_data_2/v4.1/variant_index
       step.variant_index_path: gs://ot_orchestration/releases/24.11_freeze10/variant_index
       step.amino_acid_change_annotations:
         - gs://otar013-ppp/OTAR2081_foldx/foldx_variant_annotation
