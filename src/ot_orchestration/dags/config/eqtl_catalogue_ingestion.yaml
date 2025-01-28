@@ -4,10 +4,10 @@ eqtl_catalogue_decompressed_susie_path: gs://eqtl_catalogue_data/ebi_ftp/susie_d
 decompression_logs: gs://eqtl_catalogue_data/ebi_ftp/susie_decompressed_tmp/logs.log
 
 dataproc:
-  python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/dev/cli.py
+  python_main_module: gs://genetics_etl_python_playground/initialisation/cli.py
   cluster_metadata:
-    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/dev/gentropy-0.0.0-py3-none-any.whl
-  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/dev/install_dependencies_on_cluster.sh
+    GENTROPY_REF: v2.0.1
+  cluster_init_script: gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh
   cluster_name: otg-preprocess-eqtl
   autoscaling_policy: eqtl-preprocess
   num_workers: 4
