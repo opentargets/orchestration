@@ -1,10 +1,11 @@
 ---
-python_main_module: gs://genetics_etl_python_playground/initialisation/gentropy/v{gentropy_version}/cli.py
+
+python_main_module: gs://genetics_etl_python_playground/initialisation/cli.py
 
 dataproc_cluster_settings:
   cluster_metadata:
-    PACKAGE: gs://genetics_etl_python_playground/initialisation/gentropy/v{gentropy_version}/gentropy-{gentropy_version}-py3-none-any.whl
-  cluster_init_script: gs://genetics_etl_python_playground/initialisation/gentropy/v{gentropy_version}/install_dependencies_on_cluster.sh
+    GENTROPY_REF: {gentropy_version}
+  cluster_init_script: gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh
   autoscaling_policy: otg-etl
   allow_efm: false
   num_workers: 2
