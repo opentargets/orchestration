@@ -242,7 +242,6 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
                 --json \
                 --dir_plugins {self.pm.cache_dir}/VEP_plugins \
                 --sift b \
-                --polyphen b \
                 --fasta {self.pm.cache_dir}/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz \
                 --mane_select \
                 --appris \
