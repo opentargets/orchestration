@@ -214,7 +214,7 @@ class FinemappingBatchOperator(CloudBatchSubmitJobOperator):
                 "step.lead_pval_threshold=1e-5 "
                 "step.purity_mean_r2_threshold=0.25 "
                 "step.purity_min_r2_threshold=0.25 "
-                "step.cs_lbf_thr=2 step.sum_pips=0.99 "
+                "step.cs_lbf_thr=2 step.sum_pips=0.95 "
                 "step.susie_est_tausq=False "
                 "step.run_carma=False "
                 "step.run_sumstat_imputation=False "
