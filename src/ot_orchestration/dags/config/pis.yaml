@@ -165,9 +165,6 @@ steps:
     - name: download_latest atlas
       source: gs://otar010-atlas
       destination: evidence/atlas.json.bz2
-    - name: download_latest uniprot
-      source: gs://otar011-uniprot
-      destination: evidence/uniprot.json.gz
     - name: download_latest eva
       source: gs://otar012-eva/disease-target-evidence
       destination: evidence/eva.json.gz
