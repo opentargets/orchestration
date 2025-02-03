@@ -134,9 +134,6 @@ steps:
     - name: download_latest gene_burden
       source: gs://otar000-evidence_input/GeneBurden/json
       destination: evidence/gene_burden.json.gz
-    - name: download_latest evidences
-      source: gs://otar000-evidence_input/Genetics_portal/json
-      destination: evidence/genetics-portal-evidences.json.gz
     - name: download_latest genomics_england
       source: gs://otar000-evidence_input/GenomicsEngland/json
       destination: evidence/genomics_england.json.gz
