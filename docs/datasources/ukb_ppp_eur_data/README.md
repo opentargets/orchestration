@@ -113,7 +113,11 @@ The output of finemapping can be found under the:
 ### Credible set qc
 
 After the finemapping is performed, the qc dag is run. For more detail see [credible set qc dag](../../credible_set_qc/README.md).
-The final credible sets are collected in the `gs://ukb_ppp_eur_data/credible_set_clean/`.
+
+The credible sets that pass the qc are collected in the `gs://ukb_ppp_eur_data/credible_set_clean/`.
+
+> [!NOTE]
+> The results from fine mapping runs as well as logs and manifests are stored under **dated directories**. The results with the latest date are the most recent ones. Each release contains the full set of results. Date format used follows %Y%m%d format.
 
 #### Parametrization of google batch finemapping job
 

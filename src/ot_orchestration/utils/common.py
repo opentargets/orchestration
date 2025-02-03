@@ -53,3 +53,10 @@ shared_labels: Callable[[str], dict[str, str]] = lambda project: {
     "environment": "development" if "dev" in project else "production",
     "created_by": "unified-pipeline",
 }
+
+genetics_shared_labels: Callable[[str], dict[str, str]] = lambda project: {
+    "team": "open-targets",
+    "subteam": "genetics",
+    "environment": "development" if "dev" in project else "production",
+    "created_by": "gentropy-pipelines",
+}

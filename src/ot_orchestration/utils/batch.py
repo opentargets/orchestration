@@ -136,10 +136,10 @@ def create_batch_job(
                         provisioning_model=AllocationPolicy.ProvisioningModel.SPOT,
                     )
                 )
-            ]
+            ],
+            labels=labels.as_dict(),
         ),
         logs_policy=LogsPolicy(destination=LogsPolicy.Destination.CLOUD_LOGGING),
-        labels=labels.as_dict(),
     )
 
     return job
@@ -151,9 +151,7 @@ def create_task_env(var_list: list[dict[str, str]]):
     return environments
 
 
-def create_task_commands(
-    commands: list[str] | None, params: dict[str, str] | None
-) -> list[str]:
+def create_task_commands(commands: list[str] | None, params: dict[str, str] | None) -> list[str]:
     """This function prepares list of commands for google batch job from the step configuration."""
     task_commands = []
     args: list[str] = []
