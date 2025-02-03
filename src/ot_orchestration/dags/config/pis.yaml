@@ -155,6 +155,12 @@ steps:
     - name: download_latest sysbio
       source: gs://otar000-evidence_input/SysBio/json
       destination: evidence/sysbio.json.gz
+    - name: download_latest uniprot_literature
+      source: gs://otar000-evidence_input/Uniprot_literature/json
+      destination: evidence/uniprot_literature.json.gz
+    - name: download_latest uniprot_variants
+      source: gs://otar000-evidence_input/Uniprot_variants/json
+      destination: evidence/uniprot_variants.json.gz
     - name: download_latest reactome
       source: gs://otar006-reactome
       destination: evidence/reactome.json.gz
