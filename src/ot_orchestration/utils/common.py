@@ -19,6 +19,8 @@ GCP_ZONE = "europe-west1-d"
 GCP_DATAPROC_IMAGE = "2.2"
 GCP_AUTOSCALING_POLICY = "otg-etl"
 GCP_EFM_AUTOSCALING_POLICY = "otg-efm"
+GENTROPY_CLI_SCRIPT = "gs://genetics_etl_python_playground/initialisation/cli.py"
+GENTROPY_CLUSTER_INIT_SCRIPT = "gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh"
 
 # CLI configuration.
 CLUSTER_CONFIG_DIR = "/config"

@@ -24,6 +24,8 @@ from ot_orchestration.utils.common import (
     GCP_PROJECT_GENETICS,
     GCP_REGION,
     GCP_ZONE,
+    GENTROPY_CLI_SCRIPT,
+    GENTROPY_CLUSTER_INIT_SCRIPT,
 )
 from ot_orchestration.utils.labels import Labels
 from ot_orchestration.utils.path import GCSPath
@@ -41,7 +43,7 @@ def create_cluster(
     num_local_ssds: int = 1,
     autoscaling_policy: str = GCP_AUTOSCALING_POLICY,
     master_disk_size: int = 500,
-    cluster_init_script: str | None = None,
+    cluster_init_script: str | None = GENTROPY_CLUSTER_INIT_SCRIPT,
     cluster_metadata: dict[str, str] | None = None,
     allow_efm: bool = False,
     idle_delete_ttl: int = 30 * 60,
@@ -154,7 +156,7 @@ def get_autoscaling_policy(
 def submit_gentropy_step(
     cluster_name: str,
     step_name: str,
-    python_main_module: str,
+    python_main_module: str = GENTROPY_CLI_SCRIPT,
     project_id: str = GCP_PROJECT_GENETICS,
     trigger_rule: TriggerRule = TriggerRule.ALL_SUCCESS,
     params: dict[str, Any] | None = None,

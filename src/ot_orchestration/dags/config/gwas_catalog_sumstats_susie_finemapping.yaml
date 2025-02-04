@@ -1,4 +1,15 @@
 ---
+environment_specs:
+  - name: Test
+    vars:
+      input_path: gs://ot_orchestration/test/gwas_catalog_inputs
+      output_path: gs://ot_orchestration/test/gwas_catalog_sumstats_susie
+  - name: Prod
+    vars:
+      input_path: gs://gwas_catalog_inputs
+
+env: Test
+
 nodes:
   - id: generate_manifests
     kind: Task
@@ -25,6 +36,6 @@ nodes:
         boot_disk_mib: 20_000
       task_specs:
         max_retry_count: 1
-        max_run_duration: '7200s'
+        max_run_duration: "7200s"
       policy_specs:
         machine_type: n2-highmem-4
