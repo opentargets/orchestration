@@ -8,7 +8,7 @@ environment_specs:
     vars:
       input_path: gs://gwas_catalog_inputs
 
-env: Test
+env: Prod
 
 nodes:
   - id: generate_manifests
@@ -16,9 +16,9 @@ nodes:
     prerequisites: []
     params:
       collected_loci_path: gs://gwas_catalog_sumstats_susie/study_locus_lb_clumped
-      manifest_prefix: gs://gwas_catalog_sumstats_susie/finemapping_manifests
-      output_path: gs://gwas_catalog_sumstats_susie/credible_set_datasets
-      log_path: gs://gwas_catalog_sumstats_susie/finemapping_logs
+      manifest_prefix: gs://gwas_catalog_sumstats_susie/finemapping_manifests/20250204
+      output_path: gs://gwas_catalog_sumstats_susie/credible_set_datasets_20250204
+      log_path: gs://gwas_catalog_sumstats_susie/finemapping_logs/20250204
       max_records_per_chunk: 40_000
 
   - id: finemapping_batch_job
@@ -29,10 +29,10 @@ nodes:
       study_index_path: gs://gwas_catalog_sumstats_susie/study_index
     google_batch:
       entrypoint: /bin/sh
-      image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:dev
+      image: 'europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:2.0.2-rc.2'
       resource_specs:
         cpu_milli: 4000
-        memory_mib: 25000
+        memory_mib: 25_000
         boot_disk_mib: 20_000
       task_specs:
         max_retry_count: 1

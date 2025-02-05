@@ -1,15 +1,15 @@
 """Labels for resources in Google Cloud."""
 
 import re
+from collections.abc import Callable
 from typing import Any
 
 from ot_orchestration.utils.common import (
-    GCP_PROJECT_PLATFORM,
-    shared_labels,
     GCP_PROJECT_GENETICS,
+    GCP_PROJECT_PLATFORM,
     genetics_shared_labels,
+    shared_labels,
 )
-from collections.abc import Callable
 
 
 class Labels:

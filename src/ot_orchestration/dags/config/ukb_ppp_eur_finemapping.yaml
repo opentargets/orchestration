@@ -22,7 +22,7 @@ nodes:
       manifest_prefix: '{root_path}/finemapping_manifests/{date}'
       output_path: '{root_path}/credible_set_datasets/susie/{date}'
       log_path: '{root_path}/finemapping_logs/{date}'
-      max_records_per_chunk: 100_000
+      max_records_per_chunk: 40_000
 
   - id: finemapping_batch_job
     kind: Task

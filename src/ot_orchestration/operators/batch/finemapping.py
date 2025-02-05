@@ -4,7 +4,6 @@ import time
 from collections.abc import Sequence
 
 from airflow.models.baseoperator import BaseOperator
-
 from airflow.providers.google.cloud.operators.cloud_batch import (
     CloudBatchSubmitJobOperator,
 )
@@ -130,7 +129,7 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         """Get the environment that will be used by batch tasks."""
         transfer_objects = []
         env_objects: list[tuple[int, str, int]] = []
-        manifest_generation_date = time.strftime("%Y%m%d%H%M%S")
+        manifest_generation_date = time.strftime("%H%M%S")
         for i, lines in enumerate(manifest_chunks):
             self.log.info("Amending %s lines for %s manifest", len(lines) - 1, i)
             text = "\n".join(lines)
@@ -161,7 +160,7 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         manifest_rows = self._generate_manifest_rows(study_locus_ids)
         manifest_chunks = self._partition_rows_by_range(manifest_rows)
         environments = self._prepare_batch_task_env(manifest_chunks)
-        return environments
+        return environments[0:1]
 
 
 class FinemappingBatchOperator(CloudBatchSubmitJobOperator):
