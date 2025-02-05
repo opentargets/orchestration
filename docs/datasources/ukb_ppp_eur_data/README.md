@@ -1,14 +1,16 @@
 # UK Biobank Pharma Proteomics Project (UKB-PPP)
 
-This document was updated on 2024-10-11
+This document was updated on 2025-02-05
 
 Data source comes from the `https://registry.opendata.aws/ukbppp/`
 
 Data stored under `gs://ukb_ppp_eur_data` bucket comes with following structure
 
 ```
-gs://ukb_ppp_eur_data/credible_set_datasets/susie
-gs://ukb_ppp_eur_data/credible_set_clean/
+gs://ukb_ppp_eur_data/credible_set_datasets/susie/20241021/
+gs://ukb_ppp_eur_data/credible_set_datasets/susie/20250129/
+gs://ukb_ppp_eur_data/credible_set_clean/20241021/
+gs://ukb_ppp_eur_data/credible_set_clean/20250129/
 gs://ukb_ppp_eur_data/docs/
 gs://ukb_ppp_eur_data/finemapping_logs/
 gs://ukb_ppp_eur_data/finemapping_manifests/
@@ -17,6 +19,8 @@ gs://ukb_ppp_eur_data/study_index/
 gs://ukb_ppp_eur_data/study_locus_lb_clumped/
 gs://ukb_ppp_eur_data/test/
 ```
+> [!TIP]
+> The latest credible sets stored with 20250129 release date.
 
 ## Processing description
 
@@ -106,7 +110,7 @@ Due to infrastructure, the fine mapping process is divided into a 2-step logic:
 
 The output of finemapping can be found under the:
 
-- `gs://ukb_ppp_eur_data/credible_set_datasets/susie/` - fine mapped study loci
+- `gs://ukb_ppp_eur_data/credible_set_datasets/susie/20250129` - fine mapped study loci
 - `gs://ukb_ppp_eur_data/finemapping_manifests/` - manifests used during the fine mapping job
 - `gs://ukb_ppp_eur_data/finemapping_logs/` - logs from the individual finemapping tasks
 
@@ -126,3 +130,10 @@ To adjust the parameters for google batch infrastructure refer to the `google_ba
 
 > [!WARNING]
 > After running the google batch fine mapping job, ensure that the job tasks have succeeded, otherwise the job requires manual curation.
+
+
+## Changelog
+
+### 2025-02-05
+
+- [fix: repair SusieFinemapperStep to work with new SL schema #957](https://github.com/opentargets/gentropy/pull/957) resolved [issue](https://github.com/opentargets/issues/issues/3667)

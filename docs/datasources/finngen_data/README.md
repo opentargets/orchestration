@@ -1,16 +1,16 @@
 # Finngen
 
-This document was updated on 2024-10-15
+This document was updated on 2025-02-05
 
-This datasource is currently fixed under [Finngen Data Freeze 11 - June 24 2024](https://www.finngen.fi/en/access_results#:~:text=LATEST%20RELEASE%3A-,DF11%20%2D%20June%2024%202024,-Total%20sample%20size)
+This datasource is currently fixed under [Finngen Data Freeze 12 - November 4 2024](https://r12.finngen.fi/)
 
-Data source comes from the bucket `gs://finngen-public-data-r11/` hosted by Finngen.
+Data source comes from the bucket `gs://finngen-public-data-r12/` hosted by Finngen.
 
 Data is stored under `gs://finngen_data/r11` comes with following structure
 
 ```
-gs://finngen_data/r11/credible_set_datasets/susie
-gs://finngen_data/r11/study_index/
+gs://finngen_data/r12/credible_set_datasets/susie
+gs://finngen_data/r12/study_index/
 ```
 
 ## Preprocessing
@@ -43,3 +43,10 @@ The output datasets are:
 - [x] [`CredibleSets`](https://opentargets.github.io/gentropy/python_api/datasets/study_locus/) stored under `gs://finngen_data/r11/credible_set_datasets/susie/`
 
 The configuration of the dataproc infrastructure and individual step parameters can be found in `finngen_ingestion.yaml` file.
+
+
+## Changelog
+
+### 2025-02-05
+
+- [fix: updating info in finngen study index ingestion (#972)](https://github.com/opentargets/gentropy/pull/972)
