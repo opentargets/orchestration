@@ -8,17 +8,23 @@ from ot_orchestration.operators.batch.finemapping import (
     FinemappingBatchJobManifestOperator,
     FinemappingBatchOperator,
 )
+from ot_orchestration.types import Environment, EnvironmentSpec
 from ot_orchestration.utils import (
     chain_dependencies,
+    find_environment_vars,
     find_node_in_config,
     read_yaml_config,
 )
 from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 
-config = read_yaml_config(
-    Path(__file__).parent / "config" / "gwas_catalog_sumstats_susie_finemapping.yaml"
+SOURCE_CONFIG_FILE_PATH = (
+    Path(__file__).parent / Path(__file__).parent / "config" / "gwas_catalog_sumstats_susie_finemapping.yaml"
 )
-
+config = read_yaml_config(SOURCE_CONFIG_FILE_PATH)
+env_spec: list[EnvironmentSpec] = config["environment_specs"]
+env: Environment = config["env"]
+sentinels = find_environment_vars(env_spec, env)
+config = read_yaml_config(SOURCE_CONFIG_FILE_PATH, sentinels)
 
 with DAG(
     dag_id=Path(__file__).stem,
