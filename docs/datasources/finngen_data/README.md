@@ -6,7 +6,7 @@ This datasource is currently fixed under [Finngen Data Freeze 12 - November 4 20
 
 Data source comes from the bucket `gs://finngen-public-data-r12/` hosted by Finngen.
 
-Data is stored under `gs://finngen_data/r11` comes with following structure
+Data is stored under `gs://finngen_data/r12` comes with following structure
 
 ```
 gs://finngen_data/r12/credible_set_datasets/susie
@@ -19,8 +19,8 @@ Raw data is fetched by the gentropy steps directly from the data source. No prep
 
 The fetching paths are:
 
-- snp files from `gs://finngen-public-data-r11/finemap/full/susie/*.snp.bgz`
-- credible_set files from `gs://finngen-public-data-r11/finemap/summary/*SUSIE.cred.summary.tsv`
+- snp files from `gs://finngen-public-data-r12/finemap/full/susie/*.snp.bgz`
+- credible_set files from `gs://finngen-public-data-r12/finemap/summary/*SUSIE.cred.summary.tsv`
 
 ## Processing description
 
@@ -39,8 +39,8 @@ Steps run in parallel in the dataproc cluster.
 
 The output datasets are:
 
-- [x] [`StudyIndex`](https://opentargets.github.io/gentropy/python_api/datasets/study_index/) stored under `gs://finngen_data/r11/study_index/`
-- [x] [`CredibleSets`](https://opentargets.github.io/gentropy/python_api/datasets/study_locus/) stored under `gs://finngen_data/r11/credible_set_datasets/susie/`
+- [x] [`StudyIndex`](https://opentargets.github.io/gentropy/python_api/datasets/study_index/) stored under `gs://finngen_data/r12/study_index/`
+- [x] [`CredibleSets`](https://opentargets.github.io/gentropy/python_api/datasets/study_locus/) stored under `gs://finngen_data/r12/credible_set_datasets/susie/`
 
 The configuration of the dataproc infrastructure and individual step parameters can be found in `finngen_ingestion.yaml` file.
 
