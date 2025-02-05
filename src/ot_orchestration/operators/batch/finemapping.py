@@ -1,6 +1,7 @@
 """Finemapping operators. This module does not yet follow the `generic` batch job operators pattern."""
 
 import time
+from collections.abc import Sequence
 
 from airflow.models.baseoperator import BaseOperator
 from airflow.providers.google.cloud.operators.cloud_batch import (
@@ -15,6 +16,7 @@ from ot_orchestration.utils.batch import (
     create_task_spec,
 )
 from ot_orchestration.utils.common import GCP_PROJECT_GENETICS, GCP_REGION
+from ot_orchestration.utils.labels import GentropyDagLabels
 from ot_orchestration.utils.path import GCSPath, extract_partition_from_blob
 
 
@@ -127,7 +129,7 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         """Get the environment that will be used by batch tasks."""
         transfer_objects = []
         env_objects: list[tuple[int, str, int]] = []
-        manifest_generation_date = time.strftime("%Y%m%d%H%M%S")
+        manifest_generation_date = time.strftime("%H%M%S")
         for i, lines in enumerate(manifest_chunks):
             self.log.info("Amending %s lines for %s manifest", len(lines) - 1, i)
             text = "\n".join(lines)
@@ -158,24 +160,28 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         manifest_rows = self._generate_manifest_rows(study_locus_ids)
         manifest_chunks = self._partition_rows_by_range(manifest_rows)
         environments = self._prepare_batch_task_env(manifest_chunks)
-        return environments
+        return environments[0:1]
 
 
 class FinemappingBatchOperator(CloudBatchSubmitJobOperator):
+    template_fields: Sequence[str] = ("run_id",)
+
     def __init__(
         self,
         manifest: tuple[int, str, int],
         study_index_path: str,
         google_batch: GoogleBatchSpecs,
+        run_id: str | None = None,
         **kwargs,
     ):
         self.study_index_path = study_index_path
         self.idx, self.study_locus_manifest_path, self.num_of_tasks = manifest
-
+        self.run_id = run_id
+        timestamp = time.strftime("%Y%m%d%H%M%S")
         super().__init__(
             project_id=GCP_PROJECT_GENETICS,
             region=GCP_REGION,
-            job_name=f"finemapping-job-{self.idx}-{time.strftime('%Y%m%d-%H%M%S')}",
+            job_name=f"finemapping-job-{self.idx}-{timestamp}",
             job=create_batch_job(
                 task=create_task_spec(
                     image=google_batch["image"],
@@ -194,6 +200,7 @@ class FinemappingBatchOperator(CloudBatchSubmitJobOperator):
                 ),
                 task_env=create_task_env(var_list=[{"LOCUS_INDEX": str(idx)} for idx in range(0, manifest[2])]),
                 policy_specs=google_batch["policy_specs"],
+                labels=GentropyDagLabels(gentropy_dag="UKB-PPP-EUR-SuSiE-Finemapping", run_id=timestamp),
             ),
             deferrable=False,
             **kwargs,
@@ -205,7 +212,7 @@ class FinemappingBatchOperator(CloudBatchSubmitJobOperator):
         return [
             "-c",
             (
-                "poetry run gentropy "
+                "uv run gentropy "
                 "step=susie_finemapping "
                 f"step.study_index_path={self.study_index_path} "
                 f"step.study_locus_manifest_path={self.study_locus_manifest_path} "

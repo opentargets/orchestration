@@ -1,6 +1,6 @@
-## Credible set qc dag
+# Credible set qc dag
 
-Credible set qc is a set of operations performed on the `StudyLocus` datasets originally finemapped by OpenTargets to:
+Credible set qc is a set of operations performed on the `StudyLocus` datasets originally fine-mapped by OpenTargets to:
 
 - Ensure pValue of each locus does meet the pre-defined threshold
 - Perform repartitioning of the credible sets, as the output from the batch job contains files per loci, resulting in slow queries.

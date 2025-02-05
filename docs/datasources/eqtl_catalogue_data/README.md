@@ -1,6 +1,6 @@
 # EQTL Catalogue
 
-This document was updated on 2024-10-14
+This document was updated on 2025-02-05
 
 This datasource is currently fixed under the [eQTL Catalogue Release 7 - June 2024](https://www.ebi.ac.uk/eqtl/Release_notes/#:~:text=eQTL%20Catalogue%20release%207%20%2D%20June%202024)
 
@@ -9,13 +9,15 @@ Data source comes from the `https://www.ebi.ac.uk/eqtl/`
 Data stored under `gs://eqtl_catalogue_data` bucket comes with following structure
 
 ```
-gs://eqtl_catalogue_data/credible_set_datasets/
+gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie/
+gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie_patched/
 gs://eqtl_catalogue_data/docs/
 gs://eqtl_catalogue_data/ebi_ftp/susie/
 gs://eqtl_catalogue_data/otar2077/
 gs://eqtl_catalogue_data/study_index/
 gs://eqtl_catalogue_data/study_locus_datasets/
 ```
+
 
 ## Preprocessing
 
@@ -42,6 +44,18 @@ The dag consists of 3 steps:
 The output datasets from the dataproc job are:
 
 - [x] [`StudyIndex`](https://opentargets.github.io/gentropy/python_api/datasets/study_index/) stored under `gs://eqtl_catalogue_data/study_index/`
-- [x] [`CredibleSets`](https://opentargets.github.io/gentropy/python_api/datasets/study_locus/) stored under `gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie/`
+- [x] [`CredibleSets`](https://opentargets.github.io/gentropy/python_api/datasets/study_locus/) stored under `gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie_patched/`
 
 The configuration of the dataproc infrastructure and individual step parameters can be found in `eqtl_catalogue_ingestion.yaml` file.
+
+> [!NOTE]
+> The outputs of the steps are contained in the target bucket with prefix _eqtl_catalogue_susie_patched_. The original credible sets are stored under `gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie/`.
+> The patched credible sets have fixed the issue with the sum of Posterior Probabilities [see issue](https://github.com/opentargets/issues/issues/3566)
+
+## Changelog
+
+### 2025-02-05
+
+- [fix: reclassify eqtl catalogue sc datasets #894](https://github.com/opentargets/gentropy/pull/894)
+- [feat(qtls): flagging trans QTL credible sets #973](https://github.com/opentargets/gentropy/pull/973)
+- [chore: removing symbols from QTL study identifiers #971](https://github.com/opentargets/gentropy/pull/971)

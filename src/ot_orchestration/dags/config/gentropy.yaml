@@ -79,9 +79,9 @@ steps:
       step.study_locus_path:
         - gs://gwas_catalog_top_hits/credible_sets/
         - gs://gwas_catalog_sumstats_pics/credible_sets/
-        - gs://gwas_catalog_sumstats_susie/credible_set_clean/
+        - gs://gwas_catalog_sumstats_susie/credible_set_clean/20250204/
         - gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie_patched/
-        - gs://ukb_ppp_eur_data/credible_set_clean/
+        - gs://ukb_ppp_eur_data/credible_set_clean/20250129/
         - gs://finngen_data/r11/credible_set_datasets/susie/
       step.study_index_path: '{release_uri}/output/study'
       # OUTPUTS

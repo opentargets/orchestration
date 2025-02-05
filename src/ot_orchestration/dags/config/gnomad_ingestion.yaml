@@ -2,7 +2,7 @@
 dataproc:
   python_main_module: gs://genetics_etl_python_playground/initialisation/cli.py
   cluster_metadata:
-    GENTROPY_REF: v2.0.1
+    GENTROPY_REF: v2.0.2-rc.3
   cluster_init_script: gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh
   cluster_name: gnomad-preprocess
   autoscaling_policy: otg-etl
@@ -22,5 +22,5 @@ nodes:
     prerequisites: [ld_index]
     params:
       step: gnomad_variants
-      step.variant_annotation_path: gs://genetics_etl_python_playground/static_assets/gnomad_variants
+      step.variant_annotation_path: gs://gnomad_data_2/v4.1/variant_index
       step.use_version_from_input: false

@@ -1,6 +1,6 @@
 # GWAS Catalog data source
 
-This document was updated on 2024-10-18
+This document was updated on 2025-02-05
 
 Data stored under 4 buckets:
 
@@ -289,12 +289,19 @@ Bucket `gs://gwas_catalog_sumstats_susie` contains:
 
 ```bash
 gs://gwas_catalog_sumstats_susie/credible_set_datasets/
-gs://gwas_catalog_sumstats_susie/credible_sets_clean/
+gs://gwas_catalog_sumstats_susie/credible_set_clean/20241021/
+gs://gwas_catalog_sumstats_susie/credible_set_clean/20250204/
+gs://gwas_catalog_sumstats_susie/credible_set_datasets_01.25/
+gs://gwas_catalog_sumstats_susie/credible_set_datasets_20250204/
 gs://gwas_catalog_sumstats_susie/finemapping_logs/
 gs://gwas_catalog_sumstats_susie/finemapping_manifests/
+gs://gwas_catalog_sumstats_susie/logs/
 gs://gwas_catalog_sumstats_susie/study_index/
 gs://gwas_catalog_sumstats_susie/study_locus_lb_clumped/
 ```
+
+> [!TIP]
+> The latest credible sets are stored under the `20250204` release.
 
 Data is produced by 2 dags:
 
@@ -352,7 +359,7 @@ The output of finemapping can be found under the:
 
 - `gs://gwas_catalog_sumstats_susie/credible_set_datasets/` - fine mapped study loci
 - `gs://gwas_catalog_sumstats_susie/finemapping_manifests/` - manifests used during the fine mapping job
-- `gs://gwas_catalog_sumstats_susie/finemapping_logs/` - logs from the individual finemapping tasks
+- `gs://gwas_catalog_sumstats_susie/finemapping_logs/` and `gs://gwas_catalog_sumstats_susie/logs/` - logs from the individual finemapping tasks
 
 ### Credible set qc
 
@@ -366,3 +373,9 @@ To adjust the parameters for google batch infrastructure refer to the `google_ba
 
 > [!WARNING]
 > After running the google batch fine mapping job, ensure that the job tasks have succeeded, otherwise the job requires manual curation.
+
+## Changelog
+
+### 2025-02-05
+
+- [fix: repair SusieFinemapperStep to work with new SL schema #957](https://github.com/opentargets/gentropy/pull/957) resolved [issue](https://github.com/opentargets/issues/issues/3667)
