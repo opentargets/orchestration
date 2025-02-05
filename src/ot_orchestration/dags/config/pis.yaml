@@ -134,9 +134,6 @@ steps:
     - name: download_latest gene_burden
       source: gs://otar000-evidence_input/GeneBurden/json
       destination: evidence/gene_burden.json.gz
-    - name: download_latest evidences
-      source: gs://otar000-evidence_input/Genetics_portal/json
-      destination: evidence/genetics-portal-evidences.json.gz
     - name: download_latest genomics_england
       source: gs://otar000-evidence_input/GenomicsEngland/json
       destination: evidence/genomics_england.json.gz
@@ -158,6 +155,12 @@ steps:
     - name: download_latest sysbio
       source: gs://otar000-evidence_input/SysBio/json
       destination: evidence/sysbio.json.gz
+    - name: download_latest uniprot_literature
+      source: gs://otar000-evidence_input/Uniprot_literature/json
+      destination: evidence/uniprot_literature.json.gz
+    - name: download_latest uniprot_variants
+      source: gs://otar000-evidence_input/Uniprot_variants/json
+      destination: evidence/uniprot_variants.json.gz
     - name: download_latest reactome
       source: gs://otar006-reactome
       destination: evidence/reactome.json.gz
@@ -168,9 +171,6 @@ steps:
     - name: download_latest atlas
       source: gs://otar010-atlas
       destination: evidence/atlas.json.bz2
-    - name: download_latest uniprot
-      source: gs://otar011-uniprot
-      destination: evidence/uniprot.json.gz
     - name: download_latest eva
       source: gs://otar012-eva/disease-target-evidence
       destination: evidence/eva.json.gz
