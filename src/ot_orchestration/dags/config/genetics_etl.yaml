@@ -135,6 +135,7 @@ nodes:
       step.variant_index_path: gs://ot_orchestration/releases/24.11_freeze10/variant_index
       step.amino_acid_change_annotations:
         - gs://otar013-ppp/OTAR2081_foldx/foldx_variant_annotation
+      step.lof_curation_variant_annotations_path: gs://otar013-ppp/OTAR2075_lof_curation/lof_curation_variant_annotations
 
   - id: colocalisation_coloc
     prerequisites:
