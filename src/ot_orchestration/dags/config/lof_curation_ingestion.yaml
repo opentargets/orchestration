@@ -1,0 +1,20 @@
+---
+dataproc:
+  python_main_module: gs://genetics_etl_python_playground/initialisation/cli.py
+  cluster_metadata:
+    GENTROPY_REF: v2.0.1
+  cluster_init_script: gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh
+
+  cluster_name: lof-curation-ingestion
+  autoscaling_policy: otg-etl
+  allow_efm: false
+  num_workers: 2
+
+nodes:
+  - id: lof_curation_ingestion
+    kind: Task
+    prerequisites: []
+    params:
+      step: lof_curation_ingestion
+      step.lof_curation_dataset_path: gs://otar013-ppp/OTAR2075_lof_curation/curation_results_OT_21-01-25.csv
+      step.lof_curation_variant_annotations_path: gs://otar013-ppp/OTAR2075_lof_curation/lof_curation_variant_annotations
