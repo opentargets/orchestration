@@ -6,6 +6,7 @@ environment_specs:
       gentropy_ref: 2.0.2-rc4
       release_dir: gs://ot_orchestration/releases/25.02_freeze1
       input_dir: gs://open-targets-pre-data-releases/24.06dev-test/input
+      # NOTE: Patched target index is required, as existing target index does not contain all columns requested by the original gene index - see https://github.com/opentargets/gentropy/pull/946
       target_index: gs://ot-team/vivien/gentropy_patched_datasets/target_index_with_tss_column
       output_path: gs://open-targets-pre-data-releases/24.06dev-test/output
 
@@ -22,7 +23,7 @@ env: Staging
 l2g_gold_standard_path: gs://genetics_etl_python_playground/input/l2g/gold_standard/curation.json
 dataproc:
   cluster_metadata:
-    GENTROPY_REF: '{gentropy_ref}'
+    GENTROPY_REF: v'{gentropy_ref}'
   cluster_name: otg-etl
   autoscaling_policy: otg-etl
 
@@ -49,7 +50,6 @@ nodes:
         - '{eqtl}/study_index'
         - '{ukb}/study_index'
         - '{finngen}/study_index'
-      # NOTE: Patched target index is required, as existing target index does not contain all columns requested by the original gene index - see https://github.com/opentargets/gentropy/pull/946
       step.target_index_path: '{target_index}'
       step.disease_index_path: '{output_path}/etl/parquet/diseases'
       step.valid_study_index_path: '{release_dir}/study_index'
