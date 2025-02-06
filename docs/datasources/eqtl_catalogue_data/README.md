@@ -11,6 +11,7 @@ Data stored under `gs://eqtl_catalogue_data` bucket comes with following structu
 ```
 gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie/
 gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie_patched/
+gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie_patched_v2/
 gs://eqtl_catalogue_data/docs/
 gs://eqtl_catalogue_data/ebi_ftp/susie/
 gs://eqtl_catalogue_data/otar2077/
@@ -44,12 +45,12 @@ The dag consists of 3 steps:
 The output datasets from the dataproc job are:
 
 - [x] [`StudyIndex`](https://opentargets.github.io/gentropy/python_api/datasets/study_index/) stored under `gs://eqtl_catalogue_data/study_index/`
-- [x] [`CredibleSets`](https://opentargets.github.io/gentropy/python_api/datasets/study_locus/) stored under `gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie_patched/`
+- [x] [`CredibleSets`](https://opentargets.github.io/gentropy/python_api/datasets/study_locus/) stored under `gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie_patched_v2/`
 
 The configuration of the dataproc infrastructure and individual step parameters can be found in `eqtl_catalogue_ingestion.yaml` file.
 
 > [!NOTE]
-> The outputs of the steps are contained in the target bucket with prefix _eqtl_catalogue_susie_patched_. The original credible sets are stored under `gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie/`.
+> The outputs of the steps are contained in the target bucket with prefix _eqtl_catalogue_susie_patched_v2_. The original credible sets are stored under `gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie/`.
 > The patched credible sets have fixed the issue with the sum of Posterior Probabilities [see issue](https://github.com/opentargets/issues/issues/3566)
 
 ## Changelog

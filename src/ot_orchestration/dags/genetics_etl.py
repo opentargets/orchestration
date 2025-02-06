@@ -11,8 +11,10 @@ from airflow.models.dag import DAG
 from airflow.utils.task_group import TaskGroup
 
 from ot_orchestration.operators.batch.vep import VepAnnotateOperator
+from ot_orchestration.types import Environment, EnvironmentSpec
 from ot_orchestration.utils import (
     chain_dependencies,
+    find_environment_vars,
     find_node_in_config,
     read_yaml_config,
 )
@@ -27,11 +29,14 @@ from ot_orchestration.utils.dataproc import (
 
 SOURCE_CONFIG_FILE_PATH = Path(__file__).parent / "config" / "genetics_etl.yaml"
 config = read_yaml_config(SOURCE_CONFIG_FILE_PATH)
+env_spec: list[EnvironmentSpec] = config["environment_specs"]
+env: Environment = config["env"]
+sentinels = find_environment_vars(env_spec, env)
+config = read_yaml_config(SOURCE_CONFIG_FILE_PATH, sentinels)
 nodes = config["nodes"]
 node_map: dict[str, BaseOperator] = {}
 
 
-# This operator meant to fail the DAG if the release folder exists:
 with DAG(
     dag_id=Path(__file__).stem,
     description="Open Targets Genetics ETL workflow",
@@ -60,7 +65,6 @@ with DAG(
             this_task = submit_gentropy_step(
                 cluster_name=dataproc_specs["cluster_name"],
                 step_name=task["id"],
-                python_main_module=dataproc_specs["python_main_module"],
                 params=task["params"],
             )
             node_map[task["id"]] = this_task
