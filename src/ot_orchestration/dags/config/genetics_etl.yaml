@@ -1,15 +1,31 @@
 ---
+
+environment_specs:
+  - name: Staging
+    vars:
+      gentropy_ref: 2.0.2-rc4
+      release_dir: gs://ot_orchestration/releases/25.02_freeze1
+      input_dir: gs://open-targets-pre-data-releases/24.06dev-test/input
+      # NOTE: Patched target index is required, as existing target index does not contain all columns requested by the original gene index - see https://github.com/opentargets/gentropy/pull/946
+      target_index: gs://ot-team/vivien/gentropy_patched_datasets/target_index_with_tss_column
+      output_path: gs://open-targets-pre-data-releases/24.06dev-test/output
+
+      # data buckets
+      gc_susie: gs://gwas_catalog_sumstats_susie
+      gc_pics: gs://gwas_catalog_sumstats_pics
+      top_hits: gs://gwas_catalog_top_hits
+      eqtl: gs://eqtl_catalogue_data
+      ukb: gs://ukb_ppp_eur_data
+      finngen: gs://ginngen_data/r12
+      gnomad: gs://gnomad_data_2
+env: Staging
+
 l2g_gold_standard_path: gs://genetics_etl_python_playground/input/l2g/gold_standard/curation.json
-release_dir: gs://ot_orchestration/releases/24.11_freeze10
 dataproc:
-  python_main_module: gs://genetics_etl_python_playground/initialisation/cli.py
   cluster_metadata:
-    GENTROPY_REF: v2.0.1
-  cluster_init_script: gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh
-  cluster_name: test-dataproc
+    GENTROPY_REF: v'{gentropy_ref}'
+  cluster_name: otg-etl
   autoscaling_policy: otg-etl
-  allow_efm: false
-  num_workers: 2
 
 nodes:
   - id: biosample_index
@@ -17,11 +33,10 @@ nodes:
     prerequisites: []
     params:
       step: biosample_index
-      step.cell_ontology_input_path: gs://open-targets-pre-data-releases/24.06dev-test/input/biosamples/cl.json
-      step.uberon_input_path: gs://open-targets-pre-data-releases/24.06dev-test/input/biosamples/uberon.json
-      step.efo_input_path: gs://open-targets-pre-data-releases/24.06dev-test/input/biosamples/efo.json
-      step.biosample_index_path: gs://ot_orchestration/releases/24.11_freeze10/biosample_index
-
+      step.cell_ontology_input_path: '{input_dir}/biosamples/cl.json'
+      step.uberon_input_path: '{input_dir}/biosamples/uberon.json'
+      step.efo_input_path: '{input_dir}/biosamples/efo.json'
+      step.biosample_index_path: '{release_dir}/biosample_index'
   - id: study_validation
     kind: Task
     prerequisites:
@@ -29,17 +44,17 @@ nodes:
     params:
       step: study_validation
       step.study_index_path:
-        - gs://gwas_catalog_top_hits/study_index
-        - gs://gwas_catalog_sumstats_susie/study_index
-        - gs://gwas_catalog_sumstats_pics/study_index
-        - gs://eqtl_catalogue_data/study_index
-        - gs://ukb_ppp_eur_data/study_index
-        - gs://finngen_data/r12/study_index
-      step.target_index_path: gs://open-targets-pre-data-releases/24.12-uo_test-3/output/etl/parquet/targets
-      step.disease_index_path: gs://open-targets-pre-data-releases/24.06/output/etl/parquet/diseases
-      step.valid_study_index_path: gs://ot_orchestration/releases/24.11_freeze10/study_index
-      step.invalid_study_index_path: gs://ot_orchestration/releases/24.11_freeze10/invalid_study_index
-      step.biosample_index_path: gs://ot_orchestration/releases/24.11_freeze10/biosample_index
+        - '{top_hits}/study_index'
+        - '{gc_susie_bucket}/study_index'
+        - '{gc_pics}/study_index'
+        - '{eqtl}/study_index'
+        - '{ukb}/study_index'
+        - '{finngen}/study_index'
+      step.target_index_path: '{target_index}'
+      step.disease_index_path: '{output_path}/etl/parquet/diseases'
+      step.valid_study_index_path: '{release_dir}/study_index'
+      step.invalid_study_index_path: '{release_dir}/invalid_study_index'
+      step.biosample_index_path: '{release_dir}/biosample_index'
       step.invalid_qc_reasons:
         - UNRESOLVED_TARGET
         - UNRESOLVED_DISEASE
@@ -57,16 +72,16 @@ nodes:
       - study_validation
     params:
       step: credible_set_validation
-      step.study_index_path: gs://ot_orchestration/releases/24.11_freeze10/study_index
+      step.study_index_path: '{release_dir}/study_index'
       step.study_locus_path:
-        - gs://gwas_catalog_top_hits/credible_sets/
-        - gs://gwas_catalog_sumstats_pics/credible_sets/
-        - gs://gwas_catalog_sumstats_susie/credible_set_clean/20250204/
-        - gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie_patched/
-        - gs://ukb_ppp_eur_data/credible_set_clean/20250129/
-        - gs://finngen_data/r12/credible_set_datasets/susie/
-      step.valid_study_locus_path: gs://ot_orchestration/releases/24.11_freeze10/credible_set
-      step.invalid_study_locus_path: gs://ot_orchestration/releases/24.11_freeze10/invalid_credible_set
+        - '{top_hits}/credible_sets/'
+        - '{gc_pics}/credible_sets/'
+        - '{gc_susie}/credible_set_clean/20250204/'
+        - '{eqtl}/credible_set_datasets/eqtl_catalogue_susie_patched_v2/'
+        - '{ukb}/credible_set_clean/20250129/'
+        - '{finngen}/r12/credible_set_datasets/susie/'
+      step.valid_study_locus_path: '{release_dir}/credible_set'
+      step.invalid_study_locus_path: '{release_dir}/invalid_credible_set'
       step.invalid_qc_reasons:
         - DUPLICATED_STUDYLOCUS_ID
         - AMBIGUOUS_STUDY
@@ -92,16 +107,16 @@ nodes:
     params:
       step: variant_to_vcf
       step.source_paths:
-        - gs://open-targets-pre-data-releases/24.09/input/evidence-files/uniprot.json.gz
-        - gs://open-targets-pre-data-releases/24.09/input/evidence-files/eva.json.gz
-        - gs://open-targets-pre-data-releases/24.09/input/pharmacogenomics-inputs/pharmacogenomics.json.gz
-        - gs://ot_orchestration/releases/24.11_freeze10/credible_set
+        - '{input_dir}/evidence-files/uniprot.json.gz'
+        - '{input_dir}/evidence-files/eva.json.gz'
+        - '{input_dir}/pharmacogenomics-inputs/pharmacogenomics.json.gz'
+        - '{release_dir}/credible_set'
       step.source_formats:
         - json
         - json
         - json
         - parquet
-      step.output_path: gs://ot_orchestration/releases/24.11_freeze10/variants/partitioned_variants
+      step.output_path: '{release_dir}/variants/partitioned_variants'
       step.partition_size: 2_000 # approximate num of variants per partition!
 
   - id: variant_annotation
@@ -110,7 +125,7 @@ nodes:
       - convert_variants_to_vcf
     google_batch:
       entrypoint: /bin/sh
-      image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/custom_ensembl_vep:dev
+      image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/custom_ensembl_vep:{gentropy_ref}
       resource_specs:
         cpu_milli: 2000
         memory_mib: 2000
@@ -122,17 +137,17 @@ nodes:
         machine_type: n1-standard-4
     params:
       vep_cache_path: gs://genetics_etl_python_playground/vep/cache
-      vcf_input_path: gs://ot_orchestration/releases/24.11_freeze10/variants/partitioned_variants
-      vep_output_path: gs://ot_orchestration/releases/24.11_freeze10/variants/annotated_variants
+      vcf_input_path: '{release_dir}/variants/partitioned_variants'
+      vep_output_path: '{release_dir}/variants/annotated_variants'
 
   - id: variant_index
     prerequisites:
       - variant_annotation
     params:
       step: variant_index
-      step.vep_output_json_path: gs://ot_orchestration/releases/24.11_freeze10/variants/annotated_variants
-      step.gnomad_variant_annotations_path: gs://gnomad_data_2/v4.1/variant_index
-      step.variant_index_path: gs://ot_orchestration/releases/24.11_freeze10/variant_index
+      step.vep_output_json_path: '{release_dir}/variants/annotated_variants'
+      step.gnomad_variant_annotations_path: '{gnomad}/v4.1/variant_index'
+      step.variant_index_path: '{release_dir}/variant_index'
       step.amino_acid_change_annotations:
         - gs://otar013-ppp/OTAR2081_foldx/foldx_variant_annotation
 
@@ -141,8 +156,8 @@ nodes:
       - variant_index
     params:
       step: colocalisation
-      step.credible_set_path: gs://ot_orchestration/releases/24.11_freeze10/credible_set
-      step.coloc_path: gs://ot_orchestration/releases/24.11_freeze10/colocalisation/
+      step.credible_set_path: '{release_dir}/credible_set'
+      step.coloc_path: '{release_dir}/colocalisation/'
       step.colocalisation_method: Coloc
       +step.colocalisation_method_params: '{priorc1: 1e-4, priorc2: 1e-4, priorc12: 1e-5}'
       +step.session.extended_spark_conf: "{spark.sql.shuffle.partitions: '4000', spark.executor.memory: '16g', spark.sql.files.maxPartitionBytes: '25000000', spark.executor.cores: '2'}"
@@ -152,8 +167,8 @@ nodes:
       - variant_index
     params:
       step: colocalisation
-      step.credible_set_path: gs://ot_orchestration/releases/24.11_freeze10/credible_set
-      step.coloc_path: gs://ot_orchestration/releases/24.11_freeze10/colocalisation
+      step.credible_set_path: '{release_dir}/credible_set'
+      step.coloc_path: '{release_dir}/colocalisation'
       step.colocalisation_method: ECaviar
       +step.session.extended_spark_conf: "{spark.sql.shuffle.partitions: '4000', spark.executor.memory: '25g', spark.sql.files.maxPartitionBytes: '25000000', spark.executor.cores: '4'}"
 
@@ -164,71 +179,71 @@ nodes:
       - variant_index
     params:
       step: locus_to_gene_feature_matrix
-      step.credible_set_path: gs://ot_orchestration/releases/24.11_freeze10/credible_set
-      step.variant_index_path: gs://ot_orchestration/releases/24.11_freeze10/variant_index
-      step.colocalisation_path: gs://ot_orchestration/releases/24.11_freeze10/colocalisation
-      step.study_index_path: gs://ot_orchestration/releases/24.11_freeze10/study_index
-      step.target_index_path: gs://open-targets-pre-data-releases/24.12-uo_test-3/output/etl/parquet/targets
-      step.feature_matrix_path: gs://ot_orchestration/releases/24.11_freeze10/locus_to_gene_feature_matrix
+      step.credible_set_path: '{release_dir}/credible_set'
+      step.variant_index_path: '{release_dir}/variant_index'
+      step.colocalisation_path: '{release_dir}/colocalisation'
+      step.study_index_path: '{release_dir}/study_index'
+      step.target_index_path: '{target_index}'
+      step.feature_matrix_path: '{release_dir}/locus_to_gene_feature_matrix'
       +step.session.extended_spark_conf: "{spark.sql.autoBroadcastJoinThreshold:'-1'}"
       step.session.write_mode: overwrite
 
-  - id: l2g_train
-    prerequisites:
-      - l2g_feature_matrix
-    params:
-      step: locus_to_gene
-      step.run_mode: train
-      step.wandb_run_name: 24.11_freeze10
-      step.hf_hub_repo_id: opentargets/locus_to_gene
-      step.hf_model_commit_message: 'chore: update model based on 24.11_freeze10 run'
-      step.model_path: gs://ot_orchestration/releases/24.11_freeze10/locus_to_gene_model/classifier.skops
-      step.credible_set_path: gs://ot_orchestration/releases/24.11_freeze10/credible_set
-      step.variant_index_path: gs://ot_orchestration/releases/24.11_freeze10/variant_index
-      step.feature_matrix_path: gs://ot_orchestration/releases/24.11_freeze10/locus_to_gene_feature_matrix
-      step.gold_standard_curation_path: gs://genetics_etl_python_playground/input/l2g/gold_standard/curation.json
-      step.gene_interactions_path: gs://genetics_etl_python_playground/static_assets/interaction # OTP 23.12 data
-      step.hyperparameters.n_estimators: 100
-      step.hyperparameters.max_depth: 5
-      step.hyperparameters.loss: log_loss
-      +step.session.extended_spark_conf: "{spark.kryoserializer.buffer.max:500m, spark.sql.autoBroadcastJoinThreshold:'-1'}"
+# - id: l2g_train
+#   prerequisites:
+#     - l2g_feature_matrix
+#   params:
+#     step: locus_to_gene
+#     step.run_mode: train
+#     step.wandb_run_name: 24.11_freeze10
+#     step.hf_hub_repo_id: opentargets/locus_to_gene
+#     step.hf_model_commit_message: 'chore: update model based on 24.11_freeze10 run'
+#     step.model_path: '{release_dir}/locus_to_gene_model/classifier.skops'
+#     step.credible_set_path: '{release_dir}/credible_set'
+#     step.variant_index_path: '{release_dir}/variant_index'
+#     step.feature_matrix_path: '{release_dir}/locus_to_gene_feature_matrix'
+#     step.gold_standard_curation_path: gs://genetics_etl_python_playground/input/l2g/gold_standard/curation.json
+#     step.gene_interactions_path: gs://genetics_etl_python_playground/static_assets/interaction # OTP 23.12 data
+#     step.hyperparameters.n_estimators: 100
+#     step.hyperparameters.max_depth: 5
+#     step.hyperparameters.loss: log_loss
+#     +step.session.extended_spark_conf: "{spark.kryoserializer.buffer.max:500m, spark.sql.autoBroadcastJoinThreshold:'-1'}"
 
-  - id: l2g_predict
-    prerequisites:
-      - l2g_train
-    params:
-      step: locus_to_gene
-      step.run_mode: predict
-      step.predictions_path: gs://ot_orchestration/releases/24.11_freeze10/locus_to_gene_predictions
-      step.feature_matrix_path: gs://ot_orchestration/releases/24.11_freeze10/locus_to_gene_feature_matrix
-      step.credible_set_path: gs://ot_orchestration/releases/24.11_freeze10/credible_set
-      step.download_from_hub: false
-      step.l2g_threshold: 0.05
-      step.model_path: gs://ot_orchestration/benchmarks/l2g/fm0/v5.1_best_cv/locus_to_gene_model/classifier.skops
-      step.hf_hub_repo_id: opentargets/locus_to_gene
-      step.session.write_mode: overwrite
+# - id: l2g_predict
+#   prerequisites:
+#     - l2g_train
+#   params:
+#     step: locus_to_gene
+#     step.run_mode: predict
+#     step.predictions_path: '{release_dir}/locus_to_gene_predictions'
+#     step.feature_matrix_path: '{release_dir}/locus_to_gene_feature_matrix'
+#     step.credible_set_path: '{release_dir}/credible_set'
+#     step.download_from_hub: false
+#     step.l2g_threshold: 0.05
+#     step.model_path: gs://ot_orchestration/benchmarks/l2g/fm0/v5.1_best_cv/locus_to_gene_model/classifier.skops
+#     step.hf_hub_repo_id: opentargets/locus_to_gene
+#     step.session.write_mode: overwrite
 
-  - id: l2g_evidence
-    prerequisites:
-      - l2g_predict
-    params:
-      step: locus_to_gene_evidence
-      step.evidence_output_path: gs://ot_orchestration/releases/24.11_freeze10/locus_to_gene_evidence
-      step.locus_to_gene_predictions_path: gs://ot_orchestration/releases/24.11_freeze10/locus_to_gene_predictions
-      step.credible_set_path: gs://ot_orchestration/releases/24.11_freeze10/credible_set
-      step.study_index_path: gs://ot_orchestration/releases/24.11_freeze10/study_index
-      step.locus_to_gene_threshold: 0.05
-      step.session.write_mode: overwrite
+# - id: l2g_evidence
+#   prerequisites:
+#     - l2g_predict
+#   params:
+#     step: locus_to_gene_evidence
+#     step.evidence_output_path: '{release_dir}/locus_to_gene_evidence
+#     step.locus_to_gene_predictions_path: '{release_dir}/locus_to_gene_predictions
+#     step.credible_set_path: '{release_dir}/credible_set
+#     step.study_index_path: '{release_dir}/study_index
+#     step.locus_to_gene_threshold: 0.05
+#     step.session.write_mode: overwrite
 
-  - id: l2g_associations
-    params:
-      step: locus_to_gene_associations
-      step.evidence_input_path: gs://ot_orchestration/releases/24.11_freeze10/locus_to_gene_evidence
-      step.disease_index_path: gs://open-targets-pre-data-releases/24.06/output/etl/parquet/diseases
-      step.direct_associations_output_path: gs://ot_orchestration/releases/24.11_freeze10/locus_to_gene_associations/direct_associations
-      step.indirect_associations_output_path: gs://ot_orchestration/releases/24.11_freeze10/locus_to_gene_associations/indirect_associations
-      step.session.spark_uri: yarn
-      step.session.write_mode: overwrite
+# - id: l2g_associations
+#   params:
+#     step: locus_to_gene_associations
+#     step.evidence_input_path: '{release_dir}/locus_to_gene_evidence
+#     step.disease_index_path: gs://open-targets-pre-data-releases/24.06/output/etl/parquet/diseases
+#     step.direct_associations_output_path: '{release_dir}/locus_to_gene_associations/direct_associations
+#     step.indirect_associations_output_path: '{release_dir}/locus_to_gene_associations/indirect_associations
+#     step.session.spark_uri: yarn
+#     step.session.write_mode: overwrite
 
-    prerequisites:
-      - l2g_evidence
+#   prerequisites:
+#     - l2g_evidence
