@@ -3,12 +3,12 @@
 environment_specs:
   - name: Staging
     vars:
-      gentropy_ref: 2.0.2-rc4
+      gentropy_ref: 2.0.2-rc.4
       release_dir: gs://ot_orchestration/releases/25.02_freeze1
-      input_dir: gs://open-targets-pre-data-releases/24.06dev-test/input
+      input_dir: gs://open-targets-pre-data-releases/24.12-uo_test-3/input
       # NOTE: Patched target index is required, as existing target index does not contain all columns requested by the original gene index - see https://github.com/opentargets/gentropy/pull/946
       target_index: gs://ot-team/vivien/gentropy_patched_datasets/target_index_with_tss_column
-      output_path: gs://open-targets-pre-data-releases/24.06dev-test/output
+      output_path: gs://open-targets-pre-data-releases/24.12-uo_test-3/output
 
       # data buckets
       gc_susie: gs://gwas_catalog_sumstats_susie
@@ -16,14 +16,14 @@ environment_specs:
       top_hits: gs://gwas_catalog_top_hits
       eqtl: gs://eqtl_catalogue_data
       ukb: gs://ukb_ppp_eur_data
-      finngen: gs://ginngen_data/r12
+      finngen: gs://finngen_data/r12
       gnomad: gs://gnomad_data_2
 env: Staging
 
 l2g_gold_standard_path: gs://genetics_etl_python_playground/input/l2g/gold_standard/curation.json
 dataproc:
   cluster_metadata:
-    GENTROPY_REF: v'{gentropy_ref}'
+    GENTROPY_REF: 'v{gentropy_ref}'
   cluster_name: otg-etl
   autoscaling_policy: otg-etl
 
@@ -37,6 +37,7 @@ nodes:
       step.uberon_input_path: '{input_dir}/biosamples/uberon.json'
       step.efo_input_path: '{input_dir}/biosamples/efo.json'
       step.biosample_index_path: '{release_dir}/biosample_index'
+      step.session.write_mode: overwrite
   - id: study_validation
     kind: Task
     prerequisites:
@@ -45,7 +46,7 @@ nodes:
       step: study_validation
       step.study_index_path:
         - '{top_hits}/study_index'
-        - '{gc_susie_bucket}/study_index'
+        - '{gc_susie}/study_index'
         - '{gc_pics}/study_index'
         - '{eqtl}/study_index'
         - '{ukb}/study_index'
@@ -79,9 +80,11 @@ nodes:
         - '{gc_susie}/credible_set_clean/20250204/'
         - '{eqtl}/credible_set_datasets/eqtl_catalogue_susie_patched_v2/'
         - '{ukb}/credible_set_clean/20250129/'
-        - '{finngen}/r12/credible_set_datasets/susie/'
+        - '{finngen}/credible_set_datasets/susie/'
       step.valid_study_locus_path: '{release_dir}/credible_set'
       step.invalid_study_locus_path: '{release_dir}/invalid_credible_set'
+      step.target_index_path: '{target_index}'
+      step.trans_qtl_threshold: 5_000_000
       step.invalid_qc_reasons:
         - DUPLICATED_STUDYLOCUS_ID
         - AMBIGUOUS_STUDY
