@@ -4,17 +4,23 @@ from pathlib import Path
 
 from airflow.models.dag import DAG
 
-from ot_orchestration.utils import chain_dependencies, read_yaml_config
+from ot_orchestration.types import Environment, EnvironmentSpec
+from ot_orchestration.utils import (
+    chain_dependencies,
+    find_environment_vars,
+    read_yaml_config,
+)
 from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
-from ot_orchestration.utils.dataproc import (
-    generate_dataproc_task_chain,
-    submit_gentropy_step,
-)
+from ot_orchestration.utils.dataproc import generate_dataproc_task_chain, submit_gentropy_step
 
-config = read_yaml_config(
-    Path(__file__).parent / "config" / "gwas_catalog_sumstats_susie_clumping.yaml"
+SOURCE_CONFIG_FILE_PATH = (
+    Path(__file__).parent / Path(__file__).parent / "config" / "gwas_catalog_sumstats_susie_clumping.yaml"
 )
-
+config = read_yaml_config(SOURCE_CONFIG_FILE_PATH)
+env_spec: list[EnvironmentSpec] = config["environment_specs"]
+env: Environment = config["env"]
+sentinels = find_environment_vars(env_spec, env)
+config = read_yaml_config(SOURCE_CONFIG_FILE_PATH, sentinels)
 with DAG(
     dag_id=Path(__file__).stem,
     description="Open Targets Genetics - Clump GWAS Catalog summary statistics with locus breaker",
@@ -26,7 +32,6 @@ with DAG(
         task = submit_gentropy_step(
             cluster_name=config["dataproc"]["cluster_name"],
             step_name=step["id"],
-            python_main_module=config["dataproc"]["python_main_module"],
             params=step["params"],
         )
 

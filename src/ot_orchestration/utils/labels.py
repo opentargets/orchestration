@@ -1,9 +1,15 @@
 """Labels for resources in Google Cloud."""
 
 import re
+from collections.abc import Callable
 from typing import Any
 
-from ot_orchestration.utils.common import GCP_PROJECT_PLATFORM, shared_labels
+from ot_orchestration.utils.common import (
+    GCP_PROJECT_GENETICS,
+    GCP_PROJECT_PLATFORM,
+    genetics_shared_labels,
+    shared_labels,
+)
 
 
 class Labels:
@@ -29,6 +35,7 @@ class Labels:
         self,
         extra: dict[str, str] | None = None,
         project: str = GCP_PROJECT_PLATFORM,
+        shared_labels: Callable[[str], dict[str, str]] = shared_labels,
     ) -> None:
         self.project = project
         self.extra = extra or {}
@@ -67,6 +74,7 @@ class StepLabels(Labels):
         step_name: str | None = None,
         is_ppp: bool = False,
         project: str = GCP_PROJECT_PLATFORM,
+        shared_labels: Callable[[str], dict[str, str]] = shared_labels,
     ) -> None:
         extra = {
             "tool": tool,
@@ -76,4 +84,21 @@ class StepLabels(Labels):
         if step_name:
             extra["step"] = step_name.replace(f"{tool}_", "")
 
-        super().__init__(extra, project)
+        super().__init__(extra, project=project, shared_labels=shared_labels)
+
+
+class GentropyDagLabels(Labels):
+    """A collection of labels for gentropy DAGs."""
+
+    def __init__(
+        self,
+        gentropy_dag: str,
+        run_id: str,
+        project: str = GCP_PROJECT_GENETICS,
+        shared_labels=genetics_shared_labels,
+    ) -> None:
+        extra = {
+            "gentropy_dag": self.clean_label(gentropy_dag),
+            "run_id": self.clean_label(run_id),
+        }
+        super().__init__(extra, project=project, shared_labels=shared_labels)

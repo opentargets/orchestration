@@ -1,9 +1,19 @@
 ---
+environment_specs:
+  - name: Test
+    vars:
+      input_path: gs://ot_orchestration/test/gwas_catalog_inputs
+      output_path: gs://ot_orchestration/test/gwas_catalog_sumstats_susie_clumping
+  - name: Prod
+    vars:
+      input_path: gs://gwas_catalog_inputs
+      output_path: gs://gwas_catalog_sumstats_susie
+
+env: Prod
+
 dataproc:
-  python_main_module: gs://genetics_etl_python_playground/initialisation/cli.py
   cluster_metadata:
-    GENTROPY_REF: v2.0.1
-  cluster_init_script: gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh
+    GENTROPY_REF: v2.0.2-rc.2
   cluster_name: otg-gwas-catalog-sumstat-susie-clumping
   autoscaling_policy: otg-etl
 
@@ -14,12 +24,12 @@ nodes:
     params:
       step: gwas_catalog_study_index
       step.catalog_study_files:
-        - gs://gwas_catalog_inputs/gwas_catalog_download_studies.tsv
+        - "{input_path}/gwas_catalog_download_studies.tsv"
       step.catalog_ancestry_files:
-        - gs://gwas_catalog_inputs/gwas_catalog_download_ancestries.tsv
-      step.study_index_path: gs://gwas_catalog_sumstats_susie/study_index
-      step.gwas_catalog_study_curation_file: gs://genetics-portal-dev-analysis/yt4/gwas_catalog_curation/20241120_output_curation.tsv
-      step.sumstats_qc_path: gs://gwas_catalog_inputs/summary_statistics_qc
+        - "{input_path}/gwas_catalog_download_ancestries.tsv"
+      step.study_index_path: "{output_path}/study_index"
+      step.gwas_catalog_study_curation_file: "{input_path}/curation/202412/GWAS_Catalog_study_curation.tsv"
+      step.sumstats_qc_path: "{input_path}/summary_statistics_qc"
       step.session.write_mode: overwrite
   - id: locus_breaker_clumping
     kind: Task
@@ -27,8 +37,8 @@ nodes:
       - gwas_catalog_study_index
     params:
       step: locus_breaker_clumping
-      step.summary_statistics_input_path: gs://gwas_catalog_inputs/harmonised_summary_statistics/*/*.parquet
-      step.clumped_study_locus_output_path: gs://gwas_catalog_sumstats_susie/study_locus_lb_clumped
+      step.summary_statistics_input_path: "{input_path}/harmonised_summary_statistics/*/*.parquet"
+      step.clumped_study_locus_output_path: "{output_path}/study_locus_lb_clumped"
       step.lbc_baseline_pvalue: 1.0e-5
       step.lbc_distance_cutoff: 250_000
       step.lbc_pvalue_threshold: 1.0e-8
