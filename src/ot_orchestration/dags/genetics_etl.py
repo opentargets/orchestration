@@ -18,14 +18,12 @@ from ot_orchestration.utils import (
     find_node_in_config,
     read_yaml_config,
 )
-from ot_orchestration.utils.common import (
-    shared_dag_args,
-    shared_dag_kwargs,
-)
+from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 from ot_orchestration.utils.dataproc import (
     generate_dataproc_task_chain,
     submit_gentropy_step,
 )
+from ot_orchestration.utils.labels import GentropyDagLabels
 
 SOURCE_CONFIG_FILE_PATH = Path(__file__).parent / "config" / "genetics_etl.yaml"
 config = read_yaml_config(SOURCE_CONFIG_FILE_PATH)
@@ -42,7 +40,7 @@ with DAG(
     description="Open Targets Genetics ETL workflow",
     default_args=shared_dag_args,
     **shared_dag_kwargs,
-):
+) as genetics_etl_dag:
     with TaskGroup(group_id="genetics_etl") as genetics_etl:
         task_config = find_node_in_config(nodes, "variant_annotation")
         if task_config:
@@ -74,4 +72,5 @@ with DAG(
         generate_dataproc_task_chain(
             tasks=list(node_map.values()),
             **config["dataproc"],
+            labels=GentropyDagLabels(gentropy_dag="genetics_etl", run_id="airflow"),
         )
