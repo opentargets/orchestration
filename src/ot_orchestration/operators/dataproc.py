@@ -1,18 +1,65 @@
-"""Utility functions for working with Dataproc clusters in the Platform project."""
+"""Utility functions for working with Dataproc clusters."""
 
+from __future__ import annotations
+
+import inspect
 from collections.abc import Sequence
+from typing import Any
 
+from airflow.models.baseoperator import BaseOperator
 from airflow.providers.google.cloud.operators.dataproc import (
     DataprocCreateClusterOperator,
     DataprocSubmitJobOperator,
 )
+from airflow.utils.context import Context
 from google.cloud.dataproc_v1 import Cluster, JobReference
 from google.cloud.dataproc_v1.types.jobs import Job, JobPlacement, SparkJob
 
+from ot_orchestration.types import DataprocSpecs
 from ot_orchestration.utils import random_id
 from ot_orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_REGION
 from ot_orchestration.utils.dataproc import ClusterGenerator
 from ot_orchestration.utils.labels import Labels
+
+
+class DataprocCreateClusterConfigGenerateOperator(BaseOperator):
+    """This operator creates the Dataproc cluster configuration.
+
+    To see all available options check the `airflow.providers.google.cloud.operators.dataproc.ClusterGenerator`
+    class initialization arguments at `airflow documentation <https://github.com/apache/airflow/blob/8b21b4e2126a1a3a514407b29003b7349ab8cf22/providers/google/src/airflow/providers/google/cloud/operators/dataproc.py#L120>`__.
+
+    The operator allows for passing the DataprocSpecs object to the ClusterGenerator class.
+
+    Args:
+        specs (DataprocSpecs): Object containing dataproc specification.
+
+    This operator:
+    1. Inspects the required keys needed to generate the cluster with ClusterGenerator class.
+    2. Drops all additional parameters provided by the user and warns the user about the additional parameters.
+
+    The validation, although not necessary, allows the user to make sure that all configuration options passed
+    downstream to the ClusterGenerator have valid keys. This can prevent from the typos creating cluster that does not meet
+    the requested criteria.
+    """
+
+    def __init__(self, specs: DataprocSpecs, **kwargs) -> None:
+        self.cluster_kwargs = specs
+        self.log.debug("Requested following cluster configuration %s", self.cluster_kwargs)
+        super().__init__(**kwargs)
+
+    def execute(self, _: Context) -> Cluster:
+        """Execute the operator."""
+        cluster_generator_keys = set(inspect.signature(ClusterGenerator).parameters.keys())
+        cg_kwargs: dict[str, Any] = {k: v for k, v in self.cluster_kwargs.items() if k in cluster_generator_keys}
+        other_keys = {k for k in self.cluster_kwargs if k not in cluster_generator_keys}
+        if other_keys:
+            self.log.warning(
+                "%s got unexpected %s that will be dropped before passing to ClusterGenerator.",
+                type(self).__name__,
+                other_keys,
+            )
+        cluster_config: dict = ClusterGenerator(**cg_kwargs).make()
+        return Cluster(**cluster_config)
 
 
 class PlatformETLCreateClusterOperator(DataprocCreateClusterOperator):
@@ -101,7 +148,6 @@ class PlatformETLCreateClusterOperator(DataprocCreateClusterOperator):
         # There are minor changes, but it must be fine-tuned as we start testing
         # the new pipeline runs.
         # The only changes so far are:
-        # - The master machine has been downsized to n2-standard-4
         # - Disks are now pd-ssd instead of pd-standard
         # - Idle delete TTL defaults to 7200 seconds so the cluster is deleted
         #   after 2 hours of inactivity. The reason for this is ETL clusters are
