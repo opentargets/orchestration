@@ -21,11 +21,19 @@ GCP_AUTOSCALING_POLICY = "otg-etl"
 GCP_EFM_AUTOSCALING_POLICY = "otg-efm"
 GENTROPY_CLI_SCRIPT = "gs://genetics_etl_python_playground/initialisation/cli.py"
 GENTROPY_CLUSTER_INIT_SCRIPT = "gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh"
+DATAPROC_BASE_PROPERTIES = {
+    "spark:spark.sql.adaptive.enabled": "true",
+    "spark:spark.shuffle.service.enabled": "true",
+}
 
-# CLI configuration.
-CLUSTER_CONFIG_DIR = "/config"
-CONFIG_NAME = "ot_config"
-PYTHON_CLI = "cli.py"
+DATAPROC_EFM_MODE_PROPERTIES = {
+    "dataproc:efm.spark.shuffle": "primary-worker",
+    "spark:spark.sql.files.maxPartitionBytes": "1073741824",  # value proposed by the Dataproc documentation. See EFM in docstring.
+    "yarn:spark.shuffle.io.serverThreads": "50",  # ensure more threads can write default for n-standard-16 is 2 * (16 cores) threads
+    "spark:spark.shuffle.io.numConnectionsPerPeer": "5",
+    "spark:spark.stage.maxConsecutiveAttempts": "10",  # defaults to 4, this is in case the master was lost
+    "spark:spark.task.maxFailures": "10",
+}
 
 # Shared DAG construction parameters.
 shared_dag_args: dict[str, Any] = {

@@ -39,6 +39,8 @@ class PathSegments(TypedDict):
 class ProtoPath(Protocol):
     segments: PathSegments
     path: str
+    is_gcs_path = False
+    is_native_path = False
 
     @abstractmethod
     def dump(self, data: Any) -> None:
@@ -85,6 +87,8 @@ class NativePath(ProtoPath):
     Args:
         path (str): Local file path.
     """
+
+    is_native_path = True
 
     def __init__(self, path: str):
         self.native_path = Path(path)
@@ -157,6 +161,8 @@ class GCSPath(ProtoPath):
         chunk_size (int): Chunk size for reading and writing. Defaults to 1024*256.
         client (storage.Client | None): Google Cloud Storage client. Defaults to storage.Client().
     """
+
+    is_gcs_path = True
 
     def __init__(
         self,
@@ -331,9 +337,7 @@ class IOManager:
                     protocol,
                 )
             case _:
-                raise NotImplementedError(
-                    "IOManager.resolve is not implemented for path=%s", path
-                )
+                raise NotImplementedError("IOManager.resolve is not implemented for path=%s", path)
 
     def resolve_paths(self, paths: list[str]) -> list[ProtoPath]:
         """Resolve multiple paths by the protocols.
@@ -384,9 +388,7 @@ class IOManager:
                 results.append(future.result())
         return results
 
-    def dump_many(
-        self, objects: list[Any], paths: list[str], n_threads: int | None = None
-    ) -> None:
+    def dump_many(self, objects: list[Any], paths: list[str], n_threads: int | None = None) -> None:
         """Dump many objects by concurrent operations. Not thread safe.
 
         When dumping many objects make sure, you are not writing to the same object multiple times.
@@ -436,9 +438,7 @@ class IOManager:
                 logging.info(f"Successfully dumped {idx + 1}/{len(futures)} objects.")
 
     @staticmethod
-    def _find_optimal_thread_num(
-        n_processes: int, max_n_threads: int = MAX_N_THREADS
-    ) -> int:
+    def _find_optimal_thread_num(n_processes: int, max_n_threads: int = MAX_N_THREADS) -> int:
         """Find optimal number of threads to spawn for the concurrent IO operations.
 
         Args:
@@ -461,9 +461,7 @@ class ThreadSafetyError(Exception):
     pass
 
 
-def extract_partition_from_blob(
-    blob: storage.Blob | str, with_prefix: bool = True
-) -> str:
+def extract_partition_from_blob(blob: storage.Blob | str, with_prefix: bool = True) -> str:
     """Extract partition prefix from a Google Cloud Storage Blob.
 
     Args:
