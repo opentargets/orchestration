@@ -1,22 +1,22 @@
 """Labels for resources in Google Cloud."""
 
+from __future__ import annotations
+
 import re
-from collections.abc import Callable
-from typing import Any
+from typing import Any, Generic, TypeVar
 
-from ot_orchestration.common import (
-    GCP_PROJECT_GENETICS,
-    GCP_PROJECT_PLATFORM,
-    genetics_shared_labels,
-    shared_labels,
-)
+from airflow.utils.context import Context
+from typing_extensions import Self
+
+from ot_orchestration.models.labels import LabelModel
+
+L = TypeVar("L", bound=LabelModel)
 
 
-class Labels:
+class Labels(Generic[L]):
     """A collection of labels for Google Cloud resources.
 
-    Includes a set of default labels, and ensures that all labels are correctly
-    formatted.
+    To build this object from labels, one has to use one of the existing label models.
 
     Refer to the `controlled vocabularies <https://github.com/opentargets/controlled-vocabularies/blob/main/infrastructure.yaml>`__
         repository for a list of example values.
@@ -31,16 +31,19 @@ class Labels:
             GCP_PROJECT_PLATFORM.
     """
 
-    def __init__(
-        self,
-        extra: dict[str, str] | None = None,
-        project: str = GCP_PROJECT_PLATFORM,
-        shared_labels: Callable[[str], dict[str, str]] = shared_labels,
-    ) -> None:
-        self.project = project
-        self.extra = extra or {}
-        self.label_dict = shared_labels(project)
-        self.label_dict.update({k: self.clean_label(v) for k, v in self.extra.items()})
+    @classmethod
+    def from_model(cls, model: L) -> Labels:
+        """Build labels from model."""
+        return cls(**model.model_dump())
+
+    @classmethod
+    def from_dict(cls, d: dict[str, str]) -> Labels:
+        """Construct labels from dict."""
+        return cls(**d)
+
+    def __init__(self, **kwargs) -> None:
+        self.label_dict = kwargs
+        self.label_dict.update({k: self.clean_label(v) for k, v in self.label_dict.items()})
 
     def clean_label(self, label: str) -> str:
         """Clean a label for use in google cloud.
@@ -59,46 +62,22 @@ class Labels:
         """Return a dict of clean labels."""
         return self.label_dict
 
-    def clone(self, extra: dict[str, str] | None = None) -> "Labels":
-        """Return a copy with additional labels."""
-        extra = extra or {}
-        return Labels({**self.label_dict, **extra}, self.project)
+    def add_dag_run_label(self, context: Context) -> Self:
+        """Add dag_run label to the labels dictionary.
 
+        This method ensures that the added labels are following expected requirements.
+        .. warning::
+            <b>This method can be only accessed during airflow runtime where the context object is accessible.</b>
 
-class StepLabels(Labels):
-    """A collection of labels with additional step-specific labels."""
+        Args:
+            context (Context): Airflow context that allows to access the `dag_run`.
 
-    def __init__(
-        self,
-        tool: str,
-        step_name: str | None = None,
-        is_ppp: bool = False,
-        project: str = GCP_PROJECT_PLATFORM,
-        shared_labels: Callable[[str], dict[str, str]] = shared_labels,
-    ) -> None:
-        extra = {
-            "tool": tool,
-            "product": "ppp" if is_ppp else "platform",
-        }
-
-        if step_name:
-            extra["step"] = step_name.replace(f"{tool}_", "")
-
-        super().__init__(extra, project=project, shared_labels=shared_labels)
-
-
-class GentropyDagLabels(Labels):
-    """A collection of labels for gentropy DAGs."""
-
-    def __init__(
-        self,
-        gentropy_dag: str,
-        run_id: str,
-        project: str = GCP_PROJECT_GENETICS,
-        shared_labels=genetics_shared_labels,
-    ) -> None:
-        extra = {
-            "gentropy_dag": self.clean_label(gentropy_dag),
-            "run_id": self.clean_label(run_id),
-        }
-        super().__init__(extra, project=project, shared_labels=shared_labels)
+        Raises:
+            ValueError: When the function is run outside the airflow dag run.
+        """
+        dag_run = context.get("dag_run")
+        if not dag_run:
+            raise ValueError("Could not the `dag_run` ensure the context is running within airflow dag run.")
+        runtime_labels = Labels.from_dict({"dag_run": dag_run}).as_dict()
+        self.add(runtime_labels)
+        return self

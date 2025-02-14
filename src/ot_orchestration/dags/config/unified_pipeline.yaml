@@ -1,17 +1,18 @@
 ---
 release_name: uo_test_paths
 
-pis_version: '25.0.0-rc.1'
-ontoform_version: '25.0.0-rc.5'
-etl_version: '25.0.0-rc.2'
-gentropy_version: '2.0.1'
-vep_version: '2.0.1'
+pis_version: "25.0.0-rc.1"
+ontoform_version: "25.0.0-rc.5"
+etl_version: "25.0.0-rc.2"
+gentropy_version: "2.0.1"
+vep_version: "2.0.1"
 
-chembl_version: '35'
-efo_version: '3.71.0'
-ensembl_version: '113'
+chembl_version: "35"
+efo_version: "3.71.0"
+ensembl_version: "113"
 
 is_ppp: false
+environment: staging
 
 # Dependency graph
 # ----------------

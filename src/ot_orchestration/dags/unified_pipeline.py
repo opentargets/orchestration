@@ -13,7 +13,7 @@ from airflow.providers.google.cloud.operators.compute import (
 from airflow.providers.google.cloud.operators.dataproc import (
     DataprocDeleteClusterOperator,
 )
-from airflow.utils.edgemodifier import Label
+from airflow.utils.edgemodifier import Label as EdgeLabel
 from airflow.utils.trigger_rule import TriggerRule
 
 from ot_orchestration.common import (
@@ -26,6 +26,7 @@ from ot_orchestration.common import (
 from ot_orchestration.dags.config.unified_pipeline import (
     UnifiedPipelineConfig,
 )
+from ot_orchestration.models.labels import UnifiedPipelineStepLabelModel
 from ot_orchestration.operators.batch.vep import VepAnnotateOperator
 from ot_orchestration.operators.dataproc import (
     PlatformETLCreateClusterOperator,
@@ -45,7 +46,7 @@ from ot_orchestration.utils.dataproc import (
     delete_cluster,
     submit_gentropy_step,
 )
-from ot_orchestration.utils.labels import StepLabels
+from ot_orchestration.utils.labels import Labels
 
 with DAG(
     default_args=shared_dag_args,
@@ -81,7 +82,16 @@ with DAG(
             @task_group(group_id=step_name)
             def pis_step(step_name: str) -> None:
                 config_uri = config.pis_config_uri(step_name)
-                labels = StepLabels("pis", step_name, config.is_ppp)
+                labels = Labels.from_model(
+                    UnifiedPipelineStepLabelModel(
+                        subteam="backend",
+                        environment=config.environment,
+                        created_by="unified-pipeline",
+                        step_name=step_name,
+                        tool="pis",
+                        product=config.product,
+                    )
+                )
                 vm_name = create_name(step_name)
 
                 c = PISDiffComputeOperator(
@@ -127,8 +137,8 @@ with DAG(
                 )
 
                 # here we define the task dependencies for both branches
-                chain(c, Label("invalid previous run"), u, r, (j, d))
-                chain(c, Label("valid previous run exists, skip run"), j)
+                chain(c, EdgeLabel("invalid previous run"), u, r, (j, d))
+                chain(c, EdgeLabel("valid previous run exists, skip run"), j)
 
             pis_step(step_name)
 
@@ -148,7 +158,16 @@ with DAG(
 
                 @task_group(group_id=step_name)
                 def ontoform_step(step_name: str) -> None:
-                    labels = StepLabels("ontoform", step_name, config.is_ppp)
+                    labels = Labels.from_model(
+                        UnifiedPipelineStepLabelModel(
+                            subteam="backend",
+                            environment=config.environment,
+                            created_by="unified-pipeline",
+                            step_name=step_name,
+                            tool="ontoform",
+                            product=config.product,
+                        )
+                    )
                     vm_name = create_name(step_name)
 
                     r = ComputeEngineRunContainerizedWorkloadSensor(
@@ -192,12 +211,20 @@ with DAG(
 
     @task_group(group_id=f"etl_cluster_prepare")
     def etl_cluster_prepare() -> None:
-        labels = StepLabels("etl", is_ppp=config.is_ppp)
-
+        labels = Labels.from_model(
+            UnifiedPipelineStepLabelModel(
+                subteam="backend",
+                environment=config.environment,
+                created_by="unified-pipeline",
+                step_name="etl_cluster_prepare",
+                tool="etl-backend",
+                product=config.product,
+            )
+        )
         c = PlatformETLCreateClusterOperator(
             task_id="cluster_create",
             cluster_name=etl_cluster_name,
-            labels=labels,
+            labels=labels.as_dict(),
         )
         uc = UploadStringOperator(
             task_id=f"upload_config",
@@ -223,15 +250,23 @@ with DAG(
             if not config.is_ppp and step_name in config.ppp_steps:
                 continue
 
-            labels = StepLabels("etl", step_name, config.is_ppp)
-
+            labels = Labels.from_model(
+                UnifiedPipelineStepLabelModel(
+                    subteam="backend",
+                    environment=config.environment,
+                    created_by="unified-pipeline",
+                    step_name=step_name,
+                    tool="etl-backend",
+                    product=config.product,
+                )
+            )
             r = PlatformETLSubmitJobOperator(
                 task_id=f"run_{step_name}",
                 step_name=step_name.replace("etl_", ""),  # remove the etl prefix
                 cluster_name=etl_cluster_name,
                 jar_uri=config.etl_jar_uri,
                 config_uri=config.etl_config_uri,
-                labels=labels,
+                labels=labels.as_dict(),
             )
             steps[step_name] = r
 
@@ -281,8 +316,16 @@ with DAG(
         def gentropy_stage() -> None:
             for step_name in config.gentropy_step_list:
                 step_config = config.gentropy_step(step_name)
-                labels = StepLabels("gentropy", step_name, config.is_ppp)
-
+                labels = Labels.from_model(
+                    UnifiedPipelineStepLabelModel(
+                        subteam="backend",
+                        environment=config.environment,
+                        created_by="unified-pipeline",
+                        step_name=step_name,
+                        tool="gentropy",
+                        product=config.product,
+                    )
+                )
                 match step_name:
                     case "gentropy_variant_annotation":
                         r = VepAnnotateOperator(

@@ -1,7 +1,7 @@
 """Configuration class for the unified pipeline."""
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from ot_orchestration.utils import read_hocon_config, read_yaml_config
 
@@ -50,6 +50,8 @@ class UnifiedPipelineConfig:
         self.efo_version = settings["efo_version"]
         self.ensembl_version = settings["ensembl_version"]
         self.is_ppp = settings["is_ppp"]
+        self.product: Literal["ppp", "platform"] = "ppp" if self.is_ppp else "platform"
+        self.environment = settings["environment"]
         self.steps = settings["steps"]
         self.ppp_steps = [s for s, d in self.steps.items() if d and d.get('ppp_only', False)]
 

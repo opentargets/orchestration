@@ -9,7 +9,7 @@ import pendulum
 from ot_orchestration.utils import strhash
 
 if TYPE_CHECKING:
-    from typing import Any, Callable
+    from typing import Any
 
 # Cloud configuration.
 GCP_PROJECT_GENETICS = "open-targets-genetics-dev"
@@ -48,6 +48,7 @@ shared_dag_kwargs: dict[str, Any] = {
     "catchup": False,
 }
 
+
 unified_pipeline_dag_kwargs: dict[str, Any] = {
     "dag_id": "unified_pipeline",
     "description": "Open Targets unified data generation pipeline",
@@ -55,18 +56,4 @@ unified_pipeline_dag_kwargs: dict[str, Any] = {
     "schedule": None,
     "tags": [*shared_dag_kwargs["tags"], "platform", "unified_pipeline"],
     "user_defined_filters": {"strhash": strhash},
-}
-
-shared_labels: Callable[[str], dict[str, str]] = lambda project: {
-    "team": "open-targets",
-    "subteam": "backend",
-    "environment": "development" if "dev" in project else "production",
-    "created_by": "unified-pipeline",
-}
-
-genetics_shared_labels: Callable[[str], dict[str, str]] = lambda project: {
-    "team": "open-targets",
-    "subteam": "genetics",
-    "environment": "development" if "dev" in project else "production",
-    "created_by": "gentropy-pipelines",
 }

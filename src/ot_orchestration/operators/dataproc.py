@@ -125,7 +125,7 @@ class PlatformETLCreateClusterOperator(DataprocCreateClusterOperator):
         self.region = region
         self.cluster_name = cluster_name
         self.idle_delete_ttl = idle_delete_ttl
-        self.labels = labels or Labels().as_dict()
+        self.labels = labels or {}
         self.metadata = metadata
         self.cluster_config = cluster_config or self._create_cluster_config()
         self.gcp_conn_id = gcp_conn_id
@@ -167,15 +167,9 @@ class PlatformETLCreateClusterOperator(DataprocCreateClusterOperator):
             idle_delete_ttl=self.idle_delete_ttl,
         ).make()
 
-    def execute(self, context) -> dict:
-        """Execute the operator."""
-        dag_run = context.get("dag_run")
-        if dag_run:
-            default_run_label = dag_run.run_id
-        run_label = context.get("params", {}).get("run_label", default_run_label)
-        self.labels.add({"run": run_label})
-        self.labels = self.labels.as_dict()
-
+    def execute(self, context: Context) -> dict:
+        """Execute the operator with added runtime label."""
+        self.labels = Labels.from_dict(self.labels).add_dag_run_label(context).as_dict()
         return super().execute(context)
 
 
@@ -224,7 +218,7 @@ class PlatformETLSubmitJobOperator(DataprocSubmitJobOperator):
         step_name: str,
         jar_uri: str,
         config_uri: str,
-        labels: Labels | None = None,
+        labels: dict[str, str] | None = None,
         gcp_conn_id: str = "google_cloud_default",
         impersonation_chain: str | Sequence[str] | None = None,
         **kwargs,
@@ -235,7 +229,7 @@ class PlatformETLSubmitJobOperator(DataprocSubmitJobOperator):
         self.step_name = step_name
         self.jar_uri = jar_uri
         self.config_uri = config_uri
-        self.labels = labels or Labels()
+        self.labels = labels or {}
         self.gcp_conn_id = gcp_conn_id
         self.impersonation_chain = impersonation_chain
 
@@ -252,11 +246,6 @@ class PlatformETLSubmitJobOperator(DataprocSubmitJobOperator):
         """Execute the operator."""
         config_filename = self.config_uri.split("/")[-1]
         job_id = f"{self.cluster_name}-{self.step_name}-{random_id()}"
-        dag_run = context.get("dag_run")
-        if dag_run:
-            default_run_label = dag_run.run_id
-        run_label = context.get("params", {}).get("run_label", default_run_label)
-        self.labels.add({"run": run_label})
 
         self.job = Job(
             reference=JobReference(project_id=self.project_id, job_id=job_id),
@@ -270,7 +259,7 @@ class PlatformETLSubmitJobOperator(DataprocSubmitJobOperator):
                     "spark.driver.extraJavaOptions": f"-Dconfig.file={config_filename} -XX:MaxPermSize=512m -XX:+UseCompressedOops",
                 },
             ),
-            labels=self.labels.as_dict(),
+            labels=Labels.from_dict(self.labels).add_dag_run_label(context).as_dict(),
         )
 
         return super().execute(context)

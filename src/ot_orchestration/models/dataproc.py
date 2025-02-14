@@ -17,18 +17,12 @@ from ot_orchestration.common import (
     GCP_ZONE,
     GENTROPY_CLUSTER_INIT_SCRIPT,
 )
+from ot_orchestration.models.labels import LabelModel
 from ot_orchestration.utils.path import IOManager
 
 
 class GentropyMetadata(BaseModel):
     ref: str
-
-
-class LabelModel(BaseModel):
-    team: Literal["open-targets"] = "open-targets"
-    subteam: Literal["backend", "data", "genetics"] = "genetics"
-    environment: Literal["development", "production"]
-    created_by: Literal["unified-pipeline", "gentropy-pipeline", "genetics-etl"]
 
 
 class DataprocSpecsModel(BaseModel):
