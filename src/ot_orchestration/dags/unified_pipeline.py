@@ -16,6 +16,13 @@ from airflow.providers.google.cloud.operators.dataproc import (
 from airflow.utils.edgemodifier import Label
 from airflow.utils.trigger_rule import TriggerRule
 
+from ot_orchestration.common import (
+    GCP_PROJECT_PLATFORM,
+    GCP_REGION,
+    GCP_ZONE,
+    shared_dag_args,
+    unified_pipeline_dag_kwargs,
+)
 from ot_orchestration.dags.config.unified_pipeline import (
     UnifiedPipelineConfig,
 )
@@ -32,13 +39,6 @@ from ot_orchestration.utils import (
     create_name,
     to_hocon,
     to_yaml,
-)
-from ot_orchestration.utils.common import (
-    GCP_PROJECT_PLATFORM,
-    GCP_REGION,
-    GCP_ZONE,
-    shared_dag_args,
-    unified_pipeline_dag_kwargs,
 )
 from ot_orchestration.utils.dataproc import (
     create_cluster,

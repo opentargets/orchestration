@@ -8,7 +8,7 @@ from pathlib import Path
 from airflow.models.baseoperator import chain
 from airflow.models.dag import DAG
 
-from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
+from ot_orchestration.common import shared_dag_args, shared_dag_kwargs
 from ot_orchestration.utils.dataproc import (
     create_cluster,
     delete_cluster,
@@ -16,7 +16,9 @@ from ot_orchestration.utils.dataproc import (
 )
 
 CLUSTER_NAME = "otg-gwascatalog-curation"
-PYTHON_MAIN_MODULE = "gs://genetics_etl_python_playground/initialisation/gentropy/szsz-update-package-for-dataproc-run/cli.py"
+PYTHON_MAIN_MODULE = (
+    "gs://genetics_etl_python_playground/initialisation/gentropy/szsz-update-package-for-dataproc-run/cli.py"
+)
 RUN_DATE = datetime.now().strftime("%Y-%m-%d")
 
 with DAG(

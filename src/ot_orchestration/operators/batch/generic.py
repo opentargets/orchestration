@@ -10,6 +10,7 @@ from airflow.providers.google.cloud.operators.cloud_batch import (
     CloudBatchSubmitJobOperator,
 )
 
+from ot_orchestration.common import GCP_PROJECT_GENETICS, GCP_REGION
 from ot_orchestration.operators.batch.batch_index import (
     BatchCommands,
     BatchEnvironments,
@@ -21,7 +22,6 @@ from ot_orchestration.operators.batch.manifest_generators.harmonisation import (
 )
 from ot_orchestration.types import GoogleBatchIndexSpecs, GoogleBatchSpecs
 from ot_orchestration.utils.batch import create_batch_job, create_task_spec
-from ot_orchestration.utils.common import GCP_PROJECT_GENETICS, GCP_REGION
 
 
 class BatchIndexOperator(BaseOperator):

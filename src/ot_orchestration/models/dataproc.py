@@ -6,7 +6,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, model_validator
 from typing_extensions import Self
 
-from ot_orchestration.utils.common import (
+from ot_orchestration.common import (
     DATAPROC_BASE_PROPERTIES,
     DATAPROC_EFM_MODE_PROPERTIES,
     GCP_AUTOSCALING_POLICY,

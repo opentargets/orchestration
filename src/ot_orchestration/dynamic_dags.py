@@ -10,6 +10,7 @@ from airflow.models.taskinstance import TaskInstance
 from airflow.operators.python import get_current_context
 from airflow.utils.trigger_rule import TriggerRule
 
+from ot_orchestration import common
 from ot_orchestration.operators.manifest_operators import (
     ManifestFilterOperator,
     ManifestGenerateOperator,
@@ -18,7 +19,7 @@ from ot_orchestration.operators.manifest_operators import (
     ManifestSubmitBatchJobOperator,
 )
 from ot_orchestration.types import ManifestObject
-from ot_orchestration.utils import IOManager, common
+from ot_orchestration.utils import IOManager
 
 
 @task(task_id="end")

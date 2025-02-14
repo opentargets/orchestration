@@ -13,13 +13,13 @@ from google.cloud.batch import JobStatus
 from google.cloud.batch_v1 import Job
 from google.cloud.storage import Client
 
+from ot_orchestration.common import GCP_PROJECT_GENETICS, GCP_REGION
 from ot_orchestration.types import GCSMountObject, GoogleBatchSpecs
 from ot_orchestration.utils.batch import (
     create_batch_job,
     create_task_env,
     create_task_spec,
 )
-from ot_orchestration.utils.common import GCP_PROJECT_GENETICS, GCP_REGION
 from ot_orchestration.utils.labels import Labels
 from ot_orchestration.utils.path import GCSPath
 
@@ -152,10 +152,7 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
     def execute(self, context) -> dict:
         """Execute the operator."""
         vcf_files = self._get_vcf_partition_basenames(self.pm.paths["input"])
-        environments = [
-            {"INPUT_FILE": file, "OUTPUT_FILE": file.replace(".csv", ".json")}
-            for file in vcf_files
-        ]
+        environments = [{"INPUT_FILE": file, "OUTPUT_FILE": file.replace(".csv", ".json")} for file in vcf_files]
         run = context.get("params", {}).get("run_label", context.get("dag_run").run_id)
         self.labels.add({"run": run})
 
@@ -188,11 +185,7 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
 
         # Retrieve the job status
         _filter = f"name:projects/{self.project_id}/locations/{self.region}/jobs/{self.job_name}*"
-        jobs = list(
-            self.hook.list_jobs(
-                region=self.region, project_id=self.project_id, filter=_filter
-            )
-        )
+        jobs = list(self.hook.list_jobs(region=self.region, project_id=self.project_id, filter=_filter))
         if len(jobs) != 1:
             raise AirflowException(f"Found more then one job for id {self.job_name}")
 

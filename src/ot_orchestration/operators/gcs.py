@@ -10,8 +10,8 @@ from google.cloud.exceptions import NotFound
 from google.cloud.storage import Client
 from google.cloud.storage.bucket import Bucket
 
+from ot_orchestration.common import GCP_PROJECT_PLATFORM
 from ot_orchestration.utils import GCSPath
-from ot_orchestration.utils.common import GCP_PROJECT_PLATFORM
 
 
 class UploadFileOperator(BaseOperator):

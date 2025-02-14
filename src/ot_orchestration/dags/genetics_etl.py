@@ -10,6 +10,7 @@ from airflow.models.baseoperator import BaseOperator
 from airflow.models.dag import DAG
 from airflow.utils.task_group import TaskGroup
 
+from ot_orchestration.common import shared_dag_args, shared_dag_kwargs
 from ot_orchestration.operators.batch.vep import VepAnnotateOperator
 from ot_orchestration.types import Environment, EnvironmentSpec
 from ot_orchestration.utils import (
@@ -18,7 +19,6 @@ from ot_orchestration.utils import (
     find_node_in_config,
     read_yaml_config,
 )
-from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 from ot_orchestration.utils.dataproc import (
     generate_dataproc_task_chain,
     submit_gentropy_step,

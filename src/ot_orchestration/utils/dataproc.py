@@ -14,10 +14,8 @@ from airflow.providers.google.cloud.operators.dataproc import (
 )
 from airflow.utils.trigger_rule import TriggerRule
 
-from ot_orchestration.utils import convert_params_to_hydra_positional_arg
-
 # from ot_orchestration.utils import GCSPath
-from ot_orchestration.utils.common import (
+from ot_orchestration.common import (
     GCP_AUTOSCALING_POLICY,
     GCP_DATAPROC_IMAGE,
     GCP_EFM_AUTOSCALING_POLICY,
@@ -27,6 +25,7 @@ from ot_orchestration.utils.common import (
     GENTROPY_CLI_SCRIPT,
     GENTROPY_CLUSTER_INIT_SCRIPT,
 )
+from ot_orchestration.utils import convert_params_to_hydra_positional_arg
 from ot_orchestration.utils.labels import Labels
 from ot_orchestration.utils.path import GCSPath
 

@@ -25,7 +25,7 @@ from google.cloud.logging_v2.services.logging_service_v2 import (
     LoggingServiceV2AsyncClient,
 )
 
-from ot_orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_ZONE
+from ot_orchestration.common import GCP_PROJECT_PLATFORM, GCP_ZONE
 from ot_orchestration.utils.labels import Labels
 
 CONTAINER_NAME = "workload_container"

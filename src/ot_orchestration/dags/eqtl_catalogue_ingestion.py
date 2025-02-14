@@ -11,12 +11,12 @@ from airflow.providers.google.cloud.operators.dataflow import (
 )
 from airflow.providers.google.cloud.operators.gcs import GCSDeleteObjectsOperator
 
-from ot_orchestration.utils import find_node_in_config, read_yaml_config
-from ot_orchestration.utils.common import (
+from ot_orchestration.common import (
     GCP_PROJECT_GENETICS,
     shared_dag_args,
     shared_dag_kwargs,
 )
+from ot_orchestration.utils import find_node_in_config, read_yaml_config
 from ot_orchestration.utils.dataproc import (
     create_cluster,
     delete_cluster,

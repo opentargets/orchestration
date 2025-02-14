@@ -4,7 +4,7 @@ import re
 from collections.abc import Callable
 from typing import Any
 
-from ot_orchestration.utils.common import (
+from ot_orchestration.common import (
     GCP_PROJECT_GENETICS,
     GCP_PROJECT_PLATFORM,
     genetics_shared_labels,

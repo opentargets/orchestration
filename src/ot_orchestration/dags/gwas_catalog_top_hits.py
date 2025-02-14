@@ -8,12 +8,12 @@ from airflow.models.baseoperator import chain
 from airflow.models.dag import DAG
 from airflow.utils.task_group import TaskGroup
 
+from ot_orchestration.common import shared_dag_args, shared_dag_kwargs
 from ot_orchestration.utils import (
     chain_dependencies,
     find_node_in_config,
     read_yaml_config,
 )
-from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 from ot_orchestration.utils.dataproc import (
     create_cluster,
     delete_cluster,
@@ -43,9 +43,7 @@ with DAG(
                     params=step["params"],
                 )
                 tasks[step["id"]] = task
-            chain_dependencies(
-                nodes=top_hits_config["nodes"], tasks_or_task_groups=tasks
-            )  # type: ignore
+            chain_dependencies(nodes=top_hits_config["nodes"], tasks_or_task_groups=tasks)  # type: ignore
 
     # DAG description:
     chain(

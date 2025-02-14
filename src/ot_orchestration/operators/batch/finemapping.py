@@ -9,13 +9,13 @@ from airflow.providers.google.cloud.operators.cloud_batch import (
 )
 from google.cloud.batch import LifecyclePolicy
 
+from ot_orchestration.common import GCP_PROJECT_GENETICS, GCP_REGION
 from ot_orchestration.types import GoogleBatchSpecs
 from ot_orchestration.utils.batch import (
     create_batch_job,
     create_task_env,
     create_task_spec,
 )
-from ot_orchestration.utils.common import GCP_PROJECT_GENETICS, GCP_REGION
 from ot_orchestration.utils.labels import GentropyDagLabels
 from ot_orchestration.utils.path import GCSPath, extract_partition_from_blob
 

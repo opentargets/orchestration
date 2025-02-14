@@ -9,6 +9,7 @@ from airflow.decorators import task
 from airflow.models.baseoperator import chain
 from airflow.models.dag import DAG
 
+from ot_orchestration.common import shared_dag_args, shared_dag_kwargs
 from ot_orchestration.operators.batch.generic import (
     BatchIndexOperator,
     BatchJobOperator,
@@ -19,7 +20,6 @@ from ot_orchestration.utils import (
     find_node_in_config,
     read_yaml_config,
 )
-from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 
 SOURCE_CONFIG_FILE_PATH = Path(__file__).parent / "config" / "gwas_catalog_sumstat_harmonisation.yaml"
 config = read_yaml_config(SOURCE_CONFIG_FILE_PATH)

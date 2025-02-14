@@ -4,19 +4,17 @@ from pathlib import Path
 
 from airflow.models.dag import DAG
 
-from ot_orchestration.utils import chain_dependencies, read_yaml_config
-from ot_orchestration.utils.common import (
+from ot_orchestration.common import (
     shared_dag_args,
     shared_dag_kwargs,
 )
+from ot_orchestration.utils import chain_dependencies, read_yaml_config
 from ot_orchestration.utils.dataproc import (
     generate_dataproc_task_chain,
     submit_gentropy_step,
 )
 
-config = read_yaml_config(
-    Path(__file__).parent / "config" / "finngen_ukb_meta_harmonisation.yaml"
-)
+config = read_yaml_config(Path(__file__).parent / "config" / "finngen_ukb_meta_harmonisation.yaml")
 
 with DAG(
     dag_id=Path(__file__).stem,

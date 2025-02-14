@@ -15,9 +15,9 @@ from airflow.utils.context import Context
 from google.cloud.dataproc_v1 import Cluster, JobReference
 from google.cloud.dataproc_v1.types.jobs import Job, JobPlacement, SparkJob
 
+from ot_orchestration.common import GCP_PROJECT_PLATFORM, GCP_REGION
 from ot_orchestration.types import DataprocSpecs
 from ot_orchestration.utils import random_id
-from ot_orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_REGION
 from ot_orchestration.utils.dataproc import ClusterGenerator
 from ot_orchestration.utils.labels import Labels
 
@@ -47,7 +47,7 @@ class DataprocCreateClusterConfigGenerateOperator(BaseOperator):
         self.log.debug("Requested following cluster configuration %s", self.cluster_kwargs)
         super().__init__(**kwargs)
 
-    def execute(self, _: Context) -> Cluster:
+    def execute(self, context: Context) -> Cluster:
         """Execute the operator."""
         cluster_generator_keys = set(inspect.signature(ClusterGenerator).parameters.keys())
         cg_kwargs: dict[str, Any] = {k: v for k, v in self.cluster_kwargs.items() if k in cluster_generator_keys}
@@ -115,7 +115,7 @@ class PlatformETLCreateClusterOperator(DataprocCreateClusterOperator):
         cluster_name: str,
         cluster_config: dict | Cluster | None = None,
         idle_delete_ttl: int = 7200,
-        labels: Labels | None = None,
+        labels: dict[str, str] | None = None,
         metadata: Sequence[tuple[str, str]] = (),
         gcp_conn_id: str = "google_cloud_default",
         impersonation_chain: str | Sequence[str] | None = None,
@@ -125,7 +125,7 @@ class PlatformETLCreateClusterOperator(DataprocCreateClusterOperator):
         self.region = region
         self.cluster_name = cluster_name
         self.idle_delete_ttl = idle_delete_ttl
-        self.labels = labels or Labels()
+        self.labels = labels or Labels().as_dict()
         self.metadata = metadata
         self.cluster_config = cluster_config or self._create_cluster_config()
         self.gcp_conn_id = gcp_conn_id

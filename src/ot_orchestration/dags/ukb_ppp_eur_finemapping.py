@@ -4,13 +4,13 @@ from pathlib import Path
 
 from airflow.models.dag import DAG
 
+from ot_orchestration.common import shared_dag_args, shared_dag_kwargs
 from ot_orchestration.operators.batch.finemapping import (
     FinemappingBatchJobManifestOperator,
     FinemappingBatchOperator,
 )
 from ot_orchestration.types import Environment, EnvironmentSpec
 from ot_orchestration.utils import chain_dependencies, find_environment_vars, find_node_in_config, read_yaml_config
-from ot_orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 
 SOURCE_CONFIG_FILE_PATH = Path(__file__).parent / "config" / "ukb_ppp_eur_finemapping.yaml"
 config = read_yaml_config(SOURCE_CONFIG_FILE_PATH)
