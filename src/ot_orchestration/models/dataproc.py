@@ -25,7 +25,7 @@ class GentropyMetadata(BaseModel):
     ref: str
 
 
-class DataprocSpecsModel(BaseModel):
+class DataprocClusterConfigModel(BaseModel):
     """Dataproc cluster specification.
 
     Most of the options can be passed directly to the `airflow.providers.google.cloud.operators.dataproc.ClusterGenerator`
@@ -120,3 +120,20 @@ class DataprocSpecsModel(BaseModel):
         """Ensure the format of Dataproc autoscaling policy."""
         self.policy_name = f"projects/{self.project_id}/regions/{self.region}/autoscalingPolicies/{self.policy_name}"
         return self
+
+
+class DataprocClusterCreateModel(BaseModel):
+    cluster_name: str
+    cluster_config: DataprocClusterConfigModel
+
+
+class DataprocClusterDeleteModel(BaseModel):
+    cluster_name: str
+
+
+class DataprocSubmitPysparkJobModel(BaseModel):
+    cluster_name: str
+
+
+class DataprocSubmitSparkJobModel(BaseModel):
+    cluster_name: str
