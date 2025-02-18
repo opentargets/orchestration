@@ -4,14 +4,14 @@ dataproc_cluster_settings:
 
   - cluster_name: otg-etl
     cluster_metadata:
-      GENTROPY_REF: '{gentropy_version}'
+      GENTROPY_REF: 'v{gentropy_version}'
     autoscaling_policy: otg-etl
     num_workers: 2
     idle_delete_ttl: 3600 # in seconds
 
   - cluster_name: otg-etl-coloc
     cluster_metadata:
-      GENTROPY_REF: '{gentropy_version}'
+      GENTROPY_REF: 'v{gentropy_version}'
     autoscaling_policy: otg-efm
     worker_machine_type: n1-highmem-32
     num_workers: 20
@@ -129,7 +129,7 @@ steps:
         max_run_duration: '2h'
       policy_specs:
         machine_type: n1-standard-4
-      image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/custom_ensembl_vep:v{vep_version}
+      image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/custom_ensembl_vep:{vep_version}
       entrypoint: /bin/sh
     params:
       # INPUTS
