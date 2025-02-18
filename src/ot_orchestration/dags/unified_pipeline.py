@@ -250,6 +250,10 @@ with DAG(
     # ==============================================================================================
     # Gentropy stage of the DAG.
     #
+    # The process parses the list of dataproc_cluster_settings found in the gentropy.yaml
+    # to obtain all clusters required by the steps, then based on the `cluster_name` defined
+    # in each step it assigns the gentropy step to a correct cluster.
+    #
     # c. Prepare the Gentropy Dataproc cluster.
     # r. The Gentropy steps are run in parallel, as their prerequisites are met.
     #       There are different types of Gentropy steps. We match special cases by
@@ -262,22 +266,26 @@ with DAG(
     #       management functions into operators.
     # ==============================================================================================
     if len(config.gentropy_step_list):
-        # Split the tasks into separate task groups
         clusters = {}
         for cluster_settings in config.gentropy_dataproc_cluster_settings:
             name = cluster_settings["cluster_name"]
             clean_name = create_cluster_name(name)
-            # update the cluster settings,
-            # the name of the cluster must be adjusted to match the clean name
+            # The name of the cluster must be adjusted to match the clean name
             cluster_settings["cluster_name"] = clean_name
             create_cluster_task_id = f"create_{name}_cluster"
             delete_cluster_task_id = f"delete_{name}_cluster"
-            # Collect all clusters by their original names, so they can be
-            # referenced by the steps config.
+            # Collect all cluster_create tasks by the original cluster names, so they can be
+            # referenced by the step `cluster_name` config.
+            labels = StepLabels(
+                "gentropy",
+                step_name="create_cluster",
+                is_ppp=config.is_ppp,
+            )
             clusters[name] = {}
             clusters[name]["create"] = create_cluster(
                 task_id=create_cluster_task_id,
                 project_id=GCP_PROJECT_PLATFORM,
+                labels=labels,
                 **cluster_settings,
             )
             clusters[name]["delete"] = delete_cluster(
@@ -318,7 +326,6 @@ with DAG(
 
                 steps[step_name] = r
                 if r not in clusterless_steps:
-                    # print(clusters[step_config])
                     c = clusters[step_config["cluster_name"]]["create"]
                     d = clusters[step_config["cluster_name"]]["delete"]
                     chain(c, r, d)
