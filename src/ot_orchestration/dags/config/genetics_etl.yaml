@@ -153,7 +153,9 @@ nodes:
     params:
       step: variant_index
       step.vep_output_json_path: '{release_dir}/variants/annotated_variants'
-      step.gnomad_variant_annotations_path: '{gnomad}/v4.1/variant_index'
+      step.variant_annotations_path:
+        - '{gnomad}/v4.1/variant_index'
+        - gs://otar013-ppp/OTAR2075_lof_curation/lof_curation_variant_annotations
       step.variant_index_path: '{release_dir}/variant_index'
       step.amino_acid_change_annotations: []
 

@@ -134,7 +134,9 @@ steps:
       step.session.output_partitions: 25
       # INPUTS
       step.vep_output_json_path: '{release_uri}/intermediate/variant_annotation'
-      step.gnomad_variant_annotations_path: gs://gnomad_data_2/v4.1/variant_index
+      step.variant_annotations_path:
+        - gs://gnomad_data_2/v4.1/variant_index
+        - gs://otar013-ppp/OTAR2075_lof_curation/lof_curation_variant_annotations
       # TODO: Temporary disabled until gnetropy is updated
       # step.amino_acid_change_annotations:
       #   - gs://genetics_etl_python_playground/static_assets/foldx_variant_annotation
