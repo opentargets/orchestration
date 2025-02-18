@@ -14,7 +14,7 @@ from airflow.providers.google.cloud.operators.dataproc import (
 )
 from airflow.utils.trigger_rule import TriggerRule
 
-from ot_orchestration.utils import convert_params_to_hydra_positional_arg, create_cluster_name
+from ot_orchestration.utils import convert_params_to_hydra_positional_arg
 
 # from ot_orchestration.utils import GCSPath
 from ot_orchestration.utils.common import (
@@ -135,7 +135,7 @@ def create_cluster(
         project_id=project_id,
         cluster_config=cluster_config,
         region=GCP_REGION,
-        cluster_name=create_cluster_name(cluster_name),
+        cluster_name=cluster_name,
         trigger_rule=TriggerRule.ALL_SUCCESS,
         labels=labels.as_dict(),
     )
@@ -303,7 +303,7 @@ def delete_cluster(
     return DataprocDeleteClusterOperator(
         task_id=task_id,
         project_id=project_id,
-        cluster_name=create_cluster_name(cluster_name),
+        cluster_name=cluster_name,
         region=GCP_REGION,
         trigger_rule=TriggerRule.ALL_SUCCESS,
     )
