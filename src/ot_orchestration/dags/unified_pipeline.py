@@ -262,20 +262,33 @@ with DAG(
     #       management functions into operators.
     # ==============================================================================================
     if len(config.gentropy_step_list):
-        gentropy_cluster_name = create_cluster_name("gentropy")
+        # Split the tasks into separate task groups
+        clusters = {}
+        for cluster_settings in config.gentropy_dataproc_cluster_settings:
+            name = cluster_settings["cluster_name"]
+            clean_name = create_cluster_name(name)
+            # update the cluster settings,
+            # the name of the cluster must be adjusted to match the clean name
+            cluster_settings["cluster_name"] = clean_name
+            create_cluster_task_id = f"create_{name}_cluster"
+            delete_cluster_task_id = f"delete_{name}_cluster"
+            # Collect all clusters by their original names, so they can be
+            # referenced by the steps config.
+            clusters[name] = {}
+            clusters[name]["create"] = create_cluster(
+                task_id=create_cluster_task_id,
+                project_id=GCP_PROJECT_PLATFORM,
+                **cluster_settings,
+            )
+            clusters[name]["delete"] = delete_cluster(
+                task_id=delete_cluster_task_id,
+                project_id=GCP_PROJECT_PLATFORM,
+                cluster_name=cluster_settings["cluster_name"],
+            )
+            clusters[name]["create_id"] = create_cluster_task_id
+            clusters[name]["delete_id"] = delete_cluster_task_id
+
         clusterless_steps = []
-
-        c = create_cluster(
-            cluster_name=gentropy_cluster_name,
-            project_id=GCP_PROJECT_PLATFORM,
-            **config.gentropy_dataproc_cluster_settings,
-            idle_delete_ttl=90 * 60,
-        )
-
-        d = delete_cluster(
-            gentropy_cluster_name,
-            project_id=GCP_PROJECT_PLATFORM,
-        )
 
         @task_group(group_id="gentropy_stage")
         def gentropy_stage() -> None:
@@ -296,22 +309,25 @@ with DAG(
                         clusterless_steps.append(r)
                     case _:
                         r = submit_gentropy_step(
-                            cluster_name=gentropy_cluster_name,
+                            cluster_name=clusters[step_config["cluster_name"]],
                             step_name=step_name,
                             project_id=GCP_PROJECT_PLATFORM,
-                            python_main_module=config.gentropy_python_main_module,
                             params=step_config["params"],
                             labels=labels,
                         )
 
                 steps[step_name] = r
                 if r not in clusterless_steps:
+                    # print(clusters[step_config])
+                    c = clusters[step_config["cluster_name"]]["create"]
+                    d = clusters[step_config["cluster_name"]]["delete"]
                     chain(c, r, d)
 
         r = gentropy_stage()
 
     # ==============================================================================================
     # After creating all the tasks, we tie them together by creating dependencies.
+    print(steps)
     for step_name in steps:
         if step_config := config.steps.get(step_name):
             for dep in step_config.get("depends_on", []):

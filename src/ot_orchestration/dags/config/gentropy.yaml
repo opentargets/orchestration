@@ -3,15 +3,25 @@
 python_main_module: gs://genetics_etl_python_playground/initialisation/cli.py
 
 dataproc_cluster_settings:
-  cluster_metadata:
-    GENTROPY_REF: '{gentropy_version}'
-  cluster_init_script: gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh
-  autoscaling_policy: otg-etl
-  allow_efm: false
-  num_workers: 2
+
+  - cluster_name: otg-etl
+    cluster_metadata:
+      GENTROPY_REF: '{gentropy_version}'
+    autoscaling_policy: otg-etl
+    num_workers: 2
+    idle_delete_ttl: 3600 # in seconds
+
+  - cluster_name: otg-etl-coloc
+    cluster_metadata:
+      GENTROPY_REF: '{gentropy_version}'
+    autoscaling_policy: otg-efm
+    worker_machine_type: n1-highmem-32
+    num_workers: 20
+    allow_efm: true
 
 steps:
   biosample:
+    cluster_name: otg-etl
     params:
       step: biosample_index
       step.session.write_mode: ignore
@@ -24,6 +34,7 @@ steps:
       step.biosample_index_path: '{release_uri}/output/biosample'
 
   study:
+    cluster_name: otg-etl
     params:
       step: study_validation
       step.session.write_mode: ignore
@@ -54,6 +65,7 @@ steps:
       step.invalid_study_index_path: '{release_uri}/log/study_failed'
 
   credible_set:
+    cluster_name: otg-etl
     params:
       step: credible_set_validation
       step.session.write_mode: ignore
@@ -89,6 +101,7 @@ steps:
       step.invalid_study_locus_path: '{release_uri}/log/credible_set_failed'
 
   variant_partition:
+    cluster_name: otg-etl
     params:
       step: variant_to_vcf
       step.partition_size: 2_000 # approximate num of variants per partition!
@@ -128,6 +141,7 @@ steps:
       vep_output_path: '{release_uri}/intermediate/variant_annotation'
 
   variant:
+    cluster_name: otg-etl
     params:
       step: variant_index
       step.session.write_mode: ignore
@@ -144,6 +158,7 @@ steps:
       step.variant_index_path: '{release_uri}/output/variant'
 
   colocalisation_coloc:
+    cluster_name: otg-etl-coloc
     params:
       step: colocalisation
       step.session.write_mode: ignore
@@ -157,6 +172,7 @@ steps:
       step.coloc_path: '{release_uri}/output/colocalisation'
 
   colocalisation_ecaviar:
+    cluster_name: otg-etl-coloc
     params:
       step: colocalisation
       step.session.write_mode: ignore
@@ -169,6 +185,7 @@ steps:
       step.coloc_path: '{release_uri}/output/colocalisation'
 
   l2g_feature_matrix:
+    cluster_name: otg-etl
     params:
       step: locus_to_gene_feature_matrix
       step.session.write_mode: ignore
@@ -183,6 +200,7 @@ steps:
       step.feature_matrix_path: '{release_uri}/output/l2g_feature_matrix'
 
   l2g_prediction:
+    cluster_name: otg-etl
     params:
       step: locus_to_gene
       step.session.write_mode: ignore
@@ -199,6 +217,7 @@ steps:
       step.predictions_path: '{release_uri}/output/l2g_prediction'
 
   l2g_evidence:
+    cluster_name: otg-etl
     params:
       step: locus_to_gene_evidence
       step.session.write_mode: ignore
