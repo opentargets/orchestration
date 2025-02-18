@@ -334,7 +334,6 @@ with DAG(
 
     # ==============================================================================================
     # After creating all the tasks, we tie them together by creating dependencies.
-    print(steps)
     for step_name in steps:
         if step_config := config.steps.get(step_name):
             for dep in step_config.get("depends_on", []):
