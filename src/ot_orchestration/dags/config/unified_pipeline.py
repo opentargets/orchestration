@@ -85,11 +85,11 @@ class UnifiedPipelineConfig:
 
         # GENTROPY-specific settings.
         self.gentropy_version = settings["gentropy_version"]
+        self.l2g_training = settings["l2g_training"]
         self.vep_version = settings["vep_version"]
         self.gentropy_config = self.init_gentropy_settings()
         self.gentropy_dataproc_cluster_settings = self.gentropy_config["dataproc_cluster_settings"]
         self.gentropy_step_list = [s for s in settings["steps"].keys() if s.startswith("gentropy_")]
-        self.gentropy_python_main_module = self.gentropy_config["python_main_module"]
 
     def pis_config_uri(self, step_name: str) -> str:
         """Return the google cloud url of the PIS configuration file for a step."""
@@ -156,6 +156,7 @@ class UnifiedPipelineConfig:
         return read_yaml_config(
             self.gentropy_config_local_path,
             sentinels={
+                "l2g_training": self.l2g_training,
                 "release_uri": self.release_uri,
                 "gentropy_version": self.gentropy_version,
                 "vep_version": self.vep_version,
