@@ -210,6 +210,7 @@ steps:
   gentropy_l2g_prediction:
     depends_on:
       - gentropy_l2g_feature_matrix
+      - gentropy_l2g_training
 
   gentropy_l2g_evidence:
     depends_on:
