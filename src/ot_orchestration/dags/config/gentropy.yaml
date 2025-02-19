@@ -202,21 +202,17 @@ steps:
     cluster_name: otg-etl
     params:
       step: locus_to_gene
+      step.run_mode: train
       step.session.write_mode: ignore
       +step.session.extended_spark_conf: "{spark.kryoserializer.buffer.max:500m, spark.sql.autoBroadcastJoinThreshold:'-1'}"
-      step.run_mode: train
-      step.hyperparameters.n_estimators: 100
-      step.hyperparameters.max_depth: 5
-      step.hyperparameters.loss: log_loss
       step.wandb_run_name: '{l2g_training}'
+      step.cross_validate: false
       step.hf_hub_repo_id: opentargets/locus_to_gene
       step.hf_model_commit_message: 'chore: update model base model for {l2g_training} run'
       # INPUTS
       step.credible_set_path: '{release_uri}/output/credible_set'
-      step.variant_index_path: '{release_uri}/output/variant'
       step.feature_matrix_path: '{release_uri}/output/l2g_feature_matrix'
       step.gold_standard_curation_path: '{release_uri}/inputs/l2g/gold_standard.json'
-      step.gene_interactions_path: '{release_uri}/output/interaction'
       # OUTPUTS
       step.model_path: '{release_uri}/etc/model/locus_to_gene_model/classifier.skops'
 
@@ -224,16 +220,15 @@ steps:
     cluster_name: otg-etl
     params:
       step: locus_to_gene
+      step.run_mode: predict
       step.session.write_mode: ignore
       step.session.output_partitions: 1
-      step.run_mode: predict
       step.l2g_threshold: 0.05
-      step.download_from_hub: false
-      step.hf_hub_repo_id: opentargets/locus_to_gene
+      step.download_from_hub: true
       # INPUTS
+      step.hf_hub_repo_id: opentargets/locus_to_gene
       step.feature_matrix_path: '{release_uri}/output/l2g_feature_matrix'
       step.credible_set_path: '{release_uri}/output/credible_set'
-      step.model_path: '{release_uri}/etc/model/locus_to_gene_model/classifier.skops'
       # OUTPUTS
       step.predictions_path: '{release_uri}/output/l2g_prediction'
 

@@ -205,19 +205,17 @@ nodes:
     params:
       step: locus_to_gene
       step.run_mode: train
+      +step.session.extended_spark_conf: "{spark.kryoserializer.buffer.max:500m, spark.sql.autoBroadcastJoinThreshold:'-1'}"
       step.wandb_run_name: 24.11_freeze10
+      step.cross_validate: false
       step.hf_hub_repo_id: opentargets/locus_to_gene
       step.hf_model_commit_message: 'chore: update model based on 24.11_freeze10 run'
-      step.model_path: '{release_dir}/locus_to_gene_model/classifier.skops'
+      # INPUTS
       step.credible_set_path: '{release_dir}/credible_set'
-      step.variant_index_path: '{release_dir}/variant_index'
       step.feature_matrix_path: '{release_dir}/locus_to_gene_feature_matrix'
       step.gold_standard_curation_path: gs://genetics_etl_python_playground/input/l2g/gold_standard/curation.json
-      step.gene_interactions_path: gs://genetics_etl_python_playground/static_assets/interaction # OTP 23.12 data
-      step.hyperparameters.n_estimators: 100
-      step.hyperparameters.max_depth: 5
-      step.hyperparameters.loss: log_loss
-      +step.session.extended_spark_conf: "{spark.kryoserializer.buffer.max:500m, spark.sql.autoBroadcastJoinThreshold:'-1'}"
+      # OUTPUTS
+      step.model_path: '{release_dir}/locus_to_gene_model/classifier.skops'
 
   - id: l2g_predict
     prerequisites:
@@ -225,14 +223,15 @@ nodes:
     params:
       step: locus_to_gene
       step.run_mode: predict
-      step.predictions_path: '{release_dir}/locus_to_gene_predictions'
+      step.session.write_mode: overwrite
+      step.l2g_threshold: 0.05
+      step.download_from_hub: true
+      # INPUTS
+      step.hf_hub_repo_id: opentargets/locus_to_gene
       step.feature_matrix_path: '{release_dir}/locus_to_gene_feature_matrix'
       step.credible_set_path: '{release_dir}/credible_set'
-      step.download_from_hub: false
-      step.l2g_threshold: 0.05
-      step.model_path: gs://ot_orchestration/benchmarks/l2g/fm0/v5.1_best_cv/locus_to_gene_model/classifier.skops
-      step.hf_hub_repo_id: opentargets/locus_to_gene
-      step.session.write_mode: overwrite
+      # OUTPUTS
+      step.predictions_path: '{release_dir}/locus_to_gene_predictions'
 
   - id: l2g_evidence
     prerequisites:
