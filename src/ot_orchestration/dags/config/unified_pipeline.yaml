@@ -205,7 +205,6 @@ steps:
       - gentropy_variant
       - gentropy_l2g_feature_matrix
       - pis_l2g_gold_standard
-      - etl_interaction
 
   gentropy_l2g_prediction:
     depends_on:

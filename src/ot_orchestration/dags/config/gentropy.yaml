@@ -198,7 +198,6 @@ steps:
       # OUTPUTS
       step.feature_matrix_path: '{release_uri}/output/l2g_feature_matrix'
 
-
   l2g_training:
     cluster_name: otg-etl
     params:
