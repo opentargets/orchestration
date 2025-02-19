@@ -211,7 +211,7 @@ steps:
       source: http://purl.obolibrary.org/obo/go.obo
       destination: go/go.obo
 
-  gold_standard:
+  l2g_gold_standard:
     - name: download L2G gold standard
       source: gs://genetics-portal-dev-analysis/xg1/L2G_intervals/training_set_v5_1_efo.json
       destination: l2g/gold_standard.json
