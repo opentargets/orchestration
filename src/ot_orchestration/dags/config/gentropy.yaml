@@ -54,7 +54,7 @@ steps:
         - gs://gwas_catalog_sumstats_pics/study_index
         - gs://eqtl_catalogue_data/study_index
         - gs://ukb_ppp_eur_data/study_index
-        - gs://finngen_data/r11/study_index
+        - gs://finngen_data/r12/study_index
       step.target_index_path: '{release_uri}/output/target'
       step.disease_index_path: '{release_uri}/output/disease'
       step.biosample_index_path: '{release_uri}/output/biosample'
@@ -85,15 +85,17 @@ steps:
         - INVALID_VARIANT_IDENTIFIER
         - INVALID_CHROMOSOME
         - TOP_HIT_AND_SUMMARY_STATS
+      step.trans_qtl_threshold: 5_000_000
       # INPUTS
       step.study_locus_path:
         - gs://gwas_catalog_top_hits/credible_sets/
         - gs://gwas_catalog_sumstats_pics/credible_sets/
         - gs://gwas_catalog_sumstats_susie/credible_set_clean/20250204/
-        - gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie_patched/
+        - gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie_patched_v2/
         - gs://ukb_ppp_eur_data/credible_set_clean/20250129/
-        - gs://finngen_data/r11/credible_set_datasets/susie/
+        - gs://finngen_data/r12/credible_set_datasets/susie/
       step.study_index_path: '{release_uri}/output/study'
+      step.target_index_path: '{release_uri}/output/target'
       # OUTPUTS
       step.valid_study_locus_path: '{release_uri}/output/credible_set'
       step.invalid_study_locus_path: '{release_uri}/log/credible_set_failed'
