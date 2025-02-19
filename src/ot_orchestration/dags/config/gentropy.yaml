@@ -216,7 +216,7 @@ steps:
       step.gold_standard_curation_path: '{release_uri}/inputs/l2g/gold_standard.json'
       step.gene_interactions_path: '{release_uri}/output/interaction'
       # OUTPUTS
-      step.model_path: '{release_uri}/etc/models/locus_to_gene_model/classifier.skops'
+      step.model_path: '{release_uri}/etc/model/locus_to_gene_model/classifier.skops'
 
   l2g_prediction:
     cluster_name: otg-etl
@@ -231,7 +231,7 @@ steps:
       # INPUTS
       step.feature_matrix_path: '{release_uri}/output/l2g_feature_matrix'
       step.credible_set_path: '{release_uri}/output/credible_set'
-      step.model_path: '{release_uri}/etc/models/locus_to_gene_model/classifier.skops'
+      step.model_path: '{release_uri}/etc/model/locus_to_gene_model/classifier.skops'
       # OUTPUTS
       step.predictions_path: '{release_uri}/output/l2g_prediction'
 
