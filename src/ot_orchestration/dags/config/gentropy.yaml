@@ -210,13 +210,13 @@ steps:
       step.hf_hub_repo_id: opentargets/locus_to_gene
       step.hf_model_commit_message: 'chore: update model base model for {l2g_training} run'
       # INPUTS
-      step.credible_set_path: '{release_dir}/output/credible_set'
-      step.variant_index_path: '{release_dir}/output/variant'
-      step.feature_matrix_path: '{release_dir}/output/l2g_feature_matrix'
-      step.gold_standard_curation_path: '{release_dir}/inputs/l2g/gold_standard.json'
-      step.gene_interactions_path: '{release_dir}/output/interaction'
+      step.credible_set_path: '{release_uri}/output/credible_set'
+      step.variant_index_path: '{release_uri}/output/variant'
+      step.feature_matrix_path: '{release_uri}/output/l2g_feature_matrix'
+      step.gold_standard_curation_path: '{release_uri}/inputs/l2g/gold_standard.json'
+      step.gene_interactions_path: '{release_uri}/output/interaction'
       # OUTPUTS
-      step.model_path: '{release_dir}/etc/models/locus_to_gene_model/classifier.skops'
+      step.model_path: '{release_uri}/etc/models/locus_to_gene_model/classifier.skops'
 
   l2g_prediction:
     cluster_name: otg-etl
@@ -231,7 +231,7 @@ steps:
       # INPUTS
       step.feature_matrix_path: '{release_uri}/output/l2g_feature_matrix'
       step.credible_set_path: '{release_uri}/output/credible_set'
-      step.model_path: '{release_dir}/etc/models/locus_to_gene_model/classifier.skops'
+      step.model_path: '{release_uri}/etc/models/locus_to_gene_model/classifier.skops'
       # OUTPUTS
       step.predictions_path: '{release_uri}/output/l2g_prediction'
 
