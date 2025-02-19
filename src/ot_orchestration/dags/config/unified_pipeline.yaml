@@ -43,7 +43,7 @@ steps:
     ppp_only: true
   pis_expression:
   pis_go:
-  pis_gold_standard:
+  pis_l2g_gold_standard:
   pis_interaction:
   pis_literature:
   pis_openfda:
@@ -204,7 +204,7 @@ steps:
       - gentropy_credible_set
       - gentropy_variant
       - gentropy_l2g_feature_matrix
-      - pis_gold_standard
+      - pis_l2g_gold_standard
       - etl_interaction
 
   gentropy_l2g_prediction:

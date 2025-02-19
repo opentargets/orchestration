@@ -16,6 +16,7 @@ from airflow.providers.google.cloud.operators.dataproc import (
 from airflow.utils.edgemodifier import Label
 from airflow.utils.trigger_rule import TriggerRule
 
+from ot_orchestration.dags.config.cluster_registry import ClusterRegistry
 from ot_orchestration.dags.config.unified_pipeline import (
     UnifiedPipelineConfig,
 )
@@ -41,8 +42,6 @@ from ot_orchestration.utils.common import (
     unified_pipeline_dag_kwargs,
 )
 from ot_orchestration.utils.dataproc import (
-    create_cluster,
-    delete_cluster,
     submit_gentropy_step,
 )
 from ot_orchestration.utils.labels import StepLabels
@@ -266,37 +265,8 @@ with DAG(
     #       management functions into operators.
     # ==============================================================================================
     if len(config.gentropy_step_list):
-        clusters = {}
-        for cluster_settings in config.gentropy_dataproc_cluster_settings:
-            name = cluster_settings["cluster_name"]
-            clean_name = create_cluster_name(name)
-            # The name of the cluster must be adjusted to match the clean name
-            cluster_settings["cluster_name"] = clean_name
-            create_cluster_task_id = f"create_{name}_cluster"
-            delete_cluster_task_id = f"delete_{name}_cluster"
-            # Collect all cluster_create tasks by the original cluster names, so they can be
-            # referenced by the step `cluster_name` config.
-            labels = StepLabels(
-                "gentropy",
-                step_name="create_cluster",
-                is_ppp=config.is_ppp,
-            )
-            clusters[name] = {}
-            clusters[name]["create"] = create_cluster(
-                task_id=create_cluster_task_id,
-                project_id=GCP_PROJECT_PLATFORM,
-                labels=labels,
-                **cluster_settings,
-            )
-            clusters[name]["delete"] = delete_cluster(
-                task_id=delete_cluster_task_id,
-                project_id=GCP_PROJECT_PLATFORM,
-                cluster_name=cluster_settings["cluster_name"],
-            )
-            clusters[name]["create_id"] = create_cluster_task_id
-            clusters[name]["delete_id"] = delete_cluster_task_id
-
         clusterless_steps = []
+        cluster_registry = ClusterRegistry.from_dataproc_cluster_settings(config.gentropy_dataproc_cluster_settings)
 
         @task_group(group_id="gentropy_stage")
         def gentropy_stage() -> None:
@@ -316,19 +286,20 @@ with DAG(
                         )
                         clusterless_steps.append(r)
                     case _:
+                        cluster_name = step_config["cluster_name"]
+                        current_cluster = cluster_registry.clusters[cluster_name]
                         r = submit_gentropy_step(
-                            cluster_name=clusters[step_config["cluster_name"]],
+                            cluster_name=current_cluster.name,
                             step_name=step_name,
                             project_id=GCP_PROJECT_PLATFORM,
                             params=step_config["params"],
                             labels=labels,
                         )
+                        c = current_cluster.create
+                        d = current_cluster.delete
+                        chain(c, r, d)
 
                 steps[step_name] = r
-                if r not in clusterless_steps:
-                    c = clusters[step_config["cluster_name"]]["create"]
-                    d = clusters[step_config["cluster_name"]]["delete"]
-                    chain(c, r, d)
 
         r = gentropy_stage()
 
