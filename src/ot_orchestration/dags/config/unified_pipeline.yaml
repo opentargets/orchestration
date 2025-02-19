@@ -10,6 +10,7 @@ vep_version: '2.0.1'
 chembl_version: '35'
 efo_version: '3.71.0'
 ensembl_version: '113'
+l2g_training: '2025-02'
 
 is_ppp: false
 
@@ -42,6 +43,7 @@ steps:
     ppp_only: true
   pis_expression:
   pis_go:
+  pis_l2g_gold_standard:
   pis_interaction:
   pis_literature:
   pis_openfda:
@@ -197,10 +199,18 @@ steps:
       - gentropy_colocalisation_ecaviar
       - gentropy_variant
 
+  gentropy_l2g_training:
+    depends_on:
+      - gentropy_credible_set
+      - gentropy_variant
+      - gentropy_l2g_feature_matrix
+      - pis_l2g_gold_standard
+      - etl_interaction
+
   gentropy_l2g_prediction:
     depends_on:
-      - etl_interaction
       - gentropy_l2g_feature_matrix
+      - gentropy_l2g_training
 
   gentropy_l2g_evidence:
     depends_on:

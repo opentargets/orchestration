@@ -211,6 +211,11 @@ steps:
       source: http://purl.obolibrary.org/obo/go.obo
       destination: go/go.obo
 
+  l2g_gold_standard:
+    - name: download L2G gold standard
+      source: gs://genetics-portal-dev-analysis/xg1/L2G_intervals/training_set_v5_1_efo.json
+      destination: l2g/gold_standard.json
+
   interaction:
     - name: download ensembl interactions grch38
       source: https://ftp.ensembl.org/pub/release-${ensembl_version}/gtf/homo_sapiens/Homo_sapiens.GRCh38.${ensembl_version}.chr.gtf.gz
@@ -227,11 +232,6 @@ steps:
     - name: download_latest string interactions
       source: gs://otar001-core/stringInteractions
       destination: interaction/string-interactions.txt.gz
-
-  l2g_prediction:
-    - name: download model
-      source: gs://ot_orchestration/benchmarks/l2g/fm0/v5.1_best_cv/locus_to_gene_model/classifier.skops
-      destination: l2g_prediction/classifier.skops
 
   literature:
     - name: download literature

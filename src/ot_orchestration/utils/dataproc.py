@@ -48,6 +48,7 @@ def create_cluster(
     allow_efm: bool = False,
     idle_delete_ttl: int = 30 * 60,
     labels: Labels | None = None,
+    task_id: str = "create_cluster",
     **kwargs: Any,
 ) -> DataprocCreateClusterOperator:
     """Generate an Airflow task to create a Dataproc cluster. Common parameters are reused, and varying parameters can be specified as needed.
@@ -67,6 +68,7 @@ def create_cluster(
         allow_efm (bool): Wether to allow for Enhanced Flexibility Mode in spark cluster to store the shuffle partitions in the primary workers only.
         idle_delete_ttl (int): Time in seconds to wait before deleting the cluster after it becomes idle. Defaults to 30 minutes.
         labels (Labels): Optional labels to add to the cluster.
+        task_id (str): task id used to during the dataproc cluster creation
         **kwargs (Any): Other parameters to the ClusterGenerator.
 
         NOTE: When `allow_efm` is enabled, the autoscaling policy can not use the graceful decommissioning for primary workers!
@@ -127,10 +129,9 @@ def create_cluster(
             cluster_config[worker_section].setdefault("disk_config", {})
             # Specify the number of local SSDs.
             cluster_config[worker_section]["disk_config"]["num_local_ssds"] = num_local_ssds
-
     # Return the cluster creation operator.
     return DataprocCreateClusterOperator(
-        task_id="create_cluster",
+        task_id=task_id,
         project_id=project_id,
         cluster_config=cluster_config,
         region=GCP_REGION,
@@ -286,19 +287,21 @@ def submit_job(
 
 def delete_cluster(
     cluster_name: str,
+    task_id: str = "delete_cluster",
     project_id: str = GCP_PROJECT_GENETICS,
 ) -> DataprocDeleteClusterOperator:
     """Generate an Airflow task to delete a Dataproc cluster.
 
     Args:
         cluster_name (str): Name of the cluster.
+        task_id (str): Dataproc delete cluster task id.
         project_id (str): Project ID. Defaults to GCP_PROJECT_GENETICS.
 
     Returns:
         DataprocDeleteClusterOperator: Airflow task to delete a Dataproc cluster.
     """
     return DataprocDeleteClusterOperator(
-        task_id="delete_cluster",
+        task_id=task_id,
         project_id=project_id,
         cluster_name=cluster_name,
         region=GCP_REGION,
