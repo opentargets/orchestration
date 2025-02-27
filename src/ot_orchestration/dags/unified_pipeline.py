@@ -27,7 +27,7 @@ from ot_orchestration.operators.dataproc import (
 )
 from ot_orchestration.operators.gce import ComputeEngineRunContainerizedWorkloadSensor
 from ot_orchestration.operators.gcs import CopyBlobOperator, UploadStringOperator
-from ot_orchestration.operators.unified_pipeline import PISDiffComputeOperator
+from ot_orchestration.operators.unified_pipeline import DiffComputeOperator
 from ot_orchestration.utils import (
     create_cluster_name,
     create_name,
@@ -83,8 +83,9 @@ with DAG(
                 labels = StepLabels("pis", step_name, config.is_ppp)
                 vm_name = create_name(step_name)
 
-                c = PISDiffComputeOperator(
+                c = DiffComputeOperator(
                     task_id=f"diff_{step_name}",
+                    stage_name="pis",
                     step_name=step_name,
                     local_config=config.pis_config,
                     remote_config_uri=config_uri,
@@ -114,8 +115,6 @@ with DAG(
                     task_id=f"join_{step_name}",
                     trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
                 )
-                # add the final step to the step registry
-                steps[step_name] = j
 
                 d = ComputeEngineDeleteInstanceOperator(
                     task_id=f"delete_vm_{step_name}",
@@ -129,53 +128,77 @@ with DAG(
                 chain(c, Label("invalid previous run"), u, r, (j, d))
                 chain(c, Label("valid previous run exists, skip run"), j)
 
-            pis_step(step_name)
+            steps[step_name] = pis_step(step_name)
 
     pis_stage()
 
     # ==============================================================================================
-    # ONTOFORM stage of the DAG
+    # PTS stage of the DAG
     #
+    # c. Check if the step must be run, if not, jump to j.
+    # u. Upload the step configuration to GCS.
     # r. Run the step in a Compute Engine VM, waiting for it to produce an exit code.
     # d. Delete the VM.
     # ==============================================================================================
-    if len(config.ontoform_step_list):
+    @task_group(group_id="pts_stage")
+    def pts_stage() -> None:
+        for step_name in config.pts_step_list:
 
-        @task_group(group_id="ontoform_stage")
-        def ontoform_stage() -> None:
-            for step_name in config.ontoform_step_list:
+            @task_group(group_id=step_name)
+            def pts_step(step_name: str) -> None:
+                config_uri = config.pts_config_uri(step_name)
+                labels = StepLabels("pts", step_name, config.is_ppp)
+                vm_name = create_name(step_name)
 
-                @task_group(group_id=step_name)
-                def ontoform_step(step_name: str) -> None:
-                    labels = StepLabels("ontoform", step_name, config.is_ppp)
-                    vm_name = create_name(step_name)
+                c = DiffComputeOperator(
+                    task_id=f"diff_{step_name}",
+                    stage_name="pts",
+                    step_name=step_name,
+                    local_config=config.pts_config,
+                    remote_config_uri=config_uri,
+                )
 
-                    r = ComputeEngineRunContainerizedWorkloadSensor(
-                        task_id=f"run_{step_name}",
-                        instance_name=vm_name,
-                        labels=labels,
-                        container_image=config.ontoform_image,
-                        container_service_account=config.service_account,
-                        container_scopes=config.service_account_scopes,
-                        container_args=config.ontoform_args(step_name),
-                        machine_type=config.ontoform_machine_type,
-                        deferrable=True,
-                    )
+                u = UploadStringOperator(
+                    task_id=f"upload_config_{step_name}",
+                    contents=to_yaml(config.pts_config),
+                    dst_uri=config_uri,
+                    overwrite=True,
+                )
 
-                    d = ComputeEngineDeleteInstanceOperator(
-                        task_id=f"delete_vm_{step_name}",
-                        project_id=GCP_PROJECT_PLATFORM,
-                        zone=GCP_ZONE,
-                        resource_id=vm_name,
-                        trigger_rule=TriggerRule.NONE_SKIPPED,
-                    )
+                r = ComputeEngineRunContainerizedWorkloadSensor(
+                    task_id=f"run_{step_name}",
+                    instance_name=vm_name,
+                    labels=labels,
+                    container_image=config.pts_image,
+                    container_env=config.pts_env_vars(step_name),
+                    container_service_account=config.service_account,
+                    container_scopes=config.service_account_scopes,
+                    container_files={config_uri: "/config.yaml"},
+                    work_disk_size_gb=config.pts_disk_size,
+                    machine_type=config.pts_machine_type,
+                    deferrable=True,
+                )
 
-                    steps[step_name] = r
-                    chain(r, d)
+                j = EmptyOperator(
+                    task_id=f"join_{step_name}",
+                    trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
+                )
 
-                ontoform_step(step_name)
+                d = ComputeEngineDeleteInstanceOperator(
+                    task_id=f"delete_vm_{step_name}",
+                    project_id=GCP_PROJECT_PLATFORM,
+                    zone=GCP_ZONE,
+                    resource_id=vm_name,
+                    trigger_rule=TriggerRule.NONE_SKIPPED,
+                )
 
-        ontoform_stage()
+                # here we define the task dependencies for both branches
+                chain(c, Label("invalid previous run"), u, r, (j, d))
+                chain(c, Label("valid previous run exists, skip run"), j)
+
+            steps[step_name] = pts_step(step_name)
+
+    pts_stage()
 
     # ==============================================================================================
     # ETL stage of the DAG
@@ -265,8 +288,7 @@ with DAG(
     #       management functions into operators.
     # ==============================================================================================
     if len(config.gentropy_step_list):
-        clusterless_steps = []
-        cluster_registry = ClusterRegistry.from_dataproc_cluster_settings(config.gentropy_dataproc_cluster_settings)
+        cluster_registry = ClusterRegistry(config.gentropy_dataproc_cluster_settings)
 
         @task_group(group_id="gentropy_stage")
         def gentropy_stage() -> None:
@@ -284,20 +306,17 @@ with DAG(
                             google_batch=step_config["google_batch"],
                             labels=labels,
                         )
-                        clusterless_steps.append(r)
+
                     case _:
-                        cluster_name = step_config["cluster_name"]
-                        current_cluster = cluster_registry.clusters[cluster_name]
+                        cluster = cluster_registry.get_cluster(step_config)
                         r = submit_gentropy_step(
-                            cluster_name=current_cluster.name,
+                            cluster_name=cluster.name,
                             step_name=step_name,
                             project_id=GCP_PROJECT_PLATFORM,
                             params=step_config["params"],
                             labels=labels,
                         )
-                        c = current_cluster.create
-                        d = current_cluster.delete
-                        chain(c, r, d)
+                        chain(cluster.create, r, cluster.delete)
 
                 steps[step_name] = r
 

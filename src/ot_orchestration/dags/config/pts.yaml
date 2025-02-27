@@ -1,0 +1,117 @@
+---
+work_path: /mnt/disks/work
+log_level: INFO
+pool: 32
+scratchpad: {}
+
+# This values will be filled in from the orchestrator config
+release_uri: 'gs://'
+
+steps:
+  #: DISEASE STEP :#################################################################################
+  disease:
+    - name: transform disease_efo
+      source: input/disease/efo_otar_slim.json
+      destination: output/disease/disease.parquet
+      transformer: disease
+    - name: transform disease_hpo
+      source: input/disease/hp-full.json
+      destination: output/disease/disease_hpo.parquet
+      transformer: disease_hpo
+    - name: transform disease_phenotype
+      requires:
+        - transform disease_efo
+      source:
+        - output/disease/disease.parquet
+        - input/disease/phenotype.hpoa
+        - input/disease/mondo.json
+      destination: output/disease/disease_phenotype.parquet
+      transformer: disease_phenotype
+
+  ##################################################################################################
+
+  #: EXPRESSION STEP :##############################################################################
+  expression:
+    - name: unzip normal tissue
+      source: input/expression/normal_tissue.tsv.zip
+      destination: intermediate/expression/normal_tissue.tsv
+    - name: gzip normal tissue
+      requires:
+        - unzip normal tissue
+      source: intermediate/expression/normal_tissue.tsv
+      destination: intermediate/expression/normal_tissue.tsv.gz
+
+    - name: transform expression tissue
+      source: input/expression/map_with_efos.json
+      destination: intermediate/expression/tissue-translation-map.parquet
+      transformer: expression_tissue
+  ##################################################################################################
+
+  #: OPENFDA STEP :#################################################################################
+  openfda:
+    - name: explode_glob transform openfda drug events
+      glob: input/openfda/**/*.zip
+      do:
+        - name: transform ${match_path}${match_stem}
+          source: ${uri}
+          destination: intermediate/openfda/${uuid}.parquet
+          transformer: openfda
+  ##################################################################################################
+
+  #: SO STEP :######################################################################################
+  so:
+    - name: transform so
+      source: input/so/so.json
+      destination: output/so/so.parquet
+      transformer: so
+  ##################################################################################################
+
+  #: TARGET STEP :##################################################################################
+  target:
+    - name: unzip subcellular location
+      source: input/target/hpa/subcellular_location.tsv.zip
+      destination: intermediate/target/hpa/subcellular_location.tsv
+    - name: gzip subcellular location
+      requires:
+        - unzip subcellular location
+      source: intermediate/target/hpa/subcellular_location.tsv
+      destination: intermediate/target/hpa/subcellular_location.tsv.gz
+
+    - name: csv_to_parquet subcellular location ssl
+      source: input/target/hpa/subcellular_locations_ssl.tsv
+      destination: intermediate/target/hpa/subcellular_locations_ssl.parquet
+      separator: "\t"
+
+    - name: unzip essentiality matrix
+      source: input/target/project-scores/essentiality_matrices.zip
+      inner_file: EssentialityMatrices/04_binaryDepScores.tsv
+      destination: intermediate/target/project-scores/04_binaryDepScores.tsv
+    - name: csv_to_parquet essentiality matrix
+      requires:
+        - unzip essentiality matrix
+      source: intermediate/target/project-scores/04_binaryDepScores.tsv
+      destination: intermediate/target/project-scores/04_binaryDepScores.parquet
+      separator: "\t"
+
+    - name: csv_to_parquet gene identifier
+      source: input/target/project-scores/gene_identifiers_latest.csv.gz
+      destination: intermediate/target/project-scores/gene_identifiers_latest.parquet
+
+    - name: transform ensembl
+      source: input/target/ensembl/homo_sapiens.json
+      destination: intermediate/target/ensembl/homo_sapiens.parquet
+      transformer: ensembl
+
+    - name: transform gnomad
+      source: input/target/gnomad/gnomad.v2.1.1.lof_metrics.by_gene.txt.bgz
+      destination: intermediate/target/gnomad/gnomad_lof_by_gene.txt.gz
+      transformer: gnomad
+
+    - name: explode_glob homology
+      glob: input/target/homologue/gene_dictionary/*.json
+      do:
+        - name: transform ${match_stem} to parquet
+          source: ${uri}
+          destination: intermediate/target/homologue/gene_dictionary/${match_path}${match_stem}.parquet
+          transformer: homology
+  ##################################################################################################
