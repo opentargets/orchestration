@@ -3,7 +3,6 @@
 from pathlib import Path
 from typing import Any
 
-from airflow.utils.log.logging_mixin import LoggingMixin
 from ot_orchestration.utils import read_hocon_config, read_yaml_config
 
 

@@ -210,64 +210,65 @@ with DAG(
     # r. The ETL steps are run in parallel, as their prerequisites are met.
     # d. Delete the Dataproc cluster.
     # ==============================================================================================
-    etl_cluster_name = create_cluster_name("etl")
+    if len(config.etl_step_list):
+        etl_cluster_name = create_cluster_name("etl")
 
-    @task_group(group_id=f"etl_cluster_prepare")
-    def etl_cluster_prepare() -> None:
-        labels = StepLabels("etl", is_ppp=config.is_ppp)
+        @task_group(group_id=f"etl_cluster_prepare")
+        def etl_cluster_prepare() -> None:
+            labels = StepLabels("etl", is_ppp=config.is_ppp)
 
-        c = PlatformETLCreateClusterOperator(
-            task_id="cluster_create",
-            cluster_name=etl_cluster_name,
-            labels=labels,
-        )
-        uc = UploadStringOperator(
-            task_id=f"upload_config",
-            contents=to_hocon(config.etl_config),
-            dst_uri=config.etl_config_uri,
-            overwrite=True,
-        )
-        cj = CopyBlobOperator(
-            task_id=f"upload_jar",
-            src_uri=config.etl_jar_origin_uri,
-            dst_uri=config.etl_jar_uri,
-            overwrite=True,
-        )
-
-        chain(c, uc, cj)
-
-    p = etl_cluster_prepare()
-
-    @task_group(group_id="etl_stage")
-    def etl_stage() -> None:
-        for step_name in config.etl_step_list:
-            # skip ppp steps if the pipeline is not running in ppp mode
-            if not config.is_ppp and step_name in config.ppp_steps:
-                continue
-
-            labels = StepLabels("etl", step_name, config.is_ppp)
-
-            r = PlatformETLSubmitJobOperator(
-                task_id=f"run_{step_name}",
-                step_name=step_name.replace("etl_", ""),  # remove the etl prefix
+            c = PlatformETLCreateClusterOperator(
+                task_id="cluster_create",
                 cluster_name=etl_cluster_name,
-                jar_uri=config.etl_jar_uri,
-                config_uri=config.etl_config_uri,
                 labels=labels,
             )
-            steps[step_name] = r
+            uc = UploadStringOperator(
+                task_id=f"upload_config",
+                contents=to_hocon(config.etl_config),
+                dst_uri=config.etl_config_uri,
+                overwrite=True,
+            )
+            cj = CopyBlobOperator(
+                task_id=f"upload_jar",
+                src_uri=config.etl_jar_origin_uri,
+                dst_uri=config.etl_jar_uri,
+                overwrite=True,
+            )
 
-    s = etl_stage()
+            chain(c, uc, cj)
 
-    d = DataprocDeleteClusterOperator(
-        task_id="etl_cluster_delete",
-        project_id=GCP_PROJECT_PLATFORM,
-        region=GCP_REGION,
-        cluster_name=etl_cluster_name,
-        trigger_rule=TriggerRule.ALL_SUCCESS,
-    )
+        p = etl_cluster_prepare()
 
-    chain(p, s, d)
+        @task_group(group_id="etl_stage")
+        def etl_stage() -> None:
+            for step_name in config.etl_step_list:
+                # skip ppp steps if the pipeline is not running in ppp mode
+                if not config.is_ppp and step_name in config.ppp_steps:
+                    continue
+
+                labels = StepLabels("etl", step_name, config.is_ppp)
+
+                r = PlatformETLSubmitJobOperator(
+                    task_id=f"run_{step_name}",
+                    step_name=step_name.replace("etl_", ""),  # remove the etl prefix
+                    cluster_name=etl_cluster_name,
+                    jar_uri=config.etl_jar_uri,
+                    config_uri=config.etl_config_uri,
+                    labels=labels,
+                )
+                steps[step_name] = r
+
+        s = etl_stage()
+
+        d = DataprocDeleteClusterOperator(
+            task_id="etl_cluster_delete",
+            project_id=GCP_PROJECT_PLATFORM,
+            region=GCP_REGION,
+            cluster_name=etl_cluster_name,
+            trigger_rule=TriggerRule.ALL_SUCCESS,
+        )
+
+        chain(p, s, d)
 
     # ==============================================================================================
     # Gentropy stage of the DAG.

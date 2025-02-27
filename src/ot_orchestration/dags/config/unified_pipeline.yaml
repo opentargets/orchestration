@@ -1,14 +1,14 @@
 ---
-release_name: uo_test_paths
+release_name: 2503-testrun-2
 
-pis_version: '25.0.0-rc.1'
-ontoform_version: '25.0.0-rc.5'
-etl_version: '25.0.0-rc.2'
-gentropy_version: '2.0.1'
-vep_version: '2.0.1'
+pis_version: '25.2.0-alpha.7'
+pts_version: '25.0.0-alpha.9'
+etl_version: '25.0.0-alpha.5'
+gentropy_version: '2.2.0-rc.5'
+vep_version: '2.2.0-rc.5'
 
 chembl_version: '35'
-efo_version: '3.71.0'
+efo_version: '3.73.0'
 ensembl_version: '113'
 l2g_training: '2025-02'
 
@@ -43,7 +43,7 @@ steps:
     ppp_only: true
   pis_expression:
   pis_go:
-  pis_l2g_gold_standard:
+  pis_l2g:
   pis_interaction:
   pis_literature:
   pis_openfda:
@@ -56,27 +56,27 @@ steps:
   pis_target_engine:
   pis_target_validation:
 
-  # ONTOFORM STEPS
-  ontoform_disease:
+  # PTS STEPS
+  pts_disease:
     depends_on:
       - pis_disease
-  ontoform_expression:
+  pts_expression:
     depends_on:
       - pis_expression
-  ontoform_target:
+  pts_target:
     depends_on:
       - pis_target
-  ontoform_openfda:
+  pts_openfda:
     depends_on:
       - pis_openfda
-  ontoform_so:
+  pts_so:
     depends_on:
       - pis_so
 
   # ETL STEPS
   etl_expression:
     depends_on:
-      - ontoform_expression
+      - pts_expression
   etl_go:
     depends_on:
       - pis_go
@@ -88,20 +88,20 @@ steps:
     ppp_only: true
     depends_on:
       - pis_otar
-      - ontoform_disease
+      - pts_disease
   etl_target:
     depends_on:
-      - ontoform_target
+      - pts_target
       - etl_reactome
 
   etl_drug:
     depends_on:
       - pis_drug
-      - ontoform_disease
+      - pts_disease
       - etl_target
   etl_search_facet:
     depends_on:
-      - ontoform_disease
+      - pts_disease
       - etl_go
       - etl_target
   etl_interaction:
@@ -115,7 +115,7 @@ steps:
 
   etl_openfda:
     depends_on:
-      - ontoform_openfda
+      - pts_openfda
       - etl_drug
   etl_literature:
     depends_on:
@@ -163,8 +163,8 @@ steps:
 
   gentropy_study:
     depends_on:
-      - ontoform_target
-      - ontoform_disease
+      - pts_target
+      - pts_disease
       - etl_target
       - gentropy_biosample
 
@@ -201,10 +201,11 @@ steps:
 
   gentropy_l2g_training:
     depends_on:
+      - pis_l2g
+      - etl_interaction
       - gentropy_credible_set
       - gentropy_variant
       - gentropy_l2g_feature_matrix
-      - pis_l2g_gold_standard
 
   gentropy_l2g_prediction:
     depends_on:
