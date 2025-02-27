@@ -14,7 +14,7 @@ from airflow.providers.google.cloud.operators.dataproc import (
 )
 from airflow.utils.trigger_rule import TriggerRule
 
-from ot_orchestration.utils import convert_params_to_hydra_positional_arg
+from ot_orchestration.utils import convert_params_to_hydra_positional_arg, random_id
 
 # from ot_orchestration.utils import GCSPath
 from ot_orchestration.utils.common import (
@@ -269,6 +269,7 @@ def submit_job(
         DataprocSubmitJobOperator: Airflow task to submit an arbitrary job to a Dataproc cluster.
     """
     labels = labels or Labels()
+    job_id = f"{cluster_name}-{task_id}-{random_id()}"
 
     return DataprocSubmitJobOperator(
         task_id=task_id,
@@ -276,7 +277,7 @@ def submit_job(
         project_id=project_id,
         job={
             "job_uuid": f"airflow-{task_id}",
-            "reference": {"project_id": project_id},
+            "reference": {"project_id": project_id, "job_id": job_id},
             "placement": {"cluster_name": cluster_name},
             job_type: job_specification,
             "labels": labels.as_dict(),
