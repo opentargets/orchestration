@@ -8,6 +8,7 @@ on:
     paths:
       - images/gentropy/scripts/harmonise-sumstats.sh
       - images/gentropy/Dockerfile
+  workflow_dispatch:
 
 env:
   PROJECT_ID: open-targets-genetics-dev
