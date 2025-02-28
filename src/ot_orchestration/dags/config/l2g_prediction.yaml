@@ -3,10 +3,11 @@ environment_specs:
   - name: Test
     vars:
       root_path: gs://ot_orchestration/test_data/l2g_prediction_batch_job/inputs
-      gentropy_version: 2.2.0-rc.5
+      gentropy_image_version: dev
   - name: Prod
     vars:
       root_path: gs://open-targets-pre-data-releases/2503-testrun-2/output
+      gentropy_image_version: dev
 
 env: Test
 
@@ -42,7 +43,7 @@ nodes:
       - generate_sumstat_index
     google_batch:
       entrypoint: /bin/sh
-      image: 'europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:{gentropy_version}'
+      image: 'europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/ot_gentropy:{gentropy_image_version}'
       resource_specs:
         cpu_milli: 2000
         memory_mib: 7000
