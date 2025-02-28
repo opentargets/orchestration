@@ -1,0 +1,54 @@
+---
+environment_specs:
+  - name: Test
+    vars:
+      root_path: gs://ot_orchestration/test_data/l2g_prediction_batch_job/inputs
+      gentropy_version: 2.2.0-rc.5
+  - name: Prod
+    vars:
+      root_path: gs://open-targets-pre-data-releases/2503-testrun-2/output
+
+env: Test
+
+nodes:
+  - id: generate_credible_set_index
+    kind: Task
+    prerequisites: []
+    google_batch_index_specs:
+      manifest_generator_label: l2g_prediction
+      manifest_generator_specs:
+        commands:
+          - -c
+          - 'uv run gentropy'
+        options:
+          step: locus_to_gene
+          step.session.write_mode: append
+          step.run_mode: predict
+          step.session.output_partitions: 1
+          step.l2g_threshold: 0.05
+          step.download_from_hub: true
+          # INPUTS
+          step.hf_hub_repo_id: opentargets/locus_to_gene
+          step.feature_matrix_path: '{root_path}/l2g_feature_matrix'
+          step.credible_set_path: '$cs_partition'
+          # OUTPUTS
+          step.predictions_path: '{root_path}/output/l2g_prediction'
+        manifest_kwargs:
+          credible_set_glob: '{root_path}/credible_set/**.parquet'
+
+  - id: l2g_prediction
+    kind: Task
+    prerequisites:
+      - generate_sumstat_index
+    google_batch:
+      entrypoint: /bin/sh
+      image: 'europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:{gentropy_version}'
+      resource_specs:
+        cpu_milli: 2000
+        memory_mib: 7000
+        boot_disk_mib: 4000
+      task_specs:
+        max_retry_count: 0
+        max_run_duration: "1h"
+      policy_specs:
+        machine_type: n1-standard-2
