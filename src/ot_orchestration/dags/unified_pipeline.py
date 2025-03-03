@@ -288,7 +288,7 @@ with DAG(
                         )
 
                     case "gentropy_l2g_prediction":
-                        
+
                         @task_group("l2g_prediction")
                         def l2g_predictions_batch_job() -> None:
                             b = BatchIndexOperator(

@@ -72,7 +72,7 @@ class BatchIndexOperator(BaseOperator):
 
 class BatchJobOperator(CloudBatchSubmitJobOperator):
     """Generic Batch Job operator.
-    
+
     This operator has to be used in conjunction to the BatchIndexOperator.
     It runs the google batch jobs defined defined by the BatchIndexOperator.
     """

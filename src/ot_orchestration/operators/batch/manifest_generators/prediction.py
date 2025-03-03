@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from airflow.exceptions import AirflowSkipException
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 
@@ -23,8 +21,8 @@ class GentropyStepGoogleBatchManifestGenerator(ProtoManifestGenerator):
         gcp_conn_id: str = "google_cloud_default",
      ):
         """Manifest generator for gentropy step running on google batch.
-        
-        This class should be utilized in case the gentropy step execution should be 
+
+        This class should be utilized in case the gentropy step execution should be
         partitioned by arbitrary number of google batch tasks.
 
         Args:

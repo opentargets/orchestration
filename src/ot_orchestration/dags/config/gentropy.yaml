@@ -233,7 +233,7 @@ steps:
           # INPUTS
           step.hf_hub_repo_id: opentargets/locus_to_gene
           step.feature_matrix_path: '{release_uri}/intermediate/l2g_feature_matrix'
-          step.credible_set_path: '$cs_partition'  # The env value $cs_partition differs within each machine.
+          step.credible_set_path: '$cs_partition' # The env value $cs_partition differs within each machine.
           # OUTPUTS
           step.predictions_path: '{release_uri}/output/l2g_prediction'
         manifest_kwargs:
@@ -264,4 +264,3 @@ steps:
       step.study_index_path: '{release_uri}/output/study_index'
       # OUTPUTS
       step.evidence_output_path: '{release_uri}/intermediate/evidence/gentropy'
-
