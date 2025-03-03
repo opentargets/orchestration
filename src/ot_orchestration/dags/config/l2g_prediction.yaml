@@ -12,11 +12,11 @@ environment_specs:
 env: Test
 
 nodes:
-  - id: gentropy_l2g_prediction_job_definition
+  - id: build_l2g_prediction
     kind: Task
     prerequisites: []
     google_batch_index_specs:
-      manifest_generator_label: l2g_prediction
+      manifest_generator_label: default
       manifest_generator_specs:
         commands:
           - -c
@@ -35,12 +35,12 @@ nodes:
           # OUTPUTS
           step.predictions_path: '{root_path}/output/l2g_prediction'
         manifest_kwargs:
-          credible_set_glob: '{root_path}/credible_set/**.parquet'
+          input_glob: '{root_path}/credible_set/**.parquet'
 
-  - id: gentropy_l2g_prediction
+  - id: run_l2g_prediction
     kind: Task
     prerequisites:
-      - gentropy_l2g_prediction_job_definition
+      - build_l2g_prediction
     google_batch:
       entrypoint: /bin/sh
       image: 'europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/ot_gentropy:{gentropy_image_version}'

@@ -33,18 +33,18 @@ with DAG(
     default_args=shared_dag_args,
     **shared_dag_kwargs,
 ):
-    index_config = find_node_in_config(config["nodes"], "generate_credible_set_index")
-    prediction_config = find_node_in_config(config["nodes"], "l2g_prediction")
+    index_config = find_node_in_config(config["nodes"], "build_l2g_prediction")
+    prediction_config = find_node_in_config(config["nodes"], "run_l2g_prediction")
 
     if index_config and prediction_config:
         batch_index = BatchIndexOperator(
             task_id=index_config["id"],
             batch_index_specs=index_config["google_batch_index_specs"],
         )
-        harmonisation_batch_job = BatchJobOperator.partial(
+        prediction_task = BatchJobOperator.partial(
             task_id=prediction_config["id"],
             job_name="prediction",
             google_batch=prediction_config["google_batch"],
         ).expand(batch_index_row=batch_index.output)
 
-        chain(batch_index, harmonisation_batch_job)
+        chain(batch_index, prediction_task)

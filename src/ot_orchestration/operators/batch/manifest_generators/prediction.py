@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from airflow.exceptions import AirflowSkipException
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 
@@ -11,7 +13,7 @@ from ot_orchestration.types import ManifestGeneratorSpecs
 from ot_orchestration.utils.path import GCSPath
 
 
-class L2GPredictionManifestGenerator(ProtoManifestGenerator):
+class GentropyStepGoogleBatchManifestGenerator(ProtoManifestGenerator):
     def __init__(
         self,
         *,
@@ -20,13 +22,28 @@ class L2GPredictionManifestGenerator(ProtoManifestGenerator):
         manifest_kwargs: dict[str, str],
         gcp_conn_id: str = "google_cloud_default",
      ):
+        """Manifest generator for gentropy step running on google batch.
+        
+        This class should be utilized in case the gentropy step execution should be 
+        partitioned by arbitrary number of google batch tasks.
+
+        Args:
+            commands (list[str]): List of commands to run the gentropy step.
+            options (dict[str, str]): dictionary of options to run the step. Typically these are {"step": "l2g_prediction"}.
+            manifest_kwargs (dict[str, str]): Arguments used to derive the batch job partitioning.
+            gcp_conn_id (str, optional): Google cloud connection. Defaults to "google_cloud_default".
+
+        The `manifest_kwargs` represent the way to partition the input dataset. The default value provided should be
+        {"input_glob": "gs://bucket_name/some/prefix/**.ext"}. Depending on the number of files that match the `input_glob`
+        the computed google batch job definition will have corresponding number of tasks.
+        """
         self.commands = commands
         self.options = options
         self.gcs_hook = GCSHook(gcp_conn_id=gcp_conn_id)
-        self.cs_glob = GCSPath(manifest_kwargs["credible_set_glob"])
+        self.input_glob = GCSPath(manifest_kwargs["input_glob"])
 
     @classmethod
-    def from_generator_config(cls, specs: ManifestGeneratorSpecs) -> L2GPredictionManifestGenerator:
+    def from_generator_config(cls, specs: ManifestGeneratorSpecs) -> GentropyStepGoogleBatchManifestGenerator:
         """Build Generator from generator specs."""
         return cls(
             commands=specs["commands"],
@@ -46,10 +63,10 @@ class L2GPredictionManifestGenerator(ProtoManifestGenerator):
 
     def build_vars_list(self) -> list[dict[str, str]]:
         """Build variable lists that will be later used to build google batch environments."""
-        protocol = self.cs_glob.segments.get("protocol")
-        bucket_name = self.cs_glob.segments.get("root")
-        prefix = self.cs_glob.segments.get("prefix")
-        match_glob = self.cs_glob.segments.get("filename")
+        protocol = self.input_glob.segments.get("protocol")
+        bucket_name = self.input_glob.segments.get("root")
+        prefix = self.input_glob.segments.get("prefix")
+        match_glob = self.input_glob.segments.get("filename")
         files = self.gcs_hook.list(
             bucket_name=bucket_name,
             prefix=prefix + "/",
@@ -57,5 +74,5 @@ class L2GPredictionManifestGenerator(ProtoManifestGenerator):
         )
 
         if len(files) == 0:
-            raise AirflowSkipException(f"No credible set files found under {self.cs_glob} glob")
-        return [{"cs_partition": f"{protocol}://{bucket_name}/{file}"} for file in files]
+            raise AirflowSkipException(f"No files found under {self.input_glob} glob")
+        return [{"input_partition": f"{protocol}://{bucket_name}/{file}"} for file in files]

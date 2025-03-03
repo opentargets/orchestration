@@ -218,7 +218,7 @@ steps:
 
   l2g_prediction:
     google_batch_index_specs:
-      manifest_generator_label: l2g_prediction
+      manifest_generator_label: default
       manifest_generator_specs:
         commands:
           - -c
@@ -238,7 +238,7 @@ steps:
           step.predictions_path: '{release_uri}/output/l2g_prediction'
         manifest_kwargs:
           # Job partitioninig depends on the number of credible_set parquet files.
-          credible_set_glob: '{release_uri}/output/credible_set/**.parquet'
+          input_glob: '{release_uri}/output/credible_set/**.parquet'
     google_batch:
       entrypoint: /bin/sh
       image: 'europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/ot_gentropy:{gentropy_image_version}'

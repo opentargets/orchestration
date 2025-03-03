@@ -17,7 +17,7 @@ from ot_orchestration.operators.batch.batch_index import (
 )
 from ot_orchestration.operators.batch.manifest_generators import ProtoManifestGenerator
 from ot_orchestration.operators.batch.manifest_generators.harmonisation import HarmonisationManifestGenerator
-from ot_orchestration.operators.batch.manifest_generators.prediction import L2GPredictionManifestGenerator
+from ot_orchestration.operators.batch.manifest_generators.prediction import GentropyStepGoogleBatchManifestGenerator
 from ot_orchestration.types import GoogleBatchIndexSpecs, GoogleBatchSpecs
 from ot_orchestration.utils.batch import create_batch_job, create_task_spec
 from ot_orchestration.utils.common import GCP_PROJECT_GENETICS, GCP_REGION
@@ -34,7 +34,7 @@ class BatchIndexOperator(BaseOperator):
     # NOTE: here register all manifest generators.
     manifest_generator_registry: dict[str, Type[ProtoManifestGenerator]] = {
         "gwas_catalog_harmonisation": HarmonisationManifestGenerator,
-        "l2g_prediction": L2GPredictionManifestGenerator,
+        "default": GentropyStepGoogleBatchManifestGenerator,
     }
 
     def __init__(
@@ -71,7 +71,12 @@ class BatchIndexOperator(BaseOperator):
 
 
 class BatchJobOperator(CloudBatchSubmitJobOperator):
-    """Generic Batch Job operator."""
+    """Generic Batch Job operator.
+    
+    This operator has to be used in conjunction to the BatchIndexOperator.
+    It runs the google batch jobs defined 
+    
+    """
 
     def __init__(
         self,
