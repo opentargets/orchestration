@@ -80,6 +80,7 @@ class BatchJobOperator(CloudBatchSubmitJobOperator):
         google_batch: GoogleBatchSpecs,
         project_id: str = GCP_PROJECT_GENETICS,
         region: str = GCP_REGION,
+        labels: Labels | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -96,7 +97,7 @@ class BatchJobOperator(CloudBatchSubmitJobOperator):
                 ),
                 task_env=BatchEnvironments.deserialize(batch_index_row["environment"]).construct(),
                 policy_specs=google_batch["policy_specs"],
-                labels=Labels(project=project_id),
+                labels=labels or Labels(project=project_id),
             ),
             deferrable=False,
             **kwargs,

@@ -300,6 +300,7 @@ with DAG(
                                 task_id=f"run_{step_name}",
                                 google_batch=step_config["google_batch"],
                                 project_id=GCP_PROJECT_PLATFORM,
+                                labels=labels
                             ).expand(batch_index_row=b.output)
                             chain(b, r)
                         r = l2g_predictions_batch_job()
