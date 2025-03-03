@@ -12,7 +12,7 @@ environment_specs:
 env: Test
 
 nodes:
-  - id: generate_credible_set_index
+  - id: gentropy_l2g_prediction_job_definition
     kind: Task
     prerequisites: []
     google_batch_index_specs:
@@ -37,10 +37,10 @@ nodes:
         manifest_kwargs:
           credible_set_glob: '{root_path}/credible_set/**.parquet'
 
-  - id: l2g_prediction
+  - id: gentropy_l2g_prediction
     kind: Task
     prerequisites:
-      - generate_sumstat_index
+      - gentropy_l2g_prediction_job_definition
     google_batch:
       entrypoint: /bin/sh
       image: 'europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/ot_gentropy:{gentropy_image_version}'

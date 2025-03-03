@@ -12,8 +12,6 @@ from ot_orchestration.utils.path import GCSPath
 
 
 class L2GPredictionManifestGenerator(ProtoManifestGenerator):
-    fields = {"credibleSetPartition": "CREDIBLE_SET_PARTITION", "predictionPartition": "PREDICTION_PARTITION"}
-
     def __init__(
         self,
         *,
@@ -21,7 +19,7 @@ class L2GPredictionManifestGenerator(ProtoManifestGenerator):
         options: dict[str, str],
         manifest_kwargs: dict[str, str],
         gcp_conn_id: str = "google_cloud_default",
-    ):
+     ):
         self.commands = commands
         self.options = options
         self.gcs_hook = GCSHook(gcp_conn_id=gcp_conn_id)
@@ -52,13 +50,11 @@ class L2GPredictionManifestGenerator(ProtoManifestGenerator):
         bucket_name = self.cs_glob.segments.get("root")
         prefix = self.cs_glob.segments.get("prefix")
         match_glob = self.cs_glob.segments.get("filename")
-        print(prefix, match_glob)
         files = self.gcs_hook.list(
             bucket_name=bucket_name,
             prefix=prefix + "/",
             match_glob=match_glob,
         )
-        print(files)
 
         if len(files) == 0:
             raise AirflowSkipException(f"No credible set files found under {self.cs_glob} glob")
