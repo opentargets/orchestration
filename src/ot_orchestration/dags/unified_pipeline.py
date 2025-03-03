@@ -254,7 +254,7 @@ with DAG(
     # to obtain all clusters required by the steps, then based on the `cluster_name` defined
     # in each step it assigns the gentropy step to a correct cluster.
     #
-    # b. Prepare google batch job definition
+    # b. Prepare google batch job definition index
     # c. Prepare the Gentropy Dataproc cluster
     # r. The Gentropy steps are run in parallel, as their prerequisites are met.
     #       There are different types of Gentropy steps. We match special cases by
