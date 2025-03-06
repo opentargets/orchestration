@@ -16,7 +16,7 @@ steps:
       transformer: disease
     - name: transform disease_hpo
       source: input/disease/hp-full.json
-      destination: output/disease/disease_hpo.parquet
+      destination: output/disease_hpo/disease_hpo.parquet
       transformer: disease_hpo
     - name: transform disease_phenotype
       requires:
@@ -25,8 +25,14 @@ steps:
         - output/disease/disease.parquet
         - input/disease/phenotype.hpoa
         - input/disease/mondo.json
-      destination: output/disease/disease_phenotype.parquet
+      destination: output/disease_phenotype/disease_phenotype.parquet
       transformer: disease_phenotype
+    - name: transform disease_efo for webapp
+      requires:
+        - transform disease_efo
+      source: output/disease/disease.parquet
+      destination: webapp/disease.jsonl
+      transformer: disease_efo_webapp
 
   ##################################################################################################
 

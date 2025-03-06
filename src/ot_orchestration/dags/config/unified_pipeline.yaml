@@ -1,10 +1,10 @@
 ---
-release_name: 2503-testrun-2
+release_name: 2503-testrun-3
 
 pis_version: '25.2.0-alpha.7'
-pts_version: '25.0.0-alpha.9'
-etl_version: '25.0.0-alpha.5'
-gentropy_version: '2.2.0-rc.5'
+pts_version: '25.0.0-alpha.13'
+etl_version: '25.0.0-alpha.6'
+gentropy_version: '2.2.0-rc.6'
 vep_version: '2.2.0-rc.5'
 
 chembl_version: '35'
@@ -177,6 +177,12 @@ steps:
       - pis_evidence
       - pis_pharmacogenomics
       - gentropy_credible_set
+  gentropy_colocalisation_coloc:
+    depends_on:
+      - gentropy_credible_set
+  gentropy_colocalisation_ecaviar:
+    depends_on:
+      - gentropy_credible_set
 
   gentropy_variant_annotation:
     depends_on:
@@ -185,13 +191,6 @@ steps:
   gentropy_variant:
     depends_on:
       - gentropy_variant_annotation
-
-  gentropy_colocalisation_coloc:
-    depends_on:
-      - gentropy_variant
-  gentropy_colocalisation_ecaviar:
-    depends_on:
-      - gentropy_variant
 
   gentropy_l2g_feature_matrix:
     depends_on:

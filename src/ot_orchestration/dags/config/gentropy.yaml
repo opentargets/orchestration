@@ -19,7 +19,7 @@ steps:
   biosample:
     params:
       step: biosample_index
-      step.session.write_mode: ignore
+      step.session.write_mode: errorIfExists
       step.session.output_partitions: 1
       # INPUTS
       step.cell_ontology_input_path: '{release_uri}/input/biosample/cl.json'
@@ -31,7 +31,7 @@ steps:
   study:
     params:
       step: study_validation
-      step.session.write_mode: ignore
+      step.session.write_mode: errorIfExists
       step.session.output_partitions: 1
       step.invalid_qc_reasons:
         - UNRESOLVED_TARGET
@@ -61,7 +61,7 @@ steps:
   credible_set:
     params:
       step: credible_set_validation
-      step.session.write_mode: ignore
+      step.session.write_mode: errorIfExists
       step.session.output_partitions: 25
       step.invalid_qc_reasons:
         - DUPLICATED_STUDYLOCUS_ID
@@ -95,11 +95,38 @@ steps:
       step.valid_study_locus_path: '{release_uri}/output/credible_set'
       step.invalid_study_locus_path: '{release_uri}/excluded/credible_set'
 
+  colocalisation_coloc:
+    cluster_type: otg-etl-coloc
+    params:
+      step: colocalisation
+      step.session.write_mode: errorIfExists
+      step.session.output_partitions: 25
+      step.colocalisation_method: Coloc
+      +step.colocalisation_method_params: '{priorc1: 1e-4, priorc2: 1e-4, priorc12: 1e-5}'
+      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.memoryOverhead: '1g', spark.executor.cores: '4'}"
+      # INPUTS
+      step.credible_set_path: '{release_uri}/output/credible_set'
+      # OUTPUTS
+      step.coloc_path: '{release_uri}/output/colocalisation'
+
+  colocalisation_ecaviar:
+    cluster_type: otg-etl-coloc
+    params:
+      step: colocalisation
+      step.session.write_mode: errorIfExists
+      step.session.output_partitions: 25
+      step.colocalisation_method: ECaviar
+      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.memoryOverhead: '1g', spark.executor.cores: '4'}"
+      # INPUTS
+      step.credible_set_path: '{release_uri}/output/credible_set'
+      # OUTPUTS
+      step.coloc_path: '{release_uri}/output/colocalisation'
+
   variant_partition:
     params:
       step: variant_to_vcf
       step.partition_size: 2_000 # approximate num of variants per partition!
-      step.session.write_mode: ignore
+      step.session.write_mode: errorIfExists
       # INPUTS
       step.source_paths:
         - '{release_uri}/input/evidence/uniprot_variants.json.gz'
@@ -137,7 +164,7 @@ steps:
   variant:
     params:
       step: variant_index
-      step.session.write_mode: ignore
+      step.session.write_mode: errorIfExists
       step.session.output_partitions: 25
       # INPUTS
       step.vep_output_json_path: '{release_uri}/intermediate/variant_annotation'
@@ -149,37 +176,10 @@ steps:
       # OUTPUTS
       step.variant_index_path: '{release_uri}/output/variant'
 
-  colocalisation_coloc:
-    cluster_type: otg-etl-coloc
-    params:
-      step: colocalisation
-      step.session.write_mode: ignore
-      step.session.output_partitions: 25
-      step.colocalisation_method: Coloc
-      +step.colocalisation_method_params: '{priorc1: 1e-4, priorc2: 1e-4, priorc12: 1e-5}'
-      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.memoryOverhead: '1g', spark.executor.cores: '4'}"
-      # INPUTS
-      step.credible_set_path: '{release_uri}/output/credible_set'
-      # OUTPUTS
-      step.coloc_path: '{release_uri}/output/colocalisation'
-
-  colocalisation_ecaviar:
-    cluster_type: otg-etl-coloc
-    params:
-      step: colocalisation
-      step.session.write_mode: ignore
-      step.session.output_partitions: 25
-      step.colocalisation_method: ECaviar
-      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.memoryOverhead: '1g', spark.executor.cores: '4'}"
-      # INPUTS
-      step.credible_set_path: '{release_uri}/output/credible_set'
-      # OUTPUTS
-      step.coloc_path: '{release_uri}/output/colocalisation'
-
   l2g_feature_matrix:
     params:
       step: locus_to_gene_feature_matrix
-      step.session.write_mode: ignore
+      step.session.write_mode: errorIfExists
       +step.session.extended_spark_conf: "{spark.sql.autoBroadcastJoinThreshold:'-1'}"
       # INPUTS
       step.credible_set_path: '{release_uri}/output/credible_set'
@@ -193,13 +193,13 @@ steps:
   l2g_training:
     params:
       step: locus_to_gene
-      step.session.write_mode: ignore
+      step.session.write_mode: errorIfExists
       step.run_mode: train
-      +step.session.extended_spark_conf: "{spark.kryoserializer.buffer.max:500m, spark.sql.autoBroadcastJoinThreshold:'-1'}"
       step.wandb_run_name: '{l2g_training}'
       step.cross_validate: false
       step.hf_hub_repo_id: opentargets/locus_to_gene
       step.hf_model_commit_message: 'chore: update model base model for {l2g_training} run'
+      +step.session.extended_spark_conf: "{spark.kryoserializer.buffer.max:500m, spark.sql.autoBroadcastJoinThreshold:'-1'}"
       # INPUTS
       step.credible_set_path: '{release_uri}/output/credible_set'
       step.feature_matrix_path: '{release_uri}/intermediate/l2g_feature_matrix'
@@ -212,14 +212,15 @@ steps:
     params:
       step: locus_to_gene
       step.run_mode: predict
-      step.session.write_mode: ignore
+      step.session.write_mode: errorIfExists
       step.session.output_partitions: 1
       step.l2g_threshold: 0.05
       step.download_from_hub: true
       step.explain_predictions: true
+      +step.session.extended_spark_conf: "{spark.rpc.message.maxSize:'1024'}"
       # INPUTS
       step.hf_hub_repo_id: opentargets/locus_to_gene
-      step.feature_matrix_path: '{release_uri}/output/l2g_feature_matrix'
+      step.feature_matrix_path: '{release_uri}/intermediate/l2g_feature_matrix'
       step.credible_set_path: '{release_uri}/output/credible_set'
       # OUTPUTS
       step.predictions_path: '{release_uri}/output/l2g_prediction'
@@ -227,7 +228,7 @@ steps:
   l2g_evidence:
     params:
       step: locus_to_gene_evidence
-      step.session.write_mode: ignore
+      step.session.write_mode: errorIfExists
       step.locus_to_gene_threshold: 0.05
       # INPUTS
       step.credible_set_path: '{release_uri}/output/credible_set'
