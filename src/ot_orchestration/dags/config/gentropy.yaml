@@ -211,26 +211,46 @@ steps:
       step.hf_model_commit_message: 'chore: update model base model for {l2g_training} run'
       # INPUTS
       step.credible_set_path: '{release_uri}/output/credible_set'
-      step.feature_matrix_path: '{release_uri}/output/l2g_feature_matrix'
+      step.feature_matrix_path: '{release_uri}/intermediate/l2g_feature_matrix'
       step.gold_standard_curation_path: '{release_uri}/inputs/l2g/gold_standard.json'
       # OUTPUTS
       step.model_path: '{release_uri}/etc/model/locus_to_gene_model/classifier.skops'
 
   l2g_prediction:
-    cluster_name: otg-etl
-    params:
-      step: locus_to_gene
-      step.run_mode: predict
-      step.session.write_mode: ignore
-      step.session.output_partitions: 1
-      step.l2g_threshold: 0.05
-      step.download_from_hub: true
-      # INPUTS
-      step.hf_hub_repo_id: opentargets/locus_to_gene
-      step.feature_matrix_path: '{release_uri}/output/l2g_feature_matrix'
-      step.credible_set_path: '{release_uri}/output/credible_set'
-      # OUTPUTS
-      step.predictions_path: '{release_uri}/output/l2g_prediction'
+    google_batch_index_specs:
+      manifest_generator_label: default
+      manifest_generator_specs:
+        commands:
+          - -c
+          - 'uv run gentropy'
+        options:
+          step: locus_to_gene
+          step.session.write_mode: append
+          step.run_mode: predict
+          step.session.output_partitions: 1
+          step.l2g_threshold: 0.05
+          step.download_from_hub: true
+          # INPUTS
+          step.hf_hub_repo_id: opentargets/locus_to_gene
+          step.feature_matrix_path: '{release_uri}/intermediate/l2g_feature_matrix'
+          step.credible_set_path: '$cs_partition' # The env value $cs_partition differs within each machine.
+          # OUTPUTS
+          step.predictions_path: '{release_uri}/output/l2g_prediction'
+        manifest_kwargs:
+          # Job partitioninig depends on the number of credible_set parquet files.
+          input_glob: '{release_uri}/output/credible_set/**.parquet'
+    google_batch:
+      entrypoint: /bin/sh
+      image: 'europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/ot_gentropy:{gentropy_image_version}'
+      resource_specs:
+        cpu_milli: 2000
+        memory_mib: 7000
+        boot_disk_mib: 4000
+      task_specs:
+        max_retry_count: 0
+        max_run_duration: "1h"
+      policy_specs:
+        machine_type: n1-standard-2
 
   l2g_evidence:
     cluster_name: otg-etl

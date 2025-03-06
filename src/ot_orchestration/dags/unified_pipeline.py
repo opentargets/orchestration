@@ -20,6 +20,7 @@ from ot_orchestration.dags.config.cluster_registry import ClusterRegistry
 from ot_orchestration.dags.config.unified_pipeline import (
     UnifiedPipelineConfig,
 )
+from ot_orchestration.operators.batch.generic import BatchIndexOperator, BatchJobOperator
 from ot_orchestration.operators.batch.vep import VepAnnotateOperator
 from ot_orchestration.operators.dataproc import (
     PlatformETLCreateClusterOperator,
@@ -253,7 +254,8 @@ with DAG(
     # to obtain all clusters required by the steps, then based on the `cluster_name` defined
     # in each step it assigns the gentropy step to a correct cluster.
     #
-    # c. Prepare the Gentropy Dataproc cluster.
+    # b. Prepare google batch job definition index
+    # c. Prepare the Gentropy Dataproc cluster
     # r. The Gentropy steps are run in parallel, as their prerequisites are met.
     #       There are different types of Gentropy steps. We match special cases by
     #       name in the config to define custom tasks for them. Most are dataproc
@@ -284,7 +286,25 @@ with DAG(
                             google_batch=step_config["google_batch"],
                             labels=labels,
                         )
-                        clusterless_steps.append(r)
+
+                    case "gentropy_l2g_prediction":
+
+                        @task_group("l2g_prediction")
+                        def l2g_predictions_batch_job() -> None:
+                            b = BatchIndexOperator(
+                                task_id=f"build_{step_name}",
+                                batch_index_specs=step_config["google_batch_index_specs"]
+                            )
+                            r = BatchJobOperator.partial(
+                                job_name=create_name("l2g_prediction"),
+                                task_id=f"run_{step_name}",
+                                google_batch=step_config["google_batch"],
+                                project_id=GCP_PROJECT_PLATFORM,
+                                labels=labels
+                            ).expand(batch_index_row=b.output)
+                            chain(b, r)
+                        r = l2g_predictions_batch_job()
+
                     case _:
                         cluster_name = step_config["cluster_name"]
                         current_cluster = cluster_registry.clusters[cluster_name]
@@ -312,6 +332,5 @@ with DAG(
             if config.is_ppp:
                 for ppp_dep in step_config.get("depends_on_ppp", []):
                     steps[step_name].set_upstream(steps[ppp_dep])
-
 if __name__ == "__main__":
     dag.test()
