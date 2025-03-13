@@ -1,5 +1,5 @@
 [project]
-name = "ot_orchestration"
+name = "orchestration"
 version = "1.0.0"
 description = "Open Targets Genetics Orchestration Pipeline"
 authors = [{name = "Szymon Szyszkowski", email= "ss60@sanger.ac.uk"}]
@@ -7,20 +7,20 @@ readme = "README.md"
 dynamic = ["dependencies", "requires-python"]
 
 [tool.poetry]
-packages = [{ include = "ot_orchestration", from = "src" }]
+packages = [{ include = "orchestration", from = "src" }]
 requires-poetry = ">=2.0"
 
 [tool.poetry.dependencies]
 python = ">=3.12, <3.13"
 apache-airflow = { extras = [
-  "apache-beam",
-  "async",
-  "celery",
-  "google",
-  "kubernetes",
-  "openlineage",
-  "postgres",
-  "sftp",
+    "apache-beam",
+    "async",
+    "celery",
+    "google",
+    "kubernetes",
+    "openlineage",
+    "postgres",
+    "sftp",
 ], version = "^2.10.5" }
 apache-airflow-providers-google = "^10.22.0"
 pyyaml = "^6.0.1"
@@ -63,7 +63,7 @@ no_implicit_reexport = true
 strict_equality = true
 warn_redundant_casts = true
 warn_unused_ignores = true
-exclude = "src/ot_orchestration/dags/*"
+exclude = "src/orchestration/dags/*"
 plugins = ["returns.contrib.mypy.returns_plugin"]
 
 [[tool.mypy.overrides]]
@@ -76,20 +76,20 @@ line-length = 120
 [tool.ruff.lint]
 select = ["D", "I", "E"]
 ignore = [
-  "E501",    # line too long
-  "E731",    # do not assign a lambda expression, use a def
-  "PLC0208", # Use a sequence type instead of a `set` when iterating over values
-  "PLR0911", # Too many return statements ({returns} > {max_returns})
-  "PLR0912", # Too many branches ({branches} > {max_branches})
-  "PLR0913", # Too many arguments to function call ({c_args} > {max_args})
-  "PLR0915", # Too many statements ({statements} > {max_statements})
-  "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
-  "PLW2901", # Outer {outer_kind} variable {name} overwritten by inner {inner_kind} target
-  "UP006",   # keep type annotation style as is
-  "UP007",   # keep type annotation style as is
-  "UP038",   # Use `X | Y` in `isinstance` call instead of `(X, Y)`
-  "D107",    # Ignore missing docstring in __init__
-  "D101",    # Missing docstring in public class
+    "E501",    # line too long
+    "E731",    # do not assign a lambda expression, use a def
+    "PLC0208", # Use a sequence type instead of a `set` when iterating over values
+    "PLR0911", # Too many return statements ({returns} > {max_returns})
+    "PLR0912", # Too many branches ({branches} > {max_branches})
+    "PLR0913", # Too many arguments to function call ({c_args} > {max_args})
+    "PLR0915", # Too many statements ({statements} > {max_statements})
+    "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
+    "PLW2901", # Outer {outer_kind} variable {name} overwritten by inner {inner_kind} target
+    "UP006",   # keep type annotation style as is
+    "UP007",   # keep type annotation style as is
+    "UP038",   # Use `X | Y` in `isinstance` call instead of `(X, Y)`
+    "D107",    # Ignore missing docstring in __init__
+    "D101",    # Missing docstring in public class
 ]
 
 [tool.ruff.lint.flake8-quotes]
@@ -98,6 +98,6 @@ docstring-quotes = "double"
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 ignore-decorators = [
-  "airflow.decorators.task",                  # Don't require docstrings for Airflow tasks
-  "airflow.decorators.task_group.task_group", # ^ for airflow task groups
+    "airflow.decorators.task",                  # Don't require docstrings for Airflow tasks
+    "airflow.decorators.task_group.task_group", # ^ for airflow task groups
 ]
