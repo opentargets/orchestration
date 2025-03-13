@@ -12,10 +12,10 @@ Make sure you have [Docker](https://docs.docker.com/get-docker/) and [Google Clo
 
 ## 2. Development environment
 
-Run `make dev`. This command will install Pyenv, Python 3.12, Poetry, pre-commit, initialise the virtual environment, and build the Airflow image.
+Run `uv sync --all-extras --dev`. This command will install the dependencies in a virtual environment so you can use it in your IDE's LSP.
 
 > [!WARNING]
-> Orchestration requires poetry 2.0.X.
+> Orchestration requires [uv](https://github.com/astral-sh/uv).
 
 ## 3. Set up Google Cloud access
 

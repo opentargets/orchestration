@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
-
-import pendulum
 
 from orchestration.utils import strhash
 
@@ -35,7 +34,7 @@ shared_dag_args: dict[str, Any] = {
 
 shared_dag_kwargs: dict[str, Any] = {
     "tags": ["genetics_etl", "experimental"],
-    "start_date": pendulum.now(tz="Europe/London").subtract(days=1),
+    "start_date": datetime.now(tz=timezone.utc) - timedelta(days=1),
     "schedule": "@once",
     "catchup": False,
 }

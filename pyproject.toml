@@ -1,74 +1,43 @@
 [project]
 name = "orchestration"
 version = "1.0.0"
-description = "Open Targets Genetics Orchestration Pipeline"
-authors = [{name = "Szymon Szyszkowski", email= "ss60@sanger.ac.uk"}]
+description = "Open Targets Data Pipeline Orchestration"
+authors = [
+  { name = "Open Targets Core Team", email = "devs@opentargets.net" },
+  { name = "Szymon Szyszkowski", email = "ss60@sanger.ac.uk" },
+]
 readme = "README.md"
-dynamic = ["dependencies", "requires-python"]
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "apache-airflow-providers-google==14.1.0",
+    "apache-airflow[apache-beam,async,celery,google]==2.10.5",
+    "google==3.0.0",
+    "pandas==2.1.4",
+    "pyhocon==0.3.61",
+    "pyyaml==6.0.2",
+    "requests==2.32.3",
+    "psycopg2-binary==2.9.10",
+    "apache-airflow-providers-apache-beam==6.0.3",
+]
 
-[tool.poetry]
-packages = [{ include = "orchestration", from = "src" }]
-requires-poetry = ">=2.0"
-
-[tool.poetry.dependencies]
-python = ">=3.12, <3.13"
-apache-airflow = { extras = [
-    "apache-beam",
-    "async",
-    "celery",
-    "google",
-    "kubernetes",
-    "openlineage",
-    "postgres",
-    "sftp",
-], version = "^2.10.5" }
-apache-airflow-providers-google = "^10.22.0"
-pyyaml = "^6.0.1"
-google = "^3.0.0"
-pendulum = "^3.0.0"
-apache-airflow-providers-apache-beam = "^5.7.1"
-requests = "^2.32.3"
-pyhocon = "^0.3.61"
-pandas = "2.1.4"
-
-[tool.poetry.group.dev.dependencies]
-ruff = "^0.4.9"
-pytest = "^8.2.2"
-mypy = "^1.10.0"
-pre-commit = "^3.7.1"
-coverage = "^7.5.4"
-psycopg2-binary = "^2.9.9"
-interrogate = "^1.7.0"
-graphviz = "^0.20.3"
-
-[tool.poetry.requires-plugins]
-poetry-plugin-export = ">=1.8"
-
-[tool.poetry.group.test.dependencies]
-pytest-cov = "^5.0.0"
-pytest-sugar = "^1.0.0"
-pytest-xdist = "^3.6.1"
-deptry = "^0.16.1"
+[project.scripts]
+orchestration = "orchestration:main"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-# Semi-strict mode for mypy
-[tool.mypy]
-disallow_any_generics = true
-disallow_incomplete_defs = true
-no_implicit_optional = true
-no_implicit_reexport = true
-strict_equality = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-exclude = "src/orchestration/dags/*"
-plugins = ["returns.contrib.mypy.returns_plugin"]
+[dependency-groups]
+dev = ["deptry==0.23.0", "pre-commit==4.2.0", "ruff==0.11.4"]
 
-[[tool.mypy.overrides]]
-module = ["google.cloud.storage", "yaml"]
-ignore_missing_imports = true
+[project.optional-dependencies]
+test = ["pytest==8.3.5"]
+
+[tool.deptry]
+pep621_dev_dependency_groups = ["test"]
+
+[tool.deptry.per_rule_ignores]
+DEP002 = ["psycopg2-binary"]
 
 [tool.ruff]
 line-length = 120
@@ -76,8 +45,8 @@ line-length = 120
 [tool.ruff.lint]
 select = ["D", "I", "E"]
 ignore = [
-    "E501",    # line too long
-    "E731",    # do not assign a lambda expression, use a def
+    "E501",    # Line too long
+    "E731",    # Do not assign a lambda expression, use a def
     "PLC0208", # Use a sequence type instead of a `set` when iterating over values
     "PLR0911", # Too many return statements ({returns} > {max_returns})
     "PLR0912", # Too many branches ({branches} > {max_branches})
