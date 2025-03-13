@@ -1,8 +1,9 @@
 """Tests for package util functions."""
 
 import pytest
-from ot_orchestration.types import ConfigNode
-from ot_orchestration.utils import (
+
+from orchestration.types import ConfigNode
+from orchestration.utils import (
     convert_params_to_hydra_positional_arg,
     find_node_in_config,
     time_to_seconds,
@@ -37,9 +38,7 @@ def test_time_to_seconds(input: str, output: int) -> None:
             ["step=some_step", "step.b.c=2", "step.b.d=3"],
             False,
             id="nested dict",
-            marks=pytest.mark.xfail(
-                reason="Structured configuration not supported yet."
-            ),
+            marks=pytest.mark.xfail(reason="Structured configuration not supported yet."),
         ),
         pytest.param(
             {"step": "some_step", "step.b": 2, "+step.c": 3},
@@ -60,9 +59,7 @@ def test_time_to_seconds(input: str, output: int) -> None:
         ),
     ],
 )
-def test_convert_params_to_hydra_positional_arg(
-    input: dict, output: list[str], is_dataproc_job: bool
-) -> None:
+def test_convert_params_to_hydra_positional_arg(input: dict, output: list[str], is_dataproc_job: bool) -> None:
     """Test conversion of dictionary to hydra positional arguments."""
     assert convert_params_to_hydra_positional_arg(input, is_dataproc_job) == output
 
@@ -70,9 +67,7 @@ def test_convert_params_to_hydra_positional_arg(
 @pytest.mark.parametrize(
     ["node", "result"],
     [
-        pytest.param(
-            "A", {"id": "A", "kind": "Task", "prerequisites": []}, id="Existing node"
-        ),
+        pytest.param("A", {"id": "A", "kind": "Task", "prerequisites": []}, id="Existing node"),
         pytest.param("D", None, id="Non existing node"),
     ],
 )

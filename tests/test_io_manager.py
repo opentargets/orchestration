@@ -5,8 +5,9 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from ot_orchestration.utils import GCSPath, IOManager
-from ot_orchestration.utils.path import (
+
+from orchestration.utils import GCSPath, IOManager
+from orchestration.utils.path import (
     URI_PATTERN,
     GCSPath,
     IOManager,
@@ -220,8 +221,6 @@ class TestGCSPath:
         ),
     ],
 )
-def test_extract_partition_from_blob(
-    input_blob: str, partition: str, with_prefix: bool
-) -> None:
+def test_extract_partition_from_blob(input_blob: str, partition: str, with_prefix: bool) -> None:
     """Test extracting partition from a blob."""
     assert extract_partition_from_blob(input_blob, with_prefix) == partition

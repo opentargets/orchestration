@@ -1,61 +1,49 @@
-SHELL := /bin/bash
-
-PROJECT_ID ?= open-targets-genetics-dev
-REGION ?= europe-west1
-APP_NAME ?= $$(cat pyproject.toml| grep -m 1 "name" | cut -d" " -f3 | sed  's/"//g')
 VERSION := $$(grep '^version' pyproject.toml | sed 's%version = "\(.*\)"%\1%')
-BUCKET_NAME=gs://genetics_etl_python_playground/initialisation/${VERSION}/
-DOCKER_IMAGE := "Orchestration-Airflow"
+.DEFAULT_GOAL := start
 
-.PHONY: $(shell sed -n -e '/^$$/ { n ; /^[^ .\#][^ ]*:/ { s/:.*$$// ; p ; } ; }' $(MAKEFILE_LIST))
-.DEFAULT_GOAL := help
+### HOUSEKEEPING TARGETS ###
+.PHONY: help version clean test check upload-ukb-ppp-bucket-readme upload-eqtl-catalogue-bucket-readme upload-finngen-bucket-readme upload-gwas-catalog-buckets-readme update-bucket-docs build-gentropy-gcs-image setup-harmonisation-test
 
-dev: ## setup dev environment
-	. setup-dev.sh
+help: ## Show the help message
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-36s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-help: ## This is help
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
-
-version: ## display version and exit
+version: ## Show the package version
 	@echo $(VERSION)
 
-check-types: ## run mypy and check types
-	@poetry run python -m mypy --install-types --non-interactive src/$(APP_NAME)
+clean: ##
+	@docker compose down
+	@rm -rf logs dist .venv .pytest_cache .ruff_cache
 
-format: ## run formatting
-	@poetry run python -m ruff check --fix  src/$(APP_NAME) tests
 
-test: ## run unit tests
-	@poetry run python -m pytest tests/*.py
+### DEVELOPMENT TARGETS ###
+test: ## Run unit tests
+	@uv run pytest
 
-check: format check-types test ## run all checks
+check: format test ## run all checks
 
-generate-requirements: ## generate requirements.txt from poetry dependencies to install in the docker image
-	poetry export --without-hashes --with dev --format=requirements.txt > requirements.txt
+dev: .git/hooks/commit-msg  ## Prepare the local development environment
+	@uv sync --all-extras --dev
+	@uv run pre-commit install --hook-type commit-msg
+	@docker compose -f compose.yaml -f compose.local.yaml up -d
 
-build-airflow-image: generate-requirements  ## build local airflow image for the infrastructure
-	docker build . \
-		--tag extending_airflow:latest \
-		-f Dockerfile \
-		--no-cache
 
-upload-ukb-ppp-bucket-readme: ## Upload ukb_ppp_eur_data readme to the bucket
-	@gsutil rsync  docs/datasources/ukb_ppp_eur_data gs://ukb_ppp_eur_data/docs
+### OTHER TARGETS ###
+upload-ukb-ppp-bucket-readme: ## ppload ukb_ppp_eur_data readme to the bucket
+	@gsutil rsync docs/datasources/ukb_ppp_eur_data gs://ukb_ppp_eur_data/docs
 
-upload-eqtl-catalogue-bucket-readme: ## Upload eqtl_catalogue_data readme to the bucket
-	@gsutil rsync  docs/datasources/eqtl_catalogue_data gs://eqtl_catalogue_data/docs
+upload-eqtl-catalogue-bucket-readme: ## upload eqtl_catalogue_data readme to the bucket
+	@gsutil rsync docs/datasources/eqtl_catalogue_data gs://eqtl_catalogue_data/docs
 
-upload-finngen-bucket-readme: ## Upload finngen_data readme to the bucket
+upload-finngen-bucket-readme: ## upload finngen_data readme to the bucket
 	@gsutil rsync docs/datasources/finngen_data gs://finngen_data/docs
 
-upload-gwas-catalog-buckets-readme: ## Upload gwas_catalog readme to the bucket(s)
+upload-gwas-catalog-buckets-readme: ## upload gwas_catalog readme to the bucket(s)
 	@gsutil rsync docs/datasources/gwas_catalog_data gs://gwas_catalog_inputs/docs
 	@gsutil rsync docs/datasources/gwas_catalog_data gs://gwas_catalog_sumstats_pics/docs
 	@gsutil rsync docs/datasources/gwas_catalog_data gs://gwas_catalog_sumstats_susie/docs
 	@gsutil rsync docs/datasources/gwas_catalog_data gs://gwas_catalog_top_hits/docs
 
-update-bucket-docs: upload-eqtl-catalogue-bucket-readme upload-ukb-ppp-bucket-readme upload-finngen-bucket-readme upload-gwas-catalog-buckets-readme ## Upload readmes to the datasource buckets
-
+update-bucket-docs: upload-eqtl-catalogue-bucket-readme upload-ukb-ppp-bucket-readme upload-finngen-bucket-readme upload-gwas-catalog-buckets-readme ## upload readmes to the datasource buckets
 
 build-gentropy-gcs-image: ## build image that overwrited gentropy with tools specific for orchestration and google cloud
 	@docker buildx build \
@@ -65,7 +53,7 @@ build-gentropy-gcs-image: ## build image that overwrited gentropy with tools spe
 		-f images/gentropy/Dockerfile \
 		--no-cache .
 
-setup-harmonisation-test: ## Prepare the test bucket with raw summary statistics for the harmonisation test.
+setup-harmonisation-test: ## prepare the test bucket with raw summary statistics for the harmonisation test.
 	@gsutil rm gs://ot_orchestration/test/gwas_catalog_inputs/harmonisation_manifest.csv
 	@gsutil -m rm -r gs://ot_orchestration/test/gwas_catalog_inputs/harmonisation_summary
 	@gsutil -m rm -r gs://ot_orchestration/test/gwas_catalog_inputs/harmonised_summary_statistics

@@ -352,9 +352,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
         work_disk_size_gb: int = 0,
         gcp_conn_id: str = "google_cloud_default",
         impersonation_chain: str | Sequence[str] | None = None,
-        deferrable: bool = conf.getboolean(
-            "operators", "default_deferrable", fallback=False
-        ),
+        deferrable: bool = conf.getboolean("operators", "default_deferrable", fallback=False),
         poll_interval: int = 10,
         **kwargs,
     ) -> None:
@@ -381,9 +379,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
         """Build the environment parameters for the docker run command."""
         if not self.container_env:
             return "\\"
-        return ("\n").join(
-            [f"    -e {k}={v} \\" for k, v in self.container_env.items()]
-        )
+        return ("\n").join([f"    -e {k}={v} \\" for k, v in self.container_env.items()])
 
     def build_volume_params(self):
         """Build the volume parameters for the docker run command."""
@@ -553,15 +549,11 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
             wait_for_extended_operation(
                 operation,
                 verbose_name="instance insertion",
-                timeout=int(self.execution_timeout.total_seconds())
-                if self.execution_timeout
-                else None,
+                timeout=int(self.execution_timeout.total_seconds()) if self.execution_timeout else None,
                 log=self.log,
             )
         except Exception as e:
-            raise AirflowException(
-                f"Failed to create instance {self.instance_name}"
-            ) from e
+            raise AirflowException(f"Failed to create instance {self.instance_name}") from e
 
         self.log.info(f"created vm {self.instance_name}")
 
@@ -678,7 +670,7 @@ class ComputeEngineExitCodeTrigger(BaseTrigger):
     def serialize(self) -> tuple[str, dict[str, Any]]:
         """Serialize class arguments and classpath."""
         return (
-            "ot_orchestration.operators.gce.ComputeEngineExitCodeTrigger",
+            "orchestration.operators.gce.ComputeEngineExitCodeTrigger",
             {
                 "instance_name": self.instance_name,
                 "project": self.project,

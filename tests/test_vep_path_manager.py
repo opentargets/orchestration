@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import pytest
-from ot_orchestration.operators.batch.vep import VepAnnotationPathManager
+
+from orchestration.operators.batch.vep import VepAnnotationPathManager
 
 
 class TestVepAnnotationPathManger:
