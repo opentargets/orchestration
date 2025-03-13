@@ -1,4 +1,4 @@
-FROM apache/airflow:slim-latest-python3.10
+FROM apache/airflow:slim-latest-python3.12
 # install only orchestration requirements, package itself will be mounted as a volume
 COPY requirements.txt requirements.txt
 RUN pip install --quiet --no-cache-dir --upgrade pip setuptools && \

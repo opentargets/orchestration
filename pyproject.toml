@@ -11,7 +11,7 @@ packages = [{ include = "ot_orchestration", from = "src" }]
 requires-poetry = ">=2.0"
 
 [tool.poetry.dependencies]
-python = "^3.10, <3.11"
+python = ">=3.12, <3.13"
 apache-airflow = { extras = [
   "apache-beam",
   "async",
@@ -21,7 +21,7 @@ apache-airflow = { extras = [
   "openlineage",
   "postgres",
   "sftp",
-], version = "^2.9.2" }
+], version = "^2.10.5" }
 apache-airflow-providers-google = "^10.22.0"
 pyyaml = "^6.0.1"
 google = "^3.0.0"
