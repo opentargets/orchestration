@@ -1,10 +1,10 @@
 ---
-release_name: 2503-testrun-3
+release_name: 'partners/25.03'
 
-pis_version: '25.2.0-alpha.7'
-pts_version: '25.0.0-alpha.13'
-etl_version: '25.0.0-alpha.6'
-gentropy_version: '2.2.0-rc.6'
+pis_version: '25.2.0'
+pts_version: '25.0.0'
+etl_version: '25.1.0-alpha.2'
+gentropy_version: '2.3.0-rc.1'
 vep_version: '2.2.0-rc.5'
 
 chembl_version: '35'
@@ -12,7 +12,7 @@ efo_version: '3.73.0'
 ensembl_version: '113'
 l2g_training: '2025-02'
 
-is_ppp: false
+is_ppp: true
 
 # Dependency graph
 # ----------------
@@ -46,6 +46,7 @@ steps:
   pis_l2g:
   pis_interaction:
   pis_literature:
+  pis_mouse_phenotype:
   pis_openfda:
   pis_otar:
     ppp_only: true
@@ -54,7 +55,6 @@ steps:
   pis_so:
   pis_target:
   pis_target_engine:
-  pis_target_validation:
 
   # PTS STEPS
   pts_disease:
@@ -108,10 +108,10 @@ steps:
     depends_on:
       - pis_interaction
       - etl_target
-  etl_target_validation:
+  etl_mouse_phenotype:
     depends_on:
       - etl_target
-      - pis_target_validation
+      - pis_mouse_phenotype
 
   etl_openfda:
     depends_on:

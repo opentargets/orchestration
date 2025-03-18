@@ -288,8 +288,8 @@ with DAG(
     # Note: labels are generated but not used yet, pending refactor of cluster
     #       management functions into operators.
     # ==============================================================================================
+    cluster_registry = ClusterRegistry(config.gentropy_dataproc_cluster_settings)
     if len(config.gentropy_step_list):
-        cluster_registry = ClusterRegistry(config.gentropy_dataproc_cluster_settings)
 
         @task_group(group_id="gentropy_stage")
         def gentropy_stage() -> None:
