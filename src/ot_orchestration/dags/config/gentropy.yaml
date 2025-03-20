@@ -222,7 +222,7 @@ steps:
       manifest_generator_specs:
         commands:
           - -c
-          - 'uv run gentropy'
+          - 'python cli.py'
         options:
           step: locus_to_gene
           step.session.write_mode: append

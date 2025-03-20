@@ -212,7 +212,7 @@ class FinemappingBatchOperator(CloudBatchSubmitJobOperator):
         return [
             "-c",
             (
-                "uv run gentropy "
+                "python cli.py "
                 "step=susie_finemapping "
                 f"step.study_index_path={self.study_index_path} "
                 f"step.study_locus_manifest_path={self.study_locus_manifest_path} "
