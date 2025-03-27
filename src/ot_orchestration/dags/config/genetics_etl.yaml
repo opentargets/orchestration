@@ -183,6 +183,22 @@ nodes:
       +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.memoryOverhead: '1g', spark.executor.cores: '4'}"
       step.session.write_mode: overwrite
 
+  - id: interval_index
+    prerequisites:
+      - variant_index
+    params:
+      step: interval_index
+      step.variant_index_path: '{release_dir}/variant_index'
+      step.target_index_path: '{target_index}'
+      step.interval_sources: {}
+      +step.interval_sources.andersson: gs://genetics_etl_python_playground/static_assets/andersson2014/enhancer_tss_associations.bed
+      +step.interval_sources.javierre: gs://genetics_etl_python_playground/static_assets/javierre_2016_preprocessed
+      +step.interval_sources.jung: gs://genetics_etl_python_playground/static_assets/jung2019_pchic_tableS3.csv
+      +step.interval_sources.thurman: gs://genetics_etl_python_playground/static_assets/thurman2012/genomewideCorrs_above0.7_promoterPlusMinus500kb_withGeneNames_32celltypeCategories.bed8.gz
+      step.interval_index_path: 'gs://genetics-portal-dev-analysis/xg1/L2G_intervals/Interval_index_2503'
+      step.liftover_chain_file_path: 'gs://genetics_etl_python_playground/static_assets/grch37_to_grch38.over.chain'
+      step.session.write_mode: overwrite
+
   - id: l2g_feature_matrix
     prerequisites:
       - colocalisation_coloc
