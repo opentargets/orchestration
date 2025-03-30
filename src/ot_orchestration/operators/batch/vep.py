@@ -39,6 +39,7 @@ class VepAnnotationPathManager:
             "input": GCSPath(vcf_input_path),
             "output": GCSPath(vep_output_path),
             "cache": GCSPath(vep_cache_path),
+            "index": GCSPath(vcf_input_path + ".tbi"),
         }
 
     @cached_property
@@ -152,9 +153,9 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
     def execute(self, context) -> dict:
         """Execute the operator."""
         vcf_files = self._get_vcf_partition_basenames(self.pm.paths["input"])
-        environments = [
-            {"INPUT_FILE": file, "OUTPUT_FILE": file.replace(".csv", ".json")}
-            for file in vcf_files
+        print(vcf_files)
+        environments = [{"INPUT_FILE": file, "OUTPUT_FILE": file.replace(".vcf.gz", ".json")} for file in vcf_files][
+            0:2
         ]
         run = context.get("params", {}).get("run_label", context.get("dag_run").run_id)
         self.labels.add({"run": run})
@@ -188,11 +189,7 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
 
         # Retrieve the job status
         _filter = f"name:projects/{self.project_id}/locations/{self.region}/jobs/{self.job_name}*"
-        jobs = list(
-            self.hook.list_jobs(
-                region=self.region, project_id=self.project_id, filter=_filter
-            )
-        )
+        jobs = list(self.hook.list_jobs(region=self.region, project_id=self.project_id, filter=_filter))
         if len(jobs) != 1:
             raise AirflowException(f"Found more then one job for id {self.job_name}")
 
@@ -218,7 +215,7 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
         """
         c = Client(project=self.project_id)
         b = c.bucket(bucket_name=input_path.bucket)
-        blobs = b.list_blobs(prefix=input_path.path, match_glob="**.csv")
+        blobs = b.list_blobs(prefix=input_path.path, match_glob="**.vcf.gz")
         vcf_paths = {Path(blob.name).name for blob in blobs}
         # FIXME: Apparently this operator logs are not appearing in the airflow UI.
         self.log.info("Found %s vcf files", len(vcf_paths))
@@ -234,6 +231,7 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
                 --cache \
                 --offline \
                 --format vcf \
+                --fork 16 \
                 --force_overwrite \
                 --no_stats \
                 --dir_cache {self.pm.cache_dir} \
