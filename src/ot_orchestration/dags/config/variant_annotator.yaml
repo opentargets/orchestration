@@ -7,14 +7,12 @@ environment_specs:
       release_dir: gs://open-targets-genetics-sequencing-data/data
 env: Staging
 
-
 dataproc:
   cluster_metadata:
     GENTROPY_REF: 'v{gentropy_ref}'
   cluster_name: seq-was
   autoscaling_policy: otg-etl
   idle_delete_ttl: 10800 # in seconds
-
 
 nodes:
   - id: variant_annotation
@@ -23,30 +21,30 @@ nodes:
       entrypoint: /bin/sh
       image: 'europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/custom_ensembl_vep:2.3.0-rc.2'
       resource_specs:
-        cpu_milli: 16000
-        memory_mib: 16000
+        cpu_milli: 32000
+        memory_mib: 32000
         boot_disk_mib: 10000
       task_specs:
         max_retry_count: 1
         max_run_duration: '2h'
       policy_specs:
-        machine_type: n2-highcpu-16
+        machine_type: n2-highcpu-32
     params:
       vep_cache_path: gs://genetics_etl_python_playground/vep/cache
-      vcf_input_path: '{release_dir}/vcf'
+      vcf_input_path: '{release_dir}/vcf2'
       vep_output_path: '{release_dir}/json_annotated'
 
-  # - id: variant_index
-  #   prerequisites: ["variant_annotation"]
-  #   params:
-  #     step: variant_index
-  #     step.session.write_mode: ignore
-  #     step.session.output_partitions: 200
-  #     # INPUTS
-  #     step.vep_output_json_path: '{release_dir}/harmonised_exome_annotated_variants'
-  #     step.variant_annotations_path:
-  #       - gs://gnomad_data_2/v4.1/variant_index
-  #     # step.amino_acid_change_annotations:
-  #     #   - gs://otar013-ppp/OTAR2081_foldx/foldx_variant_annotation
-  #     # OUTPUTS
-  #     step.variant_index_path: '{release_dir}/harmonised_exome_variant_index'
+# - id: variant_index
+#   prerequisites: ["variant_annotation"]
+#   params:
+#     step: variant_index
+#     step.session.write_mode: ignore
+#     step.session.output_partitions: 200
+#     # INPUTS
+#     step.vep_output_json_path: '{release_dir}/harmonised_exome_annotated_variants'
+#     step.variant_annotations_path:
+#       - gs://gnomad_data_2/v4.1/variant_index
+#     # step.amino_acid_change_annotations:
+#     #   - gs://otar013-ppp/OTAR2081_foldx/foldx_variant_annotation
+#     # OUTPUTS
+#     step.variant_index_path: '{release_dir}/harmonised_exome_variant_index'

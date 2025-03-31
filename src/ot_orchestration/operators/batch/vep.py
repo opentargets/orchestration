@@ -154,9 +154,7 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
         """Execute the operator."""
         vcf_files = self._get_vcf_partition_basenames(self.pm.paths["input"])
         print(vcf_files)
-        environments = [{"INPUT_FILE": file, "OUTPUT_FILE": file.replace(".vcf.gz", ".json")} for file in vcf_files][
-            0:2
-        ]
+        environments = [{"INPUT_FILE": file, "OUTPUT_FILE": file.replace(".vcf.gz", ".json")} for file in vcf_files]
         run = context.get("params", {}).get("run_label", context.get("dag_run").run_id)
         self.labels.add({"run": run})
 
