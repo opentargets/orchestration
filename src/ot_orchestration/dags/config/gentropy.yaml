@@ -1,15 +1,13 @@
 ---
-
 dataproc_cluster_settings:
-
-  - cluster_name: otg-etl
+  default:
     cluster_metadata:
       GENTROPY_REF: 'v{gentropy_version}'
     autoscaling_policy: otg-etl
     num_workers: 2
     idle_delete_ttl: 3600 # in seconds
 
-  - cluster_name: otg-etl-coloc
+  otg-etl-coloc:
     cluster_metadata:
       GENTROPY_REF: 'v{gentropy_version}'
     autoscaling_policy: otg-efm
@@ -19,10 +17,9 @@ dataproc_cluster_settings:
 
 steps:
   biosample:
-    cluster_name: otg-etl
     params:
       step: biosample_index
-      step.session.write_mode: ignore
+      step.session.write_mode: errorIfExists
       step.session.output_partitions: 1
       # INPUTS
       step.cell_ontology_input_path: '{release_uri}/input/biosample/cl.json'
@@ -32,10 +29,9 @@ steps:
       step.biosample_index_path: '{release_uri}/output/biosample'
 
   study:
-    cluster_name: otg-etl
     params:
       step: study_validation
-      step.session.write_mode: ignore
+      step.session.write_mode: errorIfExists
       step.session.output_partitions: 1
       step.invalid_qc_reasons:
         - UNRESOLVED_TARGET
@@ -60,13 +56,12 @@ steps:
       step.biosample_index_path: '{release_uri}/output/biosample'
       # OUTPUTS
       step.valid_study_index_path: '{release_uri}/output/study'
-      step.invalid_study_index_path: '{release_uri}/log/study_failed'
+      step.invalid_study_index_path: '{release_uri}/excluded/study'
 
   credible_set:
-    cluster_name: otg-etl
     params:
       step: credible_set_validation
-      step.session.write_mode: ignore
+      step.session.write_mode: errorIfExists
       step.session.output_partitions: 25
       step.invalid_qc_reasons:
         - DUPLICATED_STUDYLOCUS_ID
@@ -98,17 +93,43 @@ steps:
       step.target_index_path: '{release_uri}/output/target'
       # OUTPUTS
       step.valid_study_locus_path: '{release_uri}/output/credible_set'
-      step.invalid_study_locus_path: '{release_uri}/log/credible_set_failed'
+      step.invalid_study_locus_path: '{release_uri}/excluded/credible_set'
+
+  colocalisation_coloc:
+    cluster_type: otg-etl-coloc
+    params:
+      step: colocalisation
+      step.session.write_mode: errorIfExists
+      step.session.output_partitions: 25
+      step.colocalisation_method: Coloc
+      +step.colocalisation_method_params: '{priorc1: 1e-4, priorc2: 1e-4, priorc12: 1e-5}'
+      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.memoryOverhead: '1g', spark.executor.cores: '4'}"
+      # INPUTS
+      step.credible_set_path: '{release_uri}/output/credible_set'
+      # OUTPUTS
+      step.coloc_path: '{release_uri}/output/colocalisation'
+
+  colocalisation_ecaviar:
+    cluster_type: otg-etl-coloc
+    params:
+      step: colocalisation
+      step.session.write_mode: errorIfExists
+      step.session.output_partitions: 25
+      step.colocalisation_method: ECaviar
+      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.memoryOverhead: '1g', spark.executor.cores: '4'}"
+      # INPUTS
+      step.credible_set_path: '{release_uri}/output/credible_set'
+      # OUTPUTS
+      step.coloc_path: '{release_uri}/output/colocalisation'
 
   variant_partition:
-    cluster_name: otg-etl
     params:
       step: variant_to_vcf
       step.partition_size: 2_000 # approximate num of variants per partition!
-      step.session.write_mode: ignore
+      step.session.write_mode: errorIfExists
       # INPUTS
       step.source_paths:
-        - '{release_uri}/input/evidence/uniprot.json.gz'
+        - '{release_uri}/input/evidence/uniprot_variants.json.gz'
         - '{release_uri}/input/evidence/eva.json.gz'
         - '{release_uri}/input/pharmacogenomics/pharmacogenomics.json.gz'
         - '{release_uri}/output/credible_set'
@@ -141,53 +162,24 @@ steps:
       vep_output_path: '{release_uri}/intermediate/variant_annotation'
 
   variant:
-    cluster_name: otg-etl
     params:
       step: variant_index
-      step.session.write_mode: ignore
+      step.session.write_mode: errorIfExists
       step.session.output_partitions: 25
       # INPUTS
       step.vep_output_json_path: '{release_uri}/intermediate/variant_annotation'
       step.variant_annotations_path:
         - gs://gnomad_data_2/v4.1/variant_index
-      # - gs://otar013-ppp/OTAR2075_lof_curation/lof_curation_variant_annotations # PPP ONLY!
+        - gs://otar013-ppp/OTAR2075_lof_curation/lof_curation_variant_annotations # PPP ONLY!
       step.amino_acid_change_annotations:
         - gs://otar013-ppp/OTAR2081_foldx/foldx_variant_annotation
       # OUTPUTS
       step.variant_index_path: '{release_uri}/output/variant'
 
-  colocalisation_coloc:
-    cluster_name: otg-etl-coloc
-    params:
-      step: colocalisation
-      step.session.write_mode: ignore
-      step.session.output_partitions: 25
-      step.colocalisation_method: Coloc
-      +step.colocalisation_method_params: '{priorc1: 1e-4, priorc2: 1e-4, priorc12: 1e-5}'
-      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.memoryOverhead: '1g', spark.executor.cores: '4'}"
-      # INPUTS
-      step.credible_set_path: '{release_uri}/output/credible_set'
-      # OUTPUTS
-      step.coloc_path: '{release_uri}/output/colocalisation'
-
-  colocalisation_ecaviar:
-    cluster_name: otg-etl-coloc
-    params:
-      step: colocalisation
-      step.session.write_mode: ignore
-      step.session.output_partitions: 25
-      step.colocalisation_method: ECaviar
-      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.memoryOverhead: '1g', spark.executor.cores: '4'}"
-      # INPUTS
-      step.credible_set_path: '{release_uri}/output/credible_set'
-      # OUTPUTS
-      step.coloc_path: '{release_uri}/output/colocalisation'
-
   l2g_feature_matrix:
-    cluster_name: otg-etl
     params:
       step: locus_to_gene_feature_matrix
-      step.session.write_mode: ignore
+      step.session.write_mode: errorIfExists
       +step.session.extended_spark_conf: "{spark.sql.autoBroadcastJoinThreshold:'-1'}"
       # INPUTS
       step.credible_set_path: '{release_uri}/output/credible_set'
@@ -196,71 +188,50 @@ steps:
       step.study_index_path: '{release_uri}/output/study'
       step.target_index_path: '{release_uri}/output/target'
       # OUTPUTS
-      step.feature_matrix_path: '{release_uri}/output/l2g_feature_matrix'
+      step.feature_matrix_path: '{release_uri}/intermediate/l2g_feature_matrix'
 
   l2g_training:
-    cluster_name: otg-etl
     params:
       step: locus_to_gene
+      step.session.write_mode: errorIfExists
       step.run_mode: train
-      step.session.write_mode: ignore
-      +step.session.extended_spark_conf: "{spark.kryoserializer.buffer.max:500m, spark.sql.autoBroadcastJoinThreshold:'-1'}"
       step.wandb_run_name: '{l2g_training}'
       step.cross_validate: false
       step.hf_hub_repo_id: opentargets/locus_to_gene
       step.hf_model_commit_message: 'chore: update model base model for {l2g_training} run'
+      +step.session.extended_spark_conf: "{spark.kryoserializer.buffer.max:500m, spark.sql.autoBroadcastJoinThreshold:'-1'}"
       # INPUTS
       step.credible_set_path: '{release_uri}/output/credible_set'
       step.feature_matrix_path: '{release_uri}/intermediate/l2g_feature_matrix'
-      step.gold_standard_curation_path: '{release_uri}/inputs/l2g/gold_standard.json'
+      step.gold_standard_curation_path: '{release_uri}/input/l2g/gold_standard.json'
       # OUTPUTS
       step.model_path: '{release_uri}/etc/model/locus_to_gene_model/classifier.skops'
 
   l2g_prediction:
-    google_batch_index_specs:
-      manifest_generator_label: default
-      manifest_generator_specs:
-        commands:
-          - -c
-          - 'uv run gentropy'
-        options:
-          step: locus_to_gene
-          step.session.write_mode: append
-          step.run_mode: predict
-          step.session.output_partitions: 1
-          step.l2g_threshold: 0.05
-          step.download_from_hub: true
-          # INPUTS
-          step.hf_hub_repo_id: opentargets/locus_to_gene
-          step.feature_matrix_path: '{release_uri}/intermediate/l2g_feature_matrix'
-          step.credible_set_path: '$cs_partition' # The env value $cs_partition differs within each machine.
-          # OUTPUTS
-          step.predictions_path: '{release_uri}/output/l2g_prediction'
-        manifest_kwargs:
-          # Job partitioninig depends on the number of credible_set parquet files.
-          input_glob: '{release_uri}/output/credible_set/**.parquet'
-    google_batch:
-      entrypoint: /bin/sh
-      image: 'europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/ot_gentropy:{gentropy_image_version}'
-      resource_specs:
-        cpu_milli: 2000
-        memory_mib: 7000
-        boot_disk_mib: 4000
-      task_specs:
-        max_retry_count: 0
-        max_run_duration: "1h"
-      policy_specs:
-        machine_type: n1-standard-2
+    params:
+      step: locus_to_gene
+      step.run_mode: predict
+      step.session.write_mode: errorIfExists
+      step.session.output_partitions: 1
+      step.l2g_threshold: 0.05
+      step.download_from_hub: true
+      step.explain_predictions: true
+      +step.session.extended_spark_conf: "{spark.rpc.message.maxSize:'1024'}"
+      # INPUTS
+      step.hf_hub_repo_id: opentargets/locus_to_gene
+      step.feature_matrix_path: '{release_uri}/intermediate/l2g_feature_matrix'
+      step.credible_set_path: '{release_uri}/output/credible_set'
+      # OUTPUTS
+      step.predictions_path: '{release_uri}/output/l2g_prediction'
 
   l2g_evidence:
-    cluster_name: otg-etl
     params:
       step: locus_to_gene_evidence
-      step.session.write_mode: ignore
+      step.session.write_mode: errorIfExists
       step.locus_to_gene_threshold: 0.05
       # INPUTS
       step.credible_set_path: '{release_uri}/output/credible_set'
       step.locus_to_gene_predictions_path: '{release_uri}/output/l2g_prediction'
-      step.study_index_path: '{release_uri}/output/study_index'
+      step.study_index_path: '{release_uri}/output/study'
       # OUTPUTS
-      step.evidence_output_path: '{release_uri}/intermediate/evidence/gentropy'
+      step.evidence_output_path: '{release_uri}/intermediate/evidence/l2g_evidence'

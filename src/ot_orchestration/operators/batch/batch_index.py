@@ -56,6 +56,7 @@ class BatchEnvironments:
             logging.warning("Can not create Batch environments from empty variable list, skipping")
             raise AirflowSkipException("Can not create Batch environments from empty variable list")
         environments = create_task_env(self.vars_list)
+        print(f"{environments=}")
         return environments
 
     def serialize(self) -> BatchEnvironmentsSerialized:
