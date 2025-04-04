@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 from airflow.providers.google.cloud.operators.dataproc import (
     DataprocCreateClusterOperator,
@@ -15,60 +16,42 @@ from ot_orchestration.utils.utils import create_cluster_name
 
 @dataclass
 class Cluster:
-    """Box class to store the tasks to build the dataproc cluster and the reference to it's name."""
+    """Stores the cluster name and management methods."""
 
+    name: str
     create: DataprocCreateClusterOperator
     delete: DataprocDeleteClusterOperator
-    name: str
 
 
 class ClusterRegistry:
-    """CLuster registry object.
+    """A map from cluster type to a cluster object."""
 
-    This registry allows to build a dictionary of DataprocClusterOperator tasks:
-     -  `DataprocCreateClusterOperator`
-     -  `DataprocDeleteClusterOperator`
-    """
-
-    def __init__(self):
+    def __init__(self, clusters: dict[str, dict[str, Any]]):
+        self.cluster_types = clusters
         self.clusters: dict[str, Cluster] = {}
 
-    def _add_cluster(self, cluster_settings: dict):
-        """Method to add cluster tasks to the cluster registry.
-
-        The original name of the cluster - `cluster_name` is used as a key for the registry,
-        the actual `cluster_name` is defined at a runtime with the `clean_cluster_name` function.
-        """
-        cluster_name = cluster_settings["cluster_name"]
-        if not self.clusters.get(cluster_name):
-            clean_name = create_cluster_name(cluster_name)
-            cluster_settings.update({"cluster_name": clean_name})
-            c = create_cluster(
-                task_id=f"create_{cluster_name}",
+    def _add_cluster(self, cluster_type: str) -> Cluster:
+        """Add a cluster to the registry."""
+        name = create_cluster_name(f"gentropy_{cluster_type}")
+        self.clusters[cluster_type] = Cluster(
+            name=name,
+            create=create_cluster(
+                task_id=f"create_cluster_{cluster_type}",
+                cluster_name=name,
                 project_id=GCP_PROJECT_PLATFORM,
-                **cluster_settings,
-            )
-            d = delete_cluster(
-                task_id=f"delete_{cluster_name}",
-                cluster_name=clean_name,
+                **self.cluster_types[cluster_type],
+            ),
+            delete=delete_cluster(
+                task_id=f"delete_cluster_{cluster_type}",
+                cluster_name=name,
                 project_id=GCP_PROJECT_PLATFORM,
-            )
-            self.clusters[cluster_name] = Cluster(create=c, delete=d, name=clean_name)
-        return self
+            ),
+        )
+        return self.clusters[cluster_type]
 
-    @classmethod
-    def from_dataproc_cluster_settings(cls, dataproc_cluster_settings: list[dict]) -> ClusterRegistry:
-        """Build the cluster registry directly from the unified pipeline configuration.
-
-        Args:
-            dataproc_cluster_settings (list[dict]): reference to the unified pipeline configuration.
-
-        Returns:
-            ClusterRegistry: the registry with clusters defined in the dataproc_cluster_settings
-
-
-        """
-        registry = cls()
-        for cluster_settings in dataproc_cluster_settings:
-            registry._add_cluster(cluster_settings)
-        return registry
+    def get_cluster(self, step_config: dict[str, Any]) -> Cluster:
+        """Get the cluster for the given step configuration."""
+        cluster_type = step_config.get("cluster_type", "default")
+        if cluster_type not in self.clusters:
+            return self._add_cluster(cluster_type)
+        return self.clusters[cluster_type]

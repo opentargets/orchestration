@@ -14,13 +14,12 @@ from ot_orchestration.utils import GCSPath
 from ot_orchestration.utils.common import GCP_PROJECT_PLATFORM
 
 
-class PISDiffComputeOperator(BaseBranchOperator):
-    """Custom operator that decides whether to run a PIS step or not.
+class DiffComputeOperator(BaseBranchOperator):
+    """Custom operator that decides whether to run a step or not.
 
-    At the moment, this operator will check the parts of the PIS configuration
-    that are relevant to the current step, comparing them against the copy in the
-    specified bucket. If they are different, that means the step should be
-    run.
+    At the moment, this operator will check the parts of the configuration that
+    are relevant to the current step, comparing them against the copy in the
+    specified bucket. If they are different, that means the step should be run.
 
     It would be interesting add a check that downloads the manifest from the
     specified bucket and compares the resources listed for the step with the
@@ -29,12 +28,14 @@ class PISDiffComputeOperator(BaseBranchOperator):
 
     Args:
         project_id: The GCP project ID. Defaults to the platform project.
-        step_name: The name of the PIS step to check.
-        local_config: The local configuration.
-        remote_config_uri: The GCS URI of the remote configuration file.
+        stage_name: The name of the stage.
+        step_name: The name of the step.
+        step to check. local_config: The local configuration. remote_config_uri:
+        The GCS URI of the remote configuration file.
     """
 
     template_fields: Sequence[str] = (
+        "stage_name",
         "step_name",
         "local_config",
         "remote_config_uri",
@@ -44,12 +45,14 @@ class PISDiffComputeOperator(BaseBranchOperator):
         self,
         *args,
         project_id: str = GCP_PROJECT_PLATFORM,
+        stage_name: str,
         step_name: str,
         local_config: dict[str, Any],
         remote_config_uri: str,
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
+        self.stage_name = stage_name
         self.step_name = step_name
         self.project_id = project_id
         self.local_config = local_config
@@ -66,13 +69,15 @@ class PISDiffComputeOperator(BaseBranchOperator):
 
     def extract_relevant_config(self, config: dict[str, Any]) -> dict[str, Any]:
         """Get the relevant part of the configuration for the current step."""
+        step_name = self.step_name.replace(f"{self.stage_name}_", "")
         return {
+            # TODO: All the config should be compared in here, not just the scratchpad and step
             "scratchpad": config.get("scratchpad", None),
-            "step": config.get("steps", {}).get(self.step_name.replace("pis_", ""), None),
+            "step": config.get("steps", {}).get(self.step_name.replace(step_name, ""), None),
         }
 
     def choose_branch(self, context: Context) -> str | Iterable[str]:
-        """Decide whether to run the current PIS step or not."""
+        """Decide whether to run the current step or not."""
         remote_config = {}
 
         try:
@@ -93,7 +98,7 @@ class PISDiffComputeOperator(BaseBranchOperator):
 
         if should_run:
             self.log.info("configuration differs, step %s will run", self.step_name)
-            return f"pis_stage.{self.step_name}.upload_config_{self.step_name}"
+            return f"{self.stage_name}_stage.{self.step_name}.upload_config_{self.step_name}"
 
         self.log.info("configuration is equal, step %s will not run", self.step_name)
-        return f"pis_stage.{self.step_name}.join_{self.step_name}"
+        return f"{self.stage_name}_stage.{self.step_name}.join_{self.step_name}"
