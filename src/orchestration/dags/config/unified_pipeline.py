@@ -38,12 +38,9 @@ class UnifiedPipelineConfig:
         # become more dynamic. Just add them to self in the initialization so they
         # are available.
 
-        # fmt: off
-        # The service account and scopes to use (only used by PIS so far).
         # The drive scope is needed to download spreadsheets from Google Drive
         # for the PIS otar step.
-        self.service_account = "platform-input-support@open-targets-eu-dev.iam.gserviceaccount.com"  # fmt: skip
-        self.service_account_scopes = ["https://www.googleapis.com/auth/drive"]
+        self.service_account_extra_scopes = ["https://www.googleapis.com/auth/drive"]
 
         # Pipeline settings.
         settings = read_yaml_config(self.config_path)
