@@ -132,14 +132,7 @@ class CloudLoggingHook(GoogleBaseHook):
 
     Args:
         gcp_conn_id: The connection ID to use when connecting to Google Cloud.
-        impersonation_chain: Optional service account to impersonate using short-term
-            credentials, or chained list of accounts required to get the access_token
-            of the last account in the list, which will be impersonated in the request.
-            If set as a string, the account must grant the originating account the
-            Service Account Token Creator IAM role.
-            If set as a sequence, the identities from the list must grant Service Account
-            Token Creator IAM role to the directly preceding identity, with first account
-            from the list granting this role to the originating account.
+        impersonation_chain: Optional service account or chain to impersonate.
     """
 
     def __init__(
@@ -160,6 +153,7 @@ class CloudLoggingHook(GoogleBaseHook):
         if self._client is None:
             self._client = RateLimitedLoggingClient(
                 log=self.log,
+                project=self.project_id,
                 credentials=self.get_credentials(),
                 client_info=CLIENT_INFO,
             )
@@ -171,14 +165,7 @@ class CloudLoggingAsyncHook(GoogleBaseHook):
 
     Args:
         gcp_conn_id: The connection ID to use when connecting to Google Cloud.
-        impersonation_chain: Optional service account to impersonate using short-term
-            credentials, or chained list of accounts required to get the access_token
-            of the last account in the list, which will be impersonated in the request.
-            If set as a string, the account must grant the originating account the
-            Service Account Token Creator IAM role.
-            If set as a sequence, the identities from the list must grant Service Account
-            Token Creator IAM role to the directly preceding identity, with first account
-            from the list granting this role to the originating account.
+        impersonation_chain: Optional service account or chain to impersonate.
     """
 
     def __init__(
@@ -299,7 +286,6 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
         container_command: Command to run inside the container (optional).
         container_args: Arguments to pass to the container (optional).
         container_env: Environment variables to pass to the container (optional).
-        container_service_account: Service account to use for the instance (default default).
         container_scopes: A list of extra scopes to add to the service account if any are needed.
         container_files: Files to copy to the instance (optional). This is a dictionary where
             the key is a GCS path in the form `gs://bucket/path/to/file` and the value is the path
@@ -314,14 +300,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
             be formatted with ext4 and mounted under `/mnt/disks/work`. The instance will have write
             permissions to the disk. The disk will be deleted when the instance is deleted.
         gcp_conn_id: The connection ID to use when connecting to Google Cloud.
-        impersonation_chain: Optional service account to impersonate using short-term
-            credentials, or chained list of accounts required to get the access_token
-            of the last account in the list, which will be impersonated in the request.
-            If set as a string, the account must grant the originating account the
-            Service Account Token Creator IAM role.
-            If set as a sequence, the identities from the list must grant Service Account
-            Token Creator IAM role to the directly preceding identity, with first account
-            from the list granting this role to the originating account.
+        impersonation_chain: Optional service account or chain to impersonate.
         deferrable: If True, run the sensor in deferrable mode.
         poll_interval: Time (seconds) to wait between checks for the job status.
     """
@@ -347,7 +326,6 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
         container_command: str = "",
         container_args: list[str] | None = None,
         container_env: dict[str, str] | None = None,
-        container_service_account: str = "default",
         container_scopes: list[str] | None = None,
         container_files: dict[str, str] | None = None,
         machine_type: str = "n1-standard-16",
@@ -367,7 +345,6 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
         self.container_command = container_command
         self.container_args = container_args
         self.container_env = container_env
-        self.container_service_account = container_service_account
         self.container_scopes = container_scopes or []
         self.container_files = container_files or {}
         self.machine_type = machine_type
@@ -387,7 +364,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
         """Build the volume parameters for the docker run command."""
         if self.container_files == {}:
             return "\\"
-        vs = [f"    -v /home/app/{p}:{p} \\" for p in self.container_files.values()]
+        vs = [f"    -v /home/app/{p.lstrip('/')}:{p} \\" for p in self.container_files.values()]
         if self.work_disk_size_gb:
             vs.append("    -v /mnt/disks/work:/mnt/disks/work \\")
         return ("\n").join(vs)
@@ -486,6 +463,22 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
 
         disks = [boot_disk, work_disk] if self.work_disk_size_gb else [boot_disk]
 
+        # Decide which service account to use. To honor the impersonation chain,
+        # we need to get the last service account in the chain. If there is nothing,
+        # we use the default service account.
+        service_account_email = "default"
+        try:
+            service_account_email = self.hook._get_credentials_email
+        except Exception:
+            self.log.warning("Failed to get the service account email from the credentials.")
+        self.log.info(f"using service account {service_account_email} for the instance creation")
+        if self.impersonation_chain:
+            if isinstance(self.impersonation_chain, str):
+                service_account_email = self.impersonation_chain.split(",")[-1]
+            elif isinstance(self.impersonation_chain, Sequence):
+                service_account_email = self.impersonation_chain[-1]
+            self.log.info(f"using service account {service_account_email} from the impersonation chain")
+
         return compute_v1.Instance(
             name=self.instance_name,
             description="unified pipeline runner instance",
@@ -520,7 +513,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
             ],
             service_accounts=[
                 types.ServiceAccount(
-                    email=self.container_service_account or "default",
+                    email=service_account_email,
                     scopes=([
                         "https://www.googleapis.com/auth/cloud-platform",
                         "https://www.googleapis.com/auth/devstorage.full_control",
@@ -576,6 +569,13 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
 
     def execute(self, context: Context):
         """Set up and execute the sensor, then start the trigger."""
+        # Try to extract the impersonation chain and project from the connection
+        conn = self.hook.get_connection(self.gcp_conn_id)
+        impersonation_chain = conn.extra_dejson.get("impersonation_chain")
+        if impersonation_chain:
+            self.log.info(f"setting impersonation_chain from connection: {impersonation_chain}")
+            self.impersonation_chain = impersonation_chain
+
         dag_run = context.get("dag_run")
         if dag_run:
             default_run_label = dag_run.run_id
@@ -638,14 +638,7 @@ class ComputeEngineExitCodeTrigger(BaseTrigger):
             If set to None or missing, the default project_id from the Google Cloud connection is used.
         zone: The zone of the VM (for example europe-west1-b).
         gcp_conn_id: The connection ID to use when connecting to Google Cloud.
-        impersonation_chain: Optional service account to impersonate using short-term
-            credentials, or chained list of accounts required to get the access_token
-            of the last account in the list, which will be impersonated in the request.
-            If set as a string, the account must grant the originating account the
-            Service Account Token Creator IAM role.
-            If set as a sequence, the identities from the list must grant Service Account
-            Token Creator IAM role to the directly preceding identity, with first account
-            from the list granting this role to the originating account.
+        impersonation_chain: Optional service account or chain to impersonate.
         poll_sleep: Time (seconds) to wait between two consecutive checks.
     """
 

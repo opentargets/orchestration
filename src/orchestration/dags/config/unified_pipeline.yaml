@@ -1,5 +1,5 @@
 ---
-release_name: 'partners/25.03'
+release_name: 'tests/25.06'
 
 pis_version: '25.2.0'
 pts_version: '25.0.0'

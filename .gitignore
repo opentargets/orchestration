@@ -15,5 +15,10 @@ htmlcov
 .cache
 .coverage
 
+# terraform
+.terraform
+terraform.tfstate*
+plan.out
+
 # airflow logs
 logs
