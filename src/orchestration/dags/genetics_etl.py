@@ -12,17 +12,9 @@ from airflow.utils.task_group import TaskGroup
 
 from orchestration.operators.batch.vep import VepAnnotateOperator
 from orchestration.types import Environment, EnvironmentSpec
-from orchestration.utils import (
-    chain_dependencies,
-    find_environment_vars,
-    find_node_in_config,
-    read_yaml_config,
-)
+from orchestration.utils import chain_dependencies, find_environment_vars, find_node_in_config, read_yaml_config
 from orchestration.utils.common import shared_dag_args, shared_dag_kwargs
-from orchestration.utils.dataproc import (
-    generate_dataproc_task_chain,
-    submit_gentropy_step,
-)
+from orchestration.utils.dataproc import generate_dataproc_task_chain, submit_gentropy_step
 from orchestration.utils.labels import GentropyDagLabels
 
 SOURCE_CONFIG_FILE_PATH = Path(__file__).parent / "config" / "genetics_etl.yaml"

@@ -3,8 +3,8 @@ name = "orchestration"
 version = "1.0.0"
 description = "Open Targets Data Pipeline Orchestration"
 authors = [
-  { name = "Open Targets Core Team", email = "devs@opentargets.net" },
-  { name = "Szymon Szyszkowski", email = "ss60@sanger.ac.uk" },
+    { name = "Open Targets Core Team", email = "devs@opentargets.net" },
+    { name = "Szymon Szyszkowski", email = "ss60@sanger.ac.uk" },
 ]
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
@@ -20,6 +20,12 @@ dependencies = [
     "apache-airflow-providers-apache-beam==6.0.3",
 ]
 
+[project.optional-dependencies]
+test = ["pytest==8.3.5"]
+
+[dependency-groups]
+dev = ["deptry==0.23.0", "pre-commit==4.2.0", "ruff==0.11.4"]
+
 [project.scripts]
 orchestration = "orchestration:main"
 
@@ -27,26 +33,74 @@ orchestration = "orchestration:main"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[dependency-groups]
-dev = ["deptry==0.23.0", "pre-commit==4.2.0", "ruff==0.11.4"]
-
-[project.optional-dependencies]
-test = ["pytest==8.3.5"]
-
 [tool.deptry]
+known_first_party = ["orchestration"]
 pep621_dev_dependency_groups = ["test"]
+
 
 [tool.deptry.per_rule_ignores]
 DEP002 = ["psycopg2-binary"]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
 [tool.ruff]
+target-version = 'py312'
 line-length = 120
+preview = true
 
 [tool.ruff.lint]
-select = ["D", "I", "E"]
+select = [
+    "D",
+    'E',      # pycodestyle
+    'I',      # isort
+    'F',      # pyflakes
+    'N',      # pep8-naming
+    'Q',      # flake8-quotes
+    'RUF',    # ruff
+    'PERF',   # perflint
+    'UP',     # pyupgrade
+    'W',      # pycodestyle
+    'D',      # pydocstyle
+    'PL',     # pylint
+    'TRY',    # tryceratops
+    'FURB',   # refurb
+    'S',      # flake8-bandit
+    'B',      # flake8-bugbear
+    'A001',   # flake8-builtins
+    'COM',    # flake8-commas
+    'C4',     # flake8-comprehensions
+    'T10',    # flake8-debugger
+    'D212',   # flake8-docstrings
+    'EXE',    # flake8-executable
+    'INT',    # flake8-gettext
+    'ISC',    # flake8-implicit-str-concat
+    'ICN001', # flake8-import-conventions
+    'LOG',    # flake8-logging
+    'G',      # flake8-logging-format
+    'PIE',    # flake8-pie
+    'PT',     # flake8-pytest-style
+    'RSE',    # flake8-raise
+    'RET504', # flake8-return
+    'SIM',    # flake8-simplify
+    'TID',    # flake8-tidy-imports
+    'T20',    # flake8-todo
+]
+
 ignore = [
-    "E501",    # Line too long
-    "E731",    # Do not assign a lambda expression, use a def
+    'B011',    # we don't run python with `-O` (also see S101)
+    'B904',    # possibly useful but too noisy
+    'COM812',  # trailing commas on multiline lists are nice, but we have 2.5k violations
+    'D1',      # allow lax documentation
+    "D101",    # missing docstring in public class
+    "D107",    # Ignore missing docstring in __init__
+    'D213',    # we prefer D212
+    'E226',    # allow omitting whitespace around arithmetic operators
+    "E501",    # allow long lines for now
+    'E731',    # allow assigning lambdas (it's useful for single-line functions defined inside other functions)
+    'FURB113', # less readable
+    'FURB140', # less readable and actually slower in 3.12+
+    'G004',    # we don't care about logging format
     "PLC0208", # Use a sequence type instead of a `set` when iterating over values
     "PLR0911", # Too many return statements ({returns} > {max_returns})
     "PLR0912", # Too many branches ({branches} > {max_branches})
@@ -54,15 +108,74 @@ ignore = [
     "PLR0915", # Too many statements ({statements} > {max_statements})
     "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
     "PLW2901", # Outer {outer_kind} variable {name} overwritten by inner {inner_kind} target
+    'RUF012',  # ultra-noisy and dicts in classvars are very common
+    'RUF015',  # not always more readable
+    'S101',    # we use asserts outside tests, and do not run python with `-O` (also see B011)
+    'S311',    # false positives, it does not care about the context
+    'S324',    # all our md5/sha1 usages are for non-security purposes
+    'S404',    # useless, triggers on *all* subprocess imports
+    'S403',    # there's already a warning on using pickle, no need to have one for the import
+    'S405',    # we don't use lxml in unsafe ways
+    'S603',    # useless, triggers on *all* subprocess calls: https://github.com/astral-sh/ruff/issues/4045
+    'S607',    # we trust the PATH to be sane
+    'PERF203', # noisy, false positives, and not applicable for 3.11+
+    'PIE807',  # `lambda: []` is much clearer for `load_default` in schemas
+    'PLC0415', # local imports are there for a reason
+    'PLC2701', # some private imports are needed
+    'PLR09',   # too-many-<whatever> is just noisy
+    'PLR0913', # very noisy
+    'PLR2004', # extremely noisy and generally annoying
+    'PLR6201', # sets are faster (by a factor of 10!) but it's noisy and we're in nanoseconds territory
+    'PLR6301', # extremely noisy and generally annoying
+    'PLW0108', # a lambda often makes it more clear what you actually want
+    'PLW1510', # we often do not care about the status code of commands
+    'PLW1514', # we expect UTF8 environments everywhere
+    'PLW1641', # false positives with SA comparator classes
+    'PLW2901', # noisy and reassigning to the loop var is usually intentional
+    'PT011',   # very noisy
+    'PT015',   # nice for tests but not so nice elsewhere
+    'PT018',   # ^ likewise
+    'S301',    # we trust our pickled data
+    'SIM102',  # sometimes nested ifs are more readable
+    'SIM103',  # sometimes this is more readable (especially when checking multiple conditions)
+    'SIM105',  # try-except-pass is faster and people are used to it
+    'SIM108',  # noisy ternary
+    'SIM114',  # sometimes separate ifs are more readable (especially if they just return a bool)
+    'SIM117',  # nested context managers may be more readable
+    'TRY002',  # super noisy, and those exceptions are pretty exceptional anyway
+    'TRY003',  # super noisy
+    'TRY300',  # kind of strange in many cases
+    'TRY301',  # sometimes doing that is actually useful
+    'TRY400',  # not all exceptions need exception logging
     "UP006",   # keep type annotation style as is
     "UP007",   # keep type annotation style as is
-    "UP038",   # Use `X | Y` in `isinstance` call instead of `(X, Y)`
-    "D107",    # Ignore missing docstring in __init__
-    "D101",    # Missing docstring in public class
+    'UP038',   # it looks kind of weird and it slower than a tuple
+]
+
+extend-safe-fixes = [
+    'C4',      # they seem pretty safe
+    'D200',    # ^ likewise
+    'D400',    # ^ likewise
+    'PERF102', # ^ likewise
+    'PT014',   # duplicate test case parametrizations are never intentional
+    'RET504',  # looks pretty safe
+    'RSE102',  # we do not use `raise func()` (with `func` returning the exception instance)
+    'RUF005',  # we typically don't deal with objects overriding `__add__` or `__radd__`
+    'SIM110',  # looks pretty safe
+    'UP008',   # ^ likewise
 ]
 
 [tool.ruff.lint.flake8-quotes]
-docstring-quotes = "double"
+multiline-quotes = 'double'
+docstring-quotes = 'double'
+avoid-escape = true
+
+[tool.ruff.lint.flake8-pytest-style]
+fixture-parentheses = false
+mark-parentheses = false
+parametrize-names-type = 'tuple'
+parametrize-values-type = 'list'
+parametrize-values-row-type = 'tuple'
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

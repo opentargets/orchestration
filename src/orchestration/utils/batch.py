@@ -16,22 +16,12 @@ from google.cloud.batch_v1 import (
     Volume,
 )
 
-from orchestration.types import (
-    BatchPolicySpecs,
-    BatchResourceSpecs,
-    BatchTaskSpecs,
-    GCSMountObject,
-)
-from orchestration.utils import (
-    convert_params_to_hydra_positional_arg,
-    time_to_seconds,
-)
+from orchestration.types import BatchPolicySpecs, BatchResourceSpecs, BatchTaskSpecs, GCSMountObject
+from orchestration.utils import convert_params_to_hydra_positional_arg, time_to_seconds
 from orchestration.utils.labels import Labels
 
 
-def create_container_runnable(
-    image: str, *, commands: list[str], **kwargs: Any
-) -> Runnable:
+def create_container_runnable(image: str, *, commands: list[str], **kwargs: Any) -> Runnable:
     """Create a container runnable for a Batch job with additional optional parameters.
 
     Args:
@@ -42,10 +32,7 @@ def create_container_runnable(
     Returns:
         Runnable: The container runnable.
     """
-    runnable = Runnable(
-        container=Runnable.Container(image_uri=image, commands=commands, **kwargs)
-    )
-    return runnable
+    return Runnable(container=Runnable.Container(image_uri=image, commands=commands, **kwargs))
 
 
 def create_task_spec(
@@ -82,9 +69,7 @@ def create_task_spec(
     }
     if lifecycle_policies:
         parameters["lifecycle_policies"] = lifecycle_policies
-    task = TaskSpec(**parameters)
-
-    return task
+    return TaskSpec(**parameters)
 
 
 def set_up_mounting_points(
@@ -130,7 +115,7 @@ def create_batch_job(
     if mounting_points:
         task.volumes = set_up_mounting_points(mounting_points)
 
-    job = Job(
+    return Job(
         task_groups=[TaskGroup(task_spec=task, task_environments=task_env)],
         allocation_policy=AllocationPolicy(
             instances=[
@@ -146,18 +131,13 @@ def create_batch_job(
         logs_policy=LogsPolicy(destination=LogsPolicy.Destination.CLOUD_LOGGING),
     )
 
-    return job
-
 
 def create_task_env(var_list: list[dict[str, str]]):
     """This function creates list of batch_v1.Environment objects from provided list of dictionaries."""
-    environments = [Environment(variables=variables) for variables in var_list]
-    return environments
+    return [Environment(variables=variables) for variables in var_list]
 
 
-def create_task_commands(
-    commands: list[str] | None, params: dict[str, str] | None
-) -> list[str]:
+def create_task_commands(commands: list[str] | None, params: dict[str, str] | None) -> list[str]:
     """This function prepares list of commands for google batch job from the step configuration."""
     task_commands = []
     args: list[str] = []

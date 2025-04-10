@@ -168,19 +168,14 @@ def chain_dependencies(nodes: list[ConfigNode], tasks_or_task_groups: dict[str, 
 
     """
     if nodes:
-        node_dependencies = {
-            node["id"]: node.get("prerequisites", []) for node in nodes
-        }
+        node_dependencies = {node["id"]: node.get("prerequisites", []) for node in nodes}
         for label, node in tasks_or_task_groups.items():
-            print(node_dependencies)
             for dependency in node_dependencies[label]:
                 if dependency in tasks_or_task_groups:
                     node.set_upstream(tasks_or_task_groups[dependency])
 
 
-def convert_params_to_hydra_positional_arg(
-    params: dict[str, Any] | None, dataproc: bool = False
-) -> list[str]:
+def convert_params_to_hydra_positional_arg(params: dict[str, Any] | None, dataproc: bool = False) -> list[str]:
     """Convert configuration parameters to form that can be passed to hydra step positional arguments.
 
     This function parses to get the overwrite syntax used by hydra.
@@ -219,9 +214,7 @@ def find_node_in_config(config: list[ConfigNode], node_id: str) -> ConfigNode | 
     return None
 
 
-def find_environment_vars(
-    env_spec: list[EnvironmentSpec], env: Environment
-) -> dict[str, str]:
+def find_environment_vars(env_spec: list[EnvironmentSpec], env: Environment) -> dict[str, str]:
     """Get the environment variables for a given environment."""
     for spec in env_spec:
         if spec["name"] == env:

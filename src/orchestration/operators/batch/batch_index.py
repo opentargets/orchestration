@@ -10,6 +10,8 @@ from google.cloud.batch import Environment
 
 from orchestration.utils.batch import create_task_commands, create_task_env
 
+logger = logging.getLogger(__name__)
+
 
 class BatchCommandsSerialized(TypedDict):
     options: dict[str, str]
@@ -27,13 +29,12 @@ class BatchCommands:
 
     def construct(self) -> list[str]:
         """Construct Batch commands from mapping."""
-        logging.info(
+        logger.info(
             "Constructing batch task commands from commands: %s and options: %s",
             self.commands,
             self.options,
         )
-        commands = create_task_commands(self.commands, self.options)
-        return commands
+        return create_task_commands(self.commands, self.options)
 
     def serialize(self) -> BatchCommandsSerialized:
         """Serialize batch commands."""
@@ -51,19 +52,11 @@ class BatchEnvironments:
 
     def construct(self) -> list[Environment]:
         """Construct Batch Environment from list of mappings."""
-        logging.info(
-            "Constructing batch environments from vars_list: %s", self.vars_list
-        )
+        logger.info("Constructing batch environments from vars_list: %s", self.vars_list)
         if not self.vars_list:
-            logging.warning(
-                "Can not create Batch environments from empty variable list, skipping"
-            )
-            raise AirflowSkipException(
-                "Can not create Batch environments from empty variable list"
-            )
-        environments = create_task_env(self.vars_list)
-        print(f"{environments=}")
-        return environments
+            logger.warning("Can not create Batch environments from empty variable list, skipping")
+            raise AirflowSkipException("Can not create Batch environments from empty variable list")
+        return create_task_env(self.vars_list)
 
     def serialize(self) -> BatchEnvironmentsSerialized:
         """Serialize batch environments."""
@@ -104,11 +97,11 @@ class BatchIndex:
         """Partition batch index by N chunks taking into account max_task_count as an upper limit of tasks in chunk."""
         if not self.vars_list:
             msg = "BatchIndex can not partition variable list, as list is empty."
-            logging.warning(msg)
+            logger.warning(msg)
             return self
 
         if max_task_count > len(self.vars_list):
-            logging.warning(
+            logger.warning(
                 "BatchIndex will use only one partition due to size of the dataset being smaller then max_task_count %s < %s",
                 len(self.vars_list),
                 max_task_count,
@@ -119,7 +112,7 @@ class BatchIndex:
             batch = self.vars_list[i : i + max_task_count]
             self.vars_batches.append(BatchEnvironmentsSerialized(vars_list=batch))
 
-        logging.info("Created %s task list batches.", len(self.vars_batches))
+        logger.info("Created %s task list batches.", len(self.vars_batches))
 
         return self
 
@@ -127,23 +120,17 @@ class BatchIndex:
     def rows(self) -> list[BatchIndexRow]:
         """Create the master manifest that will gather the information needed to create batch Environments."""
         rows: list[BatchIndexRow] = []
-        logging.info("Preparing BatchIndexRows. Each row represents a batch job.")
+        logger.info("Preparing BatchIndexRows. Each row represents a batch job.")
         for idx, batch in enumerate(self.vars_batches):
-            rows.append(
-                {
-                    "idx": idx + 1,
-                    "command": BatchCommandsSerialized(
-                        options=self.options, commands=self.commands
-                    ),
-                    "environment": batch,
-                }
-            )
+            rows.append({
+                "idx": idx + 1,
+                "command": BatchCommandsSerialized(options=self.options, commands=self.commands),
+                "environment": batch,
+            })
 
-        logging.info("Prepared %s BatchIndexRows", len(rows))
+        logger.info("Prepared %s BatchIndexRows", len(rows))
         if not rows:
-            raise AirflowSkipException(
-                "Empty BatchIndexRows will not allow to create batch task. Skipping downstream"
-            )
+            raise AirflowSkipException("Empty BatchIndexRows will not allow to create batch task. Skipping downstream")
         return rows
 
     def __repr__(self) -> str:

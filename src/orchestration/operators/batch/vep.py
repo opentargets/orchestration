@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from functools import cached_property
 from pathlib import Path
-from typing import Sequence, Set
 
 from airflow.exceptions import AirflowException
 from airflow.providers.google.cloud.hooks.cloud_batch import CloudBatchHook
@@ -14,11 +14,7 @@ from google.cloud.batch_v1 import Job
 from google.cloud.storage import Client
 
 from orchestration.types import GCSMountObject, GoogleBatchSpecs
-from orchestration.utils.batch import (
-    create_batch_job,
-    create_task_env,
-    create_task_spec,
-)
+from orchestration.utils.batch import create_batch_job, create_task_env, create_task_spec
 from orchestration.utils.common import GCP_PROJECT_GENETICS, GCP_REGION
 from orchestration.utils.labels import Labels
 from orchestration.utils.path import GCSPath
@@ -152,10 +148,7 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
     def execute(self, context) -> dict:
         """Execute the operator."""
         vcf_files = self._get_vcf_partition_basenames(self.pm.paths["input"])
-        environments = [
-            {"INPUT_FILE": file, "OUTPUT_FILE": file.replace(".csv", ".json")}
-            for file in vcf_files
-        ]
+        environments = [{"INPUT_FILE": file, "OUTPUT_FILE": file.replace(".csv", ".json")} for file in vcf_files]
         run = context.get("params", {}).get("run_label", context.get("dag_run").run_id)
         self.labels.add({"run": run})
 
@@ -187,12 +180,8 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
         self.log.debug(completed_job)
 
         # Retrieve the job status
-        _filter = f"name:projects/{self.project_id}/locations/{self.region}/jobs/{self.job_name}*"
-        jobs = list(
-            self.hook.list_jobs(
-                region=self.region, project_id=self.project_id, filter=_filter
-            )
-        )
+        f = f"name:projects/{self.project_id}/locations/{self.region}/jobs/{self.job_name}*"
+        jobs = list(self.hook.list_jobs(region=self.region, project_id=self.project_id, filter=f))
         if len(jobs) != 1:
             raise AirflowException(f"Found more then one job for id {self.job_name}")
 
@@ -205,7 +194,7 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
 
         return Job.to_dict(jobs[0])  # type: ignore
 
-    def _get_vcf_partition_basenames(self, input_path: GCSPath) -> Set[str]:
+    def _get_vcf_partition_basenames(self, input_path: GCSPath) -> set[str]:
         """Based on listed vcf file partition extract their basenames.
 
         NOTE: Do not reconstruct full path to the mount, as it will
@@ -214,7 +203,7 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
         different.
 
         Returns:
-            Set[str]: set of basenames to pass to the task environments.
+            set[str]: set of basenames to pass to the task environments.
         """
         c = Client(project=self.project_id)
         b = c.bucket(bucket_name=input_path.bucket)

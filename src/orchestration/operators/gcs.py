@@ -1,5 +1,6 @@
 """Custom operators for Google Cloud Storage (GCS) interactions."""
 
+import tempfile
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -86,22 +87,23 @@ class UploadRemoteFileOperator(BaseOperator):
         self.bucket_name, self.path = self.dst_uri.split()
 
     def execute(self, context) -> None:
-        """Execute the Operator."""
         c = Client(project=self.project_id)
         b = Bucket(client=c, name=self.bucket_name)
-        temp_file = Path("/tmp") / self.src_url.split("/")[-1]
 
-        with requests.get(self.src_url, stream=True) as r:
+        with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+            temp_file = Path(tmp_file.name)
+
+        with requests.get(self.src_url, stream=True, timeout=10) as r:
             r.raise_for_status()
             with open(temp_file, "wb") as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    f.write(chunk)
+                f.writelines(r.iter_content(chunk_size=8192))
 
         if not b.exists():
             b.create()
 
         blob = b.blob(self.path)
         blob.upload_from_filename(temp_file)
+        temp_file.unlink()
         self.log.info("uploaded file from %s to: %s", self.src_url, self.dst_uri)
 
 
@@ -209,9 +211,7 @@ class CopyBlobOperator(BaseOperator):
         )
 
         source_bucket, source_object = self.src_uri.replace("gs://", "").split("/", 1)
-        destination_bucket, destination_object = self.dst_uri.replace(
-            "gs://", ""
-        ).split("/", 1)
+        destination_bucket, destination_object = self.dst_uri.replace("gs://", "").split("/", 1)
 
         if not hook.exists(source_bucket, source_object):
             raise FileNotFoundError(f"Source object {self.src_uri} does not exist.")

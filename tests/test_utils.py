@@ -3,15 +3,11 @@
 import pytest
 
 from orchestration.types import ConfigNode
-from orchestration.utils import (
-    convert_params_to_hydra_positional_arg,
-    find_node_in_config,
-    time_to_seconds,
-)
+from orchestration.utils import convert_params_to_hydra_positional_arg, find_node_in_config, time_to_seconds
 
 
 @pytest.mark.parametrize(
-    ["input", "output"],
+    ("input", "output"),
     [
         pytest.param("1s", 1, id="1 second"),
         pytest.param("10m", 60 * 10, id="10 minutes"),
@@ -25,7 +21,7 @@ def test_time_to_seconds(input: str, output: int) -> None:
 
 
 @pytest.mark.parametrize(
-    ["input", "output", "is_dataproc_job"],
+    ("input", "output", "is_dataproc_job"),
     [
         pytest.param(
             {"step": "some_step", "step.b": 2, "+step.c": 3},
@@ -65,7 +61,7 @@ def test_convert_params_to_hydra_positional_arg(input: dict, output: list[str], 
 
 
 @pytest.mark.parametrize(
-    ["node", "result"],
+    ("node", "result"),
     [
         pytest.param("A", {"id": "A", "kind": "Task", "prerequisites": []}, id="Existing node"),
         pytest.param("D", None, id="Non existing node"),
@@ -79,4 +75,4 @@ def test_find_node_in_config(node: str, result: ConfigNode | None) -> None:
         {"id": "C", "kind": "Task", "prerequisites": ["B"]},
     ]
 
-    assert find_node_in_config(config_list, node) == result  # type: ignore
+    assert find_node_in_config(config_list, node) == result  # type: ignore[comparison-overlap]

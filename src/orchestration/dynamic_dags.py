@@ -20,11 +20,13 @@ from orchestration.operators.manifest_operators import (
 from orchestration.types import ManifestObject
 from orchestration.utils import IOManager, common
 
+logger = logging.getLogger(__name__)
+
 
 @task(task_id="end")
 def end():
     """Finish the DAG execution."""
-    logging.info("FINISHED")
+    logger.info("FINISHED")
 
 
 @task(
@@ -51,11 +53,11 @@ def consolidate_manifests(ti: TaskInstance | None = None) -> list[ManifestObject
 @task.branch(task_id="begin")
 def begin() -> str:
     """Start the DAG execution by choosing the execution mode."""
-    logging.info("START")
+    logger.info("START")
     params = get_current_context().get("params")
     if not params:
         raise AirflowSkipException("No params provided, skipping.")
-    logging.info(params)
+    logger.info(params)
     if params["mode"] == "CONTINUE":
         return "generate_manifests"
     else:
@@ -83,7 +85,7 @@ def collect_task_outcome(manifests: list[ManifestObject]):
         if new_manifest[status_flag_prefix] == "success":
             succeeded_manifests.append(new_manifest)
 
-    logging.info("FAILED MANIFESTS %s/%s", len(failed_manifests), len(manifests))
+    logger.info("FAILED MANIFESTS %s/%s", len(failed_manifests), len(manifests))
     return {
         "failed_manifests": failed_manifests,
         "succeeded_manifests": succeeded_manifests,
@@ -116,25 +118,25 @@ def generic_genetics_dag():
 
     failed_existing_manifests = ManifestFilterOperator(
         task_id="filter_failed_manifests",
-        manifests=existing_manifests,  # type: ignore
+        manifests=existing_manifests,  # type: ignore[arg-type]
     ).output
 
     saved_manifests = ManifestSaveOperator(
         task_id="generate_staging_output",
-        manifest_blobs=new_manifests,  # type: ignore
+        manifest_blobs=new_manifests,  # type: ignore[arg-type]
     ).output
 
     consolidated_manifests = consolidate_manifests()
     batch_job = ManifestSubmitBatchJobOperator(
         task_id="gwas-catalog_batch_job",
-        manifests=consolidated_manifests,  # type: ignore
+        manifests=consolidated_manifests,  # type: ignore[arg-type]
         gcp_project=common.GCP_PROJECT_GENETICS,
         gcp_region=common.GCP_REGION,
         job_name=f"gwas-catalog-job-{time.strftime('%Y%m%d-%H%M%S')}",
         step="gwas-catalog-etl",
     ).output
 
-    updated_manifests = collect_task_outcome(manifests=consolidated_manifests)  # type: ignore
+    updated_manifests = collect_task_outcome(manifests=consolidated_manifests)  # type: ignore[arg-type]
 
     # MODE == CONTINUE
     chain(

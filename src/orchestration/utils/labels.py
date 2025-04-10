@@ -4,12 +4,7 @@ import re
 from collections.abc import Callable
 from typing import Any
 
-from orchestration.utils.common import (
-    GCP_PROJECT_GENETICS,
-    GCP_PROJECT_PLATFORM,
-    genetics_shared_labels,
-    shared_labels,
-)
+from orchestration.utils.common import GCP_PROJECT_GENETICS, GCP_PROJECT_PLATFORM, genetics_shared_labels, shared_labels
 
 
 class Labels:

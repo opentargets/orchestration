@@ -8,11 +8,7 @@ from orchestration.utils import convert_params_to_hydra_positional_arg
 
 
 @pytest.mark.parametrize(
-    [
-        "params",
-        "output",
-        "error",
-    ],
+    ("params", "output", "error"),
     [
         pytest.param(
             {"step.param1": "value1", "step.param2": "value2"},

@@ -1,14 +1,13 @@
 """Manifest operators."""
 
+from collections.abc import Sequence
 from functools import cached_property
-from typing import Any, Sequence
+from typing import Any
 
 from airflow.exceptions import AirflowSkipException
 from airflow.models.baseoperator import BaseOperator
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
-from airflow.providers.google.cloud.operators.cloud_batch import (
-    CloudBatchSubmitJobOperator,
-)
+from airflow.providers.google.cloud.operators.cloud_batch import CloudBatchSubmitJobOperator
 from airflow.utils.context import Context
 from google.cloud.batch_v1 import Environment
 
@@ -86,9 +85,7 @@ class ManifestGenerateOperator(BaseOperator):
                     "Listing objects from path with %s protocol is not implemented",
                     protocol,
                 )
-            self.log.info(
-                "Listing files at %s/%s with match glob %s", root, prefix, matchglob
-            )
+            self.log.info("Listing files at %s/%s with match glob %s", root, prefix, matchglob)
             files = self.gcs_hook.list(
                 bucket_name=root,
                 prefix=prefix,
@@ -98,17 +95,12 @@ class ManifestGenerateOperator(BaseOperator):
             self.log.info(files)
             results[key] = {
                 "common_path": f"{protocol}://{root}/{prefix}",
-                "samplesheet": {
-                    extract_study_id_from_path(s): f"{protocol}://{root}/{s}"
-                    for s in files
-                },
+                "samplesheet": {extract_study_id_from_path(s): f"{protocol}://{root}/{s}" for s in files},
             }
 
         studies_with_sumstats: dict[str, str] = results["raw_sumstat"]["samplesheet"]
         studies_with_manifests: dict[str, str] = results["manifest"]["samplesheet"]
-        new_study_ids = set(studies_with_sumstats.keys()) - set(
-            studies_with_manifests.keys()
-        )
+        new_study_ids = set(studies_with_sumstats.keys()) - set(studies_with_manifests.keys())
         if len(new_study_ids) == 0:
             raise AirflowSkipException("All raw sumstats have manifests, skipping.")
         common_path: str = results["manifest"]["common_path"]
@@ -205,17 +197,14 @@ class ManifestReadOperator(BaseOperator):
                 "Listing objects from path with %s protocol is not implemented",
                 protocol,
             )
-        self.log.info(
-            "Listing files at %s/%s with match glob %s", root, prefix, matchglob
-        )
+        self.log.info("Listing files at %s/%s with match glob %s", root, prefix, matchglob)
         manifest_paths = self.gcs_hook.list(
             bucket_name=root,
             prefix=prefix,
             match_glob=matchglob,
         )
         manifest_paths = [f"{protocol}://{root}/{mp}" for mp in manifest_paths]
-        manifests = IOManager().load_many(manifest_paths)
-        return manifests
+        return IOManager().load_many(manifest_paths)
 
 
 class ManifestSubmitBatchJobOperator(BaseOperator):
@@ -274,41 +263,26 @@ class ManifestSubmitBatchJobOperator(BaseOperator):
             raise AirflowSkipException(f"No params for step {self.step} were found.")
         google_batch_job_specs = step_params.get("googlebatch")
         if not google_batch_job_specs:
-            raise AirflowSkipException(
-                f"No batch job params were defined for step {self.step}."
-            )
+            raise AirflowSkipException(f"No batch job params were defined for step {self.step}.")
         policy_specs = google_batch_job_specs.get("policy_specs")
         if not policy_specs:
-            raise AirflowSkipException(
-                f"No policy specs defined found for step {self.step} batch job configuration."
-            )
+            raise AirflowSkipException(f"No policy specs defined found for step {self.step} batch job configuration.")
         resource_specs = google_batch_job_specs.get("resource_specs")
         if not resource_specs:
-            raise AirflowSkipException(
-                f"No resource specs defined found for step {self.step} batch job configuration."
-            )
+            raise AirflowSkipException(f"No resource specs defined found for step {self.step} batch job configuration.")
         task_specs = google_batch_job_specs.get("task_specs")
         if not task_specs:
-            raise AirflowSkipException(
-                f"No task specs were defined for step {self.step} batch job configuration."
-            )
+            raise AirflowSkipException(f"No task specs were defined for step {self.step} batch job configuration.")
         image = google_batch_job_specs.get("image")
         if not policy_specs:
-            raise AirflowSkipException(
-                f"No image was defined for step {self.step} batch job configuration."
-            )
+            raise AirflowSkipException(f"No image was defined for step {self.step} batch job configuration.")
         commands = google_batch_job_specs.get("commands")
         if not commands:
-            raise AirflowSkipException(
-                f"No commands were defined for step {self.step} batch job configuration."
-            )
+            raise AirflowSkipException(f"No commands were defined for step {self.step} batch job configuration.")
         task_spec = create_task_spec(image, commands, resource_specs, task_specs)
-        task_env = [
-            Environment(variables={"MANIFEST_PATH": mp}) for mp in manifest_paths
-        ]
+        task_env = [Environment(variables={"MANIFEST_PATH": mp}) for mp in manifest_paths]
         batch_job = create_batch_job(task_spec, task_env, policy_specs)
         self.log.info(batch_job)
-        self.task_id
         cloudbatch_operator = CloudBatchSubmitJobOperator(
             project_id=self.gcp_project,
             region=self.gcp_region,

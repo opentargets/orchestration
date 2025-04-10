@@ -1,5 +1,12 @@
 {
   "python.analysis.typeCheckingMode": "basic",
+  "[python]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit",
+    },
+  },
   "files.associations": {
     "*.conf": "hocon",
   },

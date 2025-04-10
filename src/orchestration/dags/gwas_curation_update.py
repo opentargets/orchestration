@@ -9,11 +9,7 @@ from airflow.models.baseoperator import chain
 from airflow.models.dag import DAG
 
 from orchestration.utils.common import shared_dag_args, shared_dag_kwargs
-from orchestration.utils.dataproc import (
-    create_cluster,
-    delete_cluster,
-    submit_gentropy_step,
-)
+from orchestration.utils.dataproc import create_cluster, delete_cluster, submit_gentropy_step
 
 CLUSTER_NAME = "otg-gwascatalog-curation"
 PYTHON_MAIN_MODULE = "gs://genetics_etl_python_playground/initialisation/gentropy/szsz-update-package-for-dataproc-run/cli.py"

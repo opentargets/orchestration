@@ -2,10 +2,7 @@
 
 from collections.abc import Sequence
 
-from airflow.providers.google.cloud.operators.dataproc import (
-    DataprocCreateClusterOperator,
-    DataprocSubmitJobOperator,
-)
+from airflow.providers.google.cloud.operators.dataproc import DataprocCreateClusterOperator, DataprocSubmitJobOperator
 from google.cloud.dataproc_v1 import Cluster, JobReference
 from google.cloud.dataproc_v1.types.jobs import Job, JobPlacement, SparkJob
 

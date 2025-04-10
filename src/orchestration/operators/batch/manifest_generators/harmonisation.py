@@ -15,7 +15,7 @@ from orchestration.operators.batch.manifest_generators import ProtoManifestGener
 from orchestration.types import ManifestGeneratorSpecs
 from orchestration.utils.path import GCSPath
 
-logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 class HarmonisationManifestGenerator(ProtoManifestGenerator):
@@ -58,9 +58,7 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
         self.manifest: pd.DataFrame | None = None
 
     @classmethod
-    def from_generator_config(
-        cls, specs: ManifestGeneratorSpecs
-    ) -> ProtoManifestGenerator:
+    def from_generator_config(cls, specs: ManifestGeneratorSpecs) -> ProtoManifestGenerator:
         """Construct generator from config."""
         return cls(
             commands=specs["commands"],
@@ -70,20 +68,13 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
 
     def generate_batch_index(self) -> BatchIndex:
         """Generate harmonisation manifest."""
-        vars_list = (
-            self.get_manifest_data()
-            .generate_manifest()
-            .dump_manifest()
-            .convert_manifest_to_vars_list()
-        )
+        vars_list = self.get_manifest_data().generate_manifest().dump_manifest().convert_manifest_to_vars_list()
 
-        index = BatchIndex(
+        return BatchIndex(
             vars_list=vars_list,
             options=self.options,
             commands=self.commands,
         )
-
-        return index
 
     def get_manifest_data(self) -> HarmonisationManifestGenerator:
         """List raw sumstat and harmonised sumstat paths."""
@@ -113,9 +104,9 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
                 match_glob=match_glob,
             )
             if len(files) == 0 and key == "raw_sumstat":
-                logging.warning("No %s files found", key)
+                logger.warning("No %s files found", key)
                 raise AirflowSkipException(f"No {key} files found")
-            logging.info("Found %s %s files", len(files), key)
+            logger.info("Found %s %s files", len(files), key)
             results[key] = {
                 "sumstat": [f"{protocol}://{root}/{s}" for s in files],
                 "study": [self.extract_study_id_from_path(s) for s in files],
@@ -147,12 +138,12 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
         qc_df.rename(columns={"sumstat": "qcPath"}, inplace=True)
         qc_df["qcPerformed"] = True
 
-        logging.info("Shape of raw sumstats %s", raw_df.shape)
-        logging.info("Shape of harm sumstats %s", harm_df.shape)
-        logging.info("Shape of qc %s", qc_df.shape)
+        logger.info("Shape of raw sumstats %s", raw_df.shape)
+        logger.info("Shape of harm sumstats %s", harm_df.shape)
+        logger.info("Shape of qc %s", qc_df.shape)
         merged_df = raw_df.merge(harm_df, how="left", on="study")
         merged_df2 = merged_df.merge(qc_df, how="left", on="study")
-        logging.info("Shape of merged sumstat %s", merged_df2.shape)
+        logger.info("Shape of merged sumstat %s", merged_df2.shape)
 
         # Backfill
         merged_df2["isHarmonised"] = merged_df2["isHarmonised"].fillna(False)
@@ -170,9 +161,9 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
 
     def dump_manifest(self) -> HarmonisationManifestGenerator:
         """Perform dump of the manifest for downstream processing."""
-        if not isinstance(self.manifest, pd.DataFrame):
+        if self.manifest is None:
             raise ValueError("Create manifest first.")
-        logging.info("Dumping manifest to %s", self.manifest_path)
+        logger.info("Dumping manifest to %s", self.manifest_path)
         self.manifest.to_csv(self.manifest_path, index=False)
         return self
 
@@ -184,20 +175,18 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
                 raise ValueError(f"Flag {flag} is missing in manifest")
             values = manifest[flag].drop_duplicates().values
             # Expect the flag to be boolean False only
-            assert not values[0] and len(values) == 1, (
-                "All non harmonised studies should have qcPerformed set to False"
-            )
+            assert not values[0] and len(values) == 1, "All non harmonised studies should have qcPerformed set to False"
 
     def convert_manifest_to_vars_list(self) -> list[dict[str, str]]:
         """Deconstruct manifest to collect studies to harmonize as a variable list."""
-        if not isinstance(self.manifest, pd.DataFrame):
+        if self.manifest is None:
             raise ValueError("Create manifest first.")
 
         manifest = self.manifest.copy()
         # NOTE: we want to have a var_list with only non harmonised data.
         manifest = manifest[~manifest["isHarmonised"]]
         # Skip the execution if there is nothing new to harmonise
-        logging.info("Shape of manifest %s", manifest.shape)
+        logger.info("Shape of manifest %s", manifest.shape)
         if manifest.empty:
             raise AirflowSkipException("No new studies to harmonise")
         self._validate_manifest_flags(manifest)
@@ -208,12 +197,11 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
         # convert to list of dictionaries
         var_list = manifest.to_dict("records")
         if var_list:
-            logging.info("Variable list is not empty!")
+            logger.info("Variable list is not empty!")
         else:
             AirflowSkipException("No environments to create")
         # NOTE: Ensure the types are correct, as Environment requires dict[str,str] types.
-        var_list = [{str(k): str(v) for k, v in row.items()} for row in var_list]
-        return var_list
+        return [{str(k): str(v) for k, v in row.items()} for row in var_list]
 
     @staticmethod
     def output_path(study: str, path_pattern: GCSPath) -> str:
