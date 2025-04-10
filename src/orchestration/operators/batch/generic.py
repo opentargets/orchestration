@@ -3,22 +3,13 @@
 from __future__ import annotations
 
 import time
-from typing import Type
 
 from airflow.models.baseoperator import BaseOperator
-from airflow.providers.google.cloud.operators.cloud_batch import (
-    CloudBatchSubmitJobOperator,
-)
+from airflow.providers.google.cloud.operators.cloud_batch import CloudBatchSubmitJobOperator
 
-from orchestration.operators.batch.batch_index import (
-    BatchCommands,
-    BatchEnvironments,
-    BatchIndexRow,
-)
+from orchestration.operators.batch.batch_index import BatchCommands, BatchEnvironments, BatchIndexRow
 from orchestration.operators.batch.manifest_generators import ProtoManifestGenerator
-from orchestration.operators.batch.manifest_generators.harmonisation import (
-    HarmonisationManifestGenerator,
-)
+from orchestration.operators.batch.manifest_generators.harmonisation import HarmonisationManifestGenerator
 from orchestration.types import GoogleBatchIndexSpecs, GoogleBatchSpecs
 from orchestration.utils.batch import create_batch_job, create_task_spec
 from orchestration.utils.common import GCP_PROJECT_GENETICS, GCP_REGION
@@ -32,7 +23,7 @@ class BatchIndexOperator(BaseOperator):
     """
 
     # NOTE: here register all manifest generators.
-    manifest_generator_registry: dict[str, Type[ProtoManifestGenerator]] = {
+    manifest_generator_registry: dict[str, type[ProtoManifestGenerator]] = {
         "gwas_catalog_harmonisation": HarmonisationManifestGenerator
     }
 
@@ -48,25 +39,20 @@ class BatchIndexOperator(BaseOperator):
         super().__init__(**kwargs)
 
     @classmethod
-    def get_generator(cls, label: str) -> Type[ProtoManifestGenerator]:
+    def get_generator(cls, label: str) -> type[ProtoManifestGenerator]:
         """Get the generator by it's label in the registry."""
         try:
             return cls.manifest_generator_registry[label]
         except KeyError:
-            raise KeyError(
-                f"Manifest generator with label {label} not found in the manifest generator registry."
-            )
+            raise KeyError(f"Manifest generator with label {label} not found in the manifest generator registry.")
 
     def execute(self, **kwargs) -> list[BatchIndexRow]:
         """Execute the operator."""
-        generator = self.manifest_generator.from_generator_config(
-            self.manifest_generator_specs
-        )
+        generator = self.manifest_generator.from_generator_config(self.manifest_generator_specs)
         index = generator.generate_batch_index()
         self.log.info(index)
         partitioned_index = index.partition(self.max_task_count)
-        rows = partitioned_index.rows
-        return rows
+        return partitioned_index.rows
 
 
 class BatchJobOperator(CloudBatchSubmitJobOperator):
@@ -86,16 +72,12 @@ class BatchJobOperator(CloudBatchSubmitJobOperator):
             job=create_batch_job(
                 task=create_task_spec(
                     image=google_batch["image"],
-                    commands=BatchCommands.deserialize(
-                        batch_index_row["command"]
-                    ).construct(),
+                    commands=BatchCommands.deserialize(batch_index_row["command"]).construct(),
                     task_specs=google_batch["task_specs"],
                     resource_specs=google_batch["resource_specs"],
                     entrypoint=google_batch["entrypoint"],
                 ),
-                task_env=BatchEnvironments.deserialize(
-                    batch_index_row["environment"]
-                ).construct(),
+                task_env=BatchEnvironments.deserialize(batch_index_row["environment"]).construct(),
                 policy_specs=google_batch["policy_specs"],
             ),
             deferrable=False,

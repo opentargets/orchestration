@@ -19,6 +19,8 @@ MAX_N_THREADS = 32
 URI_PATTERN = r"^^((?P<protocol>.*)://)?(?P<root>[(\w)-]+)/(?P<path>([(\w)-/])+)"
 PARTITION_REGEX = r"\w*=(\w*)"
 
+logger = logging.getLogger(__name__)
+
 
 class PathSegments(TypedDict):
     """Path segments.
@@ -112,7 +114,7 @@ class NativePath(ProtoPath):
         Returns:
             Any: Loaded data.
         """
-        with open(self.native_path, "r") as fp:
+        with open(self.native_path) as fp:
             match self.native_path.suffix:
                 case ".json":
                     return json.load(fp)
@@ -195,10 +197,10 @@ class GCSPath(ProtoPath):
         Returns:
             re.Match: Match object.
         """
-        _match = self.path_pattern.match(self.gcs_path)
-        if _match is None:
+        matches = self.path_pattern.match(self.gcs_path)
+        if matches is None:
             raise ValueError("Invalid GCS path %s", self.gcs_path)
-        return _match
+        return matches
 
     @property
     def bucket(self) -> str:
@@ -360,17 +362,17 @@ class IOManager:
             list[Any]: Objects that were read.
         """
         if not paths:
-            logging.warning("Nothing to load.")
+            logger.warning("Nothing to load.")
             return []
 
         resolved_paths = self.resolve_paths(paths)
         if not n_threads:
             n_threads = self._find_optimal_thread_num(len(paths))
-        logging.info(f"LOADING %s OBJECTS by %s THREADS.", len(paths), n_threads)
+        logger.info("LOADING %s OBJECTS by %s THREADS.", len(paths), n_threads)
         with concurrent.futures.ThreadPoolExecutor(max_workers=n_threads) as executor:
             futures: list[concurrent.futures.Future] = []
             for path in resolved_paths:
-                method = lambda: path.load()
+                method = lambda path=path: path.load()
                 futures.append(executor.submit(method))
         results = []
 
@@ -378,9 +380,9 @@ class IOManager:
         for idx, future in enumerate(futures):
             exe = future.exception()
             if exe:
-                logging.error(exe)
+                logger.error(exe)
             else:
-                logging.info(f"Successfully loaded {idx + 1}/{len(futures)} objects.")
+                logger.info(f"Successfully loaded {idx + 1}/{len(futures)} objects.")
                 results.append(future.result())
         return results
 
@@ -407,7 +409,7 @@ class IOManager:
         if len(paths) != len(objects):
             raise ValueError("Empty paths or unequal number of objects")
         if not paths:
-            logging.warning("Nothing to dump.")
+            logger.warning("Nothing to dump.")
             return None
 
         resolved_paths = self.resolve_paths(paths)
@@ -420,20 +422,20 @@ class IOManager:
             )
         if not n_threads:
             n_threads = self._find_optimal_thread_num(len(paths))
-        logging.info(f"DUMPING %s OBJECTS by %s THREADS.", len(paths), n_threads)
+        logger.info("DUMPING %s OBJECTS by %s THREADS.", len(paths), n_threads)
         with concurrent.futures.ThreadPoolExecutor(max_workers=n_threads) as executor:
             futures: list[concurrent.futures.Future] = []
             for path, ob in zip(resolved_paths, objects, strict=True):
-                method = lambda: path.dump(ob)
+                method = lambda path=path, ob=ob: path.dump(ob)
                 futures.append(executor.submit(method))
 
         concurrent.futures.wait(futures)
         for idx, future in enumerate(futures):
             exe = future.exception()
             if exe:
-                logging.error(exe)
+                logger.error(exe)
             else:
-                logging.info(f"Successfully dumped {idx + 1}/{len(futures)} objects.")
+                logger.info(f"Successfully dumped {idx + 1}/{len(futures)} objects.")
 
     @staticmethod
     def _find_optimal_thread_num(
@@ -458,8 +460,6 @@ class IOManager:
 class ThreadSafetyError(Exception):
     """Exception raised for errors in thread safety."""
 
-    pass
-
 
 def extract_partition_from_blob(
     blob: storage.Blob | str, with_prefix: bool = True
@@ -477,11 +477,10 @@ def extract_partition_from_blob(
         name = blob
     if isinstance(blob, storage.Blob):
         name: str = blob.name  # type: ignore
-    if name.endswith("/"):
-        name = name[:-1]
-    _match = re.search(PARTITION_REGEX, name)
-    if not _match:
+    name = name.removesuffix("/")
+    matches = re.search(PARTITION_REGEX, name)
+    if not matches:
         raise ValueError("No partition found in %s", name)
     if with_prefix:
-        return _match.group(0)
-    return _match.group(1)
+        return matches.group(0)
+    return matches.group(1)

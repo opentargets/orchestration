@@ -8,10 +8,7 @@ from airflow.models.dag import DAG
 
 from orchestration.utils import chain_dependencies, read_yaml_config
 from orchestration.utils.common import shared_dag_args, shared_dag_kwargs
-from orchestration.utils.dataproc import (
-    generate_dataproc_task_chain,
-    submit_gentropy_step,
-)
+from orchestration.utils.dataproc import generate_dataproc_task_chain, submit_gentropy_step
 
 CONFIG_FILE_PATH = Path(__file__).parent / "config" / "credible_set_qc.yaml"
 config = read_yaml_config(CONFIG_FILE_PATH)
@@ -37,5 +34,5 @@ with DAG(
         cluster_name=config["dataproc"]["cluster_name"],
         cluster_init_script=config["dataproc"]["cluster_init_script"],
         cluster_metadata=config["dataproc"]["cluster_metadata"],
-        tasks=[t for t in tasks.values()],
+        tasks=list(tasks.values()),
     )

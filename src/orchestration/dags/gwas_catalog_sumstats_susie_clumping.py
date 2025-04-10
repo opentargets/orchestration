@@ -5,22 +5,12 @@ from pathlib import Path
 from airflow.models.dag import DAG
 
 from orchestration.types import Environment, EnvironmentSpec
-from orchestration.utils import (
-    chain_dependencies,
-    find_environment_vars,
-    read_yaml_config,
-)
+from orchestration.utils import chain_dependencies, find_environment_vars, read_yaml_config
 from orchestration.utils.common import shared_dag_args, shared_dag_kwargs
-from orchestration.utils.dataproc import (
-    generate_dataproc_task_chain,
-    submit_gentropy_step,
-)
+from orchestration.utils.dataproc import generate_dataproc_task_chain, submit_gentropy_step
 
 SOURCE_CONFIG_FILE_PATH = (
-    Path(__file__).parent
-    / Path(__file__).parent
-    / "config"
-    / "gwas_catalog_sumstats_susie_clumping.yaml"
+    Path(__file__).parent / Path(__file__).parent / "config" / "gwas_catalog_sumstats_susie_clumping.yaml"
 )
 config = read_yaml_config(SOURCE_CONFIG_FILE_PATH)
 env_spec: list[EnvironmentSpec] = config["environment_specs"]
@@ -45,6 +35,6 @@ with DAG(
     chain_dependencies(nodes=config["nodes"], tasks_or_task_groups=tasks)
 
     dag = generate_dataproc_task_chain(
-        tasks=[t for t in tasks.values()],
+        tasks=list(tasks.values()),
         **config["dataproc"],
     )

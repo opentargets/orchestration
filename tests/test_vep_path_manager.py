@@ -33,8 +33,8 @@ class TestVepAnnotationPathManger:
             "root",
         )
         with pytest.raises(ValueError) as e:
-            vp.mount_dir_root
-            assert e.value.args[0] == "Mount dir has to be an absolute path."
+            _ = vp.mount_dir_root
+        assert e.value.args[0] == "Mount dir has to be an absolute path."
 
     def test_mount_dir_ends_with_slash(self) -> None:
         """Assert that mount dir trailing slash will be dropped."""
@@ -56,8 +56,8 @@ class TestVepAnnotationPathManger:
             "/root",
         )
         with pytest.raises(ValueError) as e:
-            vp.path_registry
-            assert "Invalid GCS path" in e.value.args[0]
+            _ = vp.path_registry
+        assert "Invalid GCS path" in e.value.args[0]
 
     def test_mount_dir_property(self) -> None:
         """Test correct paths provided."""

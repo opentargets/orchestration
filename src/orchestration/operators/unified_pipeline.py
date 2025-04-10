@@ -1,7 +1,7 @@
 """Custom operators for the Platform part of the pipeline."""
 
-from collections.abc import Sequence
-from typing import Any, Iterable
+from collections.abc import Iterable, Sequence
+from typing import Any
 
 import yaml
 from airflow.operators.branch import BaseBranchOperator
@@ -72,10 +72,8 @@ class DiffComputeOperator(BaseBranchOperator):
         step_name = self.step_name.replace(f"{self.stage_name}_", "")
         return {
             # TODO: All the config should be compared in here, not just the scratchpad and step
-            "scratchpad": config.get("scratchpad", None),
-            "step": config.get("steps", {}).get(
-                self.step_name.replace(step_name, ""), None
-            ),
+            "scratchpad": config.get("scratchpad"),
+            "step": config.get("steps", {}).get(self.step_name.replace(step_name, ""), None),
         }
 
     def choose_branch(self, context: Context) -> str | Iterable[str]:

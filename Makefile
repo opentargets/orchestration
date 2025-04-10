@@ -24,7 +24,7 @@ check: format test ## run all checks
 dev: .git/hooks/commit-msg  ## Prepare the local development environment
 	@uv sync --all-extras --dev
 	@uv run pre-commit install --hook-type commit-msg
-	@docker compose -f compose.yaml -f compose.local.yaml up -d
+	@docker compose -f compose.yaml up -d
 
 
 ### OTHER TARGETS ###

@@ -5,18 +5,10 @@ from pathlib import Path
 from airflow.models.dag import DAG
 
 from orchestration.utils import chain_dependencies, read_yaml_config
-from orchestration.utils.common import (
-    shared_dag_args,
-    shared_dag_kwargs,
-)
-from orchestration.utils.dataproc import (
-    generate_dataproc_task_chain,
-    submit_gentropy_step,
-)
+from orchestration.utils.common import shared_dag_args, shared_dag_kwargs
+from orchestration.utils.dataproc import generate_dataproc_task_chain, submit_gentropy_step
 
-config = read_yaml_config(
-    Path(__file__).parent / "config" / "finngen_ukb_meta_harmonisation.yaml"
-)
+config = read_yaml_config(Path(__file__).parent / "config" / "finngen_ukb_meta_harmonisation.yaml")
 
 with DAG(
     dag_id=Path(__file__).stem,
@@ -40,5 +32,5 @@ with DAG(
         cluster_name=config["dataproc"]["cluster_name"],
         cluster_init_script=config["dataproc"]["cluster_init_script"],
         cluster_metadata=config["dataproc"]["cluster_metadata"],
-        tasks=[t for t in tasks.values()],
+        tasks=list(tasks.values()),
     )

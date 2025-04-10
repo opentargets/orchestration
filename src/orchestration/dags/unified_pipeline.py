@@ -7,33 +7,19 @@ from airflow.models.baseoperator import chain
 from airflow.models.dag import DAG
 from airflow.models.param import Param
 from airflow.operators.empty import EmptyOperator
-from airflow.providers.google.cloud.operators.compute import (
-    ComputeEngineDeleteInstanceOperator,
-)
-from airflow.providers.google.cloud.operators.dataproc import (
-    DataprocDeleteClusterOperator,
-)
+from airflow.providers.google.cloud.operators.compute import ComputeEngineDeleteInstanceOperator
+from airflow.providers.google.cloud.operators.dataproc import DataprocDeleteClusterOperator
 from airflow.utils.edgemodifier import Label
 from airflow.utils.trigger_rule import TriggerRule
 
 from orchestration.dags.config.cluster_registry import ClusterRegistry
-from orchestration.dags.config.unified_pipeline import (
-    UnifiedPipelineConfig,
-)
+from orchestration.dags.config.unified_pipeline import UnifiedPipelineConfig
 from orchestration.operators.batch.vep import VepAnnotateOperator
-from orchestration.operators.dataproc import (
-    PlatformETLCreateClusterOperator,
-    PlatformETLSubmitJobOperator,
-)
+from orchestration.operators.dataproc import PlatformETLCreateClusterOperator, PlatformETLSubmitJobOperator
 from orchestration.operators.gce import ComputeEngineRunContainerizedWorkloadSensor
 from orchestration.operators.gcs import CopyBlobOperator, UploadStringOperator
 from orchestration.operators.unified_pipeline import DiffComputeOperator
-from orchestration.utils import (
-    create_cluster_name,
-    create_name,
-    to_hocon,
-    to_yaml,
-)
+from orchestration.utils import create_cluster_name, create_name, to_hocon, to_yaml
 from orchestration.utils.common import (
     GCP_PROJECT_PLATFORM,
     GCP_REGION,
@@ -41,9 +27,7 @@ from orchestration.utils.common import (
     shared_dag_args,
     unified_pipeline_dag_kwargs,
 )
-from orchestration.utils.dataproc import (
-    submit_gentropy_step,
-)
+from orchestration.utils.dataproc import submit_gentropy_step
 from orchestration.utils.labels import StepLabels
 
 with DAG(
@@ -213,7 +197,7 @@ with DAG(
     if len(config.etl_step_list):
         etl_cluster_name = create_cluster_name("etl")
 
-        @task_group(group_id=f"etl_cluster_prepare")
+        @task_group(group_id="etl_cluster_prepare")
         def etl_cluster_prepare() -> None:
             labels = StepLabels("etl", is_ppp=config.is_ppp)
 
@@ -223,13 +207,13 @@ with DAG(
                 labels=labels,
             )
             uc = UploadStringOperator(
-                task_id=f"upload_config",
+                task_id="upload_config",
                 contents=to_hocon(config.etl_config),
                 dst_uri=config.etl_config_uri,
                 overwrite=True,
             )
             cj = CopyBlobOperator(
-                task_id=f"upload_jar",
+                task_id="upload_jar",
                 src_uri=config.etl_jar_origin_uri,
                 dst_uri=config.etl_jar_uri,
                 overwrite=True,
@@ -325,13 +309,13 @@ with DAG(
 
     # ==============================================================================================
     # After creating all the tasks, we tie them together by creating dependencies.
-    for step_name in steps:
+    for step_name, step in steps.items():
         if step_config := config.steps.get(step_name):
             for dep in step_config.get("depends_on", []):
-                steps[step_name].set_upstream(steps[dep])
+                step.set_upstream(steps[dep])
             if config.is_ppp:
                 for ppp_dep in step_config.get("depends_on_ppp", []):
-                    steps[step_name].set_upstream(steps[ppp_dep])
+                    step.set_upstream(steps[ppp_dep])
 
 if __name__ == "__main__":
     dag.test()

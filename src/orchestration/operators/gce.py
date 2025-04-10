@@ -4,9 +4,10 @@ import asyncio
 import datetime
 import logging
 import time
+from collections.abc import Sequence
 from functools import cached_property
 from textwrap import dedent
-from typing import Any, Sequence
+from typing import Any
 
 from airflow.configuration import conf
 from airflow.exceptions import AirflowException
@@ -21,9 +22,7 @@ from google.api_core.extended_operation import ExtendedOperation
 from google.cloud import compute_v1, logging_v2
 from google.cloud import logging as google_logging
 from google.cloud.compute_v1 import types
-from google.cloud.logging_v2.services.logging_service_v2 import (
-    LoggingServiceV2AsyncClient,
-)
+from google.cloud.logging_v2.services.logging_service_v2 import LoggingServiceV2AsyncClient
 
 from orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_ZONE
 from orchestration.utils.labels import Labels
@@ -31,7 +30,7 @@ from orchestration.utils.labels import Labels
 CONTAINER_NAME = "workload_container"
 LOGGING_REQUEST_INTERVAL = 5
 
-## WARNING
+# WARNING
 # After any change in deferrable operators, you must restart the airflow triggerer
 # container to apply the changes with:
 # docker compose restart airflow-trigger
@@ -42,7 +41,7 @@ def wait_for_extended_operation(
     operation: ExtendedOperation,
     verbose_name: str = "operation",
     timeout: int | None = 300,
-    log: logging.Logger = logging.getLogger(__name__),
+    log: logging.Logger | None = None,
 ) -> Any:
     """Waits for the extended (long-running) operation to complete.
 
@@ -70,6 +69,9 @@ def wait_for_extended_operation(
         In case of an operation taking longer than `timeout` seconds to complete,
         a `concurrent.futures.TimeoutError` will be raised.
     """
+    if log is None:
+        log = logging.getLogger(__name__)
+
     result = operation.result(timeout=timeout)
 
     if operation.error_code:
@@ -220,7 +222,7 @@ class CloudLoggingAsyncHook(GoogleBaseHook):
         The exit code is the number that follows the string "exit status" in the message. To harden
         the query, we are using the regex:
 
-        startup-script[\w\":\s]*exit status [0-9]+
+        startup-script[\\w\":\\s]*exit status [0-9]+
 
         This is because the message changes depending on the script exiting successfully:
 
@@ -232,7 +234,7 @@ class CloudLoggingAsyncHook(GoogleBaseHook):
         """  # noqa: D301
         client = self.get_conn()
         timestamp = start_time.isoformat()
-        query = f'resource.type="gce_instance" labels.instance_name="{instance_name}" timestamp>"{timestamp}" jsonPayload.message=~"startup-script[\w\\\":\s]*exit status [0-9]+"'  # fmt: skip
+        query = f'resource.type="gce_instance" labels.instance_name="{instance_name}" timestamp>"{timestamp}" jsonPayload.message=~"startup-script[\w\\\":\s]*exit status [0-9]+"'  # type: ignore # fmt: skip  # noqa: Q004, W605
         log_pages = None
 
         while True:
@@ -268,7 +270,7 @@ class CloudLoggingAsyncHook(GoogleBaseHook):
 
         if logs and logs.entries:
             entry = logs.entries[0]
-            return int(entry.json_payload["message"].split("exit status", 1)[1].strip())
+            return int(entry.json_payload["message"].split("exit status", 1)[1].strip())  # type: ignore[index]
 
         self.log.info("No log entries with an exit status found yet.")
         return None
@@ -360,7 +362,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
         self.project = project
         self.zone = zone
         self.instance_name = instance_name
-        self.labels = labels if labels else Labels()
+        self.labels = labels or Labels()
         self.container_image = container_image
         self.container_command = container_command
         self.container_args = container_args
@@ -402,7 +404,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
         """
         arg = (" ").join(self.container_args or [])
 
-        gcs_files = (" ").join([f'"{w}"' for w in self.container_files.keys()])
+        gcs_files = (" ").join([f'"{w}"' for w in self.container_files])
         dest_paths = (" ").join([f'"{w}"' for w in self.container_files.values()])
 
         init_work_disk = (
@@ -450,7 +452,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
                 {self.container_command} {arg}
         """)
 
-    def declare_instance(self) -> compute_v1.InstanceTemplate:
+    def declare_instance(self) -> compute_v1.Instance:
         """Declare the instance to be created.
 
         The instance includes:
@@ -519,18 +521,16 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
             service_accounts=[
                 types.ServiceAccount(
                     email=self.container_service_account or "default",
-                    scopes=(
-                        [
-                            "https://www.googleapis.com/auth/cloud-platform",
-                            "https://www.googleapis.com/auth/devstorage.full_control",
-                            "https://www.googleapis.com/auth/logging.write",
-                            "https://www.googleapis.com/auth/monitoring.write",
-                            "https://www.googleapis.com/auth/servicecontrol",
-                            "https://www.googleapis.com/auth/service.management.readonly",
-                            "https://www.googleapis.com/auth/trace.append",
-                            *self.container_scopes,
-                        ]
-                    ),
+                    scopes=([
+                        "https://www.googleapis.com/auth/cloud-platform",
+                        "https://www.googleapis.com/auth/devstorage.full_control",
+                        "https://www.googleapis.com/auth/logging.write",
+                        "https://www.googleapis.com/auth/monitoring.write",
+                        "https://www.googleapis.com/auth/servicecontrol",
+                        "https://www.googleapis.com/auth/service.management.readonly",
+                        "https://www.googleapis.com/auth/trace.append",
+                        *self.container_scopes,
+                    ]),
                 ),
             ],
         )
@@ -665,7 +665,7 @@ class ComputeEngineExitCodeTrigger(BaseTrigger):
         self.gcp_conn_id = gcp_conn_id
         self.impersonation_chain = impersonation_chain
         self.poll_sleep = poll_sleep
-        self.start_time = datetime.datetime.now(datetime.timezone.utc)
+        self.start_time = datetime.datetime.now(datetime.UTC)
 
     def serialize(self) -> tuple[str, dict[str, Any]]:
         """Serialize class arguments and classpath."""
@@ -704,20 +704,16 @@ class ComputeEngineExitCodeTrigger(BaseTrigger):
                 self.log.info(f"VM {self.instance_name} exit code is {exit_code}")
 
                 if exit_code == 0:
-                    yield TriggerEvent(
-                        {
-                            "status": "success",
-                            "message": f"VM {self.instance_name} exit code is {exit_code}",
-                        }
-                    )
+                    yield TriggerEvent({
+                        "status": "success",
+                        "message": f"VM {self.instance_name} exit code is {exit_code}",
+                    })
                     return
                 elif exit_code is not None:
-                    yield TriggerEvent(
-                        {
-                            "status": "error",
-                            "message": f"VM {self.instance_name} exit code is {exit_code}",
-                        }
-                    )
+                    yield TriggerEvent({
+                        "status": "error",
+                        "message": f"VM {self.instance_name} exit code is {exit_code}",
+                    })
                     return
                 self.log.info("VM startup script is still running.")
                 await asyncio.sleep(self.poll_sleep)

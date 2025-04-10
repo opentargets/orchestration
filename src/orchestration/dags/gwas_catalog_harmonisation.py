@@ -14,34 +14,29 @@ from orchestration.operators.batch.generic import (
     BatchJobOperator,
 )
 from orchestration.types import Environment, EnvironmentSpec
-from orchestration.utils import (
-    find_environment_vars,
-    find_node_in_config,
-    read_yaml_config,
-)
+from orchestration.utils import find_environment_vars, find_node_in_config, read_yaml_config
 from orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 
-SOURCE_CONFIG_FILE_PATH = (
-    Path(__file__).parent / "config" / "gwas_catalog_sumstat_harmonisation.yaml"
-)
+SOURCE_CONFIG_FILE_PATH = Path(__file__).parent / "config" / "gwas_catalog_sumstat_harmonisation.yaml"
 config = read_yaml_config(SOURCE_CONFIG_FILE_PATH)
 env_spec: list[EnvironmentSpec] = config["environment_specs"]
 env: Environment = config["env"]
 sentinels = find_environment_vars(env_spec, env)
 config = read_yaml_config(SOURCE_CONFIG_FILE_PATH, sentinels)
+logger = logging.getLogger(__name__)
 
 
 @task(task_id="begin")
 def begin():
     """Starting the DAG execution."""
-    logging.info("STARTING")
-    logging.info(config)
+    logger.info("STARTING")
+    logger.info(config)
 
 
 @task(task_id="end")
 def end():
     """Finish the DAG execution."""
-    logging.info("FINISHED")
+    logger.info("FINISHED")
 
 
 with DAG(
@@ -51,9 +46,7 @@ with DAG(
     **shared_dag_kwargs,
 ):
     index_config = find_node_in_config(config["nodes"], "generate_sumstat_index")
-    harmonisation_config = find_node_in_config(
-        config["nodes"], "gwas_catalog_harmonisation"
-    )
+    harmonisation_config = find_node_in_config(config["nodes"], "gwas_catalog_harmonisation")
     if index_config and harmonisation_config:
         batch_index = BatchIndexOperator(
             task_id=index_config["id"],

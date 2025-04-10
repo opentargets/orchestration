@@ -6,22 +6,12 @@ from pathlib import Path
 
 from airflow.models.baseoperator import chain
 from airflow.models.dag import DAG
-from airflow.providers.google.cloud.operators.dataflow import (
-    DataflowTemplatedJobStartOperator,
-)
+from airflow.providers.google.cloud.operators.dataflow import DataflowTemplatedJobStartOperator
 from airflow.providers.google.cloud.operators.gcs import GCSDeleteObjectsOperator
 
 from orchestration.utils import find_node_in_config, read_yaml_config
-from orchestration.utils.common import (
-    GCP_PROJECT_GENETICS,
-    shared_dag_args,
-    shared_dag_kwargs,
-)
-from orchestration.utils.dataproc import (
-    create_cluster,
-    delete_cluster,
-    submit_gentropy_step,
-)
+from orchestration.utils.common import GCP_PROJECT_GENETICS, shared_dag_args, shared_dag_kwargs
+from orchestration.utils.dataproc import create_cluster, delete_cluster, submit_gentropy_step
 from orchestration.utils.path import GCSPath
 
 CONFIG_PATH = Path(__file__).parent / "config" / "eqtl_catalogue_ingestion.yaml"

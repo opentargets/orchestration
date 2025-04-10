@@ -42,19 +42,19 @@ class UnifiedPipelineConfig:
         # The service account and scopes to use (only used by PIS so far).
         # The drive scope is needed to download spreadsheets from Google Drive
         # for the PIS otar step.
-        self.service_account = "platform-input-support@open-targets-eu-dev.iam.gserviceaccount.com" #fmt: skip
+        self.service_account = "platform-input-support@open-targets-eu-dev.iam.gserviceaccount.com"  # fmt: skip
         self.service_account_scopes = ["https://www.googleapis.com/auth/drive"]
 
         # Pipeline settings.
         settings = read_yaml_config(self.config_path)
         release_name = settings["release_name"]
-        self.release_uri:str = f'gs://open-targets-pre-data-releases/{release_name}'
+        self.release_uri: str = f"gs://open-targets-pre-data-releases/{release_name}"
         self.chembl_version = settings["chembl_version"]
         self.efo_version = settings["efo_version"]
         self.ensembl_version = settings["ensembl_version"]
         self.is_ppp = settings["is_ppp"]
         self.steps = settings["steps"]
-        self.ppp_steps = [s for s, d in self.steps.items() if d and d.get('ppp_only', False)]
+        self.ppp_steps = [s for s, d in self.steps.items() if d and d.get("ppp_only", False)]
 
         # PIS-specific settings.
         pis_version = settings["pis_version"]
@@ -62,8 +62,9 @@ class UnifiedPipelineConfig:
         # The base image for PIS, the version tag will be appended from the config file.
         pis_image_base = "europe-west1-docker.pkg.dev/open-targets-eu-dev/pis/pis"
         self.pis_image = f"{pis_image_base}:{pis_version}"
-        self.pis_step_list = [s for s in settings["steps"].keys() if s.startswith("pis_")]
-        self.pis_disk_size = 150 # The disk size for PIS vms, in GB.
+        self.pis_step_list = [s for s in settings["steps"] if s.startswith("pis_")]
+
+        self.pis_disk_size = 150  # The disk size for PIS vms, in GB.
         # Note: although not all steps need this much space, it is easier to have a
         # single value for all steps, and the machines are so short-lived that it
         # doesn't matter much with respect to cost.
@@ -74,9 +75,9 @@ class UnifiedPipelineConfig:
         # The base image for PTS, the version tag will be appended from the config file.
         pts_image_base = "europe-west1-docker.pkg.dev/open-targets-eu-dev/pts/pts"
         self.pts_image = f"{pts_image_base}:{pts_version}"
-        self.pts_step_list = [s for s in settings["steps"].keys() if s.startswith("pts_")]
-        self.pts_machine_type = 'n1-standard-32'
-        self.pts_disk_size = 150 # The disk size for PIS vms, in GB.
+        self.pts_step_list = [s for s in settings["steps"] if s.startswith("pts_")]
+        self.pts_machine_type = "n1-standard-32"
+        self.pts_disk_size = 150  # The disk size for PIS vms, in GB.
 
         # ETL-specific settings.
         etl_version = settings["etl_version"]
@@ -85,7 +86,7 @@ class UnifiedPipelineConfig:
         # The base url for the ETL jar, the version will be replaced in from the config file.
         self.etl_jar_origin_uri = f"gs://opentargets-pipelines/up/etl/etl-{etl_version}.jar"
         self.etl_jar_uri = f"{self.release_uri}/etc/bin/etl.jar"  # fmt: skip
-        self.etl_step_list = [s for s in settings["steps"].keys() if s.startswith("etl_")]
+        self.etl_step_list = [s for s in settings["steps"] if s.startswith("etl_")]
 
         # GENTROPY-specific settings.
         self.gentropy_version = settings["gentropy_version"]
@@ -93,7 +94,7 @@ class UnifiedPipelineConfig:
         self.vep_version = settings["vep_version"]
         self.gentropy_config = self.init_gentropy_settings()
         self.gentropy_dataproc_cluster_settings = self.gentropy_config["dataproc_cluster_settings"]
-        self.gentropy_step_list = [s for s in settings["steps"].keys() if s.startswith("gentropy_")]
+        self.gentropy_step_list = [s for s in settings["steps"] if s.startswith("gentropy_")]
 
     def pis_config_uri(self, step_name: str) -> str:
         """Return the google cloud url of the PIS configuration file for a step."""
@@ -182,7 +183,6 @@ class UnifiedPipelineConfig:
                 "release_uri": self.release_uri,
                 "gentropy_version": self.gentropy_version,
                 "vep_version": self.vep_version,
-                "l2g_training": self.l2g_training,
             },
         )
 
@@ -191,7 +191,5 @@ class UnifiedPipelineConfig:
         real_step_name = step_name.replace("gentropy_", "")
         step = self.gentropy_config["steps"].get(real_step_name)
         if not step:
-            raise ValueError(
-                f"Step {real_step_name} not in gentropy config ({self.gentropy_config_local_path})."
-            )
+            raise ValueError(f"Step {real_step_name} not in gentropy config ({self.gentropy_config_local_path}).")
         return step

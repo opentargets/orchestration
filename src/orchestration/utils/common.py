@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from orchestration.utils import strhash
 
 if TYPE_CHECKING:
-    from typing import Any, Callable
+    from collections.abc import Callable
+    from typing import Any
 
 # Cloud configuration.
 GCP_PROJECT_GENETICS = "open-targets-genetics-dev"
@@ -34,7 +35,7 @@ shared_dag_args: dict[str, Any] = {
 
 shared_dag_kwargs: dict[str, Any] = {
     "tags": ["genetics_etl", "experimental"],
-    "start_date": datetime.now(tz=timezone.utc) - timedelta(days=1),
+    "start_date": datetime.now(tz=UTC) - timedelta(days=1),
     "schedule": "@once",
     "catchup": False,
 }

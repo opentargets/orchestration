@@ -4,22 +4,12 @@ from pathlib import Path
 
 from airflow.models.dag import DAG
 
-from orchestration.operators.batch.finemapping import (
-    FinemappingBatchJobManifestOperator,
-    FinemappingBatchOperator,
-)
+from orchestration.operators.batch.finemapping import FinemappingBatchJobManifestOperator, FinemappingBatchOperator
 from orchestration.types import Environment, EnvironmentSpec
-from orchestration.utils import (
-    chain_dependencies,
-    find_environment_vars,
-    find_node_in_config,
-    read_yaml_config,
-)
+from orchestration.utils import chain_dependencies, find_environment_vars, find_node_in_config, read_yaml_config
 from orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 
-SOURCE_CONFIG_FILE_PATH = (
-    Path(__file__).parent / "config" / "ukb_ppp_eur_finemapping.yaml"
-)
+SOURCE_CONFIG_FILE_PATH = Path(__file__).parent / "config" / "ukb_ppp_eur_finemapping.yaml"
 config = read_yaml_config(SOURCE_CONFIG_FILE_PATH)
 env_spec: list[EnvironmentSpec] = config["environment_specs"]
 env: Environment = config["env"]

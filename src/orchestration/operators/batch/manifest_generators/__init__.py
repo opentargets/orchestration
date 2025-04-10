@@ -10,9 +10,7 @@ from orchestration.types import ManifestGeneratorSpecs
 
 class ProtoManifestGenerator(Protocol):
     @classmethod
-    def from_generator_config(
-        cls, specs: ManifestGeneratorSpecs
-    ) -> ProtoManifestGenerator:
+    def from_generator_config(cls, specs: ManifestGeneratorSpecs) -> ProtoManifestGenerator:
         """Constructor for Manifest Generator given the specification."""
         raise NotImplementedError("Implement it in subclasses")
 
