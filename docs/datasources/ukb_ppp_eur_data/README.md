@@ -1,24 +1,25 @@
 # UK Biobank Pharma Proteomics Project (UKB-PPP)
 
-This document was updated on 2025-02-05
+This document was updated on 2025-04-11
 
 Data source comes from the `https://registry.opendata.aws/ukbppp/`
 
-Data stored under `gs://ukb_ppp_eur_data` bucket comes with following structure
+Data stored under `gs://ukb_ppp_eur_data` and `gs://ukb_ppp_eur_inputs` buckets comes with following structures
 
 ```
-gs://ukb_ppp_eur_data/credible_set_datasets/susie/20241021/
 gs://ukb_ppp_eur_data/credible_set_datasets/susie/20250129/
-gs://ukb_ppp_eur_data/credible_set_clean/20241021/
 gs://ukb_ppp_eur_data/credible_set_clean/20250129/
 gs://ukb_ppp_eur_data/docs/
 gs://ukb_ppp_eur_data/finemapping_logs/
 gs://ukb_ppp_eur_data/finemapping_manifests/
-gs://ukb_ppp_eur_data/harmonised_summary_statistics/
 gs://ukb_ppp_eur_data/study_index/
 gs://ukb_ppp_eur_data/study_locus_lb_clumped/
-gs://ukb_ppp_eur_data/test/
 ```
+
+```
+gs://ukb_ppp_eur_inputs/harmonised_summary_statistics/
+```
+
 > [!TIP]
 > The latest credible sets stored with 20250129 release date.
 
@@ -71,7 +72,7 @@ The process is runs on **dataproc** cluster.
 The outputs are stored in:
 
 - `gs://ukb_ppp_eur_data/study_index` - study index
-- `gs://ukb_ppp_eur_data/harmonised_summary_statistics` - summary statistics
+- `gs://ukb_ppp_eur_inputs/harmonised_summary_statistics` - summary statistics
 
 #### locus_breaker_clumping
 
@@ -137,3 +138,8 @@ To adjust the parameters for google batch infrastructure refer to the `google_ba
 ### 2025-02-05
 
 - [fix: repair SusieFinemapperStep to work with new SL schema #957](https://github.com/opentargets/gentropy/pull/957) resolved [issue](https://github.com/opentargets/issues/issues/3667)
+
+### 2025-04-11
+
+- chore: harmonised summary statistics were moved from `gs://ukb_ppp_eur_data/harmonised_summary_statistics` to `gs://ukb_ppp_eur_inputs/harmonised_summary_statistics`. Summary statistics are now in the archive bucket (cold storage).
+- chore: removal of 2024-10-21 credible sets due to data duplication.
