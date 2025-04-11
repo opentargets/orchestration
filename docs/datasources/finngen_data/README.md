@@ -50,3 +50,7 @@ The configuration of the dataproc infrastructure and individual step parameters 
 ### 2025-02-05
 
 - [fix: updating info in finngen study index ingestion (#972)](https://github.com/opentargets/gentropy/pull/972)
+
+### 2025-04-11
+
+- chore: removal of r11 and r10 data to prevent data duplication.

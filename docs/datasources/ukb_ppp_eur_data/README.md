@@ -138,5 +138,8 @@ To adjust the parameters for google batch infrastructure refer to the `google_ba
 ### 2025-02-05
 
 - [fix: repair SusieFinemapperStep to work with new SL schema #957](https://github.com/opentargets/gentropy/pull/957) resolved [issue](https://github.com/opentargets/issues/issues/3667)
+
+### 2025-04-11
+
 - chore: harmonised summary statistics were moved from `gs://ukb_ppp_eur_data/harmonised_summary_statistics` to `gs://ukb_ppp_eur_inputs/harmonised_summary_statistics`. Summary statistics are now in the archive bucket (cold storage).
-- chore: delete of credible sets harmonised at 2024-10-21 due to data duplication.
+- chore: removal of 2024-10-21 credible sets due to data duplication.
