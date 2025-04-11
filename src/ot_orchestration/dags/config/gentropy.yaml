@@ -156,7 +156,7 @@ steps:
       entrypoint: /bin/sh
     params:
       # INPUTS
-      vep_cache_path: gs://genetics_etl_python_playground/vep/cache
+      vep_cache_path: gs://vep_cache_data/vep/cache
       vcf_input_path: '{release_uri}/intermediate/variant_partition'
       # OUTPUTS
       vep_output_path: '{release_uri}/intermediate/variant_annotation'
