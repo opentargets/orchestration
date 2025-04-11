@@ -1,6 +1,6 @@
 # UK Biobank Pharma Proteomics Project (UKB-PPP)
 
-This document was updated on 2025-02-05
+This document was updated on 2025-04-11
 
 Data source comes from the `https://registry.opendata.aws/ukbppp/`
 

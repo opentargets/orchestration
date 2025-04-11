@@ -1,6 +1,6 @@
 # Finngen
 
-This document was updated on 2025-02-05
+This document was updated on 2025-04-11
 
 This datasource is currently fixed under [Finngen Data Freeze 12 - November 4 2024](https://r12.finngen.fi/)
 
