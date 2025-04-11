@@ -33,7 +33,7 @@ nodes:
           - gwas_catalog_top_hit_ingestion
         params:
           step: ld_based_clumping
-          step.ld_index_path: gs://genetics_etl_python_playground/static_assets/ld_index
+          step.ld_index_path: gs://gnomad_data_2/v2.1.1/ld_index
           step.study_locus_input_path: gs://gwas_catalog_top_hits/study_locus_window_based_clumped
           step.clumped_study_locus_output_path: gs://gwas_catalog_top_hits/study_locus_ld_clumped
           step.study_index_path: gs://gwas_catalog_top_hits/study_index
