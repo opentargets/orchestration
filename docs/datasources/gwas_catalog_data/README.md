@@ -1,6 +1,6 @@
 # GWAS Catalog data source
 
-This document was updated on 2025-02-05
+This document was updated on 2025-04-11
 
 Data stored under 4 buckets:
 
@@ -288,16 +288,14 @@ The step that performs [PICS finemapping](https://opentargets.github.io/gentropy
 Bucket `gs://gwas_catalog_sumstats_susie` contains:
 
 ```bash
-gs://gwas_catalog_sumstats_susie/credible_set_datasets/
-gs://gwas_catalog_sumstats_susie/credible_set_clean/20241021/
 gs://gwas_catalog_sumstats_susie/credible_set_clean/20250204/
-gs://gwas_catalog_sumstats_susie/credible_set_datasets_01.25/
 gs://gwas_catalog_sumstats_susie/credible_set_datasets_20250204/
 gs://gwas_catalog_sumstats_susie/finemapping_logs/
 gs://gwas_catalog_sumstats_susie/finemapping_manifests/
 gs://gwas_catalog_sumstats_susie/logs/
 gs://gwas_catalog_sumstats_susie/study_index/
 gs://gwas_catalog_sumstats_susie/study_locus_lb_clumped/
+gs://gwas_catalog_sumstats_susie/susie_logs.parquet/
 ```
 
 > [!TIP]
@@ -379,3 +377,7 @@ To adjust the parameters for google batch infrastructure refer to the `google_ba
 ### 2025-02-05
 
 - [fix: repair SusieFinemapperStep to work with new SL schema #957](https://github.com/opentargets/gentropy/pull/957) resolved [issue](https://github.com/opentargets/issues/issues/3667)
+
+### 2025-04-11
+
+- chore: remove 2024-10-21 credible sets to prevent data duplication.

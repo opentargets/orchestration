@@ -1,6 +1,6 @@
 # Finngen
 
-This document was updated on 2025-02-05
+This document was updated on 2025-04-11
 
 This datasource is currently fixed under [Finngen Data Freeze 12 - November 4 2024](https://r12.finngen.fi/)
 
@@ -50,3 +50,7 @@ The configuration of the dataproc infrastructure and individual step parameters 
 ### 2025-02-05
 
 - [fix: updating info in finngen study index ingestion (#972)](https://github.com/opentargets/gentropy/pull/972)
+
+### 2025-04-11
+
+- chore: removal of r11 and r10 data to prevent data duplication.
