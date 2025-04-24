@@ -1,4 +1,4 @@
-FROM apache/airflow:slim-latest
+FROM apache/airflow:slim-2.10.5-python3.12
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 COPY pyproject.toml README.md ./
