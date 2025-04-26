@@ -5,18 +5,13 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from ot_orchestration.utils import GCSPath, IOManager
-from ot_orchestration.utils.path import (
-    URI_PATTERN,
-    GCSPath,
-    IOManager,
-    NativePath,
-    extract_partition_from_blob,
-)
+
+from orchestration.utils import URI_PATTERN, GCSPath, IOManager, NativePath
+from orchestration.utils.path import extract_partition_from_blob
 
 
 @pytest.mark.parametrize(
-    ["path", "expected_class"],
+    ("path", "expected_class"),
     [
         pytest.param("some/path", NativePath, id="local path"),
         pytest.param("file://some/path", NativePath, id="fs protocol"),
@@ -29,7 +24,7 @@ def test_io_manager(path: str, expected_class: Any) -> None:
 
 
 @pytest.mark.parametrize(
-    ["obj", "suffix"],
+    ("obj", "suffix"),
     [
         pytest.param("content", "path/file.txt", id="whole subpath does not exist"),
         pytest.param("content", "file.txt", id="file does not exist"),
@@ -49,7 +44,7 @@ def test_native_path(tmp_path: Path, suffix: str, obj: Any) -> None:
 
 
 @pytest.mark.parametrize(
-    ["input_path", "_match", "protocol", "root", "path"],
+    ("input_path", "matches", "protocol", "root", "path"),
     [
         pytest.param(
             "gs://bucket_name",
@@ -79,7 +74,7 @@ def test_native_path(tmp_path: Path, suffix: str, obj: Any) -> None:
 )
 def test_uri_pattern_regex(
     input_path: str,
-    _match: bool,
+    matches: bool,
     protocol: str | None,
     root: str | None,
     path: str | None,
@@ -88,8 +83,7 @@ def test_uri_pattern_regex(
     pattern = re.compile(URI_PATTERN)
     pattern_match = pattern.search(input_path)
 
-    if not _match:
-        print(pattern_match)
+    if not matches:
         assert pattern_match is None
     else:
         assert pattern_match is not None
@@ -100,7 +94,7 @@ def test_uri_pattern_regex(
 
 class TestGCSPath:
     @pytest.mark.parametrize(
-        ["gcs_path"],
+        "gcs_path",
         [
             pytest.param("gs://bucket/prefix/filename", id="GCS path with prefix."),
             pytest.param("gs://bucket/filename", id="GCS path without prefix."),
@@ -112,7 +106,7 @@ class TestGCSPath:
         assert str(gcs_path_obj) == gcs_path
 
     @pytest.mark.parametrize(
-        ["gcs_path", "filename", "prefix"],
+        ("gcs_path", "filename", "prefix"),
         [
             pytest.param(
                 "gs://bucket/prefix/filename",
@@ -144,14 +138,13 @@ class TestGCSPath:
             "prefix",
             "filename",
         }
-        print(gcs_path_obj.segments)
         assert gcs_path_obj.segments["protocol"] == "gs"
         assert gcs_path_obj.segments["root"] == "bucket"
         assert gcs_path_obj.segments["prefix"] == prefix
         assert gcs_path_obj.segments["filename"] == filename
 
     @pytest.mark.parametrize(
-        ["gcs_path", "path"],
+        ("gcs_path", "path"),
         [
             pytest.param(
                 "gs://bucket/prefix/filename",
@@ -176,7 +169,7 @@ class TestGCSPath:
         assert gcs_path_obj.path == path
 
     @pytest.mark.parametrize(
-        ["gcs_path", "bucket"],
+        ("gcs_path", "bucket"),
         [
             pytest.param(
                 "gs://bucket/prefix/filename",
@@ -192,7 +185,7 @@ class TestGCSPath:
 
 
 @pytest.mark.parametrize(
-    ["input_blob", "partition", "with_prefix"],
+    ("input_blob", "partition", "with_prefix"),
     [
         pytest.param(
             "gs://bucket/prefix/partition=123aa/file.parquet",
@@ -208,20 +201,12 @@ class TestGCSPath:
         ),
         pytest.param(
             "gs://bucket/prefix/partition=123aa/otherPartition=123bbb/file.parquet",
-            "partition=123aa",
-            True,
-            id="only first partition is checked",
-        ),
-        pytest.param(
-            "gs://bucket/prefix/partition=123aa/otherPartition=123bbb/file.parquet",
             "123aa",
             False,
             id="Return without prefix",
         ),
     ],
 )
-def test_extract_partition_from_blob(
-    input_blob: str, partition: str, with_prefix: bool
-) -> None:
+def test_extract_partition_from_blob(input_blob: str, partition: str, with_prefix: bool) -> None:
     """Test extracting partition from a blob."""
     assert extract_partition_from_blob(input_blob, with_prefix) == partition

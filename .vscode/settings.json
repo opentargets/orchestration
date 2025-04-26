@@ -1,9 +1,19 @@
 {
   "python.analysis.typeCheckingMode": "basic",
+  "[python]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit",
+    },
+  },
   "files.associations": {
     "*.conf": "hocon",
   },
   "yaml.schemas": {
-    "https://raw.githubusercontent.com/opentargets/pis/refs/heads/sane-paths/.vscode/config-schema.json": "pis.yaml"
+    "https://raw.githubusercontent.com/opentargets/otter/refs/heads/main/.vscode/config-schema.json": [
+      "pis.yaml",
+      "pts.yaml"
+    ],
   }
 }

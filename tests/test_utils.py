@@ -1,16 +1,13 @@
 """Tests for package util functions."""
 
 import pytest
-from ot_orchestration.types import ConfigNode
-from ot_orchestration.utils import (
-    convert_params_to_hydra_positional_arg,
-    find_node_in_config,
-    time_to_seconds,
-)
+
+from orchestration.types import ConfigNode
+from orchestration.utils import convert_params_to_hydra_positional_arg, find_node_in_config, time_to_seconds
 
 
 @pytest.mark.parametrize(
-    ["input", "output"],
+    ("input", "output"),
     [
         pytest.param("1s", 1, id="1 second"),
         pytest.param("10m", 60 * 10, id="10 minutes"),
@@ -24,7 +21,7 @@ def test_time_to_seconds(input: str, output: int) -> None:
 
 
 @pytest.mark.parametrize(
-    ["input", "output", "is_dataproc_job"],
+    ("input", "output", "is_dataproc_job"),
     [
         pytest.param(
             {"step": "some_step", "step.b": 2, "+step.c": 3},
@@ -37,9 +34,7 @@ def test_time_to_seconds(input: str, output: int) -> None:
             ["step=some_step", "step.b.c=2", "step.b.d=3"],
             False,
             id="nested dict",
-            marks=pytest.mark.xfail(
-                reason="Structured configuration not supported yet."
-            ),
+            marks=pytest.mark.xfail(reason="Structured configuration not supported yet."),
         ),
         pytest.param(
             {"step": "some_step", "step.b": 2, "+step.c": 3},
@@ -60,19 +55,15 @@ def test_time_to_seconds(input: str, output: int) -> None:
         ),
     ],
 )
-def test_convert_params_to_hydra_positional_arg(
-    input: dict, output: list[str], is_dataproc_job: bool
-) -> None:
+def test_convert_params_to_hydra_positional_arg(input: dict, output: list[str], is_dataproc_job: bool) -> None:
     """Test conversion of dictionary to hydra positional arguments."""
     assert convert_params_to_hydra_positional_arg(input, is_dataproc_job) == output
 
 
 @pytest.mark.parametrize(
-    ["node", "result"],
+    ("node", "result"),
     [
-        pytest.param(
-            "A", {"id": "A", "kind": "Task", "prerequisites": []}, id="Existing node"
-        ),
+        pytest.param("A", {"id": "A", "kind": "Task", "prerequisites": []}, id="Existing node"),
         pytest.param("D", None, id="Non existing node"),
     ],
 )
@@ -84,4 +75,4 @@ def test_find_node_in_config(node: str, result: ConfigNode | None) -> None:
         {"id": "C", "kind": "Task", "prerequisites": ["B"]},
     ]
 
-    assert find_node_in_config(config_list, node) == result  # type: ignore
+    assert find_node_in_config(config_list, node) == result  # type: ignore[comparison-overlap]
