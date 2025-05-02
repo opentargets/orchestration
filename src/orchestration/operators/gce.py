@@ -1,5 +1,7 @@
 """Custom sensor that runs a containerized workload on a Google Compute Engine instance."""
 
+from __future__ import annotations
+
 import asyncio
 import datetime
 import logging
@@ -7,7 +9,7 @@ import time
 from collections.abc import Sequence
 from functools import cached_property
 from textwrap import dedent
-from typing import Any
+from typing import TYPE_CHECKING
 
 from airflow.configuration import conf
 from airflow.exceptions import AirflowException
@@ -26,6 +28,9 @@ from google.cloud.logging_v2.services.logging_service_v2 import LoggingServiceV2
 
 from orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_ZONE
 from orchestration.utils.labels import Labels
+
+if TYPE_CHECKING:
+    from typing import Any
 
 CONTAINER_NAME = "workload_container"
 LOGGING_REQUEST_INTERVAL = 5

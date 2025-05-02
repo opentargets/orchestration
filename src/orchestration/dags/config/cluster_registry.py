@@ -3,16 +3,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
-
-from airflow.providers.google.cloud.operators.dataproc import (
-    DataprocCreateClusterOperator,
-    DataprocDeleteClusterOperator,
-)
+from typing import TYPE_CHECKING
 
 from orchestration.utils.common import GCP_PROJECT_PLATFORM
 from orchestration.utils.dataproc import create_cluster, delete_cluster
 from orchestration.utils.utils import create_cluster_name
+
+if TYPE_CHECKING:
+    from typing import Any
+
+    from airflow.providers.google.cloud.operators.dataproc import (
+        DataprocCreateClusterOperator,
+        DataprocDeleteClusterOperator,
+    )
 
 
 @dataclass

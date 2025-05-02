@@ -1,8 +1,10 @@
 """Manifest operators."""
 
+from __future__ import annotations
+
 from collections.abc import Sequence
 from functools import cached_property
-from typing import Any
+from typing import TYPE_CHECKING
 
 from airflow.exceptions import AirflowSkipException
 from airflow.models.baseoperator import BaseOperator
@@ -15,6 +17,9 @@ from orchestration.types import ManifestObject
 from orchestration.utils.batch import create_batch_job, create_task_spec
 from orchestration.utils.manifest import extract_study_id_from_path
 from orchestration.utils.path import IOManager
+
+if TYPE_CHECKING:
+    from typing import Any
 
 
 class ManifestGenerateOperator(BaseOperator):
