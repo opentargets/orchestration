@@ -14,13 +14,6 @@ following software requirements:
 > to get Airflow up and running. Allocate at least 4GB of memory for the Docker
 > Engine (ideally 8GB). [More info](https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html#)
 
-Ensure you have the google application default credentials set up. You can do this by
-running the following command:
-
-```bash
-gcloud auth application-default login --project=open-targets-eu-dev --impersonate-service-account=airflow-dev@iam.gserviceaccount.com
-```
-
 > [!NOTE]
 > The terraform script used in creating the cloud instance is currently heavily
 > tailored to our internal structure, with many hardcoded values and assumptions.
@@ -29,11 +22,18 @@ gcloud auth application-default login --project=open-targets-eu-dev --impersonat
 ## Running
 
 ### Local
-Run `make dev`. This will start airflow locally and install the dependencies in
-a virtual environment so you can use it in your IDE's LSP.
+You need to set up local access to the `up-airflow-dev` service account.
+
+Then, run `make dev`. This will start airflow locally and create a virtualenv you
+can use with your IDE.
 
 Open http://localhost:8081 in a browser to access the Airflow UI. The default
 credentials are `airflow`/`airflow`.
+
+> [!WARNING]
+> If you run `docker compose up` by itself, to get a working dev environment you
+> must add the override file `compose-local.yaml` as well as set the
+> `GOOGLE_APPLICATION_CREDENTIALS` environment variable.
 
 ### Google Cloud
 Run `make`. This will set up and/or connect you to an airflow dev instance in

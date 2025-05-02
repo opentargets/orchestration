@@ -24,7 +24,7 @@ check: format test ## run all checks
 dev: .git/hooks/commit-msg  ## Prepare the local development environment
 	@uv sync --all-extras --dev
 	@uv run pre-commit install --hook-type commit-msg
-	@GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/application_default_credentials.json docker compose -f compose.yaml -f compose.local.yaml up -d
+	@GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/up-airflow-dev.json docker compose -f compose.yaml -f compose.local.yaml up -d
 
 cloud-dev: ## Start the remote development environment and connect to it (default goal)
 	@./deployment/start.sh
