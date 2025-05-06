@@ -119,7 +119,10 @@ def read_hocon_config(
 
 def to_hocon(config: dict[str, Any]) -> str:
     """Convert a ConfigTree to a HOCON string."""
-    return pyhocon.HOCONConverter.to_hocon(config)
+    if isinstance(config, pyhocon.ConfigTree):
+        return pyhocon.HOCONConverter.to_hocon(config)
+    elif isinstance(config, dict):
+        return pyhocon.HOCONConverter.to_hocon(pyhocon.ConfigFactory.from_dict(config))
 
 
 def strhash(s: str) -> str:
