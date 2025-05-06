@@ -122,7 +122,7 @@ class UploadStringOperator(BaseOperator):
         dst_uri: The destination URI in GCS.
     """
 
-    template_fields: Sequence[str] = ("contents", "dst_uri")
+    template_fields: Sequence[str] = ("dst_uri",)
 
     def __init__(
         self,
