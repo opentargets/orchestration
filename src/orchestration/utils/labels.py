@@ -77,7 +77,7 @@ class StepLabels(Labels):
         }
 
         if step_name:
-            extra["step"] = step_name.replace(f"{tool}_", "")
+            extra["step"] = step_name
 
         super().__init__(extra, project=project, shared_labels=shared_labels)
 
