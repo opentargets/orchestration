@@ -219,4 +219,4 @@ class CopyBlobOperator(BaseOperator):
             raise FileExistsError(f"Destination object {self.dst_uri} already exists.")
 
         self.log.info("copying %s to %s", self.src_uri, self.dst_uri)
-        hook.copy(source_bucket, source_object, destination_bucket, destination_object)
+        hook.rewrite(source_bucket, source_object, destination_bucket, destination_object)
