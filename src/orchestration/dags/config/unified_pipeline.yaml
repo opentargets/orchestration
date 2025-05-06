@@ -10,9 +10,7 @@ vep_version: '2.2.0-rc.5'
 chembl_version: '35'
 efo_version: '3.73.0'
 ensembl_version: '113'
-l2g_training: '2025-02'
-
-is_ppp: true
+l2g_training_version: '2025-02'
 
 # Dependency graph
 # ----------------
