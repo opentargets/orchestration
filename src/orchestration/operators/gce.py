@@ -451,7 +451,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
             boot=True,
             initialize_params=compute_v1.AttachedDiskInitializeParams(
                 disk_type=f"zones/{self.zone}/diskTypes/pd-ssd",
-                labels=self.labels.as_dict(),
+                labels=self.labels,
                 source_image="projects/cos-cloud/global/images/cos-113-18244-151-50",
             ),
         )
@@ -461,7 +461,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
             device_name="work-disk",
             initialize_params=compute_v1.AttachedDiskInitializeParams(
                 disk_size_gb=self.work_disk_size_gb,
-                labels=self.labels.as_dict(),
+                labels=self.labels,
                 disk_type=f"zones/{self.zone}/diskTypes/pd-ssd",
             ),
         )
@@ -489,7 +489,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
             description="unified pipeline runner instance",
             machine_type=f"zones/{self.zone}/machineTypes/{self.machine_type}",
             disks=disks,
-            labels=self.labels.as_dict(),
+            labels=self.labels,
             metadata=types.Metadata(
                 items=[
                     {
@@ -585,7 +585,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
         if dag_run:
             default_run_label = dag_run.run_id
         run_label = context.get("params", {}).get("run_label", default_run_label)
-        self.labels.add({"run": run_label})
+        self.labels["run"] = run_label
         self.start()
 
         if not self.deferrable:

@@ -16,19 +16,21 @@ from airflow.utils.trigger_rule import TriggerRule
 
 from orchestration.utils import convert_params_to_hydra_positional_arg, random_id
 from orchestration.utils.common import (
-    GCP_AUTOSCALING_POLICY,
-    GCP_DATAPROC_IMAGE,
-    GCP_EFM_AUTOSCALING_POLICY,
     GCP_PROJECT_GENETICS,
     GCP_REGION,
     GCP_ZONE,
-    GENTROPY_CLI_SCRIPT,
-    GENTROPY_CLUSTER_INIT_SCRIPT,
 )
 from orchestration.utils.labels import Labels
 from orchestration.utils.path import GCSPath
 
 log: logging.Logger = logging.getLogger(__name__)
+
+# TODO: Delete all these once they are no longer used here.
+GCP_DATAPROC_IMAGE = "2.2"
+GCP_AUTOSCALING_POLICY = "otg-etl"
+GCP_EFM_AUTOSCALING_POLICY = "otg-efm"
+GENTROPY_CLI_SCRIPT = "gs://genetics_etl_python_playground/initialisation/cli.py"
+GENTROPY_CLUSTER_INIT_SCRIPT = "gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh"
 
 
 def create_cluster(
