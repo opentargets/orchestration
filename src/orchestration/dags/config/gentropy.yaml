@@ -1,37 +1,21 @@
 ---
-dataproc_cluster_settings:
-  default:
-    cluster_metadata:
-      GENTROPY_REF: 'v{gentropy_version}'
-    autoscaling_policy: otg-etl
-    num_workers: 2
-    idle_delete_ttl: 3600 # in seconds
-
-  otg-etl-coloc:
-    cluster_metadata:
-      GENTROPY_REF: 'v{gentropy_version}'
-    autoscaling_policy: otg-efm
-    worker_machine_type: n1-highmem-32
-    num_workers: 20
-    allow_efm: true
-
 steps:
   biosample:
     params:
       step: biosample_index
-      step.session.write_mode: errorIfExists
+      step.session.write_mode: overwrite
       step.session.output_partitions: 1
       # INPUTS
-      step.cell_ontology_input_path: '{release_uri}/input/biosample/cl.json'
-      step.uberon_input_path: '{release_uri}/input/biosample/uberon.json'
-      step.efo_input_path: '{release_uri}/input/biosample/efo.json'
+      step.cell_ontology_input_path: '{{release_uri}}/input/biosample/cl.json'
+      step.uberon_input_path: '{{release_uri}}/input/biosample/uberon.json'
+      step.efo_input_path: '{{release_uri}}/input/biosample/efo.json'
       # OUTPUTS
-      step.biosample_index_path: '{release_uri}/output/biosample'
+      step.biosample_index_path: '{{release_uri}}/output/biosample'
 
   study:
     params:
       step: study_validation
-      step.session.write_mode: errorIfExists
+      step.session.write_mode: overwrite
       step.session.output_partitions: 1
       step.invalid_qc_reasons:
         - UNRESOLVED_TARGET
@@ -51,17 +35,17 @@ steps:
         - gs://eqtl_catalogue_data/study_index
         - gs://ukb_ppp_eur_data/study_index
         - gs://finngen_data/r12/study_index
-      step.target_index_path: '{release_uri}/output/target'
-      step.disease_index_path: '{release_uri}/output/disease'
-      step.biosample_index_path: '{release_uri}/output/biosample'
+      step.target_index_path: '{{release_uri}}/output/target'
+      step.disease_index_path: '{{release_uri}}/output/disease'
+      step.biosample_index_path: '{{release_uri}}/output/biosample'
       # OUTPUTS
-      step.valid_study_index_path: '{release_uri}/output/study'
-      step.invalid_study_index_path: '{release_uri}/excluded/study'
+      step.valid_study_index_path: '{{release_uri}}/output/study'
+      step.invalid_study_index_path: '{{release_uri}}/excluded/study'
 
   credible_set:
     params:
       step: credible_set_validation
-      step.session.write_mode: errorIfExists
+      step.session.write_mode: overwrite
       step.session.output_partitions: 25
       step.invalid_qc_reasons:
         - DUPLICATED_STUDYLOCUS_ID
@@ -89,59 +73,59 @@ steps:
         - gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie_patched_v2/
         - gs://ukb_ppp_eur_data/credible_set_clean/20250129/
         - gs://finngen_data/r12/credible_set_datasets/susie/
-      step.study_index_path: '{release_uri}/output/study'
-      step.target_index_path: '{release_uri}/output/target'
+        - gs://gwas_catalog_sumstats_susie/credible_set_clean/202505/
+      step.study_index_path: '{{release_uri}}/output/study'
+      step.target_index_path: '{{release_uri}}/output/target'
       # OUTPUTS
-      step.valid_study_locus_path: '{release_uri}/output/credible_set'
-      step.invalid_study_locus_path: '{release_uri}/excluded/credible_set'
+      step.valid_study_locus_path: '{{release_uri}}/output/credible_set'
+      step.invalid_study_locus_path: '{{release_uri}}/excluded/credible_set'
 
   colocalisation_coloc:
-    cluster_type: otg-etl-coloc
     params:
       step: colocalisation
-      step.session.write_mode: errorIfExists
+      step.session.write_mode: overwrite
       step.session.output_partitions: 25
       step.colocalisation_method: Coloc
       +step.colocalisation_method_params: '{priorc1: 1e-4, priorc2: 1e-4, priorc12: 1e-5}'
       +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.memoryOverhead: '1g', spark.executor.cores: '4'}"
       # INPUTS
-      step.credible_set_path: '{release_uri}/output/credible_set'
+      step.credible_set_path: '{{release_uri}}/output/credible_set'
       # OUTPUTS
-      step.coloc_path: '{release_uri}/output/colocalisation'
+      step.coloc_path: '{{release_uri}}/output/colocalisation'
 
   colocalisation_ecaviar:
-    cluster_type: otg-etl-coloc
     params:
       step: colocalisation
-      step.session.write_mode: errorIfExists
+      step.session.write_mode: overwrite
       step.session.output_partitions: 25
       step.colocalisation_method: ECaviar
       +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.memoryOverhead: '1g', spark.executor.cores: '4'}"
       # INPUTS
-      step.credible_set_path: '{release_uri}/output/credible_set'
+      step.credible_set_path: '{{release_uri}}/output/credible_set'
       # OUTPUTS
-      step.coloc_path: '{release_uri}/output/colocalisation'
+      step.coloc_path: '{{release_uri}}/output/colocalisation'
 
   variant_partition:
     params:
       step: variant_to_vcf
       step.partition_size: 2_000 # approximate num of variants per partition!
-      step.session.write_mode: errorIfExists
+      step.session.write_mode: overwrite
       # INPUTS
       step.source_paths:
-        - '{release_uri}/input/evidence/uniprot_variants.json.gz'
-        - '{release_uri}/input/evidence/eva.json.gz'
-        - '{release_uri}/input/pharmacogenomics/pharmacogenomics.json.gz'
-        - '{release_uri}/output/credible_set'
+        - '{{release_uri}}/input/evidence/uniprot_variants.json.gz'
+        - '{{release_uri}}/input/evidence/eva.json.gz'
+        - '{{release_uri}}/input/pharmacogenomics/pharmacogenomics.json.gz'
+        - '{{release_uri}}/output/credible_set'
       step.source_formats:
         - json
         - json
         - json
         - parquet
       # OUTPUTS
-      step.output_path: '{release_uri}/intermediate/variant_partition'
+      step.output_path: '{{release_uri}}/intermediate/variant_partition'
 
   variant_annotation:
+    cluster: false
     google_batch:
       resource_specs:
         cpu_milli: 2000
@@ -152,66 +136,66 @@ steps:
         max_run_duration: '2h'
       policy_specs:
         machine_type: n1-standard-4
-      image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/custom_ensembl_vep:{vep_version}
+      image: 'europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/custom_ensembl_vep:{{vep_version}}'
       entrypoint: /bin/sh
     params:
       # INPUTS
       vep_cache_path: gs://vep_cache_data/vep/cache
-      vcf_input_path: '{release_uri}/intermediate/variant_partition'
+      vcf_input_path: '{{release_uri}}/intermediate/variant_partition'
       # OUTPUTS
-      vep_output_path: '{release_uri}/intermediate/variant_annotation'
+      vep_output_path: '{{release_uri}}/intermediate/variant_annotation'
 
   variant:
     params:
       step: variant_index
-      step.session.write_mode: errorIfExists
+      step.session.write_mode: overwrite
       step.session.output_partitions: 25
       # INPUTS
-      step.vep_output_json_path: '{release_uri}/intermediate/variant_annotation'
+      step.vep_output_json_path: '{{release_uri}}/intermediate/variant_annotation'
       step.variant_annotations_path:
         - gs://gnomad_data_2/v4.1/variant_index
         - gs://otar013-ppp/OTAR2075_lof_curation/lof_curation_variant_annotations # PPP ONLY!
       step.amino_acid_change_annotations:
         - gs://otar013-ppp/OTAR2081_foldx/foldx_variant_annotation
       # OUTPUTS
-      step.variant_index_path: '{release_uri}/output/variant'
+      step.variant_index_path: '{{release_uri}}/output/variant'
 
   l2g_feature_matrix:
     params:
       step: locus_to_gene_feature_matrix
-      step.session.write_mode: errorIfExists
+      step.session.write_mode: overwrite
       +step.session.extended_spark_conf: "{spark.sql.autoBroadcastJoinThreshold:'-1'}"
       # INPUTS
-      step.credible_set_path: '{release_uri}/output/credible_set'
-      step.variant_index_path: '{release_uri}/output/variant'
-      step.colocalisation_path: '{release_uri}/output/colocalisation'
-      step.study_index_path: '{release_uri}/output/study'
-      step.target_index_path: '{release_uri}/output/target'
+      step.credible_set_path: '{{release_uri}}/output/credible_set'
+      step.variant_index_path: '{{release_uri}}/output/variant'
+      step.colocalisation_path: '{{release_uri}}/output/colocalisation'
+      step.study_index_path: '{{release_uri}}/output/study'
+      step.target_index_path: '{{release_uri}}/output/target'
       # OUTPUTS
-      step.feature_matrix_path: '{release_uri}/intermediate/l2g_feature_matrix'
+      step.feature_matrix_path: '{{release_uri}}/intermediate/l2g_feature_matrix'
 
   l2g_training:
     params:
       step: locus_to_gene
-      step.session.write_mode: errorIfExists
+      step.session.write_mode: overwrite
       step.run_mode: train
-      step.wandb_run_name: '{l2g_training_version}'
+      step.wandb_run_name: '{{l2g_training_version}}'
       step.cross_validate: false
       step.hf_hub_repo_id: opentargets/locus_to_gene
-      step.hf_model_commit_message: 'chore: update model base model for {l2g_training_version} run'
+      step.hf_model_commit_message: 'chore: update model base model for {{l2g_training_version}} run'
       +step.session.extended_spark_conf: "{spark.kryoserializer.buffer.max:500m, spark.sql.autoBroadcastJoinThreshold:'-1'}"
       # INPUTS
-      step.credible_set_path: '{release_uri}/output/credible_set'
-      step.feature_matrix_path: '{release_uri}/intermediate/l2g_feature_matrix'
-      step.gold_standard_curation_path: '{release_uri}/input/l2g/gold_standard.json'
+      step.credible_set_path: '{{release_uri}}/output/credible_set'
+      step.feature_matrix_path: '{{release_uri}}/intermediate/l2g_feature_matrix'
+      step.gold_standard_curation_path: '{{release_uri}}/input/l2g/gold_standard.json'
       # OUTPUTS
-      step.model_path: '{release_uri}/etc/model/locus_to_gene_model/classifier.skops'
+      step.model_path: '{{release_uri}}/etc/model/locus_to_gene_model/classifier.skops'
 
   l2g_prediction:
     params:
       step: locus_to_gene
       step.run_mode: predict
-      step.session.write_mode: errorIfExists
+      step.session.write_mode: overwrite
       step.session.output_partitions: 1
       step.l2g_threshold: 0.05
       step.download_from_hub: true
@@ -219,19 +203,19 @@ steps:
       +step.session.extended_spark_conf: "{spark.rpc.message.maxSize:'1024'}"
       # INPUTS
       step.hf_hub_repo_id: opentargets/locus_to_gene
-      step.feature_matrix_path: '{release_uri}/intermediate/l2g_feature_matrix'
-      step.credible_set_path: '{release_uri}/output/credible_set'
+      step.feature_matrix_path: '{{release_uri}}/intermediate/l2g_feature_matrix'
+      step.credible_set_path: '{{release_uri}}/output/credible_set'
       # OUTPUTS
-      step.predictions_path: '{release_uri}/output/l2g_prediction'
+      step.predictions_path: '{{release_uri}}/output/l2g_prediction'
 
   l2g_evidence:
     params:
       step: locus_to_gene_evidence
-      step.session.write_mode: errorIfExists
+      step.session.write_mode: overwrite
       step.locus_to_gene_threshold: 0.05
       # INPUTS
-      step.credible_set_path: '{release_uri}/output/credible_set'
-      step.locus_to_gene_predictions_path: '{release_uri}/output/l2g_prediction'
-      step.study_index_path: '{release_uri}/output/study'
+      step.credible_set_path: '{{release_uri}}/output/credible_set'
+      step.locus_to_gene_predictions_path: '{{release_uri}}/output/l2g_prediction'
+      step.study_index_path: '{{release_uri}}/output/study'
       # OUTPUTS
-      step.evidence_output_path: '{release_uri}/intermediate/evidence/l2g_evidence'
+      step.evidence_output_path: '{{release_uri}}/intermediate/evidence/l2g_evidence'

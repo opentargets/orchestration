@@ -1,16 +1,26 @@
 ---
-release_name: 'tests/25.06'
+release_name: '25.06'
 
-pis_version: '25.2.0'
-pts_version: '25.0.0'
-etl_version: '25.1.0-alpha.2'
+# If `is_dev` is true:
+#   * the bucket used for the run will be `open-targets-pipeline-runs`
+#   * the prefix inside the bucket will be `run_name`
+#         which defaults to a timestamp if not provided.
+is_dev: true
+run_name: 'jferrer/25.06-testrun-3'
+
+# Whether this will be a partner preview platform release (PPP)
+is_ppp: false
+
+# Versions for software and data
+pis_version: '25.2.1'
+pts_version: '25.0.2-beta.4'
+etl_version: '25.2.0-beta.1'
 gentropy_version: '2.3.0-rc.1'
-vep_version: '2.2.0-rc.5'
+vep_version: 'dev'
 
 chembl_version: '35'
-efo_version: '3.73.0'
-ensembl_version: '113'
-l2g_training_version: '2025-02'
+efo_version: '3.77.0'
+ensembl_version: '114'
 
 # Dependency graph
 # ----------------
@@ -73,12 +83,15 @@ steps:
 
   # ETL STEPS
   etl_expression:
+    num_partitions: 4
     depends_on:
       - pts_expression
   etl_go:
+    num_partitions: 1
     depends_on:
       - pis_go
   etl_reactome:
+    num_partitions: 1
     depends_on:
       - pis_reactome
 
@@ -88,11 +101,14 @@ steps:
       - pis_otar
       - pts_disease
   etl_target:
+    num_partitions: 10
     depends_on:
+      - pts_disease
       - pts_target
       - etl_reactome
 
   etl_drug:
+    num_partitions: 1
     depends_on:
       - pis_drug
       - pts_disease
@@ -107,6 +123,7 @@ steps:
       - pis_interaction
       - etl_target
   etl_mouse_phenotype:
+    num_partitions: 1
     depends_on:
       - etl_target
       - pis_mouse_phenotype
@@ -116,10 +133,12 @@ steps:
       - pts_openfda
       - etl_drug
   etl_literature:
+    num_partitions: 1000
     depends_on:
       - pis_literature
       - etl_drug
   etl_pharmacogenomics:
+    num_partitions: 1
     depends_on:
       - pis_pharmacogenomics
       - etl_drug
@@ -129,6 +148,7 @@ steps:
       - etl_drug
 
   etl_evidence:
+    num_partitions: 100
     depends_on:
       - pis_evidence
       - etl_literature
@@ -143,6 +163,7 @@ steps:
     depends_on:
       - etl_evidence
   etl_known_drug:
+    num_partitions: 2
     depends_on:
       - etl_evidence
 
@@ -170,16 +191,16 @@ steps:
     depends_on:
       - gentropy_study
 
-  gentropy_variant_partition:
-    depends_on:
-      - pis_evidence
-      - pis_pharmacogenomics
-      - gentropy_credible_set
   gentropy_colocalisation_coloc:
     depends_on:
       - gentropy_credible_set
   gentropy_colocalisation_ecaviar:
     depends_on:
+      - gentropy_credible_set
+  gentropy_variant_partition:
+    depends_on:
+      - pis_evidence
+      - pis_pharmacogenomics
       - gentropy_credible_set
 
   gentropy_variant_annotation:

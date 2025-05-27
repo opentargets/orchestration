@@ -2,196 +2,315 @@
 
 from __future__ import annotations
 
+import logging
+from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+from orchestration.dags.config.app_config import AppConfig
+from orchestration.operators.dataproc import ClusterDefinition
 
 if TYPE_CHECKING:
     from typing import Any
 
-from orchestration.utils import read_hocon_config, read_yaml_config
-
 
 class UnifiedPipelineConfig:
-    """Configuration class for the platform part of the unified pipeline.
+    """Configuration class for the Unified Pipeline.
 
-    This class reads the configuration files for both the platform part of the
-    unified pipeline dag as well as PIS and ETL applications, performs some
-    operations on them and then exposes the values.
+    This class is used to provide the config for the Unified Pipeline and all the
+    applications run by it: PIS, PTS, ETL and GENTROPY.
 
-    Some fields in PIS/PTS and ETL application configuration files are replaced
-    with values from the pipeline dag configuration, which is the only one the
-    user of the orchestrator has to modify to run the unified pipeline.
+    The configuration is loaded, parsed and in the case of the application configs,
+    templates are rendered with values from the pipeline configuration.
 
-    The configuration files are expected to be in the same directory as this file.
-    They are:
-    - `unified_pipeline.yaml`: contains the general configuration for the pipeline.
-    - `pis.yaml`: contains the configuration for the PIS steps.
-    - `pts.yaml`: contains the configuration for the PTS steps.
-    - `etl.conf`: contains the configuration for the ETL steps.
-    - `gentropy.yaml`: contains the configuration for the GENTROPY steps.
+    There are hardcoded config values that are not meant to change often. If they
+    become more dynamic, they can be moved to unified_pipeline.yaml.
     """
 
     def __init__(self) -> None:
-        self.config_path = Path(__file__).parent / "unified_pipeline.yaml"
-        self.pis_config_local_path = Path(__file__).parent / "pis.yaml"
-        self.pts_config_local_path = Path(__file__).parent / "pts.yaml"
-        self.etl_config_local_path = Path(__file__).parent / "etl.conf"
-        self.gentropy_config_local_path = Path(__file__).parent / "gentropy.yaml"
+        self.logger = logging.getLogger(__name__)
+        config_path = Path(__file__).parent
 
-        # These are hardcoded config values that are not meant to change often.
-        # It is safe to extract them from here into the config file in case they
-        # become more dynamic. Just add them to self in the initialization so they
-        # are available.
+        up = AppConfig.from_file(file_path=config_path / "unified_pipeline.yaml")
+        self._steps = up.get("steps")
 
-        # The drive scope is needed to download spreadsheets from Google Drive
-        # for the PIS otar step.
+        self.run_name = up.get("run_name") or datetime.now().strftime("%Y%m%d-%H%M")
+        """Used for labelling resources."""
+        self.release_uri: str = f"gs://open-targets-pre-data-releases/{up.get('release_name')}"
+        """The place where the production release files are read from and/or written to."""
+        self.is_dev = up.get("is_dev", True)
+        """Whether this is a development or production run."""
+        self.dev_uri = f"gs://open-targets-pipeline-runs/{self.run_name}" if self.is_dev else None
+        """The place where the development run files are read from and written to."""
         self.service_account_extra_scopes = ["https://www.googleapis.com/auth/drive"]
+        """Extra scopes to be added to the service account in executor machines"""
+        """- the drive scope is needed to download Google Drive spreadsheets for the pis_otar step"""
+        self.is_ppp = up.get("is_ppp")
+        """Whether this is a ppp run or public platform run."""
+        self.num_partitions = 20
+        """The default number of partitions for steps using spark that do not specify it."""
 
-        # Pipeline settings.
-        settings = read_yaml_config(self.config_path)
-        release_name = settings["release_name"]
-        self.release_uri: str = f"gs://open-targets-pre-data-releases/{release_name}"
-        self.chembl_version = settings["chembl_version"]
-        self.efo_version = settings["efo_version"]
-        self.ensembl_version = settings["ensembl_version"]
-        self.is_ppp = settings["is_ppp"]
-        self.steps = settings["steps"]
-        self.ppp_steps = [s for s, d in self.steps.items() if d and d.get("ppp_only", False)]
+        data_sources_exclude = "[]" if self.is_ppp else '["ot_crispr", "encore", "ot_crispr_validation"]'
+
+        self.pis = AppConfig.from_file(
+            file_path=config_path / "pis.yaml",
+            template_context={
+                "release_uri": self.dev_uri or self.release_uri,
+                "chembl_version": up.get("chembl_version"),
+                "efo_version": up.get("efo_version"),
+                "ensembl_version": up.get("ensembl_version"),
+            },
+        )
+        """The internal configuration for PIS steps."""
+
+        self.pts = AppConfig.from_file(
+            file_path=config_path / "pts.yaml",
+            template_context={
+                "release_uri": self.dev_uri or self.release_uri,
+            },
+        )
+        """The internal configuration for PTS steps."""
+
+        self.etl = AppConfig.from_file(
+            file_path=config_path / "etl.conf",
+            template_context={
+                "release_uri": self.dev_uri or self.release_uri,
+                "data_sources_exclude": data_sources_exclude,
+            },
+        )
+        """The internal configuration for ETL steps."""
+
+        self.gentropy = AppConfig.from_file(
+            file_path=config_path / "gentropy.yaml",
+            template_context={
+                "release_uri": self.dev_uri or self.release_uri,
+                "gentropy_version": up.get("gentropy_version"),
+                "l2g_training_version": datetime.now().strftime("%Y-%m"),
+                "vep_version": up.get("vep_version"),
+            },
+        )
+        """The internal configuration for GENTROPY steps."""
+
+        self.clusters = AppConfig.from_file(
+            file_path=config_path / "clusters.yaml",
+            template_context={
+                "gentropy_version": up.get("gentropy_version"),
+            },
+        )
+        """The cluster definitions."""
 
         # PIS-specific settings.
-        pis_version = settings["pis_version"]
-        self.pis_config = self.init_pis_config()
-        # The base image for PIS, the version tag will be appended from the config file.
-        pis_image_base = "europe-west1-docker.pkg.dev/open-targets-eu-dev/pis/pis"
-        self.pis_image = f"{pis_image_base}:{pis_version}"
-        self.pis_step_list = [s for s in settings["steps"] if s.startswith("pis_")]
-
-        self.pis_disk_size = 150  # The disk size for PIS vms, in GB.
-        # Note: although not all steps need this much space, it is easier to have a
-        # single value for all steps, and the machines are so short-lived that it
-        # doesn't matter much with respect to cost.
+        pis_image = "europe-west1-docker.pkg.dev/open-targets-eu-dev/pis/pis"
+        pis_version = up.get("pis_version")
+        self.pis_image = f"{pis_image}:{pis_version}"
+        """The image and tag used to run PIS steps."""
+        self.pis_disk_size = 150
+        """The disk size for PIS vms, in GB.
+            Note: although not all steps need this much space, it is simpler to
+                have a single value for all steps, the machines are short-lived
+                and it doesn't matter with respect to cost.
+        """
 
         # PTS-specific settings.
-        pts_version = settings["pts_version"]
-        self.pts_config = self.init_pts_config()
-        # The base image for PTS, the version tag will be appended from the config file.
-        pts_image_base = "europe-west1-docker.pkg.dev/open-targets-eu-dev/pts/pts"
-        self.pts_image = f"{pts_image_base}:{pts_version}"
-        self.pts_step_list = [s for s in settings["steps"] if s.startswith("pts_")]
+        pts_image = "europe-west1-docker.pkg.dev/open-targets-eu-dev/pts/pts"
+        pts_version = up.get("pts_version")
+        self.pts_image = f"{pts_image}:{pts_version}"
+        """The image and tag used to run PTS steps."""
         self.pts_machine_type = "n1-standard-32"
-        self.pts_disk_size = 150  # The disk size for PIS vms, in GB.
+        """The machine type used to run PTS steps."""
+        self.pts_disk_size = 300
+        """The disk size for PTS vms, in GB."""
 
         # ETL-specific settings.
-        etl_version = settings["etl_version"]
-        self.etl_config = self.init_etl_config()
-        self.etl_config_uri = f"{self.release_uri}/etc/config/etl.conf"
-        # The base url for the ETL jar, the version will be replaced in from the config file.
+        etl_version = up.get("etl_version")
         self.etl_jar_origin_uri = f"gs://opentargets-pipelines/up/etl/etl-{etl_version}.jar"
-        self.etl_jar_uri = f"{self.release_uri}/etc/bin/etl.jar"  # fmt: skip
-        self.etl_step_list = [s for s in settings["steps"] if s.startswith("etl_")]
+        """The URI where the jar used to run ETL is fetched from."""
 
         # GENTROPY-specific settings.
-        self.gentropy_version = settings["gentropy_version"]
-        self.l2g_training = settings["l2g_training"]
-        self.vep_version = settings["vep_version"]
-        self.gentropy_config = self.init_gentropy_settings()
-        self.gentropy_dataproc_cluster_settings = self.gentropy_config["dataproc_cluster_settings"]
-        self.gentropy_step_list = [s for s in settings["steps"] if s.startswith("gentropy_")]
-
-    def pis_config_uri(self, step_name: str) -> str:
-        """Return the google cloud url of the PIS configuration file for a step."""
-        return f"{self.release_uri}/etc/config/{step_name}.yaml"
-
-    def init_pis_config(self) -> dict[str, Any]:
-        """Initialize the PIS configuration.
-
-        This method reads the PIS configuration file, replaces the fields defined
-        in the unified pipeline config, and returns the resulting configuration.
-        """
-        pis_raw_conf = read_yaml_config(self.pis_config_local_path)
-
-        # set the work bucket path
-        pis_raw_conf["release_uri"] = self.release_uri
-
-        # fill in the scratchpad fields
-        pis_raw_conf["scratchpad"]["chembl_version"] = self.chembl_version
-        pis_raw_conf["scratchpad"]["efo_version"] = self.efo_version
-        pis_raw_conf["scratchpad"]["ensembl_version"] = self.ensembl_version
-
-        return pis_raw_conf
+        self.gentropy_main_python_file_uri = "gs://genetics_etl_python_playground/initialisation/cli.py"
+        self.gentropy_cluster_init_script_uri = (
+            "gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh"
+        )
 
     def pis_env_vars(self, step_name: str) -> dict[str, str]:
         """Return the environment variables for a PIS step."""
         return {
-            "PIS_STEP": step_name.replace("pis_", ""),
+            "PIS_STEP": step_name.removeprefix("pis_"),
             "PIS_CONFIG_PATH": "/config.yaml",
         }
 
-    def pts_config_uri(self, step_name: str) -> str:
-        """Return the google cloud url of the PTS configuration file for a step."""
-        return f"{self.release_uri}/etc/config/{step_name}.yaml"
-
-    def init_pts_config(self) -> dict[str, Any]:
-        """Initialize the PTS configuration.
-
-        This method reads the PTS configuration file, replaces the fields defined
-        in the unified pipeline config, and returns the resulting configuration.
-        """
-        pts_raw_conf = read_yaml_config(self.pts_config_local_path)
-
-        # set the work bucket path
-        pts_raw_conf["release_uri"] = self.release_uri
-
-        return pts_raw_conf
-
     def pts_env_vars(self, step_name: str) -> dict[str, str]:
-        """Return the environment variables for a PIS step."""
+        """Return the environment variables for a PTS step."""
         return {
-            "PTS_STEP": step_name.replace("pts_", ""),
+            "PTS_STEP": step_name.removeprefix("pts_"),
             "PTS_CONFIG_PATH": "/config.yaml",
         }
 
-    # pyhocon returns a ConfigTree, but we can treat it as a dict
-    def init_etl_config(self) -> dict[str, Any]:
-        """Initialize the ETL configuration.
+    def steps(self, prefix: str = "") -> list[str]:
+        """Return a list of steps in the pipeline.
 
-        This method reads the ETL configuration file, replaces the fields defined
-        in the unified pipeline config, and returns the resulting configuration.
+        Args:
+            prefix (str): Filter steps by prefix, to get the list of steps for a
+                specific stage. For example, `pis_` for PIS steps.
+            ppp (bool): Whether to include PPP-exclusive steps. Defaults to `False`.
+
+        Returns:
+            list[str]: The list of step names.
         """
-        etl_raw_conf = read_hocon_config(
-            self.etl_config_local_path,
-            sentinels={
-                "remote_uri": self.release_uri,
-            },
-        )
+        relevant_steps: list[str] = []
 
-        # ppp - set the write mode to overwrite and remove the data sources
-        if self.is_ppp:
-            etl_raw_conf["spark-settings"]["write-mode"] = "overwrite"
-            etl_raw_conf["evidences"]["data-sources-exclude"] = []
+        stage_steps = {k: v for k, v in self._steps.items() if k.startswith(prefix)}
+        for step_name, step_deps in stage_steps.items():
+            if step_deps and step_deps.get("ppp_only") and not self.is_ppp:
+                continue
+            relevant_steps.append(step_name)
+        return relevant_steps
 
-        return etl_raw_conf
+    def step_config(self, step_name: str) -> dict[str, Any]:
+        """Return the configuration for a step.
 
-    def init_gentropy_settings(self) -> dict[str, Any]:
-        """Initialize the gentropy configuration.
+        This method gathers both the common configuration for the application and
+        the specific configuration for the step. That specific configuration will
+        therefore be nested under `steps.{step_name}` in the returned dict. See
+        `step_specific_config` to get the specific configuration.
 
-        This method reads the gentropy configuration file, replaces the fields defined
-        in the unified pipeline config, and returns the resulting configuration.
+        Args:
+            step_name (str): The name of the step, in the form `{stage}_{step_name}`.
+
+        Returns:
+            dict: The configuration for the step.
         """
-        return read_yaml_config(
-            self.gentropy_config_local_path,
-            sentinels={
-                "l2g_training": self.l2g_training,
-                "release_uri": self.release_uri,
-                "gentropy_version": self.gentropy_version,
-                "vep_version": self.vep_version,
-            },
-        )
+        stage, step = step_name.split("_", 1)
+        stage_config: AppConfig = getattr(self, stage)
 
-    def gentropy_step(self, step_name: str) -> dict[str, Any]:
-        """Return the config for the gentropy step."""
-        real_step_name = step_name.replace("gentropy_", "")
-        step = self.gentropy_config["steps"].get(real_step_name)
-        if not step:
-            raise ValueError(f"Step {real_step_name} not in gentropy config ({self.gentropy_config_local_path}).")
-        return step
+        return {
+            **stage_config.config,
+            "steps": {step: stage_config.config.get("steps", {}).get(step, {})},
+        }
+
+    def step_specific_config(self, step_name: str) -> dict[str, Any]:
+        """Return the specific configuration for a step.
+
+        This method returns the specific step configuration, that is, only the
+        keys under `steps.{step_name}` in the configuration file.
+
+        Args:
+            step_name (str): The name of the step, in the form `{stage}_{step_name}`.
+
+        Returns:
+            dict[str, Any]: The specific configuration for the step.
+        """
+        _, step = step_name.split("_", 1)
+        return self.step_config(step_name).get("steps", {}).get(step, {})
+
+    def step_cluster_definition(self, step_name: str) -> ClusterDefinition | None:
+        """Return the cluster type and configuration for a step.
+
+        This method finds the proper cluster definition by matching on the most
+        specific cluster name that is a prefix of the step name. So if the step
+        name is `pis_foo_bar`, and the cluster names are `pis_foo_` and `pis_`,
+        the cluster definition for `pis_foo_` will be returned.
+
+        A step can also be configured to not use a cluster by setting the
+        `cluster` key to `False` in the step configuration. In this case, the
+        method will return None. This is useful for Gentropy steps that are run
+        using Google Batch.
+
+        Args:
+            step_name (str): The name of the step, in the form `{stage}_{step_name}`.
+
+        Returns:
+            ClusterDefinition | None: A ClusterDefinition object containing the
+                cluster type and configuration for the step. If the step requires
+                no cluster, returns None.
+
+        Raises:
+            ValueError: If no cluster definition is found for the step name.
+        """
+        if self.step_specific_config(step_name).get("cluster", True) is False:
+            return None
+
+        clusters = self.clusters.config.get("clusters", {})
+        sorted_cluster_names = sorted(clusters.keys(), key=len, reverse=True)
+        for cluster_name in sorted_cluster_names:
+            if step_name.startswith(cluster_name):
+                return ClusterDefinition(cluster_name, clusters[cluster_name])
+        raise ValueError(f"No cluster definition found for step {step_name}.")
+
+    def step_job_properties(self, step_name: str) -> dict[str, str]:
+        """Return the spark job properties for a step.
+
+        This method finds the proper job properties by matching on the most
+        specific key in the `step_job_properties` dictionary that is a prefix of
+        the step name. So if the step name is `pis_foo_bar`, and the keys are
+        `pis_foo_` and `pis_`, the job properties for `pis_foo_` will be
+        returned.
+
+        Args:
+            step_name (str): The name of the step, in the form `{stage}_{step_name}`.
+
+        Returns:
+            dict[str, str]: The spark job properties for the step. If none are
+                found, an empty dictionary is returned.
+        """
+        property_dicts = self.clusters.config.get("step_job_properties", {})
+        sorted_property_dicts = sorted(property_dicts.keys(), key=len, reverse=True)
+        for property_dict in sorted_property_dicts:
+            if step_name.startswith(property_dict):
+                return property_dicts[property_dict]
+        return {}
+
+    def step_definition(self, step_name: str) -> dict[str, Any]:
+        """Return the definition of a step.
+
+        This method returns the step definition, which includes the step name,
+        dependencies, and the number of partitions if it is a spark step.
+
+        This is a good candidate for a refactor once a Step class is modeled in.
+
+        Args:
+            step_name (str): The name of the step, in the form `{stage}_{step_name}`.
+
+        Returns:
+            dict[str, Any]: The definition of the step.
+        """
+        definition = self._steps.get(step_name)
+        # can't put the default in the get, as the content can actually be None
+        # and that will not be replaced by the default
+        return definition or {}
+
+    def config_uri(self, step_name: str) -> str:
+        """Return the URI of the configuration file for a step.
+
+        Args:
+            step_name (str): The name of the step, in the form `{stage}_{step_name}`.
+
+        Returns:
+            str: The URI of the configuration file for the step.
+        """
+        exts = {  # file extensions for any stage that does not use a yaml config
+            "etl": "conf",
+        }
+        stage, _ = step_name.split("_", 1)
+        ext = exts.get(stage, "yaml")
+        return f"{self.dev_uri or self.release_uri}/etc/config/{step_name}.{ext}"
+
+    def jar_uri(self, step_name: str) -> str:
+        """Return the URI of the jar file used to run ETL.
+
+        Args:
+            step_name (str): The name of the step, in the form `{stage}_{step_name}`.
+
+        Returns:
+            str: The URI of the jar file.
+        """
+        _, step = step_name.split("_", 1)
+        return f"{self.dev_uri or self.release_uri}/etc/bin/etl-{step}.jar"
+
+    def manifest_uri(self) -> str:
+        """Return the URI of the manifest file for the run.
+
+        Returns:
+            str: The URI of the manifest.
+        """
+        return f"{self.dev_uri or self.release_uri}/manifest.json"
