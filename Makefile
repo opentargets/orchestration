@@ -2,7 +2,7 @@ VERSION := $$(grep '^version' pyproject.toml | sed 's%version = "\(.*\)"%\1%')
 .DEFAULT_GOAL := cloud-dev
 
 ### HOUSEKEEPING TARGETS ###
-.PHONY: help version clean test check cloud-dev upload-ukb-ppp-bucket-readme upload-eqtl-catalogue-bucket-readme upload-finngen-bucket-readme upload-gwas-catalog-buckets-readme update-bucket-docs build-gentropy-gcs-image setup-harmonisation-test
+.PHONY: help version clean test check cloud-dev tunnel upload-ukb-ppp-bucket-readme upload-eqtl-catalogue-bucket-readme upload-finngen-bucket-readme upload-gwas-catalog-buckets-readme update-bucket-docs build-gentropy-gcs-image setup-harmonisation-test
 
 help: ## Show the help message
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-36s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -28,6 +28,9 @@ dev: .git/hooks/commit-msg  ## Prepare the local development environment
 
 cloud-dev: ## Start the remote development environment and connect to it (default goal)
 	@./deployment/start.sh
+
+tunnel: ## Tunnel to the remote development environment
+	@./deployment/tunnel.sh
 
 
 ### OTHER TARGETS ###
