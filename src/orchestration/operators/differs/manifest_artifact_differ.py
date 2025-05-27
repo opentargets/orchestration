@@ -43,8 +43,15 @@ class ManifestArtifactDiffer:
             self.logger.info("manifest not found")
             return True
 
-        for artifact in manifest.get("steps", {}).get(step_name, {}).get("artifacts", []):
+        relevant_manifest_step = manifest.get("steps", {}).get(step_name, None)
+        if not relevant_manifest_step:
+            self.logger.info(f"step {step_name} not found in manifest")
+            return True
+        for artifact in relevant_manifest_step.get("artifacts", []):
             artifact_uri: str = artifact.get("destination")
+            if not artifact_uri.startswith("gs://"):
+                self.logger.info(f"ignoring intermediate artifact {artifact_uri}")
+                continue
             self.logger.info(f"checking artifact {artifact_uri}")
             if not artifact_uri:
                 self.logger.warning(f"artifact {artifact} has no destination")
