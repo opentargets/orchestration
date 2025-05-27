@@ -433,9 +433,9 @@ steps:
 
   #: L2G STEP :#####################################################################################
   l2g:
-    - name: copy l2g model
-      source: gs://ot_orchestration/benchmarks/l2g/fm0/v5.1_best_cv/locus_to_gene_model/classifier.skops
-      destination: etc/model/l2g_prediction/classifier.skops
+    # - name: copy l2g model
+    #   source: gs://ot_orchestration/benchmarks/l2g/fm0/v5.1_best_cv/locus_to_gene_model/classifier.skops
+    #   destination: etc/model/l2g_prediction/classifier.skops
     - name: explode_glob l2g gold_standard
       glob: gs://genetics-portal-dev-analysis/yt4/20241024_EGL_playground/training_set/patched_training_2503-testrun-1_all_string_extended_EGL_variants.json/*.json
       do:
@@ -620,11 +620,11 @@ steps:
           source: https://ftp.ensembl.org/pub/release-${ensembl_version}/json/${each}/${each}.json
           destination: input/target/homologue/gene_dictionary/${each}.json
         - name: copy ${each} protein homology
-          source: https://ftp.ensembl.org/pub/release-${ensembl_version}/tsv/ensembl-compara/homologies/${each}/Compara.${ensembl_version}.protein_default.homologies.tsv
-          destination: input/target/homologue/homologies/protein-${each}.tsv
+          source: https://ftp.ensembl.org/pub/release-${ensembl_version}/tsv/ensembl-compara/homologies/${each}/Compara.${ensembl_version}.protein_default.homologies.tsv.gz
+          destination: input/target/homologue/homologies/protein-${each}.tsv.gz
         - name: copy ${each} ncrna homology
-          source: https://ftp.ensembl.org/pub/release-${ensembl_version}/tsv/ensembl-compara/homologies/${each}/Compara.${ensembl_version}.ncrna_default.homologies.tsv
-          destination: input/target/homologue/homologies/ncrna-${each}.tsv
+          source: https://ftp.ensembl.org/pub/release-${ensembl_version}/tsv/ensembl-compara/homologies/${each}/Compara.${ensembl_version}.ncrna_default.homologies.tsv.gz
+          destination: input/target/homologue/homologies/ncrna-${each}.tsv.gz
 
     - name: copy homology ensembl vertebrates
       source: https://ftp.ensembl.org/pub/release-${ensembl_version}/species_EnsemblVertebrates.txt
