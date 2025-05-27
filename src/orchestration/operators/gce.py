@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 from airflow.configuration import conf
 from airflow.exceptions import AirflowException
 from airflow.providers.google.cloud.hooks.compute import ComputeEngineHook
+from airflow.providers.google.cloud.operators.compute import ComputeEngineDeleteInstanceOperator
 from airflow.providers.google.common.consts import CLIENT_INFO
 from airflow.providers.google.common.hooks.base_google import GoogleBaseHook
 from airflow.sensors.base import BaseSensorOperator
@@ -726,3 +727,17 @@ class ComputeEngineExitCodeTrigger(BaseTrigger):
             gcp_conn_id=self.gcp_conn_id,
             impersonation_chain=self.impersonation_chain,
         )
+
+
+class DeleteInstanceOperator(ComputeEngineDeleteInstanceOperator):
+    def __init__(
+        self,
+        *,
+        zone: str = GCP_ZONE,
+        project_id: str = GCP_PROJECT_PLATFORM,
+        **kwargs,
+    ) -> None:
+        super().__init__(zone=zone, project_id=project_id, **kwargs)
+
+    def execute(self, context: Context) -> None:
+        super().execute(context)

@@ -210,8 +210,8 @@ class CopyBlobOperator(BaseOperator):
             impersonation_chain=self.impersonation_chain,
         )
 
-        source_bucket, source_object = self.src_uri.replace("gs://", "").split("/", 1)
-        destination_bucket, destination_object = self.dst_uri.replace("gs://", "").split("/", 1)
+        source_bucket, source_object = self.src_uri.removeprefix("gs://").split("/", 1)
+        destination_bucket, destination_object = self.dst_uri.removeprefix("gs://").split("/", 1)
 
         if not hook.exists(source_bucket, source_object):
             raise FileNotFoundError(f"Source object {self.src_uri} does not exist.")

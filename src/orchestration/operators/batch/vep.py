@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from functools import cached_property
 from pathlib import Path
+from typing import TYPE_CHECKING, cast
 
 from airflow.exceptions import AirflowException
 from airflow.providers.google.cloud.hooks.cloud_batch import CloudBatchHook
@@ -14,10 +15,14 @@ from google.cloud.batch_v1 import Job
 from google.cloud.storage import Client
 
 from orchestration.types import GCSMountObject, GoogleBatchSpecs
+from orchestration.utils import random_id
 from orchestration.utils.batch import create_batch_job, create_task_env, create_task_spec
-from orchestration.utils.common import GCP_PROJECT_GENETICS, GCP_REGION
+from orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_REGION
 from orchestration.utils.labels import Labels
 from orchestration.utils.path import GCSPath
+
+if TYPE_CHECKING:
+    from typing import Any
 
 
 class VepAnnotationPathManager:
@@ -99,13 +104,10 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
     def __init__(
         self,
         job_name: str,
-        vcf_input_path: str,
-        vep_output_path: str,
-        vep_cache_path: str,
-        google_batch: GoogleBatchSpecs,
+        config: dict[str, Any],
         mount_dir_root: str = "/mnt/disks/share",
         gcp_region: str = GCP_REGION,
-        project_id: str = GCP_PROJECT_GENETICS,
+        project_id: str = GCP_PROJECT_PLATFORM,
         gcp_conn_id: str = "google_cloud_default",
         impersonation_chain: str | Sequence[str] | None = None,
         polling_period_seconds: float = 10,
@@ -115,13 +117,14 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
     ):
         super().__init__(**kwargs)
         self.project_id = project_id
-        self.job_name = job_name
+        self.job_name = f"{job_name}-{random_id()}"
         self.region = gcp_region
 
-        self.vcf_input_path = vcf_input_path
-        self.vep_output_path = vep_output_path
-        self.vep_cache_path = vep_cache_path
-        self.google_batch = google_batch
+        self.google_batch = cast(GoogleBatchSpecs, config.get("google_batch"))
+        self.vep_cache_path = config.get("params", {}).get("vep_cache_path")
+        self.vcf_input_path = config.get("params", {}).get("vcf_input_path")
+        self.vep_output_path = config.get("params", {}).get("vep_output_path")
+
         self.mount_dir_root = mount_dir_root
         self.gcp_conn_id = gcp_conn_id
         self.impersonation_chain = impersonation_chain
@@ -149,8 +152,11 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
         """Execute the operator."""
         vcf_files = self._get_vcf_partition_basenames(self.pm.paths["input"])
         environments = [{"INPUT_FILE": file, "OUTPUT_FILE": file.replace(".csv", ".json")} for file in vcf_files]
-        run = context.get("params", {}).get("run_label", context.get("dag_run").run_id)
-        self.labels.add({"run": run})
+        dag_run = context.get("dag_run")
+        if dag_run:
+            default_run_label = dag_run.run_id
+        run_label = context.get("params", {}).get("run_label", default_run_label)
+        self.labels["run"] = run_label
 
         job_def = create_batch_job(
             task=create_task_spec(
