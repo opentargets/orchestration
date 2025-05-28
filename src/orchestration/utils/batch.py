@@ -126,7 +126,7 @@ def create_batch_job(
                     )
                 )
             ],
-            labels=labels.as_dict(),
+            labels=dict(labels),
         ),
         logs_policy=LogsPolicy(destination=LogsPolicy.Destination.CLOUD_LOGGING),
     )
