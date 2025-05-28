@@ -482,7 +482,7 @@ with DAG(
                     trigger_rule=TriggerRule.ALL_SUCCESS,
                 )
                 for step_name in steps_in_cluster:
-                    step = gentropy_steps[step_name]["end"]
+                    step = steps[step_name]["end"]
                     x.set_upstream(step)
 
     gentropy_stage()
