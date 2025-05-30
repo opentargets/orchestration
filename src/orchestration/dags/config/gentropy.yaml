@@ -27,6 +27,7 @@ steps:
         - FAILED_PZ_CHECK
         - FAILED_GC_LAMBDA_CHECK
         - NO_OT_CURATION
+        - CASE_CASE_STUDY_DESIGN
       # INPUTS
       step.study_index_path:
         - gs://gwas_catalog_top_hits/study_index
