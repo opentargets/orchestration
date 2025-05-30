@@ -92,7 +92,7 @@ steps:
       # INPUTS
       step.credible_set_path: '{{release_uri}}/output/credible_set'
       # OUTPUTS
-      step.coloc_path: '{{release_uri}}/output/colocalisation'
+      step.coloc_path: '{{release_uri}}/output/colocalisation_coloc'
 
   colocalisation_ecaviar:
     params:
@@ -104,7 +104,7 @@ steps:
       # INPUTS
       step.credible_set_path: '{{release_uri}}/output/credible_set'
       # OUTPUTS
-      step.coloc_path: '{{release_uri}}/output/colocalisation'
+      step.coloc_path: '{{release_uri}}/output/colocalisation_ecaviar'
 
   variant_partition:
     params:
@@ -169,7 +169,7 @@ steps:
       # INPUTS
       step.credible_set_path: '{{release_uri}}/output/credible_set'
       step.variant_index_path: '{{release_uri}}/output/variant'
-      step.colocalisation_path: '{{release_uri}}/output/colocalisation'
+      step.colocalisation_path: '{{release_uri}}/output/colocalisation_*'
       step.study_index_path: '{{release_uri}}/output/study'
       step.target_index_path: '{{release_uri}}/output/target'
       # OUTPUTS
