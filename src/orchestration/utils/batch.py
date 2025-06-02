@@ -95,6 +95,7 @@ def create_batch_job(
     task: TaskSpec,
     task_env: list[Environment],
     policy_specs: BatchPolicySpecs,
+    parallelism: int | None = None,
     mounting_points: list[GCSMountObject] | None = None,
     labels: Labels | None = None,
 ) -> Job:
@@ -103,7 +104,8 @@ def create_batch_job(
     Args:
         task (TaskSpec): The task specification.
         task_env (list[Environment]): The environment variables for the task.
-        policy_specs (BatchPolicySpecs): The policy specification for the task
+        policy_specs (BatchPolicySpecs): The policy specification for the task.
+        parallelism (int | None): The number of tasks to run in parallel.
         mounting_points (list[GCSMountObject] | None): List of mounting points.
         labels (dict[str, str] | None): Labels for the job
 
@@ -115,8 +117,11 @@ def create_batch_job(
     if mounting_points:
         task.volumes = set_up_mounting_points(mounting_points)
 
+    task_spec_params = {"task_spec": task, "task_environments": task_env}
+    if parallelism:
+        task_spec_params["parallelism"] = parallelism
     return Job(
-        task_groups=[TaskGroup(task_spec=task, task_environments=task_env)],
+        task_groups=[TaskGroup(**task_spec_params)],
         allocation_policy=AllocationPolicy(
             instances=[
                 AllocationPolicy.InstancePolicyOrTemplate(

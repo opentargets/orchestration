@@ -49,6 +49,7 @@ class GoogleBatchSpecs(TypedDict):
     commands: list[str]
     environment: list[dict[str, Any]]
     entrypoint: str
+    parallelism: int
 
 
 class DataprocSpecs(TypedDict):

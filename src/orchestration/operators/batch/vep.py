@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, cast
 from airflow.exceptions import AirflowException
 from airflow.providers.google.cloud.hooks.cloud_batch import CloudBatchHook
 from airflow.providers.google.cloud.operators.cloud_base import GoogleCloudBaseOperator
-from google.cloud.batch import JobStatus
+from google.cloud.batch import JobStatus, LifecyclePolicy
 from google.cloud.batch_v1 import Job
 from google.cloud.storage import Client
 
@@ -165,9 +165,18 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
                 resource_specs=self.google_batch["resource_specs"],
                 task_specs=self.google_batch["task_specs"],
                 entrypoint=self.google_batch["entrypoint"],
+                lifecycle_policies=[
+                    LifecyclePolicy(
+                        action=LifecyclePolicy.Action.RETRY_TASK,
+                        action_condition=LifecyclePolicy.ActionCondition(
+                            exit_codes=[50001]
+                        ),  # retry on spot preemption
+                    )
+                ],
             ),
             task_env=create_task_env(environments),
             policy_specs=self.google_batch["policy_specs"],
+            parallelism=self.google_batch["parallelism"],
             mounting_points=self.pm.mount_config,
             labels=self.labels,
         )
