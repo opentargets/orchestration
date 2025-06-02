@@ -122,7 +122,7 @@ class UploadStringOperator(BaseOperator):
         dst_uri: The destination URI in GCS.
     """
 
-    template_fields: Sequence[str] = ("contents", "dst_uri")
+    template_fields: Sequence[str] = ("dst_uri",)
 
     def __init__(
         self,
@@ -210,8 +210,8 @@ class CopyBlobOperator(BaseOperator):
             impersonation_chain=self.impersonation_chain,
         )
 
-        source_bucket, source_object = self.src_uri.replace("gs://", "").split("/", 1)
-        destination_bucket, destination_object = self.dst_uri.replace("gs://", "").split("/", 1)
+        source_bucket, source_object = self.src_uri.removeprefix("gs://").split("/", 1)
+        destination_bucket, destination_object = self.dst_uri.removeprefix("gs://").split("/", 1)
 
         if not hook.exists(source_bucket, source_object):
             raise FileNotFoundError(f"Source object {self.src_uri} does not exist.")
@@ -219,4 +219,4 @@ class CopyBlobOperator(BaseOperator):
             raise FileExistsError(f"Destination object {self.dst_uri} already exists.")
 
         self.log.info("copying %s to %s", self.src_uri, self.dst_uri)
-        hook.copy(source_bucket, source_object, destination_bucket, destination_object)
+        hook.rewrite(source_bucket, source_object, destination_bucket, destination_object)

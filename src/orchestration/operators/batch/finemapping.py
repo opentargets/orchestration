@@ -10,7 +10,7 @@ from google.cloud.batch import LifecyclePolicy
 from orchestration.types import GoogleBatchSpecs
 from orchestration.utils.batch import create_batch_job, create_task_env, create_task_spec
 from orchestration.utils.common import GCP_PROJECT_GENETICS, GCP_REGION
-from orchestration.utils.labels import GentropyDagLabels
+from orchestration.utils.labels import Labels
 from orchestration.utils.path import GCSPath, extract_partition_from_blob
 
 
@@ -194,7 +194,7 @@ class FinemappingBatchOperator(CloudBatchSubmitJobOperator):
                 ),
                 task_env=create_task_env(var_list=[{"LOCUS_INDEX": str(idx)} for idx in range(manifest[2])]),
                 policy_specs=google_batch["policy_specs"],
-                labels=GentropyDagLabels(gentropy_dag="UKB-PPP-EUR-SuSiE-Finemapping", run_id=timestamp),
+                labels=Labels({"gentropy_dag": "UKB-PPP-EUR-SuSiE-Finemapping", "run_id": timestamp}),
             ),
             deferrable=False,
             **kwargs,

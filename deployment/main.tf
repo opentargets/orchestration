@@ -36,7 +36,7 @@ data "external" "user" {
 
 resource "google_compute_instance" "up_airflow_dev_vm" {
   name         = "up-airflow-dev-${random_string.up_airflow_dev_vm.result}"
-  machine_type = "n1-standard-4"
+  machine_type = "n1-standard-16"
   metadata = {
     orchestration_git_branch = var.orchestration_git_branch
   }

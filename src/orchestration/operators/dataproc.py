@@ -1,60 +1,219 @@
 """Utility functions for working with Dataproc clusters in the Platform project."""
 
+from __future__ import annotations
+
+import logging
+from abc import ABC, abstractmethod
 from collections.abc import Sequence
+from dataclasses import asdict, dataclass
+from datetime import datetime
+from typing import TYPE_CHECKING, NamedTuple
 
-from airflow.providers.google.cloud.operators.dataproc import DataprocCreateClusterOperator, DataprocSubmitJobOperator
+from airflow.providers.google.cloud.operators.dataproc import (
+    DataprocCreateClusterOperator,
+    DataprocDeleteClusterOperator,
+    DataprocSubmitJobOperator,
+    InstanceFlexibilityPolicy,
+    PreemptibilityType,
+)
+from airflow.utils.context import Context
+from google.api_core.exceptions import NotFound as GCPNotFound
 from google.cloud.dataproc_v1 import Cluster, JobReference
-from google.cloud.dataproc_v1.types.jobs import Job, JobPlacement, SparkJob
+from google.cloud.dataproc_v1.types.jobs import Job, JobPlacement, PySparkJob, SparkJob
 
-from orchestration.utils import random_id
-from orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_REGION
+from orchestration.utils import convert_params_to_hydra_positional_arg, random_id
+from orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_REGION, GCP_SERVICE_ACCOUNT, GCP_ZONE
 from orchestration.utils.dataproc import ClusterGenerator
 from orchestration.utils.labels import Labels
 
+if TYPE_CHECKING:
+    from typing import Any
 
-class PlatformETLCreateClusterOperator(DataprocCreateClusterOperator):
-    """Create a new Dataproc cluster tailored for running Platform ETL.
 
-    This class sets many default values and streamlines the cluster creation to
-    the needs of ETL. Refer to the parent class for details on extending this one.
+@dataclass
+class ClusterConfig:
+    """Dataproc cluster configuration class.
+
+    Includes defaults tailored to our cluster needs.
+    """
+
+    project_id: str = GCP_PROJECT_PLATFORM
+    """Google cloud project ID in which to create the cluster. Default is GCP_PROJECT_PLATFORM."""
+    zone: str | None = GCP_ZONE
+    """Google cloud zone in which to create the cluster. Default is GCP_ZONE."""
+
+    custom_image: str | None = None
+    """Custom Dataproc image to use for the cluster."""
+    custom_image_project_id: str | None = None
+    """Google cloud project ID of the custom image."""
+    custom_image_family: str | None = None
+    """Image family for the custom dataproc image."""
+    image_version: str | None = "2.2"
+    """The version of software inside the cluster."""
+
+    autoscaling_policy: str | None = None
+    """Autoscaling policy resource. Project ID and region will be automatically
+        added when the class is instantiated if not provided."""
+
+    num_masters: int = 1
+    """The number of master nodes to spin up. Default is 1."""
+    master_machine_type: str = "n1-highmem-16"
+    """GCE machine type to use for master nodes. Default is n1-highmem-16."""
+    master_disk_type: str = "pd-ssd"
+    """The disk type to use for master nodes. Default is pd-ssd."""
+    master_disk_size: int = 512
+    """The disk size in GB to use for master nodes. Default is 500."""
+    master_accelerator_type: str | None = None
+    """The GPU type to use for master nodes."""
+    master_accelerator_count: int | None = None
+    """The number of GPUs to use for master nodes."""
+
+    num_workers: int | None = 2
+    """The number of worker nodes in the cluster (0 for single-node mode).
+        Default is 2."""
+    min_num_workers: int | None = None
+    """The minimum number of primary worker nodes in the cluster.
+        If more than ``min_num_workers`` VMs are created out of ``num_workers``,
+        the failed VMs will be deleted, cluster is resized to available VMs and
+        set to RUNNING.
+        If created VMs are less than ``min_num_workers``, the cluster is placed
+        in ERROR state. The failed VMs are not deleted.
+    """
+    num_preemptible_workers: int = 0
+    """The number of instances in the instance group as secondary workers.
+        Default is 0.
+    """
+    worker_machine_type: str = "n1-standard-4"
+    """GCE machine type to use for worker nodes. Default is n1-standard-4."""
+    worker_disk_type: str = "pd-ssd"
+    """The disk type to use for worker nodes. Default is pd-ssd."""
+    worker_disk_size: int = 2048
+    """The disk size to use for worker nodes. Default is 2048."""
+    worker_accelerator_type: str | None = None
+    """The GPU type to use for worker nodes."""
+    worker_accelerator_count: int | None = None
+    """The number of GPUs to use for worker nodes."""
+    secondary_worker_instance_flexibility_policy: InstanceFlexibilityPolicy | None = None
+    """Instance flexibility Policy allowing a mixture of VM shapes and
+        provisioning models."""
+    secondary_worker_accelerator_type: str | None = None
+    """The GPU type to use for secondary workers."""
+    secondary_worker_accelerator_count: int | None = None
+    """The number of GPUs to use for secondary workers."""
+
+    driver_pool_size: int = 0
+    """The number of driver nodes in node group. Default is 0."""
+    driver_pool_id: str | None = None
+    """The ID for the driver pool."""
+
+    idle_delete_ttl: int | None = 7200
+    """Delete the cluster after this many seconds of inactivity. Default is 7200
+        (2 hours)."""
+    auto_delete_time: datetime | None = None
+    """Delete the cluster at this time."""
+    auto_delete_ttl: int | None = None
+    """Delete the cluster after this many seconds."""
+    customer_managed_key: str | None = None
+    """The customer managed key to use for disk encryption."""
+    enable_component_gateway: bool | None = True
+    """Provides access to the web interfaces of default and selected optional
+        components on the cluster. Default is True."""
+
+    network_uri: str | None = None
+    """The network uri to be used for machine communication, cannot be
+        specified with subnetwork_uri"""
+    subnetwork_uri: str | None = None
+    """The subnetwork uri to be used for machine communication, cannot be
+        specified with network_uri"""
+    internal_ip_only: bool | None = None
+    """If true, all instances in the cluster will only have internal IP addresses.
+        This can only be enabled for subnetwork enabled networks"""
+    optional_components: list[str] | None = None
+    """List of optional cluster components, for more info see
+        https://cloud.google.com/dataproc/docs/reference/rest/v1/ClusterConfig#Component"""
+    preemptibility: str = PreemptibilityType.PREEMPTIBLE.value
+    """Type of preemptibility to use for secondary workers. See:
+        https://cloud.google.com/dataproc/docs/reference/rpc/
+        Default is PreemptibilityType.PREEMPTIBLE.value.
+    """
+
+    tags: list[str] | None = None
+    """The list of tags to add to all instances. Keep in mind labels are not
+        specified here but in the cluster creation operator"""
+    storage_bucket: str | None = None
+    """The Cloud Storage bucket to use, if None Dataproc will create one."""
+    metadata: dict | None = None
+    """Dict of GCE metadata entries to add to all instances."""
+    properties: dict | None = None
+    """Dict of properties to set on config files."""
+
+    init_actions_uris: list[str] | None = None
+    """List of GCS URIs of initialization scripts."""
+    init_action_timeout: str = "10m"
+    """Timeout for initialization actions. Default is 10 minutes."""
+
+    service_account: str | None = GCP_SERVICE_ACCOUNT
+    """The service account to use for the cluster. Default is GCP_SERVICE_ACCOUNT."""
+    service_account_scopes: list[str] | None = None
+    """The scopes to use for the cluster."""
+
+    def __post_init__(self) -> None:
+        if isinstance(self.autoscaling_policy, str) and "/" not in self.autoscaling_policy:
+            zone = self.zone or GCP_ZONE
+            region = zone.rsplit("-", 1)[0]
+            ap = f"projects/{self.project_id}/regions/{region}/autoscalingPolicies/{self.autoscaling_policy}"
+            self.autoscaling_policy = ap
+
+    def create_cluster(self) -> Cluster:
+        """Create a Dataproc cluster from the configuration.
+
+        Returns:
+            Cluster: The Dataproc cluster.
+        """
+        return ClusterGenerator(**asdict(self)).make()
+
+
+class ClusterDefinition(NamedTuple):
+    """Cluster definition.
+
+    This class is used to define the cluster configuration for a step in the
+    pipeline. It contains the cluster type and configuration.
+    """
+
+    cluster_type: str
+    """The type of the cluster."""
+    config: dict[str, Any]
+    """The configuration dict for the cluster. See
+        `src.orchestration.utils.dataproc.ClusterConfig`."""
+
+
+class CreateClusterOperator(DataprocCreateClusterOperator):
+    """Create a new Dataproc cluster.
+
+    This class wraps the original DataprocCreateClusterOperator to provide some
+    tooling around it. Already existing clusters will be used.
 
     For more information on how to use this operator, take a look at
     `the guide <https://airflow.apache.org/docs/apache-airflow-providers-google/stable/operators/cloud/dataproc.html#howto-operator-dataproccreateclusteroperator>`_.
 
     Args:
-        project_id: The ID of the Google cloud project in which
-            to create the cluster. (templated)
-        region: The specified region where the dataproc cluster is created.
-        cluster_name: Name of the cluster to create
-        cluster_config: Required. The cluster config to create.
-            If a dict is provided, it must be of the same form as the protobuf message
-            :class:`~google.cloud.dataproc_v1.types.ClusterConfig`
-        idle_delete_ttl: Optional. The duration to keep the cluster alive while idling.
-        labels: Labels that will be assigned to created cluster. Please, notice that
-            adding labels to ClusterConfig object in cluster_config parameter will not lead
-            to adding labels to the cluster. Labels for the clusters could be only set by passing
-            values to parameter of DataprocCreateCluster operator.
-        labels: Labels that will be assigned to created cluster.
-        metadata: Additional metadata that is provided to the method.
-        gcp_conn_id: The connection ID to use connecting to Google Cloud.
-        impersonation_chain: Optional service account to impersonate using short-term
-            credentials, or chained list of accounts required to get the access_token
-            of the last account in the list, which will be impersonated in the request.
-            If set as a string, the account must grant the originating account
-            the Service Account Token Creator IAM role.
-            If set as a sequence, the identities from the list must grant
-            Service Account Token Creator IAM role to the directly preceding identity, with first
-            account from the list granting this role to the originating account (templated).
+        project_id (str): The ID of the Google cloud project in which to create
+            the cluster. Default is `GCP_PROJECT_PLATFORM`. Templated.
+        region (str): The region where the cluster will be created. Default is
+            `GCP_REGION`. Templated.
+        cluster_name (str): The cluster name.
+        cluster_config (ClusterConfig): The cluster configuration.
+        labels (Labels): The labels assigned to the cluster. Templated.
+        gcp_conn_id (str): The connection ID used when connecting to Google Cloud.
+        impersonation_chain: (str | Sequence[str | None]) Optional service
+            account or chain to impersonate.
     """
 
     template_fields: Sequence[str] = (
         "project_id",
         "region",
-        "cluster_config",
-        "virtual_cluster_config",
         "cluster_name",
         "labels",
-        "impersonation_chain",
     )
 
     def __init__(
@@ -63,95 +222,58 @@ class PlatformETLCreateClusterOperator(DataprocCreateClusterOperator):
         project_id: str = GCP_PROJECT_PLATFORM,
         region: str = GCP_REGION,
         cluster_name: str,
-        cluster_config: dict | Cluster | None = None,
-        idle_delete_ttl: int = 7200,
+        cluster_config: ClusterConfig,
         labels: Labels | None = None,
-        metadata: Sequence[tuple[str, str]] = (),
         gcp_conn_id: str = "google_cloud_default",
         impersonation_chain: str | Sequence[str] | None = None,
         **kwargs,
     ) -> None:
         self.project_id = project_id
         self.region = region
-        self.cluster_name = cluster_name
-        self.idle_delete_ttl = idle_delete_ttl
+        self.cluster_config = cluster_config
         self.labels = labels or Labels()
-        self.metadata = metadata
-        self.cluster_config = cluster_config or self._create_cluster_config()
         self.gcp_conn_id = gcp_conn_id
         self.impersonation_chain = impersonation_chain
 
+        cluster = cluster_config.create_cluster()
+
         super().__init__(
-            project_id=self.project_id,
+            cluster_name=cluster_name,
             region=self.region,
-            cluster_name=self.cluster_name,
-            cluster_config=self.cluster_config,
-            labels=self.labels,
-            metadata=self.metadata,
+            project_id=self.project_id,
+            cluster_config=cluster,
+            labels=dict(self.labels),
+            use_if_exists=True,
             gcp_conn_id=self.gcp_conn_id,
             impersonation_chain=self.impersonation_chain,
             **kwargs,
         )
 
-    def _create_cluster_config(self) -> dict:
-        # This is the legacy cluster configuration for ETL dataproc clusters.
-        # There are minor changes, but it must be fine-tuned as we start testing
-        # the new pipeline runs.
-        # The only changes so far are:
-        # - The master machine has been downsized to n2-standard-4
-        # - Disks are now pd-ssd instead of pd-standard
-        # - Idle delete TTL defaults to 7200 seconds so the cluster is deleted
-        #   after 2 hours of inactivity. The reason for this is ETL clusters are
-        #   not deleted if any of the tasks fail.
-        return ClusterGenerator(
-            project_id=GCP_PROJECT_PLATFORM,
-            master_machine_type="n1-highmem-16",
-            enable_component_gateway=True,
-            master_disk_size=512,
-            master_disk_type="pd-ssd",
-            worker_machine_type="n1-highmem-64",
-            num_workers=4,
-            worker_disk_size=2000,
-            worker_disk_type="pd-ssd",
-            image_version="2.0-debian10",
-            properties={"spark:spark.driver.memory": "478g"},
-            idle_delete_ttl=self.idle_delete_ttl,
-        ).make()
-
-    def execute(self, context) -> dict:
+    def execute(self, context: Context) -> dict:
         """Execute the operator."""
-        dag_run = context.get("dag_run")
-        if dag_run:
-            default_run_label = dag_run.run_id
-        run_label = context.get("params", {}).get("run_label", default_run_label)
-        self.labels.add({"run": run_label})
-        self.labels = self.labels.as_dict()
-
+        # the base operator can only handle dicts, we need to convert back and forth
+        labels = Labels({**self.labels})
+        labels.add_dag_run_id(context)
+        self.labels = dict(labels)
         return super().execute(context)
 
 
-class PlatformETLSubmitJobOperator(DataprocSubmitJobOperator):
+class SubmitJobOperator(DataprocSubmitJobOperator):
     """Submit a job to a cluster.
 
     Args:
-        project_id: Optional. The ID of the Google Cloud project that the job belongs to.
-        region: Optional. The Cloud Dataproc region in which to handle the request.
-        cluster_name: Required. The cluster to submit the job to.
-        step_name: Required. The name of the job.
-        jar_uri: Required. The URL of the jar file for the job. Note it is named URL
-            and not URI.
-        config_uri: Required. The URL of the configuration file for the job. Note it is
-            named URL and not URI.
-        labels: Optional. The labels to associate with this job.
-        gcp_conn_id:
-        impersonation_chain: Optional service account to impersonate using short-term
-            credentials, or chained list of accounts required to get the access_token
-            of the last account in the list, which will be impersonated in the request.
-            If set as a string, the account must grant the originating account
-            the Service Account Token Creator IAM role.
-            If set as a sequence, the identities from the list must grant
-            Service Account Token Creator IAM role to the directly preceding identity, with first
-            account from the list granting this role to the originating account (templated).
+        project_id (str): The ID of the Google cloud project in which to create
+            the cluster. Default is `GCP_PROJECT_PLATFORM`. Templated.
+        region (str): The region where the cluster will be created. Default is
+            `GCP_REGION`. Templated.
+        cluster_name (str): The cluster where to send the job. Templated.
+        step_name (str): The name of the step. Templated.
+        spark_job (google.cloud.dataproc_v1.types.SparkJob | google.cloud.dataproc_v1.types.PySparkJob):
+            The spark/pyspark job that will be submit to run.
+        labels (Labels): The labels assigned to the cluster. Templated.
+        gcp_conn_id (str): The connection ID used when connecting to Google Cloud.
+        impersonation_chain: (str | Sequence[str | None]) Optional service
+            account or chain to impersonate.
     """
 
     template_fields: Sequence[str] = (
@@ -159,11 +281,7 @@ class PlatformETLSubmitJobOperator(DataprocSubmitJobOperator):
         "region",
         "cluster_name",
         "step_name",
-        "jar_uri",
-        "config_uri",
         "labels",
-        "impersonation_chain",
-        "request_id",
     )
 
     def __init__(
@@ -173,8 +291,8 @@ class PlatformETLSubmitJobOperator(DataprocSubmitJobOperator):
         region: str = GCP_REGION,
         cluster_name: str,
         step_name: str,
-        jar_uri: str,
-        config_uri: str,
+        spark_job: SparkJob | None = None,
+        py_spark_job: PySparkJob | None = None,
         labels: Labels | None = None,
         gcp_conn_id: str = "google_cloud_default",
         impersonation_chain: str | Sequence[str] | None = None,
@@ -184,44 +302,181 @@ class PlatformETLSubmitJobOperator(DataprocSubmitJobOperator):
         self.region = region
         self.cluster_name = cluster_name
         self.step_name = step_name
-        self.jar_uri = jar_uri
-        self.config_uri = config_uri
         self.labels = labels or Labels()
+        self.spark_job = spark_job
+        self.py_spark_job = py_spark_job
         self.gcp_conn_id = gcp_conn_id
         self.impersonation_chain = impersonation_chain
 
+        # check that either spark_job or py_spark_job but not both are set
+        if not bool(spark_job) ^ bool(py_spark_job):
+            raise ValueError("provide either spark_job or py_spark_job, but not both")
+
+        # note the job set in here is a `google.cloud.dataproc_v1.types.Job`,
+        # which inside contains the spark/pyspark job itself. That one is set
+        # in execution time because it needs context.
         super().__init__(
-            job={},
-            region=self.region,
             project_id=self.project_id,
+            region=self.region,
+            job={},
             gcp_conn_id=self.gcp_conn_id,
             impersonation_chain=self.impersonation_chain,
             **kwargs,
         )
 
-    def execute(self, context):
+    def execute(self, context: Context) -> str:
         """Execute the operator."""
-        config_filename = self.config_uri.split("/")[-1]
+        self.labels.add_dag_run_id(context)
         job_id = f"{self.cluster_name}-{self.step_name}-{random_id()}"
-        dag_run = context.get("dag_run")
-        if dag_run:
-            default_run_label = dag_run.run_id
-        run_label = context.get("params", {}).get("run_label", default_run_label)
-        self.labels.add({"run": run_label})
-
         self.job = Job(
             reference=JobReference(project_id=self.project_id, job_id=job_id),
             placement=JobPlacement(cluster_name=self.cluster_name),
-            spark_job=SparkJob(
-                main_jar_file_uri=self.jar_uri,
-                file_uris=[self.config_uri],
-                args=[self.step_name],
-                properties={
-                    "spark.executor.extraJavaOptions": f"-Dconfig.file={config_filename} -XX:MaxPermSize=512m -XX:+UseCompressedOops",
-                    "spark.driver.extraJavaOptions": f"-Dconfig.file={config_filename} -XX:MaxPermSize=512m -XX:+UseCompressedOops",
-                },
-            ),
-            labels=self.labels.as_dict(),
+            spark_job=self.spark_job,
+            pyspark_job=self.py_spark_job,
+            labels=self.labels,
+        )
+        return super().execute(context)
+
+
+class DeleteClusterOperator(DataprocDeleteClusterOperator):
+    def __init__(
+        self,
+        *,
+        region: str = GCP_REGION,
+        project_id: str = GCP_PROJECT_PLATFORM,
+        **kwargs,
+    ) -> None:
+        super().__init__(region=region, project_id=project_id, **kwargs)
+
+    def execute(self, context: Context) -> None:
+        try:
+            super().execute(context)
+        except GCPNotFound:
+            self.log.warning(f"cluster {self.cluster_name} not found")
+
+
+class JobBuilder(ABC):
+    """Abstract class for Dataproc jobs.
+
+    This class is used to implement jobs for dataproc clusters. It includes some
+    utilities that are common to them.
+
+    Any job that is created should implement the `build` method, which should
+    return a `SparkJob` or `PySparkJob` object. `build()` will be called by the
+    submit job operator.
+    """
+
+    @abstractmethod
+    def build(self) -> SparkJob | PySparkJob:
+        """Build the job.
+
+        Returns:
+            SparkJob | PySparkJob: The job to run.
+        """
+
+    def render_properties(
+        self,
+        properties: dict[str, str],
+        template_context: dict[str, str],
+    ) -> dict[str, str]:
+        """Render the properties using the template context.
+
+        Args:
+            properties (dict[str, str]): The properties to render.
+            template_context (dict[str, str]): The template context to use for
+                rendering.
+
+        Returns:
+            dict[str, str]: The rendered properties.
+        """
+        if not properties or not template_context:
+            return properties or {}
+
+        result: dict[str, str] = {}
+        for property_name, property_value in properties.items():
+            for sentinel, value in template_context.items():
+                result[property_name] = result.get(property_name, property_value).replace(
+                    f"{{{{{sentinel}}}}}",
+                    value,
+                )
+        return result
+
+
+class ETLJobBuilder(JobBuilder):
+    """Class for building ETL jobs."""
+
+    def __init__(
+        self,
+        jar_uri: str,
+        config_uri: str,
+        args: list[str],
+        properties: dict[str, str] | None = None,
+        template_context: dict[str, str] | None = None,
+    ) -> None:
+        self.jar_uri = jar_uri
+        self.config_uri = config_uri
+        self.args = args
+        self.properties = properties or {}
+        self.template_context = template_context or {}
+        self.logger = logging.getLogger(__name__)
+
+    def build(self) -> SparkJob:
+        """Build a SparkJob that runs an ETL step."""
+        rendered_properties = self.render_properties(
+            properties=self.properties,
+            template_context=self.template_context,
         )
 
-        return super().execute(context)
+        self.logger.info("spawning etl job")
+        self.logger.info(f"jar_uri: {self.jar_uri}")
+        self.logger.info(f"config_uri: {self.config_uri}")
+        self.logger.info(f"args: {self.args}")
+        self.logger.info(f"properties (already rendered): {rendered_properties}")
+
+        return SparkJob(
+            main_jar_file_uri=self.jar_uri,
+            file_uris=[self.config_uri],
+            args=self.args,
+            properties=rendered_properties,
+        )
+
+
+class GentropyJobBuilder(JobBuilder):
+    """Class for building Gentropy jobs."""
+
+    def __init__(
+        self,
+        main_python_file_uri: str,
+        params: dict[str, str] | None = None,
+        properties: dict[str, str] | None = None,
+        template_context: dict[str, str] | None = None,
+    ) -> None:
+        self.main_python_file_uri = main_python_file_uri
+        self.params = params or {}
+        self.properties = properties or {}
+        self.template_context = template_context or {}
+        self.logger = logging.getLogger(__name__)
+
+    def build(self) -> PySparkJob:
+        """Build a SparkJob that runs a Gentropy step."""
+        self.logger.info(f"params: {self.params}")
+
+        args = convert_params_to_hydra_positional_arg(
+            params=self.params,
+            dataproc=True,
+        )
+        rendered_properties = self.render_properties(
+            properties=self.properties,
+            template_context=self.template_context,
+        )
+
+        self.logger.info("spawning gentropy job")
+        self.logger.info(f"main_python_file_uri: {self.main_python_file_uri}")
+        self.logger.info(f"args: {args}")
+        self.logger.info(f"properties (already rendered): {rendered_properties}")
+
+        return PySparkJob(
+            main_python_file_uri=self.main_python_file_uri,
+            args=args,
+            properties=rendered_properties,
+        )

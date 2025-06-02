@@ -14,6 +14,6 @@
     "https://raw.githubusercontent.com/opentargets/otter/refs/heads/main/.vscode/config-schema.json": [
       "pis.yaml",
       "pts.yaml"
-    ],
+    ]
   }
 }

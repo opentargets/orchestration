@@ -1,5 +1,7 @@
 """Custom sensor that runs a containerized workload on a Google Compute Engine instance."""
 
+from __future__ import annotations
+
 import asyncio
 import datetime
 import logging
@@ -7,11 +9,12 @@ import time
 from collections.abc import Sequence
 from functools import cached_property
 from textwrap import dedent
-from typing import Any
+from typing import TYPE_CHECKING
 
 from airflow.configuration import conf
 from airflow.exceptions import AirflowException
 from airflow.providers.google.cloud.hooks.compute import ComputeEngineHook
+from airflow.providers.google.cloud.operators.compute import ComputeEngineDeleteInstanceOperator
 from airflow.providers.google.common.consts import CLIENT_INFO
 from airflow.providers.google.common.hooks.base_google import GoogleBaseHook
 from airflow.sensors.base import BaseSensorOperator
@@ -26,6 +29,9 @@ from google.cloud.logging_v2.services.logging_service_v2 import LoggingServiceV2
 
 from orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_ZONE
 from orchestration.utils.labels import Labels
+
+if TYPE_CHECKING:
+    from typing import Any
 
 CONTAINER_NAME = "workload_container"
 LOGGING_REQUEST_INTERVAL = 5
@@ -446,7 +452,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
             boot=True,
             initialize_params=compute_v1.AttachedDiskInitializeParams(
                 disk_type=f"zones/{self.zone}/diskTypes/pd-ssd",
-                labels=self.labels.as_dict(),
+                labels=self.labels,
                 source_image="projects/cos-cloud/global/images/cos-113-18244-151-50",
             ),
         )
@@ -456,7 +462,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
             device_name="work-disk",
             initialize_params=compute_v1.AttachedDiskInitializeParams(
                 disk_size_gb=self.work_disk_size_gb,
-                labels=self.labels.as_dict(),
+                labels=self.labels,
                 disk_type=f"zones/{self.zone}/diskTypes/pd-ssd",
             ),
         )
@@ -484,7 +490,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
             description="unified pipeline runner instance",
             machine_type=f"zones/{self.zone}/machineTypes/{self.machine_type}",
             disks=disks,
-            labels=self.labels.as_dict(),
+            labels=self.labels,
             metadata=types.Metadata(
                 items=[
                     {
@@ -580,7 +586,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
         if dag_run:
             default_run_label = dag_run.run_id
         run_label = context.get("params", {}).get("run_label", default_run_label)
-        self.labels.add({"run": run_label})
+        self.labels["run"] = run_label
         self.start()
 
         if not self.deferrable:
@@ -721,3 +727,17 @@ class ComputeEngineExitCodeTrigger(BaseTrigger):
             gcp_conn_id=self.gcp_conn_id,
             impersonation_chain=self.impersonation_chain,
         )
+
+
+class DeleteInstanceOperator(ComputeEngineDeleteInstanceOperator):
+    def __init__(
+        self,
+        *,
+        zone: str = GCP_ZONE,
+        project_id: str = GCP_PROJECT_PLATFORM,
+        **kwargs,
+    ) -> None:
+        super().__init__(zone=zone, project_id=project_id, **kwargs)
+
+    def execute(self, context: Context) -> None:
+        super().execute(context)

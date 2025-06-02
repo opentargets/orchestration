@@ -37,20 +37,16 @@ def clean_name(name: str) -> str:
     return re.sub(r"[^a-z0-9-]", "-", name.lower())
 
 
-def create_name(step_name: str) -> str:
-    """Create a google resource name for a given step name."""
-    return f"up-{clean_name(step_name)}-{{{{ run_id | strhash }}}}"
+def resource_name(name: str) -> str:
+    """Create a google resource name.
 
+    The name will include our prefix `up-` and the resource name. As an example,
+    for a step called `etl_expression` and a run with id `3beef`, the resource
+    name will be:
 
-def create_cluster_name(task_group_name: str) -> str:
-    """Create a cluster name for a given task group name.
-
-    The name will include our prefix `up-` and the task group name, so for the
-    gentropy stage of run `3beef`, the cluster name will be:
-
-    `up-gentropy-3beef`
+    `up-etl-expression-3beef`
     """
-    return f"up-{clean_name(task_group_name)}-{{{{ run_id | strhash }}}}"
+    return f"up-{clean_name(name)}-{{{{ run_id | strhash }}}}"
 
 
 def read_yaml_config(
@@ -119,7 +115,10 @@ def read_hocon_config(
 
 def to_hocon(config: dict[str, Any]) -> str:
     """Convert a ConfigTree to a HOCON string."""
-    return pyhocon.HOCONConverter.to_hocon(config)
+    if isinstance(config, pyhocon.ConfigTree):
+        return pyhocon.HOCONConverter.to_hocon(config)
+    elif isinstance(config, dict):
+        return pyhocon.HOCONConverter.to_hocon(pyhocon.ConfigFactory.from_dict(config))
 
 
 def strhash(s: str) -> str:
