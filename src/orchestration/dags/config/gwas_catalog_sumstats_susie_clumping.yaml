@@ -28,7 +28,7 @@ nodes:
       step.catalog_ancestry_files:
         - "{input_path}/gwas_catalog_download_ancestries.tsv"
       step.study_index_path: "{output_path}/study_index"
-      step.gwas_catalog_study_curation_file: "{input_path}/curation/202412/GWAS_Catalog_study_curation.tsv"
+      step.gwas_catalog_study_curation_file: "{input_path}/curation/202505/GWAS_Catalog_study_curation.tsv"
       step.sumstats_qc_path: "{input_path}/summary_statistics_qc"
       step.session.write_mode: overwrite
   - id: locus_breaker_clumping
