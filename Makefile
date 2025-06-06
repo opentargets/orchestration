@@ -27,13 +27,9 @@ sync:
 
 .git/hooks/commit-msg:
 	@uv run pre-commit install --hook-type commit-msg
-<<<<<<< Updated upstream
-	@GOOGLE_APPLICATION_CREDENTIALS=$(LOCAL_DEV_CREDENTIALS) docker compose -f compose.yaml -f compose.local.yaml up -d
-=======
 
 dev: sync .git/hooks/commit-msg  ## Prepare the local development environment
-	@GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/up-airflow-dev.json docker compose -f compose.yaml -f compose.local.yaml up -d
->>>>>>> Stashed changes
+	@GOOGLE_APPLICATION_CREDENTIALS=$(LOCAL_DEV_CREDENTIALS) docker compose -f compose.yaml -f compose.local.yaml up -d
 
 cloud-dev: ## Start the remote development environment and connect to it (default goal)
 	@./deployment/start.sh
