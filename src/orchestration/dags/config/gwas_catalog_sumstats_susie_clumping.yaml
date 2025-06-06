@@ -13,7 +13,7 @@ env: Prod
 
 dataproc:
   cluster_metadata:
-    GENTROPY_REF: v2.0.2-rc.2
+    GENTROPY_REF: v2.3.0-rc.5
   cluster_name: otg-gwas-catalog-sumstat-susie-clumping
   autoscaling_policy: otg-etl
 
