@@ -4,7 +4,7 @@ dataproc:
   autoscaling_policy: otg-gwascatalog-tophit
   python_main_module: gs://genetics_etl_python_playground/initialisation/cli.py
   cluster_metadata:
-    GENTROPY_REF: v2.0.2-rc.3
+    GENTROPY_REF:  v2.3.0-rc.5
   cluster_init_script: gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh
   num_workers: 2
 
