@@ -9,11 +9,16 @@ following software requirements:
 - [Docker](https://docs.docker.com/get-docker/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
 - [Google Cloud SDK](https://cloud.google.com/sdk/docs/install)
+- [Terraform](https://www.terraform.io/downloads.html) (optional, for cloud instance setup)
 
 > [!WARNING]
 > On macOS, the default amount of memory available for Docker might not be enough
 > to get Airflow up and running. Allocate at least 4GB of memory for the Docker
 > Engine (ideally 8GB). [More info](https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html#)
+
+> [!WARNING]
+> On macOS with if you already have vscode installed, make sure to enable the terminal shortcut
+> see [thread](https://code.visualstudio.com/docs/setup/mac#_manually-configure-the-path)
 
 > [!NOTE]
 > The terraform script used in creating the cloud instance is currently heavily
@@ -52,17 +57,34 @@ LOCAL_DEV_CREDENTIALS=path/to/your/credentials.json make dev
 
 ### Google Cloud
 
+#### Prerequisites
+
+Make sure that you have enabled the application default credentials to run the terraform.
+
+```bash
+gcloud auth application-default login
+```
+
+#### Setup
+
 Run `make`. This will set up and/or connect you to an airflow dev instance in
 Google Cloud; and open vscode into that instance code as well as a the Airflow UI
 in a browser automatically. The default credentials are `airflow`/`airflow`.
+
+The port `8081` is used for the remote Airflow UI. This port is forwarded from the machine to your local host.
+In case you lose the connection to the remote instance, you can re-run the `make` command or setup the tunnel directly with
+
+```bash
+make tunnel
+```
 
 > [!TIP]
 > You should accept the prompt to install the recommended extensions in vscode,
 > those are very helpful for working with Airflow DAGs and code.
 
-# Additional information
+## Additional information
 
-## Managing Airflow and DAGs
+### Managing Airflow and DAGs
 
 The airflow DAGs sit in the `orchestration` package inside the `dags` directory.
 The configuration for the DAGs is located in the `orchestration.dags.config`
@@ -72,11 +94,11 @@ Currently the DAGs are under heavy development, so there can be issues while
 Airflow tries to parse them. Current development focuses on unification of the
 `gwas_catalog_*` dags in `gwas_catalog_dag.py` file in a single DAG. To be able
 to run it one need to provide the configuration from the `configs/config.json`
-to the dag trigger as in the exaple picture.
+to the dag trigger as in the example picture.
 
 ![alt text](docs/image.png)
 
-## Cleaning up
+### Cleaning up
 
 You can clean up the repository with:
 
@@ -102,7 +124,7 @@ To cleanup the Airflow database, run:
 docker compose down --volumes --remove-orphans
 ```
 
-## Advanced configuration
+### Advanced configuration
 
 More information on running Airflow with Docker Compose can be found in the
 [official docs](https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html).
@@ -121,7 +143,7 @@ More information on running Airflow with Docker Compose can be found in the
 
 1. **Additional pip packages**. They can be added to the `requirements.txt` file.
 
-## Troubleshooting
+### Troubleshooting
 
 Note that when you a a new workflow under `dags/`, Airflow will not pick that up
 immediately. By default the filesystem is only scanned for new DAGs every 300s.
