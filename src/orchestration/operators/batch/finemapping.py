@@ -230,5 +230,6 @@ class FinemappingBatchOperator(CloudBatchSubmitJobOperator):
                 "+step.session.extended_spark_conf={spark.kryoserializer.buffer.max:500m} "
                 "+step.session.extended_spark_conf={spark.driver.maxResultSize:5g} "
                 "step.session.write_mode=overwrite"
+                "step.session.output_partitions=1"
             ),
         ]

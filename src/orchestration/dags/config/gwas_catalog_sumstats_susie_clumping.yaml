@@ -31,6 +31,7 @@ nodes:
       step.gwas_catalog_study_curation_file: "{input_path}/curation/202505/GWAS_Catalog_study_curation.tsv"
       step.sumstats_qc_path: "{input_path}/summary_statistics_qc"
       step.session.write_mode: overwrite
+      step.session.output_partitions: 1
   - id: locus_breaker_clumping
     kind: Task
     prerequisites:
