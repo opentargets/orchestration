@@ -1,5 +1,6 @@
 VERSION := $$(grep '^version' pyproject.toml | sed 's%version = "\(.*\)"%\1%')
 .DEFAULT_GOAL := cloud-dev
+LOCAL_DEV_CREDENTIALS ?= ~/.config/gcloud/adc.json
 
 ### HOUSEKEEPING TARGETS ###
 .PHONY: help version clean test check cloud-dev tunnel upload-ukb-ppp-bucket-readme upload-eqtl-catalogue-bucket-readme upload-finngen-bucket-readme upload-gwas-catalog-buckets-readme update-bucket-docs build-gentropy-gcs-image setup-harmonisation-test
@@ -24,7 +25,7 @@ check: format test ## run all checks
 dev: .git/hooks/commit-msg  ## Prepare the local development environment
 	@uv sync --all-extras --dev
 	@uv run pre-commit install --hook-type commit-msg
-	@GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/up-airflow-dev.json docker compose -f compose.yaml -f compose.local.yaml up -d
+	@GOOGLE_APPLICATION_CREDENTIALS=$(LOCAL_DEV_CREDENTIALS) docker compose -f compose.yaml -f compose.local.yaml up -d
 
 cloud-dev: ## Start the remote development environment and connect to it (default goal)
 	@./deployment/start.sh
