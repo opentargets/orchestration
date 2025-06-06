@@ -50,7 +50,7 @@ UNZIPPED_FILE_SIZE=$(du -sh ${UNZIPPED_RAW_LOCAL_FILE} | cut -f1)
 logging "Unzipped file size ${UNZIPPED_FILE_SIZE}"
 
 logging "Running harmonisation on ${UNZIPPED_RAW_LOCAL_FILE} file"
-poetry run gentropy step=gwas_catalog_sumstat_preprocess \
+gentropy step=gwas_catalog_sumstat_preprocess \
     step.raw_sumstats_path=$UNZIPPED_RAW_LOCAL_FILE \
     step.out_sumstats_path=$HARMONISED_FILE \
     step.session.write_mode=overwrite \
@@ -64,7 +64,7 @@ HARMONISATION_EXIT_CODE=$?
 logging "Harmonisation exit code: ${HARMONISATION_EXIT_CODE}"
 
 logging "Running qc on ${HARMONISED_FILE} file"
-poetry run gentropy step=summary_statistics_qc \
+gentropy step=summary_statistics_qc \
     step.gwas_path=$HARMONISED_FILE \
     step.output_path=$QC_FILE \
     step.pval_threshold=$QC_THRESHOLD \
