@@ -182,7 +182,6 @@ class FinemappingBatchOperator(CloudBatchSubmitJobOperator):
                     commands=self.susie_finemapping_command,
                     task_specs=google_batch["task_specs"],
                     resource_specs=google_batch["resource_specs"],
-                    entrypoint=google_batch["entrypoint"],
                     lifecycle_policies=[
                         LifecyclePolicy(
                             action=LifecyclePolicy.Action.FAIL_TASK,
@@ -194,7 +193,7 @@ class FinemappingBatchOperator(CloudBatchSubmitJobOperator):
                 ),
                 task_env=create_task_env(var_list=[{"LOCUS_INDEX": str(idx)} for idx in range(manifest[2])]),
                 policy_specs=google_batch["policy_specs"],
-                labels=Labels({"gentropy_dag": "UKB-PPP-EUR-SuSiE-Finemapping", "run_id": timestamp}),
+                labels=Labels({"gentropy_dag": "SuSiE-fine-mapping", "run_id": timestamp}),
             ),
             deferrable=False,
             **kwargs,
@@ -202,11 +201,9 @@ class FinemappingBatchOperator(CloudBatchSubmitJobOperator):
 
     @property
     def susie_finemapping_command(self) -> list[str]:
-        """Get the command for running the finemapping batch job."""
+        """Get the command for running the fine-mapping batch job."""
         return [
-            "-c",
             (
-                "uv run gentropy "
                 "step=susie_finemapping "
                 f"step.study_index_path={self.study_index_path} "
                 f"step.study_locus_manifest_path={self.study_locus_manifest_path} "
@@ -229,7 +226,7 @@ class FinemappingBatchOperator(CloudBatchSubmitJobOperator):
                 "+step.session.extended_spark_conf={spark.driver.memory:30g} "
                 "+step.session.extended_spark_conf={spark.kryoserializer.buffer.max:500m} "
                 "+step.session.extended_spark_conf={spark.driver.maxResultSize:5g} "
-                "step.session.write_mode=overwrite"
+                "step.session.write_mode=overwrite "
                 "step.session.output_partitions=1"
             ),
         ]
