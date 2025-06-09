@@ -224,8 +224,7 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
         Raises:
             ValueError: when identifier is not found.
         """
-        pattern = r"\/(GCST\d+)(\.parquet)?\/"
-        pattern = re.compile(pattern)
+        pattern = re.compile(r"\/(GCST\d+)(\.parquet)?\/")
         result = pattern.search(path)
         if not result:
             raise ValueError("Gwas Catalog identifier was not found in %s", path)
