@@ -1,8 +1,8 @@
 #!/bin/bash
 # Script for running harmonisation and qc steps by the google batch job
 # Requirements:
-# 1. Gentropy & poetry
-# 2. gsutil
+# 1. Gentropy
+# 2. gcloud
 # 3. gzip
 
 # set -x
@@ -38,7 +38,7 @@ if [ -f ${LOCAL_LOG_FILE} ]; then
 fi
 
 logging "Copying raw summary statistics from ${RAW_FILE} to ${RAW_LOCAL_FILE}"
-gsutil cp $RAW_FILE $RAW_LOCAL_FILE
+gcloud storage cp $RAW_FILE $RAW_LOCAL_FILE
 
 RAW_FILE_SIZE=$(du -sh ${RAW_LOCAL_FILE} | cut -f1)
 logging "Raw file size ${RAW_FILE_SIZE}"
@@ -87,11 +87,11 @@ clean_up() {
     REMOTE_SUMMARY_FILE="${OUTPUT_PATH}/harmonisation_summary/${STUDY_ID}/${DATE}/harmonisation.csv"
     LATEST_REMOTE_SUMMARY_FILE="${OUTPUT_PATH}/harmonisation_summary/${STUDY_ID}/latest/harmonisation.csv"
 
-    gsutil cp ${LOCAL_LOG_FILE} ${REMOTE_LOG_FILE}
-    gsutil cp ${LOCAL_LOG_FILE} ${LATEST_REMOTE_LOG_FILE}
+    gcloud storage cp ${LOCAL_LOG_FILE} ${REMOTE_LOG_FILE}
+    gcloud storage cp ${LOCAL_LOG_FILE} ${LATEST_REMOTE_LOG_FILE}
 
-    gsutil cp ${LOCAL_SUMMARY_FILE} ${REMOTE_SUMMARY_FILE}
-    gsutil cp ${LOCAL_SUMMARY_FILE} ${LATEST_REMOTE_SUMMARY_FILE}
+    gcloud storage cp ${LOCAL_SUMMARY_FILE} ${REMOTE_SUMMARY_FILE}
+    gcloud storage cp ${LOCAL_SUMMARY_FILE} ${LATEST_REMOTE_SUMMARY_FILE}
 
 }
 

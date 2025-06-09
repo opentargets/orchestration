@@ -1,7 +1,7 @@
+FROM google/cloud-sdk:489.0.0-stable AS gcloud-builder
+
 FROM europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:2.3.0-rc.5
-RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
-    | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list \
-    && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg\
-    | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg \
-    && apt-get update -y && apt-get install google-cloud-cli -y
+RUN ln -s /app/.venv/bin/python3 /usr/bin/python3
+COPY --from=gcloud-builder /usr/lib/google-cloud-sdk /opt/google-cloud-sdk
+ENV PATH="/opt/google-cloud-sdk/bin:${PATH}"
 COPY --chmod=0755 images/gentropy/scripts/harmonise-sumstats.sh harmonise-sumstats.sh
