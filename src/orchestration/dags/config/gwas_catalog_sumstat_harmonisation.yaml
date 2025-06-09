@@ -36,8 +36,9 @@ nodes:
     prerequisites:
       - generate_sumstat_index
     google_batch:
-      entrypoint: /bin/sh
-      image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:orchestration
+      entrypoint: /usr/bin/bash
+      parallelism: 200
+      image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/ot_gentropy:dev
       resource_specs:
         cpu_milli: 4000
         memory_mib: 8000
