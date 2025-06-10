@@ -39,8 +39,11 @@ class PathSegments(TypedDict):
 
 
 class ProtoPath(Protocol):
-    segments: PathSegments
-    path: str
+    @cached_property
+    def segments(self) -> PathSegments: ...
+
+    @cached_property
+    def path(self) -> str: ...
 
     @abstractmethod
     def dump(self, data: Any) -> None:
