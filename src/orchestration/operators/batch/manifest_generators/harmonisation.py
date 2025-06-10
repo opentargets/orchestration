@@ -194,7 +194,6 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
         manifest = manifest[["rawSumstatPath", "harmonisedSumstatPath", "qcPath"]]
         # Rename var_list so we have a clear names
         manifest.rename(columns=self.fields, inplace=True)
-        # convert to list of dictionaries
         var_list = manifest.to_dict("records")
         if var_list:
             logger.info("Variable list is not empty!")
