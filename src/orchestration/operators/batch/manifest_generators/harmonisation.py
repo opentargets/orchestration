@@ -89,10 +89,10 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
             dict[Literal["sumstat", "study"], list[str]],
         ] = {}
         for key, pattern in globs.items():
-            protocol = pattern.segments.get("protocol")
-            root = pattern.segments.get("root")
-            prefix = pattern.segments.get("prefix")
-            match_glob = pattern.segments.get("filename")
+            protocol = pattern.segments["protocol"]
+            root = pattern.segments["root"]
+            prefix = pattern.segments["prefix"]
+            match_glob = pattern.segments["filename"]
 
             files = self.gcs_hook.list(
                 bucket_name=root,
@@ -100,7 +100,7 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
                 # only list files that are in subdirs of this path, not in
                 # any other path that share the last directory name with
                 # target path.
-                prefix=prefix + "/",
+                prefix=f"{prefix}/",
                 match_glob=match_glob,
             )
             if len(files) == 0 and key == "raw_sumstat":
