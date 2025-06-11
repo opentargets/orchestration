@@ -3,14 +3,13 @@ environment_specs:
   - name: Test
     vars:
       output_path: gs://ot_orchestration/test/gwas_catalog_sumstats_susie
-      GENTROPY_REF: 2.0.2-rc2
+      GENTROPY_REF: 2.3.0-internal.13
   - name: Prod
     vars:
       output_path: gs://gwas_catalog_sumstats_susie
-      GENTROPY_REF: 2.0.2-rc2
+      GENTROPY_REF: 2.3.0-internal.13
 
 env: Prod
-
 nodes:
   - id: generate_manifests
     kind: Task
@@ -19,6 +18,7 @@ nodes:
       collected_loci_path: '{output_path}/study_locus_lb_clumped'
       manifest_prefix: '{output_path}/finemapping_manifests/20250204'
       output_path: '{output_path}/credible_set_datasets_20250204'
+      #!WARNING: DO NOT CHANGE THE DATE for the log_path, as it is used to back reference the already fine-mapped loci.
       log_path: '{output_path}/finemapping_logs/20250204'
       max_records_per_chunk: 40_000
 
@@ -29,8 +29,8 @@ nodes:
     params:
       study_index_path: '{output_path}/study_index'
     google_batch:
-      entrypoint: /bin/sh
       image: 'europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:{GENTROPY_REF}'
+      entrypoint: /usr/bin/bash
       resource_specs:
         cpu_milli: 4000
         memory_mib: 25_000

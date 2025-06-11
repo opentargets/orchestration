@@ -154,7 +154,7 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         manifest_rows = self._generate_manifest_rows(study_locus_ids)
         manifest_chunks = self._partition_rows_by_range(manifest_rows)
         environments = self._prepare_batch_task_env(manifest_chunks)
-        return environments[0:1]
+        return environments
 
 
 class FinemappingBatchOperator(CloudBatchSubmitJobOperator):
@@ -184,12 +184,13 @@ class FinemappingBatchOperator(CloudBatchSubmitJobOperator):
                     resource_specs=google_batch["resource_specs"],
                     lifecycle_policies=[
                         LifecyclePolicy(
-                            action=LifecyclePolicy.Action.FAIL_TASK,
+                            action=LifecyclePolicy.Action.RETRY_TASK,
                             action_condition=LifecyclePolicy.ActionCondition(
-                                exit_codes=[50005]  # Execution time exceeded.
+                                exit_codes=[50001]  # Task failed due to preemption.
                             ),
-                        )
+                        ),
                     ],
+                    entrypoint=google_batch["entrypoint"],
                 ),
                 task_env=create_task_env(var_list=[{"LOCUS_INDEX": str(idx)} for idx in range(manifest[2])]),
                 policy_specs=google_batch["policy_specs"],
@@ -203,7 +204,9 @@ class FinemappingBatchOperator(CloudBatchSubmitJobOperator):
     def susie_finemapping_command(self) -> list[str]:
         """Get the command for running the fine-mapping batch job."""
         return [
+            "-c",
             (
+                "gentropy "
                 "step=susie_finemapping "
                 f"step.study_index_path={self.study_index_path} "
                 f"step.study_locus_manifest_path={self.study_locus_manifest_path} "

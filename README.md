@@ -17,7 +17,7 @@ following software requirements:
 > Engine (ideally 8GB). [More info](https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html#)
 
 > [!WARNING]
-> On macOS with if you already have vscode installed, make sure to enable the terminal shortcut
+> On macOS if you already have vscode installed, make sure to enable the terminal shortcut
 > see [thread](https://code.visualstudio.com/docs/setup/mac#_manually-configure-the-path)
 
 > [!NOTE]
