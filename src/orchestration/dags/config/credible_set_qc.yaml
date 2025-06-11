@@ -13,11 +13,11 @@ nodes:
     prerequisites: []
     params:
       step: credible_set_qc
-      step.credible_sets_path: gs://gwas_catalog_sumstats_susie/credible_set_datasets_20250204
-      step.output_path: gs://gwas_catalog_sumstats_susie/credible_set_clean/20250204
+      step.credible_sets_path: gs://gwas_catalog_sumstats_susie/credible_set_datasets
+      step.output_path: gs://gwas_catalog_sumstats_susie/credible_set_clean/20250611
       step.p_value_threshold: 1.0e-5
       step.purity_min_r2: 0.25
-      step.n_partitions: 250
+      step.n_partitions: 350
       step.clump: false
       step.session.write_mode: overwrite
       step.session.start_hail: true

@@ -288,8 +288,8 @@ The step that performs [PICS finemapping](https://opentargets.github.io/gentropy
 Bucket `gs://gwas_catalog_sumstats_susie` contains:
 
 ```bash
-gs://gwas_catalog_sumstats_susie/credible_set_clean/20250204/
-gs://gwas_catalog_sumstats_susie/credible_set_datasets_20250204/
+gs://gwas_catalog_sumstats_susie/credible_set_clean/20250611/
+gs://gwas_catalog_sumstats_susie/credible_set_datasets/
 gs://gwas_catalog_sumstats_susie/finemapping_logs/
 gs://gwas_catalog_sumstats_susie/finemapping_manifests/
 gs://gwas_catalog_sumstats_susie/logs/
@@ -297,9 +297,6 @@ gs://gwas_catalog_sumstats_susie/study_index/
 gs://gwas_catalog_sumstats_susie/study_locus_lb_clumped/
 gs://gwas_catalog_sumstats_susie/susie_logs.parquet/
 ```
-
-> [!TIP]
-> The latest credible sets are stored under the `20250204` release.
 
 Data is produced by 2 dags:
 
@@ -381,3 +378,7 @@ To adjust the parameters for google batch infrastructure refer to the `google_ba
 ### 2025-04-11
 
 - chore: remove 2024-10-21 credible sets to prevent data duplication.
+
+### 2025-06-11
+
+- chore: unifiy credible sets output directory structure to be now in `gs://gwas_catalog_sumstats_susie/credible_set_datasets`

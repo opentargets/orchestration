@@ -26,6 +26,7 @@ nodes:
           step.session.write_mode: overwrite
           step.session.spark_uri: yarn
           step.session.output_partitions: 1
+
       - id: window_based_clumping
         kind: Task
         prerequisites: []
@@ -35,6 +36,8 @@ nodes:
           step.study_locus_output_path: gs://gwas_catalog_sumstats_pics/study_locus_window_based_clumped
           step.session.write_mode: overwrite
           step.session.spark_uri: yarn
+          +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
+
       - id: ld_based_clumping
         kind: Task
         prerequisites:
@@ -47,6 +50,8 @@ nodes:
           step.study_index_path: gs://gwas_catalog_sumstats_pics/study_index
           step.session.write_mode: overwrite
           step.session.spark_uri: yarn
+          +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
+      
       - id: pics
         kind: Task
         prerequisites:
