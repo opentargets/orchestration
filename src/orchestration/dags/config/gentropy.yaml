@@ -70,11 +70,10 @@ steps:
       step.study_locus_path:
         - gs://gwas_catalog_top_hits/credible_sets/
         - gs://gwas_catalog_sumstats_pics/credible_sets/
-        - gs://gwas_catalog_sumstats_susie/credible_set_clean/20250204/
+        - gs://gwas_catalog_sumstats_susie/credible_set_clean/20250611/
         - gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie_patched_v2/
         - gs://ukb_ppp_eur_data/credible_set_clean/20250129/
         - gs://finngen_data/r12/credible_set_datasets/susie/
-        - gs://gwas_catalog_sumstats_susie/credible_set_clean/202505/
       step.study_index_path: '{{release_uri}}/output/study'
       step.target_index_path: '{{release_uri}}/output/target'
       # OUTPUTS
@@ -198,11 +197,11 @@ steps:
       step: locus_to_gene
       step.run_mode: predict
       step.session.write_mode: overwrite
-      step.session.output_partitions: 1
+      step.session.output_partitions: 5
       step.l2g_threshold: 0.05
       step.download_from_hub: true
       step.explain_predictions: true
-      +step.session.extended_spark_conf: "{spark.rpc.message.maxSize:'1024'}"
+      +step.session.extended_spark_conf: "{spark.rpc.message.maxSize:'2046'}"
       # INPUTS
       step.hf_hub_repo_id: opentargets/locus_to_gene
       step.feature_matrix_path: '{{release_uri}}/intermediate/l2g_feature_matrix'
