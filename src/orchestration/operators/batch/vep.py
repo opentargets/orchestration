@@ -238,6 +238,7 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
                 --cache \
                 --offline \
                 --format vcf \
+                --fork 4 \
                 --force_overwrite \
                 --no_stats \
                 --dir_cache {self.pm.cache_dir} \
