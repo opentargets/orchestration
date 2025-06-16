@@ -81,21 +81,12 @@ class AppConfig:
         c._parse()
         return c
 
-    @classmethod
-    def from_steps(cls, steps: dict[str, Any]) -> AppConfig:
-        """Create an AppConfig instance from steps.
-
-        Args:
-            steps (dict[str, Any]): Dictionary with unnested steps configuration.
-
-        Returns:
-            AppConfig: An instance of AppConfig.
-        """
-        raw_config = yaml.dump({"steps": steps})
-        return cls(raw_config=raw_config, parser=yaml.safe_load)
-
     def overwrite(self, file_path: str | Path) -> AppConfig:
         """Overwrite the current configuration with another configuration from the given file.
+
+        Note:
+        ----
+        In case the override `file_path` does not exist, current configuration is returned as is.
 
         Args:
             file_path (str | Path): Path or URI to the configuration file to merge with.
@@ -107,9 +98,10 @@ class AppConfig:
         -----
         This method forces the parsing and rendering of the current and other configuration.
         Other configuration is parsed using the same template_context as self.
-
         """
         # Ensure both configs are rendered and parsed before attempting to merge.
+        if not Path(file_path).exists():
+            return self
         other = AppConfig.from_file(file_path, template_context=self.template_context)
 
         if not self.is_rendered:
@@ -179,6 +171,8 @@ class AppConfigMerger:
             override_config (AppConfig): The configuration to merge into the base configuration.
         """
         self.logger = logging.getLogger(__name__)
+        self.parser = base_config.parser
+        self.original_config = copy.deepcopy(base_config.config)
         self.base_config = base_config.config.get("steps", {})
         self.config_overwrite = override_config.config.get("steps", {})
         if not self.config_overwrite:
@@ -210,6 +204,7 @@ class AppConfigMerger:
         >>> logging.getLogger().handlers = []  # remove all handlers
         >>> base_config = '''
         ... ---
+        ... scratch: /work/dir
         ... steps:
         ...   step_a:
         ...     params:
@@ -234,6 +229,7 @@ class AppConfigMerger:
 
         >>> merged_config = '''
         ... ---
+        ... scratch: /work/dir
         ... steps:
         ...   step_a:
         ...     params:
@@ -263,20 +259,23 @@ class AppConfigMerger:
         self.logger.info("Creating deep copy of the base config before merging.")
         # NOTE: The merge results in the in-place modification of the `base_config`.
         # See https://deepmerge.readthedocs.io/en/latest/guide.html#merges-are-destructive
-        original_config = copy.deepcopy(self.base_config)
         self.logger.info(
             "Merging base config with overwrite config using DeepMerge. "
             "This will override the list values from base config with the values from overwrite config."
         )
         merged_config = merger.merge(self.base_config, self.config_overwrite)
 
-        diff = DeepDiff(original_config, merged_config)
+        diff = DeepDiff(self.original_config.get("steps"), merged_config)
         if not diff:
             self.logger.warning("No differences found after merging the configurations.")
         else:
             self.logger.info(f"Configurations overwritten in: {diff.affected_root_keys}")
-        ac = AppConfig.from_steps(merged_config)
-        # Make sure to re-render the configuration after merging
+            self.original_config.update(steps=merged_config)
+            self.logger.info("Configuration successfully merged.")
+
+        self.logger.info("Reconstructing top level fields of the original AppConfig.")
+        raw_config = yaml.dump(self.original_config)
+        ac = AppConfig(raw_config=raw_config, parser=self.parser)
         ac._render()
         ac._parse()
         return ac
