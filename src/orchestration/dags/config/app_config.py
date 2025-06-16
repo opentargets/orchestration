@@ -174,8 +174,8 @@ class AppConfigMerger:
         self.parser = base_config.parser
         self.original_config = copy.deepcopy(base_config.config)
         self.base_config = base_config.config.get("steps", {})
-        self.config_overwrite = override_config.config.get("steps", {})
-        if not self.config_overwrite:
+        self.config_override = override_config.config.get("steps", {})
+        if not self.config_override:
             raise ValueError("Config overwrite must contain `steps` key.")
         if not self.base_config:
             raise ValueError("Base config must contain `steps` key.")
@@ -263,7 +263,7 @@ class AppConfigMerger:
             "Merging base config with overwrite config using DeepMerge. "
             "This will override the list values from base config with the values from overwrite config."
         )
-        merged_config = merger.merge(self.base_config, self.config_overwrite)
+        merged_config = merger.merge(self.base_config, self.config_override)
 
         diff = DeepDiff(self.original_config.get("steps"), merged_config)
         if not diff:
