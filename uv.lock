@@ -1,4 +1,5 @@
 version = 1
+revision = 1
 requires-python = "==3.12.*"
 
 [[package]]
@@ -934,6 +935,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/7f/2f/232a9f6d88a59526347cb483ec601d878ad41ab30ee4f2fba4aca1d5a10e/deepdiff-8.4.2.tar.gz", hash = "sha256:5c741c0867ebc7fcb83950ad5ed958369c17f424e14dee32a11c56073f4ee92a", size = 515380 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0b/03/810d2e70a6944eddc826deb7b68879d8de109369040b25eeb58cdd64d94c/deepdiff-8.4.2-py3-none-any.whl", hash = "sha256:7e39e5b26f3747c54f9d0e8b9b29daab670c3100166b77cc0185d5793121b099", size = 87610 },
+]
+
+[[package]]
+name = "deepmerge"
+version = "2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a8/3a/b0ba594708f1ad0bc735884b3ad854d3ca3bdc1d741e56e40bbda6263499/deepmerge-2.0.tar.gz", hash = "sha256:5c3d86081fbebd04dd5de03626a0607b809a98fb6ccba5770b62466fe940ff20", size = 19890 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2d/82/e5d2c1c67d19841e9edc74954c827444ae826978499bde3dfc1d007c8c11/deepmerge-2.0-py3-none-any.whl", hash = "sha256:6de9ce507115cff0bed95ff0ce9ecc31088ef50cbdf09bc90a09349a318b3d00", size = 13475 },
 ]
 
 [[package]]
@@ -2921,6 +2931,7 @@ dependencies = [
     { name = "apache-airflow-providers-apache-beam" },
     { name = "apache-airflow-providers-google" },
     { name = "deepdiff" },
+    { name = "deepmerge" },
     { name = "google" },
     { name = "pandas" },
     { name = "psycopg2-binary" },
@@ -2947,6 +2958,7 @@ requires-dist = [
     { name = "apache-airflow-providers-apache-beam", specifier = "==6.0.3" },
     { name = "apache-airflow-providers-google", specifier = "==14.1.0" },
     { name = "deepdiff", specifier = ">=8.4.2" },
+    { name = "deepmerge", specifier = ">=2.0" },
     { name = "google", specifier = "==3.0.0" },
     { name = "pandas", specifier = "==2.1.4" },
     { name = "psycopg2-binary", specifier = "==2.9.10" },
@@ -2955,6 +2967,7 @@ requires-dist = [
     { name = "pyyaml", specifier = "==6.0.2" },
     { name = "requests", specifier = "==2.32.3" },
 ]
+provides-extras = ["test"]
 
 [package.metadata.requires-dev]
 dev = [

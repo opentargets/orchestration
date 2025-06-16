@@ -19,6 +19,7 @@ dependencies = [
     "psycopg2-binary==2.9.10",
     "apache-airflow-providers-apache-beam==6.0.3",
     "deepdiff>=8.4.2",
+    "deepmerge>=2.0",
 ]
 
 [project.optional-dependencies]

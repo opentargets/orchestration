@@ -91,6 +91,10 @@ class UnifiedPipelineConfig:
         )
         """The internal configuration for GENTROPY steps."""
 
+        if self.is_ppp:
+            self.gentropy = self.gentropy.overwrite(config_path / "gentropy.overrides.yaml")
+        """The internal configuration for GENTROPY steps, with PPP-specific overrides."""
+
         self.clusters = AppConfig.from_file(
             file_path=config_path / "clusters.yaml",
             template_context={
