@@ -43,8 +43,9 @@ pep621_dev_dependency_groups = ["test"]
 DEP002 = ["psycopg2-binary"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-
+filterwarnings = "ignore::DeprecationWarning"
+addopts = "--doctest-modules --cache-clear"
+testpaths = ["tests", "src/orchestration"]
 [tool.ruff]
 target-version = 'py312'
 line-length = 120
