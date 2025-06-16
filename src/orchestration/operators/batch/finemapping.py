@@ -153,8 +153,7 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         study_locus_ids = list(all_study_locus_ids - finemapped_study_locus_ids)
         manifest_rows = self._generate_manifest_rows(study_locus_ids)
         manifest_chunks = self._partition_rows_by_range(manifest_rows)
-        environments = self._prepare_batch_task_env(manifest_chunks)
-        return environments
+        return self._prepare_batch_task_env(manifest_chunks)
 
 
 class FinemappingBatchOperator(CloudBatchSubmitJobOperator):
