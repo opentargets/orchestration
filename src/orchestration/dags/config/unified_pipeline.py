@@ -63,6 +63,10 @@ class UnifiedPipelineConfig:
         )
         """The internal configuration for PIS steps."""
 
+        if self.is_ppp:
+            self.pis = self.pis.overwrite(config_path / "ppp" / "pis.override.yaml")
+        """The internal configuration for PIS steps, with PPP-specific overrides."""
+
         self.pts = AppConfig.from_file(
             file_path=config_path / "pts.yaml",
             template_context={
@@ -70,6 +74,10 @@ class UnifiedPipelineConfig:
             },
         )
         """The internal configuration for PTS steps."""
+
+        if self.is_ppp:
+            self.pts = self.pts.overwrite(config_path / "ppp" / "pts.override.yaml")
+        """The internal configuration for PTS steps, with PPP-specific overrides."""
 
         self.etl = AppConfig.from_file(
             file_path=config_path / "etl.conf",
@@ -79,6 +87,10 @@ class UnifiedPipelineConfig:
             },
         )
         """The internal configuration for ETL steps."""
+
+        if self.is_ppp:
+            self.etl = self.etl.overwrite(config_path / "ppp" / "etl.overrides.conf")
+        """The internal configuration for ETL steps, with PPP-specific overrides."""
 
         self.gentropy = AppConfig.from_file(
             file_path=config_path / "gentropy.yaml",
@@ -90,6 +102,10 @@ class UnifiedPipelineConfig:
             },
         )
         """The internal configuration for GENTROPY steps."""
+
+        if self.is_ppp:
+            self.gentropy = self.gentropy.overwrite(config_path / "ppp" / "gentropy.overrides.yaml")
+        """The internal configuration for GENTROPY steps, with PPP-specific overrides."""
 
         self.clusters = AppConfig.from_file(
             file_path=config_path / "clusters.yaml",

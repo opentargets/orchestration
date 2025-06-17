@@ -19,6 +19,7 @@ dependencies = [
     "psycopg2-binary==2.9.10",
     "apache-airflow-providers-apache-beam==6.0.3",
     "deepdiff>=8.4.2",
+    "deepmerge>=2.0",
 ]
 
 [project.optional-dependencies]
@@ -43,8 +44,9 @@ pep621_dev_dependency_groups = ["test"]
 DEP002 = ["psycopg2-binary"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-
+filterwarnings = "ignore::DeprecationWarning"
+addopts = "--doctest-modules --cache-clear"
+testpaths = ["tests", "src/orchestration"]
 [tool.ruff]
 target-version = 'py312'
 line-length = 120
