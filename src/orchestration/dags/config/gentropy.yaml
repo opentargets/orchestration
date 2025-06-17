@@ -132,13 +132,13 @@ steps:
         memory_mib: 2000
         boot_disk_mib: 10000
       task_specs:
-        max_retry_count: 3 # retry up to 3 times due to SPOT 50001 preemption errors
+        max_retry_count: 10 # retry up to 3 times due to SPOT 50001 preemption errors
         max_run_duration: '2h'
       policy_specs:
         machine_type: n1-standard-4
       image: 'europe-west1-docker.pkg.dev/open-targets-eu-dev/vep/custom_ensembl_vep:{{vep_version}}'
       entrypoint: /bin/sh
-      parallelism: 300 # max number of VEP tasks run at a time in parallel
+      parallelism: 1000 # max number of VEP tasks run at a time in parallel
     params:
       # INPUTS
       vep_cache_path: gs://vep_cache_data/vep/cache
@@ -197,7 +197,7 @@ steps:
       step: locus_to_gene
       step.run_mode: predict
       step.session.write_mode: overwrite
-      step.session.output_partitions: 5
+      step.session.output_partitions: 20
       step.l2g_threshold: 0.05
       step.download_from_hub: true
       step.explain_predictions: true

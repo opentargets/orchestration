@@ -259,7 +259,7 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
                 --check_existing \
                 --exclude_null_alleles \
                 --canonical \
-                --plugin TSSDistance \
+                --plugin TSSDistance,both_direction=1 \
                 --distance 500000 \
                 --plugin Conservation,{self.pm.cache_dir}/gerp_conservation_scores.homo_sapiens.GRCh38.bw,MAX \
                 --plugin LoF,loftee_path:{self.pm.cache_dir}/VEP_plugins,gerp_bigwig:{self.pm.cache_dir}/gerp_conservation_scores.homo_sapiens.GRCh38.bw,human_ancestor_fa:{self.pm.cache_dir}/human_ancestor.fa.gz,conservation_file:/opt/vep/loftee.sql \
