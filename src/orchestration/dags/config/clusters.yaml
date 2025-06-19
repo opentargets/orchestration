@@ -7,12 +7,14 @@ clusters:
     autoscaling_policy: otg-etl-25-secondary
     worker_machine_type: n1-standard-8
     worker_disk_size: 512
+    idle_delete_ttl: 300
 
   etl_literature:
     image_version: '2.2'
     num_masters: 1
     num_workers: 4
     worker_machine_type: n1-highmem-64
+    idle_delete_ttl: 300
     properties:
       'spark:spark.driver.memory': '478g'
       'spark:spark.sql.shuffle.partitions': '20'
@@ -23,7 +25,7 @@ clusters:
     num_masters: 1
     num_workers: 2
     worker_machine_type: 'n1-highmem-16'
-    idle_delete_ttl: 3600
+    idle_delete_ttl: 300
     internal_ip_only: false
     metadata:
       GENTROPY_REF: 'v{{gentropy_version}}'
@@ -39,6 +41,7 @@ clusters:
     num_masters: 3
     num_workers: 20
     worker_machine_type: n1-highmem-32
+    idle_delete_ttl: 300
     internal_ip_only: false
     metadata:
       GENTROPY_REF: 'v{{gentropy_version}}'
@@ -52,7 +55,6 @@ clusters:
       'yarn:spark.shuffle.io.serverThreads': '50'
     init_actions_uris:
       - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'
-    idle_delete_ttl: 3600
 
 step_job_properties:
   etl:

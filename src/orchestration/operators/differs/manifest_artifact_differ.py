@@ -10,8 +10,8 @@ from orchestration.utils.path import GCSPath, IOManager
 class ManifestArtifactDiffer:
     """Check whether the artifacts in the manifest exist in the release_uri.
 
-    This class fetches the manifest from GCS, using either `dev_uri` or `release_uri`
-    and then checks the steps' artifacts' destinations to ensure they are present.
+    This class fetches the manifest from GCS, using `release_uri` and then
+    checks the steps' artifacts' destinations to ensure they are present.
 
     Args:
         project_id (str): The GCP project ID. Defaults to the platform project.
@@ -31,7 +31,7 @@ class ManifestArtifactDiffer:
         Returns:
             bool: Whether the artifacts exist.
         """
-        manifest_uri = config.manifest_uri()
+        manifest_uri = f"{config.output_uri}/manifest.json"
         self.logger.info(f"downloading manifest from {manifest_uri}")
         m = IOManager().resolve(path=manifest_uri)
         if client and isinstance(m, GCSPath):

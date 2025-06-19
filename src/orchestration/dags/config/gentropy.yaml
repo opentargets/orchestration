@@ -10,7 +10,7 @@ steps:
       step.uberon_input_path: '{{release_uri}}/input/biosample/uberon.json'
       step.efo_input_path: '{{release_uri}}/input/biosample/efo.json'
       # OUTPUTS
-      step.biosample_index_path: '{{release_uri}}/output/biosample'
+      step.biosample_index_path: '{{output_uri}}/output/biosample'
 
   study:
     params:
@@ -40,8 +40,8 @@ steps:
       step.disease_index_path: '{{release_uri}}/output/disease'
       step.biosample_index_path: '{{release_uri}}/output/biosample'
       # OUTPUTS
-      step.valid_study_index_path: '{{release_uri}}/output/study'
-      step.invalid_study_index_path: '{{release_uri}}/excluded/study'
+      step.valid_study_index_path: '{{output_uri}}/output/study'
+      step.invalid_study_index_path: '{{output_uri}}/excluded/study'
 
   credible_set:
     params:
@@ -77,8 +77,8 @@ steps:
       step.study_index_path: '{{release_uri}}/output/study'
       step.target_index_path: '{{release_uri}}/output/target'
       # OUTPUTS
-      step.valid_study_locus_path: '{{release_uri}}/output/credible_set'
-      step.invalid_study_locus_path: '{{release_uri}}/excluded/credible_set'
+      step.valid_study_locus_path: '{{output_uri}}/output/credible_set'
+      step.invalid_study_locus_path: '{{output_uri}}/excluded/credible_set'
 
   colocalisation_coloc:
     params:
@@ -91,7 +91,7 @@ steps:
       # INPUTS
       step.credible_set_path: '{{release_uri}}/output/credible_set'
       # OUTPUTS
-      step.coloc_path: '{{release_uri}}/output/colocalisation_coloc'
+      step.coloc_path: '{{output_uri}}/output/colocalisation_coloc'
 
   colocalisation_ecaviar:
     params:
@@ -103,7 +103,7 @@ steps:
       # INPUTS
       step.credible_set_path: '{{release_uri}}/output/credible_set'
       # OUTPUTS
-      step.coloc_path: '{{release_uri}}/output/colocalisation_ecaviar'
+      step.coloc_path: '{{output_uri}}/output/colocalisation_ecaviar'
 
   variant_partition:
     params:
@@ -122,7 +122,7 @@ steps:
         - json
         - parquet
       # OUTPUTS
-      step.output_path: '{{release_uri}}/intermediate/variant_partition'
+      step.output_path: '{{output_uri}}/intermediate/variant_partition'
 
   variant_annotation:
     cluster: false
@@ -144,7 +144,7 @@ steps:
       vep_cache_path: gs://vep_cache_data/vep/cache
       vcf_input_path: '{{release_uri}}/intermediate/variant_partition'
       # OUTPUTS
-      vep_output_path: '{{release_uri}}/intermediate/variant_annotation'
+      vep_output_path: '{{output_uri}}/intermediate/variant_annotation'
 
   variant:
     params:
@@ -155,11 +155,10 @@ steps:
       step.vep_output_json_path: '{{release_uri}}/intermediate/variant_annotation'
       step.variant_annotations_path:
         - gs://gnomad_data_2/v4.1/variant_index
-        # - gs://otar013-ppp/OTAR2075_lof_curation/lof_curation_variant_annotations # PPP ONLY!
       step.amino_acid_change_annotations:
         - gs://otar013-ppp/OTAR2081_foldx/foldx_variant_annotation
       # OUTPUTS
-      step.variant_index_path: '{{release_uri}}/output/variant'
+      step.variant_index_path: '{{output_uri}}/output/variant'
 
   l2g_feature_matrix:
     params:
@@ -173,7 +172,7 @@ steps:
       step.study_index_path: '{{release_uri}}/output/study'
       step.target_index_path: '{{release_uri}}/output/target'
       # OUTPUTS
-      step.feature_matrix_path: '{{release_uri}}/intermediate/l2g_feature_matrix'
+      step.feature_matrix_path: '{{output_uri}}/intermediate/l2g_feature_matrix'
 
   l2g_training:
     params:
@@ -190,7 +189,7 @@ steps:
       step.feature_matrix_path: '{{release_uri}}/intermediate/l2g_feature_matrix'
       step.gold_standard_curation_path: '{{release_uri}}/input/l2g/gold_standard.json'
       # OUTPUTS
-      step.model_path: '{{release_uri}}/etc/model/locus_to_gene_model/classifier.skops'
+      step.model_path: '{{output_uri}}/etc/model/locus_to_gene_model/classifier.skops'
 
   l2g_prediction:
     params:
@@ -207,7 +206,7 @@ steps:
       step.feature_matrix_path: '{{release_uri}}/intermediate/l2g_feature_matrix'
       step.credible_set_path: '{{release_uri}}/output/credible_set'
       # OUTPUTS
-      step.predictions_path: '{{release_uri}}/output/l2g_prediction'
+      step.predictions_path: '{{output_uri}}/output/l2g_prediction'
 
   l2g_evidence:
     params:
@@ -219,4 +218,4 @@ steps:
       step.locus_to_gene_predictions_path: '{{release_uri}}/output/l2g_prediction'
       step.study_index_path: '{{release_uri}}/output/study'
       # OUTPUTS
-      step.evidence_output_path: '{{release_uri}}/intermediate/evidence/l2g_evidence'
+      step.evidence_output_path: '{{output_uri}}/intermediate/evidence/l2g_evidence'

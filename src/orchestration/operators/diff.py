@@ -73,31 +73,45 @@ class DiffOperator(BaseBranchOperator):
 
     def choose_branch(self, context: Context) -> str | Iterable[str]:
         """Decide whether to run a step or not."""
-        task_instance: TaskInstance = context.get("task_instance")
-        if not task_instance:
-            raise ValueError("task_instance not found in context")
+        step_must_run = False
 
-        # check if any upstream step has run, if so, we must run this step
-        steps_that_ran = task_instance.xcom_pull(key="steps_that_ran") or []
-        steps_upstream = self.config.step_definition(self.step_name).get("depends_on", [])
-        self.logger().info(f"checking if any of the upstream steps ({steps_upstream}) have run: {steps_that_ran}")
-        if any(step in steps_that_ran for step in steps_upstream):
-            self.logger().info(f"upstream step {steps_upstream} has run, forcing run of {self.step_name}")
-            # add this step to the xcom, as we check only if the immediately upstream steps ran
-            task_instance.xcom_push(key="steps_that_ran", value=[*steps_that_ran, self.step_name])
-            return self.diff_yes_task
+        # in dev runs, we only check if the step name is the one in dev_run_step:
+        if self.config.is_dev:
+            if self.step_name == self.config.dev_run_step:
+                step_must_run = True
+        else:
+            task_instance: TaskInstance = context.get("task_instance")
+            if not task_instance:
+                raise ValueError("task_instance not found in context")
 
-        for differ in self.differs:
-            differ_name = differ.__class__.__name__
-            if not isinstance(differ, Differ):
-                raise TypeError("differs must implement is_diff method")
-
-            self.logger().info(f"checking differ {differ_name} for step {self.step_name}")
-            if differ.is_diff(step_name=self.step_name, config=self.config, client=self.client):
-                # push the step name to an xcom for downstream tasks
+            # check if any upstream step has run, if so, we must run this step
+            steps_that_ran = task_instance.xcom_pull(key="steps_that_ran") or []
+            steps_upstream = self.config.step_definition(self.step_name).get("depends_on", [])
+            self.logger().info(f"checking if any of the upstream steps ({steps_upstream}) have run: {steps_that_ran}")
+            if any(step in steps_that_ran for step in steps_upstream):
+                self.logger().info(f"upstream step {steps_upstream} has run, forcing run of {self.step_name}")
+                # add this step to the xcom, as we check only if the immediately upstream steps ran
                 task_instance.xcom_push(key="steps_that_ran", value=[*steps_that_ran, self.step_name])
-                self.logger().info(f"{differ_name} triggered, step {self.step_name} will run")
-                return self.diff_yes_task
+                step_must_run = True
+
+            # if no upstream step has run, check the differs for this step
+            if not step_must_run:
+                for differ in self.differs:
+                    differ_name = differ.__class__.__name__
+                    if not isinstance(differ, Differ):
+                        raise TypeError("differs must implement is_diff method")
+
+                    self.logger().info(f"checking differ {differ_name} for step {self.step_name}")
+                    if differ.is_diff(step_name=self.step_name, config=self.config, client=self.client):
+                        # push the step name to an xcom for downstream tasks
+                        task_instance.xcom_push(key="steps_that_ran", value=[*steps_that_ran, self.step_name])
+                        self.logger().info(f"{differ_name} triggered, step {self.step_name} will run")
+                        step_must_run = True
+                        break
+
+        if step_must_run:
+            self.logger().info(f"step {self.step_name} must run, branching to {self.diff_yes_task}")
+            return self.diff_yes_task
 
         self.logger().info("no differences found, step will not run")
         return self.diff_no_task
