@@ -350,12 +350,4 @@ class UnifiedPipelineConfig:
             str: The URI of the jar file.
         """
         _, step = step_name.split("_", 1)
-        return f"{self.dev_uri or self.release_uri}/etc/bin/etl-{step}.jar"
-
-    def manifest_uri(self) -> str:
-        """Return the URI of the manifest file for the run.
-
-        Returns:
-            str: The URI of the manifest.
-        """
-        return f"{self.dev_uri or self.release_uri}/manifest.json"
+        return f"{self.output_uri}/etc/bin/etl-{step}.jar"
