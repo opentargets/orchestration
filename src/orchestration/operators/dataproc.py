@@ -293,6 +293,7 @@ class SubmitJobOperator(DataprocSubmitJobOperator):
         step_name: str,
         spark_job: SparkJob | None = None,
         py_spark_job: PySparkJob | None = None,
+        cancel_on_kill: bool = True,
         labels: Labels | None = None,
         gcp_conn_id: str = "google_cloud_default",
         impersonation_chain: str | Sequence[str] | None = None,
@@ -305,6 +306,7 @@ class SubmitJobOperator(DataprocSubmitJobOperator):
         self.labels = labels or Labels()
         self.spark_job = spark_job
         self.py_spark_job = py_spark_job
+        self.cancel_on_kill = cancel_on_kill
         self.gcp_conn_id = gcp_conn_id
         self.impersonation_chain = impersonation_chain
 
@@ -319,6 +321,7 @@ class SubmitJobOperator(DataprocSubmitJobOperator):
             project_id=self.project_id,
             region=self.region,
             job={},
+            cancel_on_kill=self.cancel_on_kill,
             gcp_conn_id=self.gcp_conn_id,
             impersonation_chain=self.impersonation_chain,
             **kwargs,

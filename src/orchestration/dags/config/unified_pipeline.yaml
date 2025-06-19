@@ -1,12 +1,30 @@
 ---
-release_name: '25.06-ppp'
+################################################################################
+# UNIFIED PIPELINE CONFIGURATION
+################################################################################
 
-# If `is_dev` is true:
-#   * the bucket used for the run will be `open-targets-pipeline-runs`
-#   * the prefix inside the bucket will be `run_name`
-#         which defaults to a timestamp if not provided.
+# `release_name` is the prefix used as work path when the pipeline is run in
+# _production mode_ (`is_dev: false`). It is where step inputs will be read
+# from, and outputs will be written to.
+release_name: '25.06'
+
+# `is_dev` decides whether this is a run for a release or development purposes.
+# On a dev run, only one step of the pipeline can be selected to run; and that
+# step can only be from the `etl` or `gentropy` stages (PIS and PTS steps can be
+# run locally in a very easy way without using the orchestrator).
+# If `is_dev` is true, the `run_name` and `run_steps` parameters must be set.
 is_dev: true
-run_name: 'irl/25.06-ppp-testrun-1'
+
+### NOTE: The next two settings are exclusive for dev runs.
+# `dev_run_name` is the output folder for a dev run. The convention is:
+# `<username>/<release_name>-<description>`
+dev_run_name: 'jferrer/test-single-step'
+# `dev_run_step` is the step that will be run in a dev run.
+dev_run_step: gentropy_biosample
+
+################################################################################
+# RELEASE SETTINGS
+################################################################################
 
 # Whether this will be a partner preview platform release (PPP)
 is_ppp: true
@@ -22,8 +40,10 @@ chembl_version: '35'
 efo_version: '3.77.0'
 ensembl_version: '114'
 
-# Dependency graph
-# ----------------
+################################################################################
+# DEPENDENCY GRAPH
+################################################################################
+
 # The following section defines the dependencies between the different steps in
 # the pipeline.
 #
@@ -40,7 +60,7 @@ ensembl_version: '114'
 # each step, but given the current fast pace of changes throughout the whole
 # pipeline, it is not worth the effort to implement this until things have
 # stabilised.
-#
+
 steps:
   # PIS STEPS
   pis_biosample:

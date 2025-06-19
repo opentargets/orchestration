@@ -14,7 +14,7 @@ GCP_PROJECT_GENETICS = "open-targets-genetics-dev"
 GCP_SERVICE_ACCOUNT = "up-airflow-dev@open-targets-eu-dev.iam.gserviceaccount.com"
 GCP_REGION = "europe-west1"
 GCP_ZONE = "europe-west1-d"
-
+GCP_BUCKET = "open-targets-pre-data-releases"
 
 shared_dag_args: dict[str, Any] = {
     "owner": "Open Targets Data Team",

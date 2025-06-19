@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 
 from orchestration.dags.config.app_config import AppConfig
 from orchestration.operators.dataproc import ClusterDefinition
+from orchestration.utils.common import GCP_BUCKET
 
 if TYPE_CHECKING:
     from typing import Any
@@ -34,14 +35,27 @@ class UnifiedPipelineConfig:
         up = AppConfig.from_file(file_path=config_path / "unified_pipeline.yaml")
         self._steps = up.get("steps")
 
-        self.run_name = up.get("run_name") or datetime.now().strftime("%Y%m%d-%H%M")
-        """Used for labelling resources."""
-        self.release_uri: str = f"gs://open-targets-pre-data-releases/{up.get('release_name')}"
-        """The place where the production release files are read from and/or written to."""
+        self.release_uri: str = f"gs://{GCP_BUCKET}/{up.get('release_name')}"
+        """The place where the input files are read from."""
+        self.output_uri = self.release_uri
+        """The place where the output files are written to."""
         self.is_dev = up.get("is_dev", True)
         """Whether this is a development or production run."""
-        self.dev_uri = f"gs://open-targets-pipeline-runs/{self.run_name}" if self.is_dev else None
-        """The place where the development run files are read from and written to."""
+
+        if self.is_dev:
+            dev_run_name = up.get("dev_run_name")
+            if not dev_run_name:
+                raise ValueError("`dev_run_name` must be provided for development runs")
+            if "/" not in dev_run_name:
+                raise ValueError("`dev_run_name` must be in the form <user_name>/<run_name>")
+            self.output_uri = f"gs://{GCP_BUCKET}/{dev_run_name}"
+            self.dev_run_step = up.get("dev_run_step")
+            """ The step to run in a development run."""
+            if not self.dev_run_step:
+                raise ValueError("`dev_run_step` must be provided for development runs")
+            if self.dev_run_step.split("_", 1)[0] not in ["etl", "gentropy"]:
+                raise NotImplementedError("dev runs are only supported for etl and gentropy steps")
+
         self.service_account_extra_scopes = ["https://www.googleapis.com/auth/drive"]
         """Extra scopes to be added to the service account in executor machines"""
         """- the drive scope is needed to download Google Drive spreadsheets for the pis_otar step"""
@@ -55,7 +69,7 @@ class UnifiedPipelineConfig:
         self.pis = AppConfig.from_file(
             file_path=config_path / "pis.yaml",
             template_context={
-                "release_uri": self.dev_uri or self.release_uri,
+                "release_uri": self.release_uri,
                 "chembl_version": up.get("chembl_version"),
                 "efo_version": up.get("efo_version"),
                 "ensembl_version": up.get("ensembl_version"),
@@ -70,7 +84,7 @@ class UnifiedPipelineConfig:
         self.pts = AppConfig.from_file(
             file_path=config_path / "pts.yaml",
             template_context={
-                "release_uri": self.dev_uri or self.release_uri,
+                "release_uri": self.release_uri,
             },
         )
         """The internal configuration for PTS steps."""
@@ -82,7 +96,8 @@ class UnifiedPipelineConfig:
         self.etl = AppConfig.from_file(
             file_path=config_path / "etl.conf",
             template_context={
-                "release_uri": self.dev_uri or self.release_uri,
+                "release_uri": self.release_uri,
+                "output_uri": self.output_uri,
                 "data_sources_exclude": data_sources_exclude,
             },
         )
@@ -95,7 +110,8 @@ class UnifiedPipelineConfig:
         self.gentropy = AppConfig.from_file(
             file_path=config_path / "gentropy.yaml",
             template_context={
-                "release_uri": self.dev_uri or self.release_uri,
+                "release_uri": self.release_uri,
+                "output_uri": self.output_uri,
                 "gentropy_version": up.get("gentropy_version"),
                 "l2g_training_version": datetime.now().strftime("%Y-%m"),
                 "vep_version": up.get("vep_version"),
@@ -143,10 +159,8 @@ class UnifiedPipelineConfig:
         """The URI where the jar used to run ETL is fetched from."""
 
         # GENTROPY-specific settings.
-        self.gentropy_main_python_file_uri = "gs://genetics_etl_python_playground/initialisation/cli.py"
-        self.gentropy_cluster_init_script_uri = (
-            "gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh"
-        )
+        gentropy_uri = "gs://genetics_etl_python_playground/initialisation"
+        self.gentropy_main_python_file_uri = f"{gentropy_uri}/cli.py"
 
     def pis_env_vars(self, step_name: str) -> dict[str, str]:
         """Return the environment variables for a PIS step."""
@@ -165,6 +179,8 @@ class UnifiedPipelineConfig:
     def steps(self, prefix: str = "") -> list[str]:
         """Return a list of steps in the pipeline.
 
+        When `is_dev` is `True`, only the `dev_run_step` is returned.
+
         Args:
             prefix (str): Filter steps by prefix, to get the list of steps for a
                 specific stage. For example, `pis_` for PIS steps.
@@ -173,6 +189,9 @@ class UnifiedPipelineConfig:
         Returns:
             list[str]: The list of step names.
         """
+        if self.is_dev:
+            return [self.dev_run_step] if self.dev_run_step.startswith(prefix) else []
+
         relevant_steps: list[str] = []
 
         stage_steps = {k: v for k, v in self._steps.items() if k.startswith(prefix)}
@@ -298,6 +317,9 @@ class UnifiedPipelineConfig:
     def config_uri(self, step_name: str) -> str:
         """Return the URI of the configuration file for a step.
 
+        This uses `output_uri` as the prefix to make sure dev runs have their
+        own config files.
+
         Args:
             step_name (str): The name of the step, in the form `{stage}_{step_name}`.
 
@@ -309,10 +331,17 @@ class UnifiedPipelineConfig:
         }
         stage, _ = step_name.split("_", 1)
         ext = exts.get(stage, "yaml")
-        return f"{self.dev_uri or self.release_uri}/etc/config/{step_name}.{ext}"
+        return f"{self.output_uri}/etc/config/{step_name}.{ext}"
 
     def jar_uri(self, step_name: str) -> str:
         """Return the URI of the jar file used to run ETL.
+
+        This is the location of the JAR file used to _run a step_ of the ETL. As
+        each step could be run with a different JAR, it will be copied there from
+        the `etl_jar_origin_uri` during the run.
+
+        This uses `output_uri` as the prefix to make sure dev runs have their
+        own JAR files.
 
         Args:
             step_name (str): The name of the step, in the form `{stage}_{step_name}`.

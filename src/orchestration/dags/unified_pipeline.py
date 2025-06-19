@@ -286,6 +286,7 @@ with DAG(
                             "num_partitions": num_partitions,
                         },
                     ).build(),
+                    cancel_on_kill=not config.is_dev,  # allow devs to leave after launching a step
                     labels=labels,
                 )
 
@@ -447,6 +448,7 @@ with DAG(
                             params=config.step_specific_config(step_name).get("params"),
                             properties=config.step_job_properties(step_name),
                         ).build(),
+                        cancel_on_kill=not config.is_dev,  # allow devs to leave after launching a step
                         labels=labels,
                     )
                     gentropy_steps[step_name] = r
@@ -489,13 +491,14 @@ with DAG(
 
     # ==============================================================================================
     # After creating all the tasks, we tie them together by creating dependencies.
-    for step_name, step_tasks in steps.items():
-        step_definition = config.step_definition(step_name) or {}
-        for dep in step_definition.get("depends_on", []):
-            step_tasks["start"].set_upstream(steps[dep]["end"])
-        if config.is_ppp:
-            for ppp_dep in step_definition.get("depends_on_ppp", []):
-                step_tasks["start"].set_upstream(steps[ppp_dep]["end"])
+    if not config.is_dev:
+        for step_name, step_tasks in steps.items():
+            step_definition = config.step_definition(step_name) or {}
+            for dep in step_definition.get("depends_on", []):
+                step_tasks["start"].set_upstream(steps[dep]["end"])
+            if config.is_ppp:
+                for ppp_dep in step_definition.get("depends_on_ppp", []):
+                    step_tasks["start"].set_upstream(steps[ppp_dep]["end"])
 
 if __name__ == "__main__":
     dag.test()
