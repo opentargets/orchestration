@@ -132,13 +132,13 @@ steps:
         memory_mib: 2000
         boot_disk_mib: 10000
       task_specs:
-        max_retry_count: 10 # retry up to 3 times due to SPOT 50001 preemption errors
+        max_retry_count: 10 # retry up to 10 times due to SPOT 50001 preemption errors
         max_run_duration: '2h'
       policy_specs:
         machine_type: n1-standard-4
       image: 'europe-west1-docker.pkg.dev/open-targets-eu-dev/vep/custom_ensembl_vep:{{vep_version}}'
       entrypoint: /bin/sh
-      parallelism: 1000 # max number of VEP tasks run at a time in parallel
+      parallelism: 500 # max number of VEP tasks run at a time in parallel
     params:
       # INPUTS
       vep_cache_path: gs://vep_cache_data/vep/cache
@@ -155,7 +155,6 @@ steps:
       step.vep_output_json_path: '{{release_uri}}/intermediate/variant_annotation'
       step.variant_annotations_path:
         - gs://gnomad_data_2/v4.1/variant_index
-        # - gs://otar013-ppp/OTAR2075_lof_curation/lof_curation_variant_annotations # PPP ONLY!
       step.amino_acid_change_annotations:
         - gs://otar013-ppp/OTAR2081_foldx/foldx_variant_annotation
       # OUTPUTS
@@ -182,7 +181,7 @@ steps:
       step.run_mode: train
       step.wandb_run_name: '{{l2g_training_version}}'
       step.cross_validate: false
-      step.hf_hub_repo_id: opentargets/locus_to_gene
+      step.hf_hub_repo_id: opentargets/locus_to_gene_25.06-ppp
       step.hf_model_commit_message: 'chore: update model base model for {{l2g_training_version}} run'
       +step.session.extended_spark_conf: "{spark.kryoserializer.buffer.max:500m, spark.sql.autoBroadcastJoinThreshold:'-1'}"
       # INPUTS
@@ -203,7 +202,7 @@ steps:
       step.explain_predictions: true
       +step.session.extended_spark_conf: "{spark.rpc.message.maxSize:'2046'}"
       # INPUTS
-      step.hf_hub_repo_id: opentargets/locus_to_gene
+      step.hf_hub_repo_id: opentargets/locus_to_gene_25.06-ppp
       step.feature_matrix_path: '{{release_uri}}/intermediate/l2g_feature_matrix'
       step.credible_set_path: '{{release_uri}}/output/credible_set'
       # OUTPUTS

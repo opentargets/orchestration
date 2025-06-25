@@ -39,6 +39,7 @@ clusters:
     num_masters: 3
     num_workers: 20
     worker_machine_type: n1-highmem-32
+    worker_disk_size: 512
     internal_ip_only: false
     metadata:
       GENTROPY_REF: 'v{{gentropy_version}}'

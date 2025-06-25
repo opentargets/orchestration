@@ -6,7 +6,7 @@ release_name: '25.06-ppp'
 #   * the prefix inside the bucket will be `run_name`
 #         which defaults to a timestamp if not provided.
 is_dev: true
-run_name: 'irl/25.06-ppp-testrun-1'
+run_name: 'il/25.06-ppp-testrun-1'
 
 # Whether this will be a partner preview platform release (PPP)
 is_ppp: true
