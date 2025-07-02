@@ -1,5 +1,5 @@
 VERSION := $$(grep '^version' pyproject.toml | sed 's%version = "\(.*\)"%\1%')
-.DEFAULT_GOAL := cloud-dev
+.DEFAULT_GOAL := dev
 LOCAL_DEV_CREDENTIALS ?= ~/.config/gcloud/adc.json
 
 ### HOUSEKEEPING TARGETS ###
