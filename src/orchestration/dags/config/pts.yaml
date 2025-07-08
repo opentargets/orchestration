@@ -107,11 +107,6 @@ steps:
       destination: intermediate/target/ensembl/homo_sapiens.parquet
       transformer: ensembl
 
-    - name: transform gnomad
-      source: input/target/gnomad/gnomad.v2.1.1.lof_metrics.by_gene.txt.bgz
-      destination: intermediate/target/gnomad/gnomad_lof_by_gene.txt.gz
-      transformer: gnomad
-
     - name: explode_glob homology
       glob: input/target/homologue/gene_dictionary/*.json
       do:
