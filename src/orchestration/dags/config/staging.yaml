@@ -1,0 +1,43 @@
+---
+# Due to the size of the staging data, the data release is continuously updated or overwritten.
+# This approach ensures the prevention of data duplication and the management of the storage costs.
+
+# IO bucket paths for staging DAGs
+
+## GWAS Catalog input locations (Summary Statistics and curated associations)
+gc_inputs: gs://gwas_catalog_inputs
+
+## GWAS Catalog output locations
+gc_top_hits: gs://gwas_catalog_top_hits
+gc_susie: gs://gwas_catalog_sumstats_susie
+gc_pics: gs://gwas_catalog_sumstats_pics
+
+## gnomAD data (LD Index, Variant Index)
+gnomad: gs://gnomad_data_2
+
+## Other data sources (Credible sets + study indices)
+finngen: gs://finngen_data
+eqtl_catalogue: gs://eqtl_catalogue_data
+ukb: gs://ukb_ppp_eur_data
+
+## Intervals (rE2G, Epiraction)
+internval_data: gs://internal_data
+
+## Variant annotation sources
+lof:   gs://otar013-ppp
+foldx: gs://otar013-ppp
+
+# Other configuration parameters
+
+## gwas catalog curation date
+curation_date: '202507'
+
+## gwas catalog data files synchronisation date
+sync_date: '20250708'
+
+## GWAS Catalog susie credible set cleanup date
+susie_cleanup_date: '20250721'
+
+# software versions
+gentropy_version: '2.4.0-internal.2'
+

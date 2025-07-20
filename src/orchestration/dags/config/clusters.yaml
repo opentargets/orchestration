@@ -67,3 +67,21 @@ step_job_properties:
     'spark.executor.extraClassPath': './hail-all-spark.jar'
     'spark.serializer': 'org.apache.spark.serializer.KryoSerializer'
     'spark.kryo.registrator': 'is.hail.kryo.HailKryoRegistrator'
+
+
+staging_tophits:
+  image_version: '2.2'
+  num_masters: 1
+  num_workers: 2
+  worker_machine_type: 'n1-highmem-16'
+  idle_delete_ttl: 3600
+  internal_ip_only: false
+  autoscaling_policy: otg-gwascatalog-tophit
+  metadata:
+    GENTROPY_REF: v2.4.0-internal.2
+  num_workers: 2
+  properties:
+    'spark:spark.shuffle.service.enabled': 'true'
+    'spark:spark.sql.adaptive.enabled': 'true'
+  init_actions_uris:
+    - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'

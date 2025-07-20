@@ -12,14 +12,14 @@ from orchestration.utils import chain_dependencies, find_node_in_config, read_ya
 from orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 from orchestration.utils.dataproc import create_cluster, delete_cluster, submit_gentropy_step
 
-CONFIG_PATH = Path(__file__).parent / "config" / "gwas_catalog_top_hits.yaml"
+CONFIG_PATH = Path(__file__).parent / "config" / "top_hits.yaml"
 config = read_yaml_config(CONFIG_PATH)
 top_hits_config = find_node_in_config(config["nodes"], "top_hits_processing")
 
 
 with DAG(
     dag_id=Path(__file__).stem,
-    description="Open Targets Genetics — GWAS Catalog top hits",
+    description="Open Targets GWAS Catalog top hits (Curated Associations) processing",
     default_args=shared_dag_args,
     **shared_dag_kwargs,
 ) as dag:

@@ -20,13 +20,19 @@ dependencies = [
     "apache-airflow-providers-apache-beam==6.0.3",
     "deepdiff>=8.4.2",
     "deepmerge>=2.0",
+    "pydantic>=2.10.6",
 ]
 
 [project.optional-dependencies]
 test = ["pytest==8.3.5"]
 
 [dependency-groups]
-dev = ["deptry==0.23.0", "pre-commit==4.2.0", "ruff==0.11.7"]
+dev = [
+    "deptry==0.23.0",
+ "ipython>=9.4.0",
+ "pre-commit==4.2.0",
+ "ruff==0.11.7",
+]
 
 [project.scripts]
 orchestration = "orchestration:main"
