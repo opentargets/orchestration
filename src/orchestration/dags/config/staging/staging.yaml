@@ -2,8 +2,10 @@
 # Due to the size of the staging data, the data release is continuously updated or overwritten.
 # This approach ensures the prevention of data duplication and the management of the storage costs.
 
-# IO bucket paths for staging DAGs
+# Globals
+run_name: 'szsz/25.09-staging-data-release'
 
+# IO bucket paths for staging DAGs
 ## GWAS Catalog input locations (Summary Statistics and curated associations)
 gc_inputs: gs://gwas_catalog_inputs
 
@@ -39,5 +41,5 @@ sync_date: '20250708'
 susie_cleanup_date: '20250721'
 
 # software versions
-gentropy_version: '2.4.0-internal.2'
+gentropy_version: '2.4.0-internal.3'
 

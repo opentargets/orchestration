@@ -24,7 +24,7 @@ class FinemappingBatchJobManifestOperator(BaseOperator):
         output_path: str,
         log_path: str,
         max_records_per_chunk: int = 100_000,
-        chunk_limit: int = 2,
+        chunk_limit: int = 10,
         **kwargs,
     ):
         self.log.info("Using collected loci from %s", collected_loci_path)

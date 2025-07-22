@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 import pyhocon
 import yaml
 from deepdiff.diff import DeepDiff
+from pydantic import BaseModel
 
 from orchestration.utils.path import GCSPath, IOManager
 
@@ -34,8 +35,10 @@ class AppConfig:
         self.rendered_config: str
         self.config: dict[str, Any]
         self.logger = logging.getLogger(__name__)
+        self._validation_model: type[BaseModel] | None = None
         self.is_rendered = False
         self.is_parsed = False
+        self.is_validated = False
 
     def _render(self) -> None:
         if not self.is_rendered:
@@ -50,12 +53,33 @@ class AppConfig:
             self.config = self.parser(self.rendered_config)
             self.is_parsed = True
 
+    def _validate(self) -> AppConfig:
+        if self.validation_model:
+            self.logger.info(f"Validating config with {self.validation_model.__name__}")
+            self.validation_model(**self.config)
+            self.is_validated = True
+        else:
+            self.logger.warning("Call to AppConfig._validate method without pre-defined validation model.")
+        return self
+
+    @property
+    def validation_model(self) -> type[BaseModel] | None:
+        """Validation model that is used to validate the config structure."""
+        return self._validation_model
+
+    @validation_model.setter
+    def validation_model(self, model: type[BaseModel]):
+        if not issubclass(model, BaseModel):
+            raise TypeError("Validation model must inherit from pydantic.BaseModel.")
+        self._validation_model = model
+
     @classmethod
     def from_file(
         cls,
         file_path: str | Path,
         client: Any = None,
         template_context: dict[str, str] | None = None,
+        model: type[BaseModel] | None = None,
     ) -> AppConfig:
         """Create an AppConfig instance from a file.
 
@@ -64,6 +88,8 @@ class AppConfig:
             client (Any): Optional client to use for file access. Defaults to None.
             template_context (dict[str, str], optional): Template context to use
                 in rendering. Optional.
+            model (type[BaseModel], optional): Class inheriting from pydantic.BaseModel to use for the config validation. Defaults to
+                no validation. Optional.
 
         Returns:
             AppConfig: An instance of AppConfig.
@@ -79,6 +105,9 @@ class AppConfig:
         c = cls(raw_config=conf, parser=parser, template_context=template_context)
         c._render()
         c._parse()
+        if model:
+            c.validation_model = model
+            c._validate()
         return c
 
     def overwrite(self, file_path: str | Path) -> AppConfig:

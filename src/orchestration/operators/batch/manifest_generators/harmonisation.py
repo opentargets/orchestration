@@ -156,7 +156,6 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
         merged_df2["harmonisedSumstatPath"] = merged_df2["study"].apply(expr)
 
         self.manifest = merged_df2
-
         return self
 
     def dump_manifest(self) -> HarmonisationManifestGenerator:

@@ -6,20 +6,20 @@
 # 3. PICS credible set generation
 # The cluster configuration is set in the `clusters.yaml` file.
 
-nodes:
+steps:
 
   - id: study_index
     prerequisites: []
     params:
       step: gwas_catalog_top_hit_ingestion
       step.catalog_study_files:
-        - "{gc_inputs}/gentroutils/{sync_date}/gwas_catalog_download_studies.tsv"
+        - "{{gc_inputs}}/gentroutils/{{sync_date}}/gwas_catalog_download_studies.tsv"
       step.catalog_ancestry_files:
-        - "{gc_inputs}/gentroutils/{sync_date}/gwas_catalog_download_ancestries.tsv"
-      step.catalog_associations_file: "{gc_inputs}/gentroutils/{sync_date}/gwas_catalog_associations_ontology_annotated.tsv"
-      step.variant_annotation_path: "{gnomad}/v4.1/variant_index"
-      step.catalog_studies_out: "{gc_top_hits}/study_index"
-      step.catalog_associations_out: "{gc_top_hits}/study_locus_window_based_clumped"
+        - "{{gc_inputs}}/gentroutils/{{sync_date}}/gwas_catalog_download_ancestries.tsv"
+      step.catalog_associations_file: "{{gc_inputs}}/gentroutils/{{sync_date}}/gwas_catalog_associations_ontology_annotated.tsv"
+      step.variant_annotation_path: "{{gnomad}}/v4.1/variant_index"
+      step.catalog_studies_out: "{{gc_top_hits}}/study_index"
+      step.catalog_associations_out: "{{gc_top_hits}}/study_locus_window_based_clumped"
       step.session.write_mode: overwrite
       step.session.output_partitions: 1
 
@@ -28,10 +28,10 @@ nodes:
       - study_index
     params:
       step: ld_based_clumping
-      step.ld_index_path: "{gnomad}/v2.1.1/ld_index"
-      step.study_locus_input_path: "{gc_top_hits}/study_locus_window_based_clumped"
-      step.clumped_study_locus_output_path: "{gc_top_hits}/study_locus_ld_clumped"
-      step.study_index_path: "{gc_top_hits}/study_index"
+      step.ld_index_path: "{{gnomad}}/v2.1.1/ld_index"
+      step.study_locus_input_path: "{{gc_top_hits}}/study_locus_window_based_clumped"
+      step.clumped_study_locus_output_path: "{{gc_top_hits}}/study_locus_ld_clumped"
+      step.study_index_path: "{{gc_top_hits}}/study_index"
       step.session.write_mode: overwrite
 
   - id: pics
@@ -39,6 +39,6 @@ nodes:
       - ld_clumping
     params:
       step: pics
-      step.study_locus_ld_annotated_in: "{gc_top_hits}/study_locus_ld_clumped"
-      step.picsed_study_locus_out: "{gc_top_hits}/credible_sets"
+      step.study_locus_ld_annotated_in: "{{gc_top_hits}}/study_locus_ld_clumped"
+      step.picsed_study_locus_out: "{{gc_top_hits}}/credible_sets"
       step.session.write_mode: overwrite

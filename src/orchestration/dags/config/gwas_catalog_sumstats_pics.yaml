@@ -4,7 +4,7 @@ dataproc:
   autoscaling_policy: otg-preprocess-gwascatalog
   python_main_module: gs://genetics_etl_python_playground/initialisation/cli.py
   cluster_metadata:
-    GENTROPY_REF: v2.3.0-rc.5
+    GENTROPY_REF: v2.4.0-internal.3
   cluster_init_script: gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh
   num_workers: 5
 
@@ -19,9 +19,9 @@ nodes:
         params:
           step: gwas_catalog_study_index
           step.catalog_study_files:
-            - gs://gwas_catalog_inputs/gwas_catalog_download_studies.tsv
+            - gs://gwas_catalog_inputs/gentroutils/20250708/gwas_catalog_download_studies.tsv
           step.catalog_ancestry_files:
-            - gs://gwas_catalog_inputs/gwas_catalog_download_ancestries.tsv
+            - gs://gwas_catalog_inputs/gentroutils/20250708/gwas_catalog_download_ancestries.tsv
           step.study_index_path: gs://gwas_catalog_sumstats_pics/study_index
           step.session.write_mode: overwrite
           step.session.spark_uri: yarn
