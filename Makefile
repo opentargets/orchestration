@@ -57,12 +57,12 @@ build-dag-svgs: ## Generate visual representations of Airflow DAGs for documenta
 		unified_pipeline/unified_pipeline, \
 		AIRFLOW__CORE__DAGS_FOLDER=src/orchestration/dags uv run airflow dags show --save docs/$(dag).svg $(notdir $(dag));)
 
+upload-eqtl-catalogue-bucket-readme: ## upload eqtl_catalogue_data readme to the bucket
+	@gcloud storage rsync docs/datasources/eqtl_catalogue_data gs://eqtl_catalogue_data/docs
+
 upload-ukb-ppp-bucket-readme: ## upload ukb_ppp_eur_data readme to the bucket
 	@gcloud storage rsync docs/datasources/ukb_ppp_eur_data gs://ukb_ppp_eur_data/docs
 	@gcloud storage rsync docs/credible_set_qc gs://ukb_ppp_eur_data/docs/credible_set_qc
-
-upload-eqtl-catalogue-bucket-readme: ## upload eqtl_catalogue_data readme to the bucket
-	@gcloud storage rsync docs/datasources/eqtl_catalogue_data gs://eqtl_catalogue_data/docs
 
 upload-finngen-bucket-readme: ## upload finngen_data readme to the bucket
 	@gcloud storage rsync docs/datasources/finngen_data gs://finngen_data/docs
@@ -77,10 +77,10 @@ upload-gwas-catalog-buckets-readme: ## upload gwas_catalog readme to the bucket(
 upload-gnomad-bucket-readme: ## upload gnomad_data readme to the bucket
 	@gcloud storage rsync docs/datasources/gnomad_data gs://gnomad_data_2/docs
 
-upload-intervals-readme: ## upload intervals readme to the bucket
+upload-interval-bucket-readme: ## upload intervals readme to the bucket
 	@gcloud storage rsync docs/datasources/intervals gs://interval_data/docs
 
-update-bucket-docs: upload-eqtl-catalogue-bucket-readme upload-ukb-ppp-bucket-readme upload-finngen-bucket-readme upload-gwas-catalog-buckets-readme ## upload readmes to the datasource buckets
+update-bucket-docs: upload-eqtl-catalogue-bucket-readme upload-ukb-ppp-bucket-readme upload-finngen-bucket-readme upload-gwas-catalog-buckets-readme upload-gnomad-bucket-readme upload-intervals-bucket-readme ## upload readmes to the datasource buckets
 
 build-gentropy-gcs-image: ## build image that overwrited gentropy with tools specific for orchestration and google cloud
 	@docker buildx build \

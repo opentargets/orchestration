@@ -2,12 +2,16 @@
 
 This catalog describes how the orchestration works in the current state
 
-## How to generate dag svg files
+## How to generate dag svg files for documentation
 
-1. Locate your global `airflow.cfg` file and update the [core] dag_folder in `airflow.cfg` to point to the `src` directory of the orchestration repository or set the `AIRFLOW__CORE__DAGS_FOLDER` environment variable.
+```{bash}
+make build-dag-svg
+```
 
-2. Run
+## How to update dag documentation on staging buckets
 
-   ```bash
-   poetry run airflow  dags show  --save docs/${DAG_NAME}.svg ${DAG_NAME}
-   ```
+```{bash}
+make update-bucket-docs
+```
+
+This documentation is updated manually on each data or staging data update.
