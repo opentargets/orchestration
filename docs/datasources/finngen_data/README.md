@@ -1,6 +1,6 @@
 # Finngen
 
-This document was updated on 2025-04-11
+This document was updated on 2025-07-22.
 
 This datasource is currently fixed under [Finngen Data Freeze 12 - November 4 2024](https://r12.finngen.fi/)
 
@@ -8,7 +8,7 @@ Data source comes from the bucket `gs://finngen-public-data-r12/` hosted by Finn
 
 Data is stored under `gs://finngen_data/r12` comes with following structure
 
-```
+```{bash}
 gs://finngen_data/r12/credible_set_datasets/susie
 gs://finngen_data/r12/study_index/
 ```
@@ -43,7 +43,6 @@ The output datasets are:
 - [x] [`CredibleSets`](https://opentargets.github.io/gentropy/python_api/datasets/study_locus/) stored under `gs://finngen_data/r12/credible_set_datasets/susie/`
 
 The configuration of the dataproc infrastructure and individual step parameters can be found in `finngen_ingestion.yaml` file.
-
 
 ## Changelog
 
