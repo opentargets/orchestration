@@ -58,6 +58,6 @@ nodes:
       - ld_based_clumping
     params:
       step: pics
-      step.study_locus_ld_annotated_in: "{output_path}study_locus_ld_clumped"
+      step.study_locus_ld_annotated_in: "{output_path}/study_locus_ld_clumped"
       step.picsed_study_locus_out: "{output_path}/credible_sets"
       step.session.write_mode: overwrite
