@@ -77,8 +77,8 @@ upload-gwas-catalog-buckets-readme: ## upload gwas_catalog readme to the bucket(
 upload-gnomad-bucket-readme: ## upload gnomad_data readme to the bucket
 	@gcloud storage rsync docs/datasources/gnomad_data gs://gnomad_data_2/docs
 
-upload-interval-bucket-readme: ## upload intervals readme to the bucket
-	@gcloud storage rsync docs/datasources/intervals gs://interval_data/docs
+upload-intervals-bucket-readme: ## upload intervals readme to the bucket
+	@gcloud storage rsync docs/datasources/interval_data gs://interval_data/docs
 
 update-bucket-docs: upload-eqtl-catalogue-bucket-readme upload-ukb-ppp-bucket-readme upload-finngen-bucket-readme upload-gwas-catalog-buckets-readme upload-gnomad-bucket-readme upload-intervals-bucket-readme ## upload readmes to the datasource buckets
 
