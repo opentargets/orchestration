@@ -53,3 +53,7 @@ The configuration of the dataproc infrastructure and individual step parameters 
 ### 2025-04-11
 
 - chore: removal of r11 and r10 data to prevent data duplication.
+
+### 2025-07-24
+
+- [feat: updated finngen studyIndex to contain pubmedId upon ingestion](https://github.com/opentargets/issues/issues/3946)
