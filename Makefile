@@ -38,33 +38,60 @@ tunnel: ## Tunnel to the remote development environment
 	@./deployment/tunnel.sh
 
 ### OTHER TARGETS ###
-upload-ukb-ppp-bucket-readme: ## ppload ukb_ppp_eur_data readme to the bucket
-	@gsutil rsync docs/datasources/ukb_ppp_eur_data gs://ukb_ppp_eur_data/docs
+
+build-dag-svgs: ## Generate visual representations of Airflow DAGs for documentation purposes
+	@uv sync --all-groups
+	@$(foreach dag, \
+		datasources/gwas_catalog_data/gwas_catalog_sumstats_pics \
+		datasources/gwas_catalog_data/gwas_catalog_sumstats_susie_clumping \
+		datasources/gwas_catalog_data/gwas_catalog_sumstats_susie_finemapping \
+		datasources/gwas_catalog_data/gwas_catalog_top_hits \
+		datasources/gnomad_data/gnomad_ingestion \
+		datasources/ukb_ppp_eur_data/ukb_ppp_eur_finemapping \
+		datasources/ukb_ppp_eur_data/ukb_ppp_eur_harmonisation \
+		datasources/finngen_data/finngen_ingestion \
+		datasources/eqtl_catalogue_data/eqtl_catalogue_ingestion \
+		credible_set_qc/credible_set_qc \
+		datasources/lof_annotations/lof_curation_ingestion \
+		datasources/foldx_annotations/foldx_ingestion \
+		unified_pipeline/unified_pipeline, \
+		AIRFLOW__CORE__DAGS_FOLDER=src/orchestration/dags uv run airflow dags show --save docs/$(dag).svg $(notdir $(dag));)
 
 upload-eqtl-catalogue-bucket-readme: ## upload eqtl_catalogue_data readme to the bucket
-	@gsutil rsync docs/datasources/eqtl_catalogue_data gs://eqtl_catalogue_data/docs
+	@gcloud storage rsync docs/datasources/eqtl_catalogue_data gs://eqtl_catalogue_data/docs
+
+upload-ukb-ppp-bucket-readme: ## upload ukb_ppp_eur_data readme to the bucket
+	@gcloud storage rsync docs/datasources/ukb_ppp_eur_data gs://ukb_ppp_eur_data/docs
+	@gcloud storage rsync docs/credible_set_qc gs://ukb_ppp_eur_data/docs/credible_set_qc
 
 upload-finngen-bucket-readme: ## upload finngen_data readme to the bucket
-	@gsutil rsync docs/datasources/finngen_data gs://finngen_data/docs
+	@gcloud storage rsync docs/datasources/finngen_data gs://finngen_data/docs
 
 upload-gwas-catalog-buckets-readme: ## upload gwas_catalog readme to the bucket(s)
-	@gsutil rsync docs/datasources/gwas_catalog_data gs://gwas_catalog_inputs/docs
-	@gsutil rsync docs/datasources/gwas_catalog_data gs://gwas_catalog_sumstats_pics/docs
-	@gsutil rsync docs/datasources/gwas_catalog_data gs://gwas_catalog_sumstats_susie/docs
-	@gsutil rsync docs/datasources/gwas_catalog_data gs://gwas_catalog_top_hits/docs
+	@gcloud storage rsync docs/datasources/gwas_catalog_data gs://gwas_catalog_inputs/docs
+	@gcloud storage rsync docs/datasources/gwas_catalog_data gs://gwas_catalog_sumstats_pics/docs
+	@gcloud storage rsync docs/datasources/gwas_catalog_data gs://gwas_catalog_sumstats_susie/docs
+	@gcloud storage rsync docs/datasources/gwas_catalog_data gs://gwas_catalog_top_hits/docs
+	@gcloud storage rsync docs/credible_set_qc gs://gwas_catalog_sumstats_susie/docs/credible_set_qc
 
-update-bucket-docs: upload-eqtl-catalogue-bucket-readme upload-ukb-ppp-bucket-readme upload-finngen-bucket-readme upload-gwas-catalog-buckets-readme ## upload readmes to the datasource buckets
+upload-gnomad-bucket-readme: ## upload gnomad_data readme to the bucket
+	@gcloud storage rsync docs/datasources/gnomad_data gs://gnomad_data_2/docs
+
+upload-intervals-bucket-readme: ## upload intervals readme to the bucket
+	@gcloud storage rsync docs/datasources/interval_data gs://interval_data/docs
+
+update-bucket-docs: upload-eqtl-catalogue-bucket-readme upload-ukb-ppp-bucket-readme upload-finngen-bucket-readme upload-gwas-catalog-buckets-readme upload-gnomad-bucket-readme upload-intervals-bucket-readme ## upload readmes to the datasource buckets
 
 build-gentropy-gcs-image: ## build image that overwrited gentropy with tools specific for orchestration and google cloud
 	@docker buildx build \
 		--platform=linux/amd64,linux/arm64 \
-		-t europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/ot_gentropy:dev  \
+		-t europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:dev  \
 		--push \
 		-f images/gentropy/Dockerfile \
 		--no-cache .
 
 setup-harmonisation-test: ## prepare the test bucket with raw summary statistics for the harmonisation test.
-	@gsutil rm gs://ot_orchestration/test/gwas_catalog_inputs/harmonisation_manifest.csv
-	@gsutil -m rm -r gs://ot_orchestration/test/gwas_catalog_inputs/harmonisation_summary
-	@gsutil -m rm -r gs://ot_orchestration/test/gwas_catalog_inputs/harmonised_summary_statistics
-	@gsutil -m rm -r gs://ot_orchestration/test/gwas_catalog_inputs/summary_statistics_qc
+	@gcloud storage rm gs://orchestration/test/gwas_catalog_inputs/harmonisation_manifest.csv
+	@gcloud storage -m rm -r gs://orchestration/test/gwas_catalog_inputs/harmonisation_summary
+	@gcloud storage -m rm -r gs://orchestration/test/gwas_catalog_inputs/harmonised_summary_statistics
+	@gcloud storage -m rm -r gs://orchestration/test/gwas_catalog_inputs/summary_statistics_qc

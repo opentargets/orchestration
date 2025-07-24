@@ -70,7 +70,7 @@ steps:
       step.study_locus_path:
         - gs://gwas_catalog_top_hits/credible_sets/
         - gs://gwas_catalog_sumstats_pics/credible_sets/
-        - gs://gwas_catalog_sumstats_susie/credible_set_clean/20250611/
+        - gs://gwas_catalog_sumstats_susie/credible_set_clean/20250721/
         - gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie_patched_v2/
         - gs://ukb_ppp_eur_data/credible_set_clean/20250129/
         - gs://finngen_data/r12/credible_set_datasets/susie/

@@ -17,12 +17,13 @@ env_spec: list[EnvironmentSpec] = config["environment_specs"]
 env: Environment = config["env"]
 sentinels = find_environment_vars(env_spec, env)
 config = read_yaml_config(SOURCE_CONFIG_FILE_PATH, sentinels)
+
 with DAG(
     dag_id=Path(__file__).stem,
     description="Open Targets Genetics - Clump GWAS Catalog summary statistics with locus breaker",
     default_args=shared_dag_args,
     **shared_dag_kwargs,
-):
+) as dag:
     tasks = {}
     for step in config["nodes"]:
         task = submit_gentropy_step(
@@ -30,11 +31,9 @@ with DAG(
             step_name=step["id"],
             params=step["params"],
         )
-
         tasks[step["id"]] = task
     chain_dependencies(nodes=config["nodes"], tasks_or_task_groups=tasks)
+    generate_dataproc_task_chain(tasks=list(tasks.values()), **config["dataproc"])
 
-    dag = generate_dataproc_task_chain(
-        tasks=list(tasks.values()),
-        **config["dataproc"],
-    )
+if __name__ == "__main__":
+    dag.test()

@@ -1,6 +1,6 @@
 # EQTL Catalogue
 
-This document was updated on 2025-02-05
+This document was updated on 2025-07-22.
 
 This datasource is currently fixed under the [eQTL Catalogue Release 7 - June 2024](https://www.ebi.ac.uk/eqtl/Release_notes/#:~:text=eQTL%20Catalogue%20release%207%20%2D%20June%202024)
 
@@ -8,7 +8,7 @@ Data source comes from the `https://www.ebi.ac.uk/eqtl/`
 
 Data stored under `gs://eqtl_catalogue_data` bucket comes with following structure
 
-```
+```{bash}
 gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie/
 gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie_patched/
 gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie_patched_v2/
@@ -18,7 +18,6 @@ gs://eqtl_catalogue_data/otar2077/
 gs://eqtl_catalogue_data/study_index/
 gs://eqtl_catalogue_data/study_locus_datasets/
 ```
-
 
 ## Preprocessing
 

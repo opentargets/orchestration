@@ -1,23 +1,20 @@
 ---
 environment_specs:
-  - name: Test
-    vars:
-      output_path: gs://ot_orchestration/test/gwas_catalog_sumstats_susie
-      GENTROPY_REF: 2.3.0-rc.9
   - name: Prod
     vars:
       output_path: gs://gwas_catalog_sumstats_susie
-      GENTROPY_REF: 2.3.0-rc.9
+      GENTROPY_REF: 2.4.0-rc.2
 
 env: Prod
+
 nodes:
   - id: generate_manifests
     kind: Task
     prerequisites: []
     params:
       collected_loci_path: '{output_path}/study_locus_lb_clumped'
-      manifest_prefix: '{output_path}/finemapping_manifests/20250204'
-      output_path: '{output_path}/credible_set_datasets_20250204'
+      manifest_prefix: '{output_path}/finemapping_manifests/20250721'
+      output_path: '{output_path}/credible_set_datasets'
       #!WARNING: DO NOT CHANGE THE DATE for the log_path, as it is used to back reference the already fine-mapped loci.
       log_path: '{output_path}/finemapping_logs/20250204'
       max_records_per_chunk: 40_000

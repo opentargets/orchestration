@@ -1,6 +1,6 @@
 # Finngen
 
-This document was updated on 2025-04-11
+This document was updated on 2025-07-22.
 
 This datasource is currently fixed under [Finngen Data Freeze 12 - November 4 2024](https://r12.finngen.fi/)
 
@@ -8,7 +8,7 @@ Data source comes from the bucket `gs://finngen-public-data-r12/` hosted by Finn
 
 Data is stored under `gs://finngen_data/r12` comes with following structure
 
-```
+```{bash}
 gs://finngen_data/r12/credible_set_datasets/susie
 gs://finngen_data/r12/study_index/
 ```
@@ -44,7 +44,6 @@ The output datasets are:
 
 The configuration of the dataproc infrastructure and individual step parameters can be found in `finngen_ingestion.yaml` file.
 
-
 ## Changelog
 
 ### 2025-02-05
@@ -54,3 +53,7 @@ The configuration of the dataproc infrastructure and individual step parameters 
 ### 2025-04-11
 
 - chore: removal of r11 and r10 data to prevent data duplication.
+
+### 2025-07-24
+
+- [feat: updated finngen studyIndex to contain pubmedId upon ingestion](https://github.com/opentargets/issues/issues/3946)

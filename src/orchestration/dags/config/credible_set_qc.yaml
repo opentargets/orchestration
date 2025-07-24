@@ -2,7 +2,7 @@
 dataproc:
   python_main_module: gs://genetics_etl_python_playground/initialisation/cli.py
   cluster_metadata:
-    GENTROPY_REF: v2.3.0-rc.5
+    GENTROPY_REF: v2.4.0-rc.2
   cluster_init_script: gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh
   cluster_name: otg-credible-set-qc
   autoscaling_policy: otg-etl
@@ -14,7 +14,7 @@ nodes:
     params:
       step: credible_set_qc
       step.credible_sets_path: gs://gwas_catalog_sumstats_susie/credible_set_datasets
-      step.output_path: gs://gwas_catalog_sumstats_susie/credible_set_clean/20250611
+      step.output_path: gs://gwas_catalog_sumstats_susie/credible_set_clean/20250721
       step.p_value_threshold: 1.0e-5
       step.purity_min_r2: 0.25
       step.n_partitions: 350

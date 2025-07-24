@@ -1,52 +1,53 @@
 ---
+environment_specs:
+  - name: Prod
+    vars:
+      input_path: gs://gwas_catalog_inputs
+      output_path: gs://gwas_catalog_top_hits
+      sync_date: '20250708'
+      gnomad_path: gs://gnomad_data_2
+
+env: Prod
+
 dataproc:
   cluster_name: otg-tophit-gwascatalog
   autoscaling_policy: otg-gwascatalog-tophit
-  python_main_module: gs://genetics_etl_python_playground/initialisation/cli.py
   cluster_metadata:
-    GENTROPY_REF: v2.3.0-rc.5
-  cluster_init_script: gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh
+    GENTROPY_REF: v2.4.0-rc.2
   num_workers: 2
 
 nodes:
-  - id: top_hits_processing
-    kind: TaskGroup
-    prerequisites: []
-    nodes:
-      - id: gwas_catalog_top_hit_ingestion
-        kind: Task
-        params:
-          step: gwas_catalog_top_hit_ingestion
-          step.catalog_study_files:
-            - gs://gwas_catalog_inputs/gwas_catalog_download_studies.tsv
-          step.catalog_ancestry_files:
-            - gs://gwas_catalog_inputs/gwas_catalog_download_ancestries.tsv
-          step.catalog_associations_file: gs://gwas_catalog_inputs/gwas_catalog_associations_ontology_annotated.tsv
-          step.variant_annotation_path: gs://gnomad_data_2/v4.1/variant_index
-          step.catalog_studies_out: gs://gwas_catalog_top_hits/study_index
-          step.catalog_associations_out: gs://gwas_catalog_top_hits/study_locus_window_based_clumped
-          step.session.write_mode: overwrite
-          step.session.spark_uri: yarn
-          step.session.output_partitions: 1
-      - id: ld_based_clumping
-        kind: Task
-        prerequisites:
-          - gwas_catalog_top_hit_ingestion
-        params:
-          step: ld_based_clumping
-          step.ld_index_path: gs://gnomad_data_2/v2.1.1/ld_index
-          step.study_locus_input_path: gs://gwas_catalog_top_hits/study_locus_window_based_clumped
-          step.clumped_study_locus_output_path: gs://gwas_catalog_top_hits/study_locus_ld_clumped
-          step.study_index_path: gs://gwas_catalog_top_hits/study_index
-          step.session.write_mode: overwrite
-          step.session.spark_uri: yarn
-      - id: pics
-        kind: Task
-        prerequisites:
-          - ld_based_clumping
-        params:
-          step: pics
-          step.study_locus_ld_annotated_in: gs://gwas_catalog_top_hits/study_locus_ld_clumped
-          step.picsed_study_locus_out: gs://gwas_catalog_top_hits/credible_sets
-          step.session.write_mode: overwrite
-          step.session.spark_uri: yarn
+  - id: gwas_catalog_top_hit_ingestion
+    kind: Task
+    params:
+      step: gwas_catalog_top_hit_ingestion
+      step.catalog_study_files:
+        - "{input_path}/gentroutils/{sync_date}/gwas_catalog_download_studies.tsv"
+      step.catalog_ancestry_files:
+        - "{input_path}/gentroutils/{sync_date}/gwas_catalog_download_ancestries.tsv"
+      step.catalog_associations_file: "{input_path}/gentroutils/{sync_date}/gwas_catalog_associations_ontology_annotated.tsv"
+      step.variant_annotation_path: "{gnomad_path}/v4.1/variant_index"
+      step.catalog_studies_out: "{output_path}/study_index"
+      step.catalog_associations_out: "{output_path}/study_locus_window_based_clumped"
+      step.session.write_mode: overwrite
+      step.session.output_partitions: 1
+  - id: ld_based_clumping
+    kind: Task
+    prerequisites:
+      - gwas_catalog_top_hit_ingestion
+    params:
+      step: ld_based_clumping
+      step.ld_index_path: "{gnomad_path}/v2.1.1/ld_index"
+      step.study_locus_input_path: "{output_path}/study_locus_window_based_clumped"
+      step.clumped_study_locus_output_path: "{output_path}/study_locus_ld_clumped"
+      step.study_index_path: "{output_path}/study_index"
+      step.session.write_mode: overwrite
+  - id: pics
+    kind: Task
+    prerequisites:
+      - ld_based_clumping
+    params:
+      step: pics
+      step.study_locus_ld_annotated_in: "{output_path}/study_locus_ld_clumped"
+      step.picsed_study_locus_out: "{output_path}/credible_sets"
+      step.session.write_mode: overwrite

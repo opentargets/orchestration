@@ -1,39 +1,35 @@
 ---
 environment_specs:
-  - name: Test
-    vars:
-      input_path: gs://ot_orchestration/test/gwas_catalog_inputs
-      output_path: gs://ot_orchestration/test/gwas_catalog_sumstats_susie_clumping
   - name: Prod
     vars:
       input_path: gs://gwas_catalog_inputs
       output_path: gs://gwas_catalog_sumstats_susie
+      curation_date: '202507'
+      sync_date: '20250708'
 
 env: Prod
 
 dataproc:
-  cluster_metadata:
-    GENTROPY_REF: v2.3.0-rc.9
   cluster_name: otg-gwas-catalog-sumstat-susie-clumping
   autoscaling_policy: otg-etl
+  cluster_metadata:
+    GENTROPY_REF: v2.4.0-rc.2
 
 nodes:
   - id: gwas_catalog_study_index
-    kind: Task
     prerequisites: []
     params:
       step: gwas_catalog_study_index
       step.catalog_study_files:
-        - "{input_path}/gwas_catalog_download_studies.tsv"
+        - "{input_path}/gentroutils/{sync_date}/gwas_catalog_download_studies.tsv"
       step.catalog_ancestry_files:
-        - "{input_path}/gwas_catalog_download_ancestries.tsv"
+        - "{input_path}/gentroutils/{sync_date}/gwas_catalog_download_ancestries.tsv"
       step.study_index_path: "{output_path}/study_index"
-      step.gwas_catalog_study_curation_file: "{input_path}/curation/202506/GWAS_Catalog_study_curation.tsv"
+      step.gwas_catalog_study_curation_file: "{input_path}/curation/{curation_date}/GWAS_Catalog_study_curation.tsv"
       step.sumstats_qc_path: "{input_path}/summary_statistics_qc"
       step.session.write_mode: overwrite
       step.session.output_partitions: 1
   - id: locus_breaker_clumping
-    kind: Task
     prerequisites:
       - gwas_catalog_study_index
     params:
@@ -51,7 +47,5 @@ nodes:
       step.remove_mhc: True
       # More memory on driver to speed up the partition discovery
       # Added spark.sql.sources.parallelPartitionDiscovery.parallelism to allow for discovering ~70k processed sumstats
-      # FIXME: This step is still not performing smoothly. Most likely due to the fact that the input dataset
-      # is not read with recursiveFileLookup=True in gentropy, rather glob patterns.
       +step.session.extended_spark_conf: "{spark.sql.sources.parallelPartitionDiscovery.parallelism: '100000', spark.driver.memory: '10g'}"
       step.session.write_mode: overwrite

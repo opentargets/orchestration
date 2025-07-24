@@ -1,12 +1,12 @@
 # UK Biobank Pharma Proteomics Project (UKB-PPP)
 
-This document was updated on 2025-04-11
+This document was updated on 2025-07-22.
 
 Data source comes from the `https://registry.opendata.aws/ukbppp/`
 
 Data stored under `gs://ukb_ppp_eur_data` and `gs://ukb_ppp_eur_inputs` buckets comes with following structures
 
-```
+```{bash}
 gs://ukb_ppp_eur_data/credible_set_datasets/susie/20250129/
 gs://ukb_ppp_eur_data/credible_set_clean/20250129/
 gs://ukb_ppp_eur_data/docs/
@@ -16,7 +16,7 @@ gs://ukb_ppp_eur_data/study_index/
 gs://ukb_ppp_eur_data/study_locus_lb_clumped/
 ```
 
-```
+```{bash}
 gs://ukb_ppp_eur_inputs/harmonised_summary_statistics/
 ```
 
@@ -46,7 +46,7 @@ Full description of the process can be found in https://github.com/opentargets/i
     - Extract gzipped per-chromosome files from inside the individual TAR files, decompress, partition by chromosome
     - Recreate the study ID. This is required because multiple rows in the study index can reuse the same summary stats file
     - Drop certain rows which don't have a corresponding summary stats file
-  - This transformation is done using Google Batch. The code can be found in this new repository: https://github.com/opentargets/gentropy-input-support. The UKB PPP-specific part is this one: https://github.com/opentargets/gentropy-input-support/blob/dc5f8f7aee13a066933f3fd5b18a9b3a5ca71069/data_sources.py#L43-L103.
+  - This transformation is done using Google Batch. The code can be found in this new repository: [gentropy-input-support](https://github.com/opentargets/gentropy-input-support). The UKB PPP-specific part is this one: [data_sources.py](https://github.com/opentargets/gentropy-input-support/blob/dc5f8f7aee13a066933f3fd5b18a9b3a5ca71069/data_sources.py#L43-L103).
   - The command to run is `./submit.py ukb_ppp_eur` inside the `gentropy-input-support`
   - This step must also be triggered manually, how to do this is described in the repository.
 - **Output.** Precursors of study index and summary stats datasets are output. Because we decided that we don't want to keep the data twice, the output of this step is only kept temporarily and is deleted after 60 days according to the _gs://gentropy-tmp_ bucket lifecycle rules.
@@ -97,15 +97,15 @@ Due to infrastructure, the fine mapping process is divided into a 2-step logic:
 
 1. Tasks performed by `FinemappingBatchJobManifestOperator`
 
-- Collect all individual loci parquet files
-- Partition collected loci into batches with with `max_records_per_chunk` as a limit of the batch size.
-- For each batch create a manifest file that will be imputed to the fine mapping gentropy step
-- Save the batch manifests to google cloud storage.
+   - Collect all individual loci parquet files
+   - Partition collected loci into batches with with `max_records_per_chunk` as a limit of the batch size.
+   - For each batch create a manifest file that will be imputed to the fine mapping gentropy step
+   - Save the batch manifests to google cloud storage.
 
 2. Tasks performed by `FinemappingBatchOperator`
 
-- Execute one google batch job per manifest with `n <= max_records_per_chunk` tasks.
-- Each task executes finemapping step on single `StudyLocus` record.
+   - Execute one google batch job per manifest with `n <= max_records_per_chunk` tasks.
+   - Each task executes finemapping step on single `StudyLocus` record.
 
 3. Collect logs
 
@@ -131,7 +131,6 @@ To adjust the parameters for google batch infrastructure refer to the `google_ba
 
 > [!WARNING]
 > After running the google batch fine mapping job, ensure that the job tasks have succeeded, otherwise the job requires manual curation.
-
 
 ## Changelog
 
