@@ -431,7 +431,6 @@ steps:
       destination: input/interaction/string-interactions.txt.gz
   ##################################################################################################
 
-
   #: INTERVAL STEP
   interval:
     - name: explode_glob rE2G interval
@@ -440,8 +439,6 @@ steps:
         - name: copy rE2G intervalt ${match_stem}
           source: ${match_prefix}/${match_path}${match_stem}.${match_ext}
           destination: output/interval_rE2G/${uuid}.parquet
-
-      
 
   ##################################################################################################
 
