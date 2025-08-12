@@ -431,6 +431,17 @@ steps:
       destination: input/interaction/string-interactions.txt.gz
   ##################################################################################################
 
+  #: INTERVAL STEP
+  interval:
+    - name: explode_glob rE2G interval
+      glob: gs://interval_data/datasets/ENCODE-rE2G/processed_E2G_2507.parquet/*.parquet
+      do:
+        - name: copy rE2G interval ${match_stem}
+          source: ${match_prefix}/${match_path}${match_stem}.${match_ext}
+          destination: output/interval_rE2G/${uuid}.parquet
+
+  ##################################################################################################
+
   #: L2G STEP :#####################################################################################
   l2g:
     # - name: copy l2g model

@@ -53,6 +53,7 @@ steps:
   pis_go:
   pis_l2g:
   pis_interaction:
+  pis_interval:
   pis_literature:
   pis_mouse_phenotype:
   pis_openfda:
