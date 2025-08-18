@@ -582,8 +582,8 @@ steps:
       destination: input/target/genenames/hgnc_complete_set.json
 
     - name: copy gnomad
-      source: https://storage.googleapis.com/gcp-public-data--gnomad/release/2.1.1/constraint/gnomad.v2.1.1.lof_metrics.by_gene.txt.bgz
-      destination: input/target/gnomad/gnomad.v2.1.1.lof_metrics.by_gene.txt.bgz
+      source: https://storage.googleapis.com/gcp-public-data--gnomad/release/4.1/constraint/gnomad.v4.1.constraint_metrics.tsv
+      destination: input/target/gnomad/gnomad.v4.1.constraint_metrics.tsv
 
     - name: copy go annotation human eco gpa
       source: https://ftp.ebi.ac.uk/pub/databases/GO/goa/HUMAN/goa_human.gpa.gz
