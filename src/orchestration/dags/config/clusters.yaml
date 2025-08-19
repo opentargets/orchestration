@@ -30,6 +30,8 @@ clusters:
     properties:
       'spark:spark.shuffle.service.enabled': 'true'
       'spark:spark.sql.adaptive.enabled': 'true'
+      'core:fs.gs.requester.pays.mode': 'AUTO'
+      'core:fs.gs.requester.pays.project.id': '{{requester_pays_project_id}}'
     init_actions_uris:
       - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'
 
