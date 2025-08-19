@@ -97,7 +97,7 @@ class UnifiedPipelineConfig:
             template_context={
                 "release_uri": self.dev_uri or self.release_uri,
                 "gentropy_version": up.get("gentropy_version"),
-                "l2g_training_version": datetime.now().strftime("%Y-%m"),
+                "l2g_training_version": up.get("release_name"),
                 "vep_version": up.get("vep_version"),
             },
         )
