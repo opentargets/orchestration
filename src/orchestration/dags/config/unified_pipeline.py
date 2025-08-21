@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 
 from orchestration.dags.config.app_config import AppConfig
 from orchestration.operators.dataproc import ClusterDefinition
+from orchestration.utils.common import GCP_PROJECT_PLATFORM
 
 if TYPE_CHECKING:
     from typing import Any
@@ -97,8 +98,9 @@ class UnifiedPipelineConfig:
             template_context={
                 "release_uri": self.dev_uri or self.release_uri,
                 "gentropy_version": up.get("gentropy_version"),
-                "l2g_training_version": datetime.now().strftime("%Y-%m"),
+                "l2g_training_version": up.get("release_name"),
                 "vep_version": up.get("vep_version"),
+                "requester_pays_project_id": GCP_PROJECT_PLATFORM,
             },
         )
         """The internal configuration for GENTROPY steps."""
