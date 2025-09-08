@@ -5,9 +5,10 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import pyhocon
+import pyhocon  # type: ignore
 import yaml
 from deepdiff.diff import DeepDiff
+from pydantic import BaseModel
 
 from orchestration.utils.path import GCSPath, IOManager
 
@@ -21,21 +22,25 @@ _parsers: dict[str, Callable] = {
 }
 
 
-class AppConfig:
+class AppConfig[T: BaseModel]:
     def __init__(
         self,
         raw_config: str,
         parser: Callable | None,
         template_context: dict[str, str] | None = None,
+        validator: type[T] | None = None,
     ):
         self.template_context = template_context or {}
         self.parser = parser or (lambda _: {})
+        self.validator = validator
         self.raw_config = raw_config
         self.rendered_config: str
         self.config: dict[str, Any]
         self.logger = logging.getLogger(__name__)
         self.is_rendered = False
         self.is_parsed = False
+        self.is_validated = False
+        self.validated: T | None = None
 
     def _render(self) -> None:
         if not self.is_rendered:
@@ -50,18 +55,26 @@ class AppConfig:
             self.config = self.parser(self.rendered_config)
             self.is_parsed = True
 
+    def _validate(self) -> None:
+        if not self.is_validated and self.validator is not None:
+            self.logger.debug(f"Validating config with {self.validator}")
+            self.validated = self.validator(**self.config)
+            self.is_validated = True
+
     @classmethod
-    def from_file(
+    def from_file[U: BaseModel](
         cls,
         file_path: str | Path,
         client: Any = None,
+        validator: type[U] | None = None,
         template_context: dict[str, str] | None = None,
-    ) -> AppConfig:
+    ) -> AppConfig[U]:
         """Create an AppConfig instance from a file.
 
         Args:
             file_path (Path | str): Path or URI to the configuration file.
             client (Any): Optional client to use for file access. Defaults to None.
+            validator (type[BaseModel] | None): Optional validator to use for config validation.
             template_context (dict[str, str], optional): Template context to use
                 in rendering. Optional.
 
@@ -76,10 +89,11 @@ class AppConfig:
         conf = m.load_str()
         parser = _parsers.get(file_path.split(".")[-1])
 
-        c = cls(raw_config=conf, parser=parser, template_context=template_context)
+        c = cls(raw_config=conf, parser=parser, validator=validator, template_context=template_context)  # type: ignore[arg-type]
         c._render()
         c._parse()
-        return c
+        c._validate()
+        return c  # type: ignore[return-value]
 
     def overwrite(self, file_path: str | Path) -> AppConfig:
         """Overwrite the current configuration with another configuration from the given file.
@@ -102,16 +116,20 @@ class AppConfig:
         # Ensure both configs are rendered and parsed before attempting to merge.
         if not Path(file_path).exists():
             return self
-        other = AppConfig.from_file(file_path, template_context=self.template_context)
+        other = AppConfig.from_file(file_path, template_context=self.template_context, validator=self.validator)
 
         if not self.is_rendered:
             self._render()
         if not self.is_parsed:
             self._parse()
+        if not self.is_validated:
+            self._validate()
         if not other.is_rendered:
             other._render()
         if not other.is_parsed:
             other._parse()
+        if not other.is_validated:
+            other._validate()
 
         return AppConfigMerger(self, other).merge()
 
@@ -275,7 +293,8 @@ class AppConfigMerger:
 
         self.logger.info("Reconstructing top level fields of the original AppConfig.")
         raw_config = yaml.dump(self.original_config)
-        ac = AppConfig(raw_config=raw_config, parser=self.parser)
+        ac: AppConfig = AppConfig(raw_config=raw_config, parser=self.parser, validator=self.base_config.validator)
         ac._render()
         ac._parse()
+        ac._validate()
         return ac

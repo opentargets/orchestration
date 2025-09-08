@@ -17,7 +17,7 @@ GCP_ZONE = "europe-west1-d"
 
 
 shared_dag_args: dict[str, Any] = {
-    "owner": "Open Targets Data Team",
+    "owner": "Open Targets Data Team aaa",
     "retries": 0,
 }
 

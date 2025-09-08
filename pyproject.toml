@@ -28,9 +28,12 @@ test = ["pytest==8.3.5"]
 [dependency-groups]
 dev = [
     "deptry==0.23.0",
- "graphviz>=0.21",
- "pre-commit==4.2.0",
- "ruff==0.11.7",
+    "graphviz>=0.21",
+    "ipython>=9.5.0",
+    "mypy>=1.17.1",
+    "pip>=25.2",
+    "pre-commit==4.2.0",
+    "ruff==0.11.7",
 ]
 
 [project.scripts]

@@ -1,0 +1,9 @@
+---
+environment_specs: 
+  - name: prod
+    vars:
+env: prod
+
+
+steps:
+  - name: gentroutils_gwas_catalog_release
