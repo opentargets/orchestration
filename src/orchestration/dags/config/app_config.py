@@ -180,7 +180,7 @@ class AppConfig[T: BaseModel]:
         return True
 
 
-class AppConfigMerger:
+class AppConfigMerger[T: BaseModel]:
     def __init__(self, base_config: AppConfig, override_config: AppConfig):
         """Merge two AppConfig instances together by overriding the `base_config` with the `override_config`.
 
@@ -190,6 +190,7 @@ class AppConfigMerger:
         """
         self.logger = logging.getLogger(__name__)
         self.parser = base_config.parser
+        self.validator = base_config.validator
         self.original_config = copy.deepcopy(base_config.config)
         self.base_config = base_config.config.get("steps", {})
         self.config_override = override_config.config.get("steps", {})
@@ -293,7 +294,7 @@ class AppConfigMerger:
 
         self.logger.info("Reconstructing top level fields of the original AppConfig.")
         raw_config = yaml.dump(self.original_config)
-        ac: AppConfig = AppConfig(raw_config=raw_config, parser=self.parser, validator=self.base_config.validator)
+        ac: AppConfig = AppConfig(raw_config=raw_config, parser=self.parser, validator=self.validator)
         ac._render()
         ac._parse()
         ac._validate()

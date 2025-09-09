@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from orchestration.dags.config.app_config import AppConfig
+from orchestration.dags.config.tools import Tools
 from orchestration.operators.dataproc import ClusterDefinition
 from orchestration.utils.common import GCP_PROJECT_PLATFORM
 
@@ -54,7 +55,7 @@ class UnifiedPipelineConfig:
         data_sources_exclude = "[]" if self.is_ppp else '["ot_crispr", "encore", "ot_crispr_validation"]'
 
         self.pis = AppConfig.from_file(
-            file_path=config_path / "pis.yaml",
+            file_path=Tools.PIS.value.config_path,
             template_context={
                 "release_uri": self.dev_uri or self.release_uri,
                 "chembl_version": up.get("chembl_version"),
@@ -69,7 +70,7 @@ class UnifiedPipelineConfig:
         """The internal configuration for PIS steps, with PPP-specific overrides."""
 
         self.pts = AppConfig.from_file(
-            file_path=config_path / "pts.yaml",
+            file_path=Tools.PTS.value.config_path,
             template_context={
                 "release_uri": self.dev_uri or self.release_uri,
             },
@@ -81,7 +82,7 @@ class UnifiedPipelineConfig:
         """The internal configuration for PTS steps, with PPP-specific overrides."""
 
         self.etl = AppConfig.from_file(
-            file_path=config_path / "etl.conf",
+            file_path=Tools.ETL.value.config_path,
             template_context={
                 "release_uri": self.dev_uri or self.release_uri,
                 "data_sources_exclude": data_sources_exclude,
@@ -94,7 +95,7 @@ class UnifiedPipelineConfig:
         """The internal configuration for ETL steps, with PPP-specific overrides."""
 
         self.gentropy = AppConfig.from_file(
-            file_path=config_path / "gentropy.yaml",
+            file_path=Tools.GENTROPY.value.config_path,
             template_context={
                 "release_uri": self.dev_uri or self.release_uri,
                 "gentropy_version": up.get("gentropy_version"),
@@ -110,7 +111,7 @@ class UnifiedPipelineConfig:
         """The internal configuration for GENTROPY steps, with PPP-specific overrides."""
 
         self.clusters = AppConfig.from_file(
-            file_path=config_path / "clusters.yaml",
+            file_path=config_path / "infrastructure" / "clusters.yaml",
             template_context={
                 "gentropy_version": up.get("gentropy_version"),
             },

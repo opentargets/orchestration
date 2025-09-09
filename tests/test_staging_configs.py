@@ -9,10 +9,28 @@ from orchestration.dags.config.staging import StagingPipelineConfig, StagingPipe
 
 
 class TestStagingConfigs:
-    @pytest.mark.parametrize("config", [pytest.param("gwas_catalog_update.yaml")])
+    @pytest.mark.parametrize(
+        "config",
+        [
+            pytest.param("credible_set_qc.yaml"),
+            pytest.param("eqtl_catalogue_ingestion.yaml"),
+            pytest.param("finngen_ingestion.yaml"),
+            pytest.param("finngen_ukb_meta_harmonisation.yaml"),
+            pytest.param("foldx_ingestion.yaml"),
+            pytest.param("gnomad_ingestion.yaml"),
+            pytest.param("gwas_catalog_sumstat_harmonisation.yaml"),
+            pytest.param("gwas_catalog_sumstats_pics.yaml"),
+            pytest.param("gwas_catalog_sumstats_susie_clumpging.yaml"),
+            pytest.param("gwas_catalog_sumstats_susie_finemapping.yaml"),
+            pytest.param("gwas_catalog_top_hits.yaml"),
+            pytest.param("gwas_catalog_update.yaml"),
+            pytest.param("ukb_ppp_eur_finemapping.yaml"),
+            pytest.param("ukb_ppp_eur_harmonsiation.yaml"),
+        ],
+    )
     def test_staging_pipeline_config(self, config: str) -> None:
         """Test with existing staging dag configuration."""
-        config_path = Path("src/orchestration/dags/config/staging") / config
+        config_path = Path("src/orchestration/dags/config") / config
         assert config_path.exists(), f"Config path {config_path} does not exist."
         assert config_path.is_file(), f"Config path {config_path} is not a file."
         staging_config = StagingPipelineConfig(path=config_path)
@@ -26,7 +44,7 @@ class TestStagingConfigs:
 class TestStagingPipelineConfigModel:
     def test_environment_specs_validation_empty_list(self) -> None:
         """Test that empty environment_specs list raises validation error."""
-        invalid_config = {"environment_specs": [], "env": "prod", "steps": {}}
+        invalid_config = {"environment_specs": [], "env": "prod", "steps": {"gentroutils": ""}}
 
         with pytest.raises(ValidationError) as exc_info:
             StagingPipelineConfigModel.model_validate(invalid_config)

@@ -1,7 +1,11 @@
 ---
-work_path: ./work
-log_level: DEBUG
+work_path: /mnt/disks/work
+log_level: INFO
+
 scratchpad:
+  gc_stats_uri: "https://www.ebi.ac.uk/gwas/api/search/stats"
+  gc_bucket: "gs://gwas_catalog_inputs"
+  gc_ftp: "ftp://ftp.ebi.ac.uk/pub/databases/gwas/releases"
 
 
 steps:

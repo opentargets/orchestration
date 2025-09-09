@@ -3,6 +3,7 @@ environment_specs:
   - name: prod
     vars:
 env: prod
+release_uri: gs://gwas_catalog_inputs/release_info
 
 
 steps:

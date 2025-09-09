@@ -2,29 +2,55 @@
 
 from pathlib import Path
 
+import pendulum
+from airflow.models.baseoperator import chain
 from airflow.models.dag import DAG
+from airflow.models.param import Param
+from airflow.operators.empty import EmptyOperator
+from airflow.utils.edgemodifier import Label
 
-from orchestration.utils import chain_dependencies, read_yaml_config
-from orchestration.utils.common import shared_dag_args, shared_dag_kwargs
-from orchestration.utils.dataproc import generate_dataproc_task_chain, submit_gentropy_step
-
-config = read_yaml_config(Path(__file__).parent / "config" / "foldx_ingestion.yaml")
+from orchestration.dags.config.staging import StagingPipelineConfig
+from orchestration.operators.config import StagingPipelineConfigLogOperator
+from orchestration.operators.dataproc import (
+    DataprocCreateClusterOperator,
+    DataprocDeleteClusterOperator,
+    DataprocSubmitJobOperator,
+)
 
 with DAG(
-    dag_id=Path(__file__).stem,
-    description="Open Targets Genetics — FoldX Ingestion",
-    default_args=shared_dag_args,
-    **shared_dag_kwargs,
-):
-    tasks = {}
-    for step in config["nodes"]:
-        task = submit_gentropy_step(
-            cluster_name=config["dataproc"]["cluster_name"],
-            step_name=step["id"],
-            python_main_module=config["dataproc"]["python_main_module"],
-            params=step["params"],
-        )
-        tasks[step["id"]] = task
-    chain_dependencies(nodes=config["nodes"], tasks_or_task_groups=tasks)
+    dag_id="foldx_ingestion",
+    description="FoldX Ingestion Pipeline.",
+    catchup=False,
+    schedule=None,
+    params={"run_label": Param("manual_run")},
+    tags=["foldx", "staging"],
+    is_paused_upon_creation=True,
+    default_args={
+        "owner": "Open Targets Data Team",
+        "depends_on_past": False,
+        "retries": 0,
+        "start_date": pendulum.datetime(2024, 6, 1, tz="UTC"),
+    },
+) as dag:
+    config = StagingPipelineConfig(path=Path(__file__).parent / "config" / "foldx_ingestion.yaml")
+    s = StagingPipelineConfigLogOperator(task_id="log_config", config=config)
+    cluster_definitions = None
 
-    dag = generate_dataproc_task_chain(tasks=list(tasks.values()), **config["dataproc"])
+    if not config.templated.validated:
+        raise ValueError("Validation failed for the staging pipeline configuration.")
+
+    for step in config.templated.validated.steps:
+        step_config = step.step_config
+        if step.name.startswith("gentroutils"):
+            u = EmptyOperator(task_id="upload_config")
+            c = EmptyOperator(task_id="create_vm")
+            r = EmptyOperator(task_id="submit")
+            d = EmptyOperator(task_id="delete_vm")
+        if step.name.startswith("gentropy"):
+            cluster_definition = ...
+            u = EmptyOperator(task_id="upload_config")
+            c = EmptyOperator(task_id="create_cluster")
+            r = EmptyOperator(task_id="submit")
+            d = EmptyOperator(task_id="delete_cluster")
+
+    resolve_dependencies(u, c, r, d)
