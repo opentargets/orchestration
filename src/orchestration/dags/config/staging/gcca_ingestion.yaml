@@ -1,0 +1,96 @@
+---
+environment_specs: 
+  - name: prod
+    vars:
+      gc_stats_uri: "https://www.ebi.ac.uk/gwas/api/search/stats"
+      gc_bucket: "gs://gwas_catalog_inputs"
+      gc_ftp: "ftp://ftp.ebi.ac.uk/pub/databases/gwas/releases"
+      gcca_bucket: "gs://gwas_catalog_top_hits"
+      gnomad_bucket: "gs://gnomad_data_2"
+
+env: prod
+staging_bucket: gs://gwas_catalog_inputs
+
+nodes:
+  - name: gentroutils_gwas_catalog_release
+    depends_on: []
+    infrastructure:
+      vm: "gentroutils"
+    runtime_config:
+      work_path: /mnt/disks/work
+      log_level: INFO
+      scratchpad:
+      steps:
+        gwas_catalog_release:
+          - name: crawl release metadata
+            stats_uri: '{gc_stats_uri}'
+            destination_template: '${gc_bucket}/gentroutils/{release_date}/stats.json'
+            promote: true
+
+          - name: fetch associations
+            stats_uri: ${gc_stats_uri}
+            source_template: '${gc_ftp}/{release_date}/gwas-catalog-associations_ontology-annotated.tsv'
+            destination_template: '${gc_bucket}/gentroutils/{release_date}/gwas_catalog_associations_ontology_annotated.tsv'
+            promote: true
+
+          - name: fetch studies
+            stats_uri: ${gc_stats_uri}
+            source_template: '${gc_ftp}/{release_date}/gwas-catalog-download-studies-v1.0.3.1.txt'
+            destination_template: '${gc_bucket}/gentroutils/{release_date}/gwas_catalog_download_studies.tsv'
+            promote: true
+
+          - name: fetch ancestries
+            stats_uri: ${gc_stats_uri}
+            source_template: '${gc_ftp}/{release_date}/gwas-catalog-download-ancestries-v1.0.3.1.txt'
+            destination_template: '${gc_bucket}/gentroutils/{release_date}/gwas_catalog_download_ancestries.tsv'
+            promote: true
+
+          - name: curation study
+            requires:
+              - fetch studies
+            previous_curation: '${gc_bucket}/curation/latest/curated/GWAS_Catalog_study_curation.tsv'
+            studies: '${gc_bucket}/gentroutils/latest/gwas_catalog_download_studies.tsv'
+            destination_template: '${gc_bucket}/curation/{release_date}/raw/GWAS_Catalog_study_curation.tsv'
+            promote: true
+  - name: gentropy_GCCA_ingestion
+    depends_on: 
+      - gentroutils_gwas_catalog_release
+    infrastructure:
+      cluster: "gcca"
+    runtime_config:
+      steps:
+        gwas_catalog_top_hit_ingestion:
+          step.catalog_study_files:
+            - '${gc_bucket}/gentroutils/{sync_date}/gwas_catalog_download_studies.tsv'
+          step.catalog_ancestry_files:
+            - '${gc_bucket}/gentroutils/{sync_date}/gwas_catalog_download_ancestries.tsv'
+          step.catalog_associations_file: '${gc_bucket}/gentroutils/{sync_date}/gwas_catalog_associations_ontology_annotated.tsv'
+          step.variant_annotation_path: '${gnomad_bucket}/v4.1/variant_index'
+          step.catalog_studies_out: '${gcca_bucket}/study_index'
+          step.catalog_associations_out: '${gcca_bucket}/study_locus_window_based_clumped'
+          step.session.write_mode: overwrite
+          step.session.output_partitions: 1
+  - name: gentropy_gcca_ld_clumping
+    depends_on: 
+      - gentropy_GCCA_ingestion
+    infrastructure:
+      cluster: "gcca"
+    runtime_config:
+      steps:
+        ld_based_clumping:
+          step.ld_index_path: '${gnomad_bucket}/v2.1.1/ld_index'
+          step.study_locus_input_path: '${gcca_bucket}/study_locus_window_based_clumped'
+          step.clumped_study_locus_output_path: '${gcca_bucket}/study_locus_ld_clumped'
+          step.study_index_path: '${gcca_bucket}/study_index'
+          step.session.write_mode: overwrite
+  - name: gentropy_gcca_pics
+    depends_on: 
+      - gentropy_gcca_ld_clumping
+    infrastructure:
+      cluster: "gcca"
+    runtime_config:
+      steps:
+        pics:
+          step.study_locus_ld_annotated_in: '${gcca_bucket}/study_locus_ld_clumped'
+          step.picsed_study_locus_out: '${gcca_bucket}/credible_sets'
+          step.session.write_mode: overwrite

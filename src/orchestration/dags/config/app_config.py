@@ -39,8 +39,7 @@ class AppConfig[T: BaseModel]:
         self.logger = logging.getLogger(__name__)
         self.is_rendered = False
         self.is_parsed = False
-        self.is_validated = False
-        self.validated: T | None = None
+        self._validated: T | None = None
 
     def _render(self) -> None:
         if not self.is_rendered:
@@ -56,10 +55,15 @@ class AppConfig[T: BaseModel]:
             self.is_parsed = True
 
     def _validate(self) -> None:
-        if not self.is_validated and self.validator is not None:
+        if self._validated is None and self.validator is not None:
             self.logger.debug(f"Validating config with {self.validator}")
-            self.validated = self.validator(**self.config)
-            self.is_validated = True
+            self._validated = self.validator(**self.config)
+
+    @property
+    def validated(self) -> T:
+        if self._validated is None:
+            raise ValueError("Config not validated")
+        return self._validated
 
     @classmethod
     def from_file[U: BaseModel](
@@ -122,14 +126,12 @@ class AppConfig[T: BaseModel]:
             self._render()
         if not self.is_parsed:
             self._parse()
-        if not self.is_validated:
-            self._validate()
+        self._validate()
         if not other.is_rendered:
             other._render()
         if not other.is_parsed:
             other._parse()
-        if not other.is_validated:
-            other._validate()
+        other._validate()
 
         return AppConfigMerger(self, other).merge()
 

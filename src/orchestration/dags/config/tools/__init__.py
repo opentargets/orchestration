@@ -29,11 +29,15 @@ class ToolSpecs[T: BaseModel]:
         return ac.validated
 
 
-class Tools[T: BaseModel](Enum):
+class Tools(Enum):
     GENTROUTILS = ToolSpecs(
         name="gentroutils", config_path=Path(__file__).parent / "gentroutils.yaml", validator=OtterTaskConfig
     )
-    PIS = ToolSpecs(name="pis", config_path=Path(__file__).parent / "pis.yaml", validator=OtterTaskConfig)
+    PIS = ToolSpecs(
+        name="pis",
+        config_path=Path(__file__).parent / "pis.yaml",
+        validator=OtterTaskConfig,
+    )
     PTS = ToolSpecs(name="pts", config_path=Path(__file__).parent / "pts.yaml", validator=OtterTaskConfig)
     ETL = ToolSpecs(name="etl", config_path=Path(__file__).parent / "etl.conf", validator=BaseModel)
     GENTROPY = ToolSpecs(
@@ -41,7 +45,7 @@ class Tools[T: BaseModel](Enum):
     )
 
     @classmethod
-    def get(cls, v: str) -> ToolSpecs[T]:
+    def get(cls, v: str) -> ToolSpecs:
         """Get the tool specification by name."""
         for c in cls.__members__.values():
             if c.name.lower() == v.lower():

@@ -54,7 +54,6 @@ class StagingPipelineConfig:
             ValueError: If no cluster definition is found for the step name.
         """
         assert self.templated.validated, "StagingPipelineConfig must be validated."
-        if self.templated.validated.
 
         clusters = self.clusters.config.get("clusters", {})
         sorted_cluster_names = sorted(clusters.keys(), key=len, reverse=True)
@@ -62,3 +61,29 @@ class StagingPipelineConfig:
             if step_name.startswith(cluster_name):
                 return ClusterDefinition(cluster_name, clusters[cluster_name])
         raise ValueError(f"No cluster definition found for step {step_name}.")
+
+    @property
+    def clusters(self) -> AppConfig:
+        """Return cluster configurations."""
+        return AppConfig.from_file(Path(__file__).parent.parent / "infrastructure" / "clusters.yaml")
+
+    @property
+    def step_config_upload_path(self) -> dict[str, str]:
+        """Return the upload path for each step."""
+        assert self.templated.validated, "StagingPipelineConfig must be validated."
+        steps = self.templated.validated.steps
+        upload_paths = {}
+        for step in steps:
+            path = self.templated.validated.staging_bucket + "/" + step.name + "/" + self.release_date
+            upload_paths[step.name] = path
+        return upload_paths
+
+    @property
+    def step_config_tools(self) -> dict[str, str]:
+        """Return the tools for each step."""
+        assert self.templated.validated, "StagingPipelineConfig must be validated."
+        steps = self.templated.validated.steps
+        tools = {}
+        for step in steps:
+            tools[step.name] = step.name.split("_")[0]
+        return tools

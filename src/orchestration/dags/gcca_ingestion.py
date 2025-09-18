@@ -13,6 +13,7 @@ from airflow.utils.edgemodifier import Label
 
 from orchestration.dags.config.staging import StagingPipelineConfig
 from orchestration.operators.config import StagingPipelineConfigLogOperator
+from orchestration.operators.gcs import UploadStringOperator
 
 with DAG(
     dag_id="gwas_catalog_update",
@@ -29,11 +30,16 @@ with DAG(
         "start_date": pendulum.datetime(2024, 1, 1, tz="UTC"),
     },
 ) as dag:
-    config = StagingPipelineConfig(path=Path(__file__).parent / "config" / "gwas_catalog_update.yaml")
+    config = StagingPipelineConfig(path=Path(__file__).parent / "config" / "gcca_ingestion.yaml")
     s = StagingPipelineConfigLogOperator(task_id="log_config", config=config)
-
-    # 1. Log the full configuration
-    u = EmptyOperator(task_id="upload_config")
+    assert config.templated.validated, "Configuration not validated"
+    for step in config.templated.validated.steps:
+        dst_uri = config.step_config_upload_path.get(step.name)
+        if dst_uri is None:
+            raise ValueError(f"No upload path configured for step {step.name}")
+        u = UploadStringOperator(
+            task_id=f"upload_{step.name}config_to_gcs", contents=step.runtime_config, dst_uri=dst_uri
+        )
 
     c = EmptyOperator(task_id="create_vm")
     # 2. Crete the VM or cluster

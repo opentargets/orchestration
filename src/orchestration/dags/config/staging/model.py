@@ -1,18 +1,13 @@
-from typing import Literal, Type, TypeVar, cast
+from typing import Literal, TypeVar
 
+import yaml
 from pydantic import BaseModel, field_validator
 
-from orchestration.dags.config.tools import Tools
+from orchestration.dags.config.tools import OtterTaskConfig, Tools
 
 T = TypeVar("T", bound=BaseModel)
 
 
-# class PipelineConfigurator():
-#     """Pipeline configuration base class."""
-#     def __init__(self, tool: str) -> None:
-#         self.operators = []
-#         if tool.lower() == "gentroutils":
-#             self.operators =
 class EnvironmentSpecs(BaseModel):
     """Environment specification."""
 
@@ -22,56 +17,70 @@ class EnvironmentSpecs(BaseModel):
     """Dictionary of variables to be used as sentinels in the configuration."""
 
 
-class Step(BaseModel):
-    """Pipeline step specification."""
+class NodeInfrastructureModel(BaseModel):
+    """Infrastructure specification for a pipeline node."""
+
+    vm: dict[str, str] | None = None
+    """VM configuration for the node."""
+    batch: dict[str, str] | None = None
+    """Batch configuration for the node."""
+    cluster: dict[str, str] | None = None
+    """Cluster configuration for the node."""
+
+
+class StagingPipelineNodeModel(BaseModel):
+    """Pipeline node specification."""
 
     name: str
-    """Name of the step. Must be in the format <tool>_<step>, where <tool> is one of the registered tools"""
+    """Name of the node. Must be in the format <tool>_<step>, where <tool> is one of the registered tools"""
     depends_on: list[str] | None = None
-    """Names of the steps that this step depends on."""
-    params: dict[str, str] | None = None
-    """Optional parameters to the step."""
+    """Names of the nodes that this node depends on."""
+    infrastructure: NodeInfrastructureModel
+    """Infrastructure specification for the node."""
+    steps: list[OtterTaskConfig]
 
-    # Make sure it is validated after type is checked
     @field_validator("name")
     @classmethod
     def validate_name(cls, v):
-        """Validate the step name."""
-        cls._validate_step_name(v)
+        """Validate the node name."""
+        cls._validate_node_name(v)
 
     @field_validator("depends_on")
     @classmethod
     def validate_depends_on(cls, v):
-        """Validate the depends_on field step names."""
+        """Validate the depends_on field node names."""
         if v is None:
             return v
         if len(v) != len(set(v)):
-            raise ValueError("Duplicate step names found in depends_on")
-        for step in v:
-            cls._validate_step_name(step)
+            raise ValueError("Duplicate node names found in depends_on")
+        for node in v:
+            cls._validate_node_name(node)
         return v
 
     @property
-    def step_config(self) -> BaseModel:
+    def runtime_config(self) -> str:
         tool_name = self.name.split("_")[0]
         step_name = self.name[len(tool_name) + 1 :]
-        return Tools.get(tool_name).get_config().get_step_config(step_name)
+        runtime_config: OtterTaskConfig = Tools.get(tool_name).get_config().get_step_config(step_name)
+        runtime_config_dict = runtime_config.model_dump()
+
+        return yaml.dump(runtime_config_dict, sort_keys=True)
 
     def __repr__(self) -> str:
-        return f"Step(name={self.name}, depends_on={self.depends_on}, step_config={self.step_config})"
+        return f"Step(name={self.name}, depends_on={self.depends_on}, runtime_config={self.runtime_config})"
 
     @staticmethod
-    def _validate_step_name(v: str) -> str:
-        """Validate the step name.
+    def _validate_node_name(v: str) -> str:
+        """Validate the node name.
 
         Args:
-            v (str): Step name.
+            v (str): Node name.
 
         Raises:
-            ValueError: If the step name is not valid.
+            ValueError: If the node name is not valid.
 
         Returns:
-            str: The validated step name.
+            str: The validated node name.
         """
         tool_name = v.split("_")[0]
         step_name = v[len(tool_name) + 1 :]
@@ -112,6 +121,16 @@ class StagingPipelineConfigModel(BaseModel):
     """Steps to include in the pipeline run. Must be valid step names registered in the tools."""
     release_uri: str
     """URI to the release info location."""
+    staging_bucket: str
+    """GCS bucket to use for staging."""
+
+    @field_validator("staging_bucket")
+    @classmethod
+    def validate_staging_bucket(cls, v: str) -> str:
+        """Validate that the staging bucket is a GCS bucket."""
+        if not v.startswith("gs://"):
+            raise ValueError("staging_bucket must be a GCS bucket (start with gs://)")
+        return v
 
     @field_validator("environment_specs")
     @classmethod
