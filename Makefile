@@ -29,7 +29,7 @@ sync:
 	@uv run pre-commit install --hook-type commit-msg
 
 dev: sync .git/hooks/commit-msg  ## Prepare the local development environment
-	@GOOGLE_APPLICATION_CREDENTIALS=$(LOCAL_DEV_CREDENTIALS) docker compose -f compose.yaml -f compose.local.yaml up -d
+	@GOOGLE_APPLICATION_CREDENTIALS=$(LOCAL_DEV_CREDENTIALS) docker compose -f compose.yaml -f compose.local.yaml up -d --build
 
 cloud-dev: ## Start the remote development environment and connect to it (default goal)
 	@./deployment/start.sh

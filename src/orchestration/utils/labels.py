@@ -4,7 +4,7 @@ import re
 from collections import UserDict
 from typing import Any
 
-from airflow.utils.context import Context
+from airflow.sdk.definitions.context import Context
 
 from orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_SERVICE_ACCOUNT
 

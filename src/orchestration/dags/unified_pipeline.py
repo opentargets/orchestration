@@ -5,13 +5,13 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from airflow.decorators.task_group import task_group
 from airflow.models.baseoperator import chain
 from airflow.models.dag import DAG
 from airflow.models.param import Param
 from airflow.models.taskmixin import DAGNode
-from airflow.operators.empty import EmptyOperator
 from airflow.providers.google.cloud.operators.compute import ComputeEngineDeleteInstanceOperator
+from airflow.providers.standard.operators.empty import EmptyOperator
+from airflow.sdk import task_group
 from airflow.utils.edgemodifier import Label
 from airflow.utils.trigger_rule import TriggerRule
 
@@ -42,7 +42,6 @@ with DAG(
     dag_id="unified_pipeline",
     description="Open Targets unified data pipeline",
     default_args=shared_dag_args,
-    default_view="grid",
     catchup=False,
     schedule=None,
     user_defined_filters={"strhash": strhash},
