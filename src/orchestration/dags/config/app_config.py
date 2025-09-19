@@ -8,12 +8,15 @@ from typing import TYPE_CHECKING
 import pyhocon
 import yaml
 from deepdiff.diff import DeepDiff
+from pydantic import BaseModel
 
 from orchestration.utils.path import GCSPath, IOManager
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-    from typing import Any
+    from typing import Any, TypeVar
+
+    T = TypeVar("T", bound=BaseModel)
 
 _parsers: dict[str, Callable] = {
     "yaml": yaml.safe_load,
@@ -160,6 +163,23 @@ class AppConfig:
 
         self.logger.info("configs are equal")
         return True
+
+    def validate(self, model: type[T]) -> T:
+        """Validate the configuration against a pydantic model.
+
+        Args:
+            model (type[BaseModel]): Pydantic model to validate against.
+
+        Returns:
+            BaseModel: Instance of the pydantic model.
+        """
+        from pydantic import BaseModel
+
+        if not issubclass(model, BaseModel):
+            raise TypeError("model must be a subclass of pydantic.BaseModel")
+        if not self.is_parsed:
+            self._parse()
+        return model(**self.config)
 
 
 class AppConfigMerger:

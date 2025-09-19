@@ -219,3 +219,36 @@ steps:
       step.study_index_path: '{{release_uri}}/output/study'
       # OUTPUTS
       step.evidence_output_path: '{{release_uri}}/intermediate/evidence/l2g_evidence'
+
+
+  # Steps used in the gwas_catalog_top_hits Gentropy pipeline
+
+  top_hits_ingestion:
+    params: 
+      step: gwas_catalog_top_hit_ingestion
+      step.catalog_study_files:
+        - "{input_path}/gentroutils/{sync_date}/gwas_catalog_download_studies.tsv"
+      step.catalog_ancestry_files:
+        - "{input_path}/gentroutils/{sync_date}/gwas_catalog_download_ancestries.tsv"
+      step.catalog_associations_file: "{input_path}/gentroutils/{sync_date}/gwas_catalog_associations_ontology_annotated.tsv"
+      step.variant_annotation_path: "{gnomad_path}/v4.1/variant_index"
+      step.catalog_studies_out: "{output_path}/study_index"
+      step.catalog_associations_out: "{output_path}/study_locus_window_based_clumped"
+      step.session.write_mode: overwrite
+      step.session.output_partitions: 1       
+    
+  top_hits_ld_based_clumping:
+      params:
+        step: ld_based_clumping
+        step.ld_index_path: "{gnomad_path}/v2.1.1/ld_index"
+        step.study_locus_input_path: "{output_path}/study_locus_window_based_clumped"
+        step.clumped_study_locus_output_path: "{output_path}/study_locus_ld_clumped"
+        step.study_index_path: "{output_path}/study_index"
+        step.session.write_mode: overwrite
+
+  top_hits_pics:
+      params:
+        step: pics
+        step.study_locus_ld_annotated_in: "{output_path}/study_locus_ld_clumped"
+        step.picsed_study_locus_out: "{output_path}/credible_sets"
+        step.session.write_mode: overwrite

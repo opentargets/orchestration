@@ -57,6 +57,26 @@ clusters:
       - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'
     idle_delete_ttl: 3600
 
+  gentropy_top_hits:
+    image_version: '2.2'
+    autoscaling_policy: 'otg-gwascatalog-tophit'
+    num_masters: 1
+    num_workers: 2
+    master_machine_type: 'n1-highmem-16'
+    worker_machine_type: 'n1-highmem-16'
+    idle_delete_ttl: 3600
+    internal_ip_only: false
+    metadata:
+      GENTROPY_REF: 'v{gentropy_version}'
+    properties:
+      'spark:spark.shuffle.service.enabled': 'true'
+      'spark:spark.sql.adaptive.enabled': 'true'
+      'core:fs.gs.requester.pays.mode': 'AUTO'
+      'core:fs.gs.requester.pays.project.id': '{{project_id}}'
+    init_actions_uris:
+      - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'
+
+
 step_job_properties:
   etl:
     'spark.executor.extraJavaOptions': '-Dconfig.file={{config_filename}} -XX:MaxPermSize=512m -XX:+UseCompressedOops'
@@ -69,3 +89,5 @@ step_job_properties:
     'spark.executor.extraClassPath': './hail-all-spark.jar'
     'spark.serializer': 'org.apache.spark.serializer.KryoSerializer'
     'spark.kryo.registrator': 'is.hail.kryo.HailKryoRegistrator'
+
+

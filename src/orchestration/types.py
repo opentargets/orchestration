@@ -79,6 +79,7 @@ class ConfigNode(TypedDict):
     google_batch: GoogleBatchSpecs
     nodes: list[ConfigNode]
     google_batch_index_specs: GoogleBatchIndexSpecs
+    tool: Literal["gentropy", "gentroutils"]
 
 
 class Environment(Enum):

@@ -1,53 +1,34 @@
 ---
-environment_specs:
-  - name: Prod
-    vars:
+environments:
+  - name: prod
+    sentinels:
+      gentroutils_version: '3.1.0'
+      gentropy_version: '2.4.0'
+      project_id: 'open-targets-genetics-dev'
       input_path: gs://gwas_catalog_inputs
       output_path: gs://gwas_catalog_top_hits
       sync_date: '20250708'
       gnomad_path: gs://gnomad_data_2
+      gc_stats_uri: "https://www.ebi.ac.uk/gwas/api/search/stats"
+      gc_ftp: "ftp://ftp.ebi.ac.uk/pub/databases/gwas/releases"
 
-env: Prod
+env: prod
+staging_bucket: '{input_path}'
 
-dataproc:
-  cluster_name: otg-tophit-gwascatalog
-  autoscaling_policy: otg-gwascatalog-tophit
-  cluster_metadata:
-    GENTROPY_REF: v2.4.0-rc.2
-  num_workers: 2
+steps:
+  gentroutils_gwas_catalog_release_ingestion:
+    vm: top_hits
+  gentropy_top_hits_ingestion:
+    depends_on: 
+      - gentroutils_gwas_catalog_release_ingestion
+    cluster: top_hits
+  gentropy_top_hits_ld_based_clumping:
+    depends_on: 
+      - gentropy_top_hits_ingestion
+    cluster: top_hits
+  gentropy_top_hits_pics:
+    depends_on: 
+      - gentropy_top_hits_ld_based_clumping
+    cluster: top_hits
 
-nodes:
-  - id: gwas_catalog_top_hit_ingestion
-    kind: Task
-    params:
-      step: gwas_catalog_top_hit_ingestion
-      step.catalog_study_files:
-        - "{input_path}/gentroutils/{sync_date}/gwas_catalog_download_studies.tsv"
-      step.catalog_ancestry_files:
-        - "{input_path}/gentroutils/{sync_date}/gwas_catalog_download_ancestries.tsv"
-      step.catalog_associations_file: "{input_path}/gentroutils/{sync_date}/gwas_catalog_associations_ontology_annotated.tsv"
-      step.variant_annotation_path: "{gnomad_path}/v4.1/variant_index"
-      step.catalog_studies_out: "{output_path}/study_index"
-      step.catalog_associations_out: "{output_path}/study_locus_window_based_clumped"
-      step.session.write_mode: overwrite
-      step.session.output_partitions: 1
-  - id: ld_based_clumping
-    kind: Task
-    prerequisites:
-      - gwas_catalog_top_hit_ingestion
-    params:
-      step: ld_based_clumping
-      step.ld_index_path: "{gnomad_path}/v2.1.1/ld_index"
-      step.study_locus_input_path: "{output_path}/study_locus_window_based_clumped"
-      step.clumped_study_locus_output_path: "{output_path}/study_locus_ld_clumped"
-      step.study_index_path: "{output_path}/study_index"
-      step.session.write_mode: overwrite
-  - id: pics
-    kind: Task
-    prerequisites:
-      - ld_based_clumping
-    params:
-      step: pics
-      step.study_locus_ld_annotated_in: "{output_path}/study_locus_ld_clumped"
-      step.picsed_study_locus_out: "{output_path}/credible_sets"
-      step.session.write_mode: overwrite
+

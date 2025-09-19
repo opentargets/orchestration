@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from datetime import datetime
 from typing import TYPE_CHECKING, NamedTuple
 
@@ -20,6 +20,7 @@ from airflow.utils.context import Context
 from google.api_core.exceptions import NotFound as GCPNotFound
 from google.cloud.dataproc_v1 import Cluster, JobReference
 from google.cloud.dataproc_v1.types.jobs import Job, JobPlacement, PySparkJob, SparkJob
+from pydantic import BaseModel
 
 from orchestration.utils import convert_params_to_hydra_positional_arg, random_id
 from orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_REGION, GCP_SERVICE_ACCOUNT, GCP_ZONE
@@ -30,8 +31,7 @@ if TYPE_CHECKING:
     from typing import Any
 
 
-@dataclass
-class ClusterConfig:
+class ClusterConfig(BaseModel):
     """Dataproc cluster configuration class.
 
     Includes defaults tailored to our cluster needs.
@@ -62,7 +62,7 @@ class ClusterConfig:
     master_disk_type: str = "pd-ssd"
     """The disk type to use for master nodes. Default is pd-ssd."""
     master_disk_size: int = 512
-    """The disk size in GB to use for master nodes. Default is 500."""
+    """The disk size in GB to use for master nodes. Default is 512."""
     master_accelerator_type: str | None = None
     """The GPU type to use for master nodes."""
     master_accelerator_count: int | None = None
@@ -157,7 +157,7 @@ class ClusterConfig:
     service_account_scopes: list[str] | None = None
     """The scopes to use for the cluster."""
 
-    def __post_init__(self) -> None:
+    def model_post_init(self, context: Any) -> None:
         if isinstance(self.autoscaling_policy, str) and "/" not in self.autoscaling_policy:
             zone = self.zone or GCP_ZONE
             region = zone.rsplit("-", 1)[0]
@@ -170,7 +170,7 @@ class ClusterConfig:
         Returns:
             Cluster: The Dataproc cluster.
         """
-        return ClusterGenerator(**asdict(self)).make()
+        return ClusterGenerator(**self.model_dump()).make()
 
 
 class ClusterDefinition(NamedTuple):
