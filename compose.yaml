@@ -4,7 +4,7 @@ x-airflow-common: &airflow-common
   environment:
     &airflow-common-env # AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session"
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
-    AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManagerr
+    AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
     AIRFLOW__CORE__FERNET_KEY: ""
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
     AIRFLOW__CORE__LOAD_EXAMPLES: "false"
@@ -18,11 +18,11 @@ x-airflow-common: &airflow-common
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/src:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
-  user: "${AIRFLOW_UID:-1000}:0"
+  user: "${AIRFLOW_UID:-1010}:0"
   depends_on: &airflow-common-depends-on
     redis:
       condition: service_healthy
-    postgress:
+    postgres:
       condition: service_healthy
 
 services:
@@ -62,8 +62,8 @@ services:
       - -c
       - |
         mkdir -p /sources/logs
-        chown -R "${AIRFLOW_UID:-1000}:0" /sources/logs
-        exec /entrypoint airflow version
+        chown -R "${AIRFLOW_UID:-1010}:0" /sources/logs
+        exec uv run airflow version
     environment:
       <<: *airflow-common-env
       _AIRFLOW_DB_MIGRATE: "true"
@@ -74,41 +74,12 @@ services:
     volumes:
       - ${AIRFLOW_PROJ_DIR:-.}:/sources
 
-  airflow-apiserver:
-    <<: *airflow-common
-    command: api-server
-    ports:
-      - "8080:8080"
-    healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8080/api/v2/version"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-    restart: always
-    depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully
-
-  airflow-cli:
-    <<: *airflow-common
-    profiles:
-      - debug
-    environment:
-      <<: *airflow-common-env
-      CONNECTION_CHECK_MAX_COUNT: "0"
-    # Workaround for entrypoint issue. See: https://github.com/apache/airflow/issues/16252
-    command:
-      - bash
-      - -c
-      - airflow
-    depends_on:
-      <<: *airflow-common-depends-on
 
   airflow-dag-processor:
     <<: *airflow-common
-    command: dag-processor
+    command: 
+    - airflow
+    - dag-processor
     healthcheck:
       test:
         [
@@ -124,9 +95,12 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+  
   airflow-scheduler:
     <<: *airflow-common
-    command: scheduler
+    command: 
+    - airflow
+    - scheduler
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
       interval: 30s
@@ -141,7 +115,9 @@ services:
 
   airflow-worker:
     <<: *airflow-common
-    command: celery worker
+    command: 
+    - airflow
+    - celery worker
     healthcheck:
       # yamllint disable rule:line-length
       test:
@@ -166,7 +142,9 @@ services:
 
   airflow-triggerer:
     <<: *airflow-common
-    command: triggerer
+    command: 
+    - airflow
+    - triggerer
     healthcheck:
       test:
         [
@@ -182,6 +160,23 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
-
+  airflow-apiserver:
+    <<: *airflow-common
+    command: 
+    - airflow
+    - api-server
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/api/v2/version"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
 volumes:
   postgres-db-volume:
