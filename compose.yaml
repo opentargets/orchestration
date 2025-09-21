@@ -62,7 +62,8 @@ services:
       - |
         mkdir -p /sources/logs
         chown -R "${AIRFLOW_UID:-1010}:0" /sources/logs
-        exec uv run airflow version
+        exec uv run airflow version &&
+        exec airflow db migrate
     environment:
       <<: *airflow-common-env
       _AIRFLOW_DB_MIGRATE: "true"
