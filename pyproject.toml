@@ -9,7 +9,7 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "apache-airflow[apache-beam,async,celery,fab,google,postgres]==3.0.6",
+    "apache-airflow[apache-beam,async,celery,fab,google,postgres,redis]==3.0.6",
     "google==3.0.0",
     "pandas==2.1.4",
     "pyhocon==0.3.61",

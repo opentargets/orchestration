@@ -169,6 +169,9 @@ google = [
 postgres = [
     { name = "apache-airflow-providers-postgres" },
 ]
+redis = [
+    { name = "apache-airflow-providers-redis" },
+]
 
 [[package]]
 name = "apache-airflow-core"
@@ -429,6 +432,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/a8/1e/03ec049d5dd709cdb6c1ff9489e13bea70be5e9a2b8594265311cf416edf/apache_airflow_providers_postgres-6.3.0.tar.gz", hash = "sha256:4d6da65245c22a7a3811fe7b782beeeced795e17a07bc7298d29c294f282cc5a", size = 58638, upload-time = "2025-09-09T03:50:08.929Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/38/57/5658daeaf1d7ad23868d46fcf247aa386a064346327bcacfc077d08157b4/apache_airflow_providers_postgres-6.3.0-py3-none-any.whl", hash = "sha256:3b11ed2fb32f50427d8bba3a44beb033078b0675c04f8713b9e976044b84f439", size = 22233, upload-time = "2025-09-09T03:49:28.497Z" },
+]
+
+[[package]]
+name = "apache-airflow-providers-redis"
+version = "4.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "apache-airflow" },
+    { name = "redis" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/23/92/ef852f6510a9f88263840b8ab4d07050d15c99399e25805e626fff64ad7f/apache_airflow_providers_redis-4.3.0.tar.gz", hash = "sha256:94679845ec1d7132d1ffb285188cd8a6c8b1a1dc0f068bcf929645bce52592c4", size = 53812, upload-time = "2025-09-09T03:50:09.801Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/11/8b/8694271c4583b9e041ca063c5fe4c8a2cb838a48f6d220b821366bb02e34/apache_airflow_providers_redis-4.3.0-py3-none-any.whl", hash = "sha256:e74e4fad51d2442aea689de631f7beba385d13e1363769872d387fbed1307b31", size = 24448, upload-time = "2025-09-09T03:49:30.277Z" },
 ]
 
 [[package]]
@@ -3189,10 +3205,10 @@ wheels = [
 
 [[package]]
 name = "orchestration"
-version = "1.0.0"
+version = "2.0.0"
 source = { editable = "." }
 dependencies = [
-    { name = "apache-airflow", extra = ["apache-beam", "async", "celery", "fab", "google", "postgres"] },
+    { name = "apache-airflow", extra = ["apache-beam", "async", "celery", "fab", "google", "postgres", "redis"] },
     { name = "deepdiff" },
     { name = "deepmerge" },
     { name = "flask-limiter" },
@@ -3218,7 +3234,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "apache-airflow", extras = ["apache-beam", "async", "celery", "fab", "google", "postgres"], specifier = "==3.0.6" },
+    { name = "apache-airflow", extras = ["apache-beam", "async", "celery", "fab", "google", "postgres", "redis"], specifier = "==3.0.6" },
     { name = "deepdiff", specifier = ">=8.4.2" },
     { name = "deepmerge", specifier = ">=2.0" },
     { name = "flask-limiter", specifier = "==3.12" },
