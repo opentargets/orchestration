@@ -1168,18 +1168,17 @@ wheels = [
 
 [[package]]
 name = "flask-limiter"
-version = "3.11.0"
+version = "3.12"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "flask" },
     { name = "limits" },
     { name = "ordered-set" },
     { name = "rich" },
-    { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9c/a4/02f67783825a4207d4ae7de4c8be45596c3fba5b65ace77fd6dc3878020d/flask_limiter-3.11.0.tar.gz", hash = "sha256:57b037fb8be423ef7ebac4fbb279fbfdc42d9aa5378467ab6798d6ce3d912117", size = 303361, upload-time = "2025-03-11T20:37:59.839Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/70/75/92b237dd4f6e19196bc73007fff288ab1d4c64242603f3c401ff8fc58a42/flask_limiter-3.12.tar.gz", hash = "sha256:f9e3e3d0c4acd0d1ffbfa729e17198dd1042f4d23c130ae160044fc930e21300", size = 303162, upload-time = "2025-03-15T02:23:10.734Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0d/6b/54101d1e595686da1fb90e0fb23497de959a39c7f398d4dda7fcdcc5cd76/flask_limiter-3.11.0-py3-none-any.whl", hash = "sha256:ae7ef0b3742228df91073d72eab0ce114fe6b00e6201ad9e12aefd53fe597352", size = 28684, upload-time = "2025-03-11T20:37:58.227Z" },
+    { url = "https://files.pythonhosted.org/packages/66/ba/40dafa278ee6a4300179d2bf59a1aa415165c26f74cfa17462132996186b/flask_limiter-3.12-py3-none-any.whl", hash = "sha256:b94c9e9584df98209542686947cf647f1ede35ed7e4ab564934a2bb9ed46b143", size = 28490, upload-time = "2025-03-15T02:23:08.919Z" },
 ]
 
 [[package]]
@@ -2941,6 +2940,7 @@ dependencies = [
     { name = "apache-airflow-providers-google" },
     { name = "deepdiff" },
     { name = "deepmerge" },
+    { name = "flask-limiter" },
     { name = "google" },
     { name = "pandas" },
     { name = "psycopg2-binary" },
@@ -2969,6 +2969,7 @@ requires-dist = [
     { name = "apache-airflow-providers-google", specifier = "==14.1.0" },
     { name = "deepdiff", specifier = ">=8.4.2" },
     { name = "deepmerge", specifier = ">=2.0" },
+    { name = "flask-limiter", specifier = "==3.12" },
     { name = "google", specifier = "==3.0.0" },
     { name = "pandas", specifier = "==2.1.4" },
     { name = "psycopg2-binary", specifier = "==2.9.10" },
