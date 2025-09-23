@@ -20,6 +20,7 @@ dependencies = [
     "apache-airflow-providers-apache-beam==6.0.3",
     "deepdiff>=8.4.2",
     "deepmerge>=2.0",
+    "flask-limiter==3.12",
 ]
 
 [project.optional-dependencies]
@@ -46,7 +47,7 @@ pep621_dev_dependency_groups = ["test"]
 
 
 [tool.deptry.per_rule_ignores]
-DEP002 = ["psycopg2-binary"]
+DEP002 = ["psycopg2-binary", "flask-limiter"]
 
 [tool.pytest.ini_options]
 filterwarnings = "ignore::DeprecationWarning"

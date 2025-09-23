@@ -438,7 +438,7 @@ steps:
       do:
         - name: copy rE2G interval ${match_stem}
           source: ${match_prefix}/${match_path}${match_stem}.${match_ext}
-          destination: output/interval_rE2G/${uuid}.parquet
+          destination: output/interval/${uuid}.parquet
 
   ##################################################################################################
 

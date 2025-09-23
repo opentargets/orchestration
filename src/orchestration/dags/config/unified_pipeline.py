@@ -100,7 +100,6 @@ class UnifiedPipelineConfig:
                 "gentropy_version": up.get("gentropy_version"),
                 "l2g_training_version": up.get("release_name"),
                 "vep_version": up.get("vep_version"),
-                "requester_pays_project_id": GCP_PROJECT_PLATFORM,
             },
         )
         """The internal configuration for GENTROPY steps."""
@@ -113,6 +112,7 @@ class UnifiedPipelineConfig:
             file_path=config_path / "clusters.yaml",
             template_context={
                 "gentropy_version": up.get("gentropy_version"),
+                "requester_pays_project_id": GCP_PROJECT_PLATFORM,
             },
         )
         """The cluster definitions."""
