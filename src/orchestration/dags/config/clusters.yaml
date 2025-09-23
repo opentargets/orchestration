@@ -17,6 +17,18 @@ clusters:
       'spark:spark.driver.memory': '478g'
       'spark:spark.sql.shuffle.partitions': '20'
 
+  etl_evidence:
+    image_version: '2.2'
+    num_masters: 1
+    num_workers: 2
+    autoscaling_policy: otg-etl
+    worker_machine_type: 'n1-highmem-16'
+    idle_delete_ttl: 3600
+    internal_ip_only: false
+    properties:
+      'spark:spark.shuffle.service.enabled': 'true'
+      'spark:spark.sql.adaptive.enabled': 'true'
+
   gentropy:
     image_version: '2.2'
     autoscaling_policy: otg-etl
@@ -30,6 +42,8 @@ clusters:
     properties:
       'spark:spark.shuffle.service.enabled': 'true'
       'spark:spark.sql.adaptive.enabled': 'true'
+      'core:fs.gs.requester.pays.mode': 'AUTO'
+      'core:fs.gs.requester.pays.project.id': '{{requester_pays_project_id}}'
     init_actions_uris:
       - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'
 

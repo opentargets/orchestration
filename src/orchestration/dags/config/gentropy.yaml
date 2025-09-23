@@ -181,7 +181,7 @@ steps:
       step.run_mode: train
       step.wandb_run_name: '{{l2g_training_version}}'
       step.cross_validate: false
-      step.hf_hub_repo_id: opentargets/locus_to_gene_25.06-ppp
+      step.hf_hub_repo_id: opentargets/locus_to_gene_{{l2g_training_version}}
       step.hf_model_commit_message: 'chore: update model base model for {{l2g_training_version}} run'
       +step.session.extended_spark_conf: "{spark.kryoserializer.buffer.max:500m, spark.sql.autoBroadcastJoinThreshold:'-1'}"
       # INPUTS
@@ -202,7 +202,7 @@ steps:
       step.explain_predictions: true
       +step.session.extended_spark_conf: "{spark.rpc.message.maxSize:'2046'}"
       # INPUTS
-      step.hf_hub_repo_id: opentargets/locus_to_gene_25.06-ppp
+      step.hf_hub_repo_id: opentargets/locus_to_gene_{{l2g_training_version}}
       step.feature_matrix_path: '{{release_uri}}/intermediate/l2g_feature_matrix'
       step.credible_set_path: '{{release_uri}}/output/credible_set'
       # OUTPUTS
