@@ -3,7 +3,7 @@ VERSION := $$(grep '^version' pyproject.toml | sed 's%version = "\(.*\)"%\1%')
 LOCAL_DEV_CREDENTIALS ?= ~/.config/gcloud/adc.json
 
 ### HOUSEKEEPING TARGETS ###
-.PHONY: help sync version clean test check cloud-dev tunnel upload-ukb-ppp-bucket-readme upload-eqtl-catalogue-bucket-readme upload-finngen-bucket-readme upload-gwas-catalog-buckets-readme update-bucket-docs build-gentropy-gcs-image setup-harmonisation-test
+.PHONY: help sync version clean clean-vm test check cloud-dev tunnel upload-ukb-ppp-bucket-readme upload-eqtl-catalogue-bucket-readme upload-finngen-bucket-readme upload-gwas-catalog-buckets-readme update-bucket-docs build-gentropy-gcs-image setup-harmonisation-test
 
 help: ## Show the help message
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-36s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -15,6 +15,17 @@ clean: ## Clean the project
 	@docker compose down
 	@rm -rf logs dist .venv .pytest_cache .ruff_cache deployment/.terraform deployment/plan.out
 
+clean-vm: ## Destroy the Airflow development VM
+	@echo "Destroying Airflow development VM..."
+	@terraform -chdir=./deployment init -reconfigure > /dev/null 2>&1 || (echo "Failed to initialize Terraform" && exit 1)
+	@VM_OUTPUT=$$(terraform -chdir=./deployment output -raw up_airflow_dev_vm 2>&1); \
+	if echo "$$VM_OUTPUT" | grep -q "up-airflow-dev-"; then \
+		echo "Found VM: $$VM_OUTPUT"; \
+		echo "Destroying VM..."; \
+		terraform -chdir=./deployment destroy -auto-approve; \
+	else \
+		echo "No VM found or already destroyed."; \
+	fi
 
 ### DEVELOPMENT TARGETS ###
 test: ## Run unit tests
