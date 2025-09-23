@@ -16,7 +16,7 @@ clusters:
     properties:
       'spark:spark.driver.memory': '478g'
       'spark:spark.sql.shuffle.partitions': '20'
-  
+
   etl_evidence:
     image_version: '2.2'
     num_masters: 1
@@ -28,7 +28,7 @@ clusters:
     properties:
       'spark:spark.shuffle.service.enabled': 'true'
       'spark:spark.sql.adaptive.enabled': 'true'
-  
+
   gentropy:
     image_version: '2.2'
     autoscaling_policy: otg-etl

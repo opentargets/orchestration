@@ -47,7 +47,7 @@ pep621_dev_dependency_groups = ["test"]
 
 
 [tool.deptry.per_rule_ignores]
-DEP002 = ["psycopg2-binary"]
+DEP002 = ["psycopg2-binary", "flask-limiter"]
 
 [tool.pytest.ini_options]
 filterwarnings = "ignore::DeprecationWarning"
