@@ -12,7 +12,8 @@ from airflow.operators.empty import EmptyOperator
 from airflow.utils.edgemodifier import Label
 from airflow.utils.trigger_rule import TriggerRule
 
-from orchestration.dags.config.staging_config import GentropyPipelineConfig, StagingPipelineStepParams
+from orchestration.dags.config.staging_config import GentropyPipelineConfig
+from orchestration.models.staging_pipeline import StagingPipelineStepParams
 from orchestration.operators.dataproc import (
     ClusterConfig,
     CreateClusterOperator,
@@ -42,40 +43,29 @@ def chain_steps(steps: dict[str, StagingPipelineStepParams], task_groups: dict[s
                 step_node.set_upstream(dep_node)
 
 
-def resource_name(prefix: str, step_name: str) -> str:
-    tools = ["gentroutils", "gentropy"]
-    for t in tools:
-        if t in step_name:
-            step_name.removeprefix(t)
-            return f"{prefix}-{step_name}"
-    raise ValueError(f"Not found tool prefix in {step_name}")
-
-
 SOURCE_CONFIG_FILE_PATH = Path(__file__).parent / "config" / "gwas_catalog_top_hits.yaml"
 with DAG(
-    dag_id=Path(__file__).stem,
+    dag_id="top_hits",
     description="Open Targets Genetics — GWAS Catalog top hits",
     default_args=shared_dag_args,
     **shared_dag_kwargs,
 ) as dag:
     task_groups = {}
     cluster_task_groups = {}
-    config = GentropyPipelineConfig.read_config(str(SOURCE_CONFIG_FILE_PATH))
-    resource_prefix = "top_hits"
-    for step_name, step_config in config.steps.items():
-        resource = resource_name(prefix=resource_prefix, step_name=step_name)
 
+    # Reading Gentropy Pipeline configuration
+    config = GentropyPipelineConfig.read_config(
+        str(SOURCE_CONFIG_FILE_PATH),
+        resource_prefix="top_hits",
+    )
+
+    for step_name, step_config in config.steps.items():
         if step_name.startswith("gentropy"):
-            if not step_config.cluster:
-                raise ValueError(f"Failed to find cluster for gentropy step {step_name}")
             create_cluster_task_id = f"create_cluster_{step_config.cluster}"
             c = EmptyOperator(task_id=create_cluster_task_id)
 
             delete_cluster_task_id = f"delete_cluster_{step_config.cluster}"
             d = EmptyOperator(task_id=delete_cluster_task_id)
-
-            if create_cluster_task_id in cluster_task_groups:
-                cluster_task_groups[create_cluster_task_id].append
 
             @task_group(group_id=step_name)
             def gentropy_step(step_config: StagingPipelineStepParams, step_name: str):
