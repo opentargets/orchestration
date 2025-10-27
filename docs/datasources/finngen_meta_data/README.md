@@ -12,7 +12,7 @@ gs://finngen_ukb_mvp_meta_data/harmonised_summary_statistics/
 gs://finngen_ukb_mvp_meta_data/harmonised_summary_statistics_qc/
 gs://finngen_ukb_mvp_meta_data/raw_summary_statistics/
 gs://finngen_ukb_mvp_meta_data/study_index/
-gs://finngen_ukb_mvp_meta_data/study_locus_lb_clumped/
+gs://finngen_ukb_mvp_meta_data/study_locus_ld_clumped/
 gs://finngen_ukb_mvp_meta_data/study_locus_window_based_clumped
 ```
 
