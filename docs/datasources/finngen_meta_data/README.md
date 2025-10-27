@@ -68,7 +68,7 @@ Due to the fact that original summary statistics files are stored in bgzip compr
 In the case of `finngen_ukb_mvp_meta_dag` we are using the (2).
 
 > [!WARNING]
-> To enable the Enhanced BGzip codec, we need to pre-set in in the `dataproc` cluster, as downloading it via the SparkSession (setting in gentropy) fails to load the codec on workers.
+> To enable the Enhanced BGzip codec, we need to pre-set in the `dataproc` cluster, as downloading it via the SparkSession (setting in gentropy) fails to load the codec on workers.
 > This is allowed via the `dataproc.use_enhanced_bgzip_codec` configuration block in `finngen_ukb_mvp_meta.yaml` file.
 
 ## Changelog
