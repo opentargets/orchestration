@@ -49,6 +49,7 @@ def create_cluster(
     idle_delete_ttl: int = 30 * 60,
     labels: Labels | None = None,
     task_id: str = "create_cluster",
+    use_enhanced_bgzip_codec: bool = False,
     **kwargs: Any,
 ) -> DataprocCreateClusterOperator:
     """Generate an Airflow task to create a Dataproc cluster. Common parameters are reused, and varying parameters can be specified as needed.
@@ -69,6 +70,7 @@ def create_cluster(
         idle_delete_ttl (int): Time in seconds to wait before deleting the cluster after it becomes idle. Defaults to 30 minutes.
         labels (Labels): Optional labels to add to the cluster.
         task_id (str): task id used to during the dataproc cluster creation
+        use_enhanced_bgzip_codec (bool): Whether to use the enhanced BGZIP codec for reading and writing VCF files. Defaults to False.
         **kwargs (Any): Other parameters to the ClusterGenerator.
 
         NOTE: When `allow_efm` is enabled, the autoscaling policy can not use the graceful decommissioning for primary workers!
@@ -96,6 +98,8 @@ def create_cluster(
             "spark:spark.stage.maxConsecutiveAttempts": "10",  # defaults to 4, this is in case the master was lost
             "spark:spark.task.maxFailures": "10",
         }
+    if use_enhanced_bgzip_codec:
+        properties = {**properties, "spark:spark.jars.packages": "org.seqdoop:hadoop-bam:7.10.0"}
 
     cluster_config = ClusterGenerator(
         num_masters=3 if allow_efm else 1,  # allows to run the dataproc cluster in HA mode.
