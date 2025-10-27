@@ -32,7 +32,7 @@ The full description of the process can be found in [issue](https://github.com/o
 - ld based clumping - [StudyLocus](https://opentargets.github.io/gentropy/python_api/datasets/study_locus/)
 - pics finemapping - [StudyLocus](https://opentargets.github.io/gentropy/python_api/datasets/credible_sets/)
 
-The configuration of the dataproc infrastructure and individual step parameters can be found in `ukb_ppp_eur_harmonisation.yaml` file.
+The configuration of the dataproc infrastructure and individual step parameters can be found in `finngen_ukb_mvp_meta.yaml` file.
 
 ![dag](finngen_ukb_mvp_meta.svg)
 
