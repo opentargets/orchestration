@@ -35,13 +35,12 @@ services:
 
   airflow-init:
     <<: *airflow-common
-    entrypoint: /bin/bash
     command:
       - -c
       - |
         mkdir -p /sources/logs
         chown -R "${AIRFLOW_UID:-1000}:0" /sources/logs
-        exec /entrypoint airflow version
+        exec airflow version
     environment:
       <<: *airflow-common-env
       _AIRFLOW_DB_MIGRATE: "true"
@@ -49,6 +48,7 @@ services:
       _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
       _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
     user: "0:0"
+    entrypoint: /bin/bash
     volumes:
       - ${AIRFLOW_PROJ_DIR:-.}:/sources
 
