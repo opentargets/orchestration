@@ -27,9 +27,7 @@ steps:
       destination: input/biosample/efo.json
   ##################################################################################################
 
-
   #: CREDIBLE_SET STEP :########################################################################
-
   credible_set:
     - name: explode_glob gwas catalog top hits credible_set
       glob: gs://gwas_catalog_top_hits/credible_sets/*.parquet
@@ -79,11 +77,9 @@ steps:
         - name: copy finngen ukb mvp meta credible_set ${match_stem}
           source: ${match_prefix}/${match_path}${match_stem}.${match_ext}
           destination: input/credible_set/FinnGen-UKB-MVP/${uuid}.parquet
-
   ##################################################################################################
 
   #: CREDIBLE_SET PPP STEP :####################################################################
-
   credible_set_ppp:
     - name: explode_glob ppp microglia credible_set
       glob: gs://eqtl_catalogue_processed_otar_internal_data/otar2077/microglia/gentropy/study_locus/*/*.parquet
@@ -108,7 +104,6 @@ steps:
           source: ${uri}
           # Flattens the directory structure
           destination: input/credible_set/IBDverse/${match_stem}.${match_ext}
-
   ##################################################################################################
 
   #: DISEASE STEP :#################################################################################
@@ -623,7 +618,6 @@ steps:
   ##################################################################################################
 
   #: STUDY STEP :########################################################################
-
   study:
     - name: explode_glob gwas catalog top hits study
       glob: gs://gwas_catalog_top_hits/study_index/*.parquet
@@ -659,21 +653,20 @@ steps:
         - name: copy eqtl catalogue study ${match_stem}
           source: ${match_prefix}/${match_path}${match_stem}.${match_ext}
           destination: input/study/eQTL-Catalogue/${uuid}.parquet
-    
+
     - name: explode_glob ukb ppp eur study
       glob: gs://ukb_ppp_eur_data/study_index/*.parquet
       do:
         - name: copy ukb ppp eur study ${match_stem}
           source: ${match_prefix}/${match_path}${match_stem}.${match_ext}
           destination: input/study/UKB-PPP/${uuid}.parquet
-    
+
     - name: explode_glob finngen ukb mvp meta study
       glob: gs://finngen_ukb_mvp_meta_data/study_index/*.parquet
       do:
         - name: copy finngen ukb mvp meta study ${match_stem}
           source: ${match_prefix}/${match_path}${match_stem}.${match_ext}
           destination: input/study/FinnGen-UKB-MVP/${uuid}.parquet
-
   ##################################################################################################
 
   #: STUDY PPP STEP :########################################################################
@@ -698,7 +691,6 @@ steps:
         - name: copy ppp ibdverse study ${uri}
           source: ${uri}
           destination: input/study/IBDverse/${match_stem}.${match_ext}
-
   ##################################################################################################
 
   #: TARGET STEP :##################################################################################
