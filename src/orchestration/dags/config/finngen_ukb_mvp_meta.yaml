@@ -1,0 +1,85 @@
+---
+environment_specs:
+  - name: Prod
+    vars:
+      data_bucket: "gs://finngen_ukb_mvp_meta_data"
+
+env: Prod
+
+dataproc:
+  cluster_name: otg-finngen-ukb-meta
+  autoscaling_policy: otg-etl
+  allow_efm: false
+  num_workers: 2
+  cluster_metadata:
+    GENTROPY_REF: v2.4.2-internal.7
+  # NOTE: spark requires to set the property spark.jars.packages to use the enhanced bgzip codec
+  # this has to be done before the cluster is created, otherwise the codec is not accessible by workers.
+  use_enhanced_bgzip_codec: true
+
+nodes:
+  - id: harmonisation
+    prerequisites: []
+    params:
+      step: finngen_ukb_mvp_meta_summary_statistics_ingestion
+      # input
+      step.source_manifest_path: "gs://finngen-public-data-r12/meta_analysis/mvp_ukbb/FinnGen_R12_MVP_UKBB_manifest.tsv"
+      step.efo_curation_path: "https://raw.githubusercontent.com/opentargets/curation/refs/tags/25.09/mappings/disease/manual_string.tsv"
+      step.gnomad_variant_index_path: "gs://gnomad_data_2/v4.1/variant_index/"
+      # outputs
+      step.study_index_output_path: "{data_bucket}/study_index/"
+      step.raw_summary_statistics_output_path: "{data_bucket}/raw_summary_statistics/"
+      step.harmonised_summary_statistics_output_path: "{data_bucket}/harmonised_summary_statistics/"
+      step.harmonised_summary_statistics_qc_output_path: "{data_bucket}/harmonised_summary_statistics_qc/"
+      # harmonisation config
+      step.perform_meta_analysis_filter: true
+      step.imputation_score_threshold: 0.8
+      step.perform_imputation_score_filter: true
+      step.min_allele_count_threshold: 20
+      step.perform_min_allele_count_filter: true
+      step.min_allele_frequency_threshold: 0.0001
+      step.perform_min_allele_frequency_filter: false
+      step.filter_out_ambiguous_variants: false
+      # session config
+      step.session.write_mode: overwrite
+      step.session.use_enhanced_bgzip_codec: true
+      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '7', spark.driver.memory: '25g'}"
+
+  - id: window_based_clumping
+    prerequisites: [harmonisation]
+    params:
+      step: window_based_clumping
+      # input
+      step.summary_statistics_input_path: "{data_bucket}/harmonised_summary_statistics"
+      # output
+      step.study_locus_output_path: "{data_bucket}/study_locus_window_based_clumped"
+      # session config
+      step.session.write_mode: overwrite
+      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
+
+  - id: ld_based_clumping
+    prerequisites:
+      - window_based_clumping
+    params:
+      step: ld_based_clumping
+      # input
+      step.ld_index_path: gs://gnomad_data_2/v2.1.1/ld_index
+      step.study_locus_input_path: "{data_bucket}/study_locus_window_based_clumped"
+      step.study_index_path: "{data_bucket}/study_index"
+      # output
+      step.clumped_study_locus_output_path: "{data_bucket}/study_locus_ld_clumped"
+      # session config
+      step.session.write_mode: overwrite
+      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
+
+  - id: pics
+    prerequisites:
+      - ld_based_clumping
+    params:
+      step: pics
+      # input
+      step.study_locus_ld_annotated_in: "{data_bucket}/study_locus_ld_clumped"
+      # output
+      step.picsed_study_locus_out: "{data_bucket}/credible_sets"
+      # session config
+      step.session.write_mode: overwrite

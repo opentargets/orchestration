@@ -60,6 +60,7 @@ build-dag-svgs: ## Generate visual representations of Airflow DAGs for documenta
 		datasources/gnomad_data/gnomad_ingestion \
 		datasources/ukb_ppp_eur_data/ukb_ppp_eur_finemapping \
 		datasources/ukb_ppp_eur_data/ukb_ppp_eur_harmonisation \
+		datasources/finngen_meta_data/finngen_ukb_mvp_meta \
 		datasources/finngen_data/finngen_ingestion \
 		datasources/eqtl_catalogue_data/eqtl_catalogue_ingestion \
 		credible_set_qc/credible_set_qc \
@@ -91,7 +92,10 @@ upload-gnomad-bucket-readme: ## upload gnomad_data readme to the bucket
 upload-intervals-bucket-readme: ## upload intervals readme to the bucket
 	@gcloud storage rsync docs/datasources/interval_data gs://interval_data/docs
 
-update-bucket-docs: upload-eqtl-catalogue-bucket-readme upload-ukb-ppp-bucket-readme upload-finngen-bucket-readme upload-gwas-catalog-buckets-readme upload-gnomad-bucket-readme upload-intervals-bucket-readme ## upload readmes to the datasource buckets
+upload-finngen-meta-readme: ## upload finngen-meta readme to the bucket
+	@gcloud storage rsync docs/datasources/finngen_meta_data gs://finngen_ukb_mvp_meta_data/docs
+
+update-bucket-docs: upload-eqtl-catalogue-bucket-readme upload-ukb-ppp-bucket-readme upload-finngen-bucket-readme upload-gwas-catalog-buckets-readme upload-gnomad-bucket-readme upload-intervals-bucket-readme upload-finngen-meta-readme ## upload readmes to the datasource buckets
 
 build-gentropy-gcs-image: ## build image that overwrited gentropy with tools specific for orchestration and google cloud
 	@docker buildx build \
