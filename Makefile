@@ -96,17 +96,3 @@ upload-finngen-meta-readme: ## upload finngen-meta readme to the bucket
 	@gcloud storage rsync docs/datasources/finngen_meta_data gs://finngen_ukb_mvp_meta_data/docs
 
 update-bucket-docs: upload-eqtl-catalogue-bucket-readme upload-ukb-ppp-bucket-readme upload-finngen-bucket-readme upload-gwas-catalog-buckets-readme upload-gnomad-bucket-readme upload-intervals-bucket-readme upload-finngen-meta-readme ## upload readmes to the datasource buckets
-
-build-gentropy-gcs-image: ## build image that overwrited gentropy with tools specific for orchestration and google cloud
-	@docker buildx build \
-		--platform=linux/amd64,linux/arm64 \
-		-t europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:dev  \
-		--push \
-		-f images/gentropy/Dockerfile \
-		--no-cache .
-
-setup-harmonisation-test: ## prepare the test bucket with raw summary statistics for the harmonisation test.
-	@gcloud storage rm gs://orchestration/test/gwas_catalog_inputs/harmonisation_manifest.csv
-	@gcloud storage -m rm -r gs://orchestration/test/gwas_catalog_inputs/harmonisation_summary
-	@gcloud storage -m rm -r gs://orchestration/test/gwas_catalog_inputs/harmonised_summary_statistics
-	@gcloud storage -m rm -r gs://orchestration/test/gwas_catalog_inputs/summary_statistics_qc
