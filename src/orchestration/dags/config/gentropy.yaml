@@ -105,6 +105,18 @@ steps:
       # OUTPUTS
       step.coloc_path: '{{release_uri}}/output/colocalisation_ecaviar'
 
+  colocalisation_colocpip_and_ecaviar:
+    params:
+      step: colocalisation
+      step.session.write_mode: overwrite
+      step.session.output_partitions: 25
+      step.colocalisation_method: coloc_pip_ecaviar
+      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.memoryOverhead: '1g', spark.executor.cores: '4'}"
+      # INPUTS
+      step.credible_set_path: '{{release_uri}}/output/credible_set'
+      # OUTPUTS
+      step.coloc_path: '{{release_uri}}/output/colocalisation'
+
   variant_partition:
     params:
       step: variant_to_vcf
@@ -168,7 +180,7 @@ steps:
       # INPUTS
       step.credible_set_path: '{{release_uri}}/output/credible_set'
       step.variant_index_path: '{{release_uri}}/output/variant'
-      step.colocalisation_path: '{{release_uri}}/output/colocalisation_*'
+      step.colocalisation_path: '{{release_uri}}/output/colocalisation'
       step.study_index_path: '{{release_uri}}/output/study'
       step.target_index_path: '{{release_uri}}/output/target'
       # OUTPUTS

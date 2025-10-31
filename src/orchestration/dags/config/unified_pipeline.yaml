@@ -192,12 +192,10 @@ steps:
     depends_on:
       - gentropy_study
 
-  gentropy_colocalisation_coloc:
+  gentropy_colocalisation_colocpip_and_ecaviar:
     depends_on:
       - gentropy_credible_set
-  gentropy_colocalisation_ecaviar:
-    depends_on:
-      - gentropy_credible_set
+
   gentropy_variant_partition:
     depends_on:
       - pis_evidence
@@ -214,8 +212,7 @@ steps:
 
   gentropy_l2g_feature_matrix:
     depends_on:
-      - gentropy_colocalisation_coloc
-      - gentropy_colocalisation_ecaviar
+      - gentropy_colocalisation_colocpip_and_ecaviar
       - gentropy_variant
 
   gentropy_l2g_training:
