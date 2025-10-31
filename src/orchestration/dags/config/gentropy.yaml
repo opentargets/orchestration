@@ -115,7 +115,7 @@ steps:
       # INPUTS
       step.credible_set_path: '{{release_uri}}/output/credible_set'
       # OUTPUTS
-      step.colocpip_ecaviar_path: '{{release_uri}}/output/colocalisation'
+      step.coloc_path: '{{release_uri}}/output/colocalisation'
 
   variant_partition:
     params:
