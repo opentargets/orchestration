@@ -17,6 +17,7 @@ steps:
         - gs://eqtl_catalogue_processed_otar_internal_data/otar2077/microglia/gentropy/study_index/*
         - gs://eqtl_catalogue_processed_otar_internal_data/otar2077/MAGE_OTAR/gentropy/study_index/*
         - gs://eqtl_catalogue_processed_otar_internal_data/otar2077/IBDverse/gentropy/study_index/*
+        - gs://finngen_ukb_mvp_meta_data/study_index/
 
   credible_set:
     params:
@@ -31,6 +32,7 @@ steps:
         - gs://eqtl_catalogue_processed_otar_internal_data/otar2077/microglia/gentropy/study_locus/*
         - gs://eqtl_catalogue_processed_otar_internal_data/otar2077/MAGE_OTAR/gentropy/study_locus/*
         - gs://eqtl_catalogue_processed_otar_internal_data/otar2077/IBDverse/gentropy/study_locus/*
+        - gs://finngen_ukb_mvp_meta_data/credible_sets/
 
   variant:
     params:

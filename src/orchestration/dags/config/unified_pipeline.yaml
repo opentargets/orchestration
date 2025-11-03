@@ -15,12 +15,12 @@ is_ppp: true
 pis_version: '25.2.1'
 pts_version: '25.2.1-rc.1'
 etl_version: '25.2.0-rc.1'
-gentropy_version: '2.4.2-rc.1'
-vep_version: 'release_114.0'
+gentropy_version: '2.4.2-rc.2'
+vep_version: 'release_115.2'
 
 chembl_version: '35'
-efo_version: '3.80.0'
-ensembl_version: '114'
+efo_version: '3.83.0'
+ensembl_version: '115'
 
 # Dependency graph
 # ----------------
