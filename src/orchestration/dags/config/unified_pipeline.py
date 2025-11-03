@@ -60,6 +60,7 @@ class UnifiedPipelineConfig:
                 "chembl_version": up.get("chembl_version"),
                 "efo_version": up.get("efo_version"),
                 "ensembl_version": up.get("ensembl_version"),
+                "gencode_version": up.get("gencode_version"),
             },
         )
         """The internal configuration for PIS steps."""
