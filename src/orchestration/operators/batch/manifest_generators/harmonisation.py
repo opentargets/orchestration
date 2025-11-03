@@ -200,7 +200,7 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
         else:
             AirflowSkipException("No environments to create")
         # NOTE: Ensure the types are correct, as Environment requires dict[str,str] types.
-        return [{str(k): str(v) for k, v in row.items()} for row in var_list][0:10]
+        return [{str(k): str(v) for k, v in row.items()} for row in var_list][0:2000]
 
     @staticmethod
     def output_path(study: str, path_pattern: GCSPath) -> str:
