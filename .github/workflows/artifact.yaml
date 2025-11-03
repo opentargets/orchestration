@@ -82,8 +82,8 @@ jobs:
           file: images/gentropy/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ env.TAG }}
+            ghcr.io/${{ github.repository }}-harmonisation:latest
+            ghcr.io/${{ github.repository }}-harmonisation:${{ env.TAG }}
             ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/opentargets/harmonisation:latest
             ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/opentargets/harmonisation:${{ env.TAG }}
 
