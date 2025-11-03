@@ -11,6 +11,7 @@ Both images are available on Github Container Registry:
 
 - `ghcr.io/open-targets/orchestration:latest`
 - `ghcr.io/open-targets/orchestration:<version>`
-
+- `ghcr.io/open-targets/orchestration-harmonisation:latest`
+- `ghcr.io/open-targets/orchestration-harmonisation:<version>`
 
 >[!NOTE] The images are built manually when a new version is released using the `artifact.yaml` workflow.
