@@ -2,12 +2,6 @@
 name: Build and Push to Artifact Registry
 
 on:
-  push:
-    branches:
-      - dev
-    paths:
-      - images/gentropy/scripts/harmonise-sumstats.sh
-      - images/gentropy/Dockerfile
   workflow_dispatch:
 
 env:
@@ -21,6 +15,12 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     name: Build docker image and push to GHCR and GAR
     runs-on: ubuntu-22.04
+
+    permissions:
+      packages: write
+      contents: read
+      attestations: write
+      id-token: write
 
     steps:
       - id: prepare
