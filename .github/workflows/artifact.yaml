@@ -73,7 +73,7 @@ jobs:
           username: oauth2accesstoken
           password: ${{ steps.auth-google.outputs.access_token }}
 
-      - id: push
+      - id: push-harmonisation
         name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -84,15 +84,35 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ env.TAG }}
+            ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/opentargets/harmonisation:latest
+            ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/opentargets/harmonisation:${{ env.TAG }}
+
+      - id: push-service
+        name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          platforms: linux/amd64,linux/arm64
+          context: .
+          file: Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ env.TAG }}
             ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/opentargets/${{ env.REPO }}:latest
             ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/opentargets/${{ env.REPO }}:${{ env.TAG }}
-          # cache-from: type=gha
-          # cache-to: type=gha,mode=max
 
-      - id: generate-attestations
+      - id: generate-attestations-harmonisation
+        name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-name: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/opentargets/harmonisation
+          subject-digest: ${{ steps.push-harmonisation.outputs.digest }}
+          push-to-registry: true
+
+      - id: generate-attestations-service
         name: Generate artifact attestation
         uses: actions/attest-build-provenance@v3
         with:
           subject-name: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/opentargets/${{ env.REPO }}
-          subject-digest: ${{ steps.push.outputs.digest }}
+          subject-digest: ${{ steps.push-service.outputs.digest }}
           push-to-registry: true
