@@ -67,32 +67,32 @@ build-dag-svgs: ## Generate visual representations of Airflow DAGs for documenta
 		datasources/lof_annotations/lof_curation_ingestion \
 		datasources/foldx_annotations/foldx_ingestion \
 		unified_pipeline/unified_pipeline, \
-		AIRFLOW__CORE__DAGS_FOLDER=src/orchestration/dags uv run airflow dags show --save docs/$(dag).svg $(notdir $(dag));)
+		AIRFLOW__CORE__DAGS_FOLDER=src/orchestration/dags uv run airflow dags show --save wiki/$(dag).svg $(notdir $(dag));)
 
 upload-eqtl-catalogue-bucket-readme: ## upload eqtl_catalogue_data readme to the bucket
-	@gcloud storage rsync docs/datasources/eqtl_catalogue_data gs://eqtl_catalogue_data/docs
+	@gcloud storage rsync wiki/datasources/eqtl_catalogue_data gs://eqtl_catalogue_data/docs
 
 upload-ukb-ppp-bucket-readme: ## upload ukb_ppp_eur_data readme to the bucket
-	@gcloud storage rsync docs/datasources/ukb_ppp_eur_data gs://ukb_ppp_eur_data/docs
-	@gcloud storage rsync docs/credible_set_qc gs://ukb_ppp_eur_data/docs/credible_set_qc
+	@gcloud storage rsync wiki/datasources/ukb_ppp_eur_data gs://ukb_ppp_eur_data/docs
+	@gcloud storage rsync wiki/credible_set_qc gs://ukb_ppp_eur_data/docs/credible_set_qc
 
 upload-finngen-bucket-readme: ## upload finngen_data readme to the bucket
-	@gcloud storage rsync docs/datasources/finngen_data gs://finngen_data/docs
+	@gcloud storage rsync wiki/datasources/finngen_data gs://finngen_data/docs
 
 upload-gwas-catalog-buckets-readme: ## upload gwas_catalog readme to the bucket(s)
-	@gcloud storage rsync docs/datasources/gwas_catalog_data gs://gwas_catalog_inputs/docs
-	@gcloud storage rsync docs/datasources/gwas_catalog_data gs://gwas_catalog_sumstats_pics/docs
-	@gcloud storage rsync docs/datasources/gwas_catalog_data gs://gwas_catalog_sumstats_susie/docs
-	@gcloud storage rsync docs/datasources/gwas_catalog_data gs://gwas_catalog_top_hits/docs
-	@gcloud storage rsync docs/credible_set_qc gs://gwas_catalog_sumstats_susie/docs/credible_set_qc
+	@gcloud storage rsync wiki/datasources/gwas_catalog_data gs://gwas_catalog_inputs/docs
+	@gcloud storage rsync wiki/datasources/gwas_catalog_data gs://gwas_catalog_sumstats_pics/docs
+	@gcloud storage rsync wiki/datasources/gwas_catalog_data gs://gwas_catalog_sumstats_susie/docs
+	@gcloud storage rsync wiki/datasources/gwas_catalog_data gs://gwas_catalog_top_hits/docs
+	@gcloud storage rsync wiki/credible_set_qc gs://gwas_catalog_sumstats_susie/docs/credible_set_qc
 
 upload-gnomad-bucket-readme: ## upload gnomad_data readme to the bucket
-	@gcloud storage rsync docs/datasources/gnomad_data gs://gnomad_data_2/docs
+	@gcloud storage rsync wiki/datasources/gnomad_data gs://gnomad_data_2/docs
 
 upload-intervals-bucket-readme: ## upload intervals readme to the bucket
-	@gcloud storage rsync docs/datasources/interval_data gs://interval_data/docs
+	@gcloud storage rsync wiki/datasources/interval_data gs://interval_data/docs
 
 upload-finngen-meta-readme: ## upload finngen-meta readme to the bucket
-	@gcloud storage rsync docs/datasources/finngen_meta_data gs://finngen_ukb_mvp_meta_data/docs
+	@gcloud storage rsync wiki/datasources/finngen_meta_data gs://finngen_ukb_mvp_meta_data/docs
 
 update-bucket-docs: upload-eqtl-catalogue-bucket-readme upload-ukb-ppp-bucket-readme upload-finngen-bucket-readme upload-gwas-catalog-buckets-readme upload-gnomad-bucket-readme upload-intervals-bucket-readme upload-finngen-meta-readme ## upload readmes to the datasource buckets
