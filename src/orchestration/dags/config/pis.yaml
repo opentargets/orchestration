@@ -565,7 +565,7 @@ steps:
       destination: input/target/ensembl/homo_sapiens.json
 
     - name: copy gencode
-      source: https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_40/gencode.v40.annotation.gff3.gz
+      source: https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/latest_release/gencode.v${gencode_version}.annotation.gff3.gz
       destination: input/target/gencode/gencode.gff3.gz
 
     - name: find_latest gene essentiality

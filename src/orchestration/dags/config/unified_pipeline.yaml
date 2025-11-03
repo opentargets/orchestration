@@ -21,6 +21,7 @@ vep_version: 'release_115.2'
 chembl_version: '35'
 efo_version: '3.83.0'
 ensembl_version: '115'
+gencode_version: '49'
 
 # Dependency graph
 # ----------------
