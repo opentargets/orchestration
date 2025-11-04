@@ -2,7 +2,7 @@
 dataproc:
   python_main_module: gs://genetics_etl_python_playground/initialisation/cli.py
   cluster_metadata:
-    GENTROPY_REF: v2.4.0-rc.2
+    GENTROPY_REF: v2.4.2-rc.4
   cluster_init_script: gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh
   cluster_name: otg-credible-set-qc
   autoscaling_policy: otg-etl
