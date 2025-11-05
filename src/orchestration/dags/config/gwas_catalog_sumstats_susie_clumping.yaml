@@ -4,8 +4,8 @@ environment_specs:
     vars:
       input_path: gs://gwas_catalog_inputs
       output_path: gs://gwas_catalog_sumstats_susie
-      curation_date: '202507'
-      sync_date: '20250708'
+      curation_date: '20251029'
+      sync_date: '20251015'
 
 env: Prod
 
@@ -13,7 +13,7 @@ dataproc:
   cluster_name: otg-gwas-catalog-sumstat-susie-clumping
   autoscaling_policy: otg-etl
   cluster_metadata:
-    GENTROPY_REF: v2.4.0-rc.2
+    GENTROPY_REF: v2.4.2-rc.4
 
 nodes:
   - id: gwas_catalog_study_index
@@ -25,7 +25,7 @@ nodes:
       step.catalog_ancestry_files:
         - "{input_path}/gentroutils/{sync_date}/gwas_catalog_download_ancestries.tsv"
       step.study_index_path: "{output_path}/study_index"
-      step.gwas_catalog_study_curation_file: "{input_path}/curation/{curation_date}/GWAS_Catalog_study_curation.tsv"
+      step.gwas_catalog_study_curation_file: "{input_path}/curation/{curation_date}/curated/GWAS_Catalog_study_curation.tsv"
       step.sumstats_qc_path: "{input_path}/summary_statistics_qc"
       step.session.write_mode: overwrite
       step.session.output_partitions: 1

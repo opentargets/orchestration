@@ -3,7 +3,7 @@ environment_specs:
   - name: Prod
     vars:
       output_path: gs://gwas_catalog_sumstats_susie
-      GENTROPY_REF: 2.4.0-rc.2
+      GENTROPY_REF: 2.4.2-rc.4
 
 env: Prod
 
