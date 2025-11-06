@@ -72,6 +72,9 @@ steps:
   pis_target_engine:
 
   # PTS STEPS
+  pts_chemical_probes:
+    depends_on:
+      - pis_target
   pts_disease:
     depends_on:
       - pis_disease

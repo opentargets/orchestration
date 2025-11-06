@@ -21,7 +21,7 @@ from google.api_core.exceptions import NotFound as GCPNotFound
 from google.cloud.dataproc_v1 import Cluster, JobReference
 from google.cloud.dataproc_v1.types.jobs import Job, JobPlacement, PySparkJob, SparkJob
 
-from orchestration.utils import convert_params_to_hydra_positional_arg, random_id
+from orchestration.utils import convert_params_to_hydra_positional_arg, random_id, resource_name
 from orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_REGION, GCP_SERVICE_ACCOUNT, GCP_ZONE
 from orchestration.utils.dataproc import ClusterGenerator
 from orchestration.utils.labels import Labels
@@ -185,6 +185,16 @@ class ClusterDefinition(NamedTuple):
     config: dict[str, Any]
     """The configuration dict for the cluster. See
         `src.orchestration.utils.dataproc.ClusterConfig`."""
+
+    @property
+    def cluster_name(self) -> str:
+        """Returns the resource name for this cluster definition."""
+        return resource_name(self.cluster_type)
+
+    @property
+    def cluster_config(self) -> ClusterConfig:
+        """Returns the ClusterConfig object for this cluster definition."""
+        return ClusterConfig(**self.config)
 
 
 class CreateClusterOperator(DataprocCreateClusterOperator):
@@ -479,4 +489,32 @@ class GentropyJobBuilder(JobBuilder):
             main_python_file_uri=self.main_python_file_uri,
             args=args,
             properties=rendered_properties,
+        )
+
+
+class PTSJobBuilder(JobBuilder):
+    """Class for building PTS dataproc jobs for PySpark PTS tasks."""
+
+    def __init__(
+        self,
+        main_python_file_uri: str,
+        args: list[str],
+        config_uri: str,
+    ) -> None:
+        self.main_python_file_uri = main_python_file_uri
+        self.args = args
+        self.config_uri = config_uri
+        self.logger = logging.getLogger(__name__)
+
+    def build(self) -> PySparkJob:
+        """Build a SparkJob that runs a Gentropy step."""
+        self.logger.info(f"params: {self.args}")
+        self.logger.info("spawning pts job")
+        self.logger.info(f"main_python_file_uri: {self.main_python_file_uri}")
+        self.logger.info(f"args: {self.args}")
+
+        return PySparkJob(
+            main_python_file_uri=self.main_python_file_uri,
+            args=self.args,
+            file_uris=[self.config_uri],
         )

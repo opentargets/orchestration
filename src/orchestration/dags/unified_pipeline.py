@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from airflow.decorators.task_group import task_group
 from airflow.models.baseoperator import chain
@@ -16,6 +17,7 @@ from airflow.utils.edgemodifier import Label
 from airflow.utils.trigger_rule import TriggerRule
 
 from orchestration.dags.config.unified_pipeline import UnifiedPipelineConfig
+from orchestration.models.pts_step import PTSDataprocStep, pts_step_from_config
 from orchestration.operators.batch.vep import VepAnnotateOperator
 from orchestration.operators.dataproc import (
     ClusterConfig,
@@ -30,7 +32,7 @@ from orchestration.operators.differs.config_differ import ConfigDiffer
 from orchestration.operators.differs.manifest_artifact_differ import ManifestArtifactDiffer
 from orchestration.operators.differs.spark_job_differ import SparkJobDiffer
 from orchestration.operators.gce import ComputeEngineRunContainerizedWorkloadSensor, DeleteInstanceOperator
-from orchestration.operators.gcs import CopyBlobOperator, UploadStringOperator
+from orchestration.operators.gcs import CopyBlobOperator, UploadFileOperator, UploadStringOperator
 from orchestration.utils import resource_name, strhash, to_hocon, to_yaml
 from orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_ZONE, shared_dag_args
 from orchestration.utils.labels import Labels
@@ -55,6 +57,7 @@ with DAG(
         ),
     },
 ) as dag:
+    logger = logging.getLogger(__name__)
     config = UnifiedPipelineConfig()
     steps: dict[str, dict[str, DAGNode]] = {}  # this is a registry of tasks, it is used to build dependencies
 
@@ -145,10 +148,13 @@ with DAG(
     # ==============================================================================================
     @task_group(group_id="pts_stage")
     def pts_stage() -> None:
+        pts_clusters = {}  # map of cluster_name to a list of step_names
         for step_name in config.steps("pts_"):
 
             @task_group(group_id=step_name)
             def pts_step(step_name: str) -> None:
+                s = pts_step_from_config(step_name, config)
+
                 config_uri = config.config_uri(step_name)
                 labels = Labels({"tool": "pts", "step": step_name}, is_ppp=config.is_ppp)
                 vm_name = resource_name(step_name)
@@ -170,36 +176,84 @@ with DAG(
                     overwrite=True,
                 )
 
-                r = ComputeEngineRunContainerizedWorkloadSensor(
-                    task_id=f"run_{step_name}",
-                    instance_name=vm_name,
-                    labels=labels,
-                    container_image=config.pts_image,
-                    container_env=config.pts_env_vars(step_name),
-                    container_scopes=config.service_account_extra_scopes,
-                    container_files={config_uri: "/config.yaml"},
-                    work_disk_size_gb=config.pts_disk_size,
-                    machine_type=config.pts_machine_type,
-                    deferrable=True,
-                )
+                chain(d, Label("differences found, run step"), u)
 
-                t = ComputeEngineDeleteInstanceOperator(
-                    task_id=f"delete_vm_{step_name}",
-                    project_id=GCP_PROJECT_PLATFORM,
-                    zone=GCP_ZONE,
-                    resource_id=vm_name,
-                )
+                if s.is_gce:
+                    r = ComputeEngineRunContainerizedWorkloadSensor(
+                        task_id=f"run_{step_name}",
+                        instance_name=vm_name,
+                        labels=labels,
+                        container_image=config.pts_image,
+                        container_env=config.pts_env_vars(step_name),
+                        container_scopes=config.service_account_extra_scopes,
+                        container_files={config_uri: "/config.yaml"},
+                        work_disk_size_gb=config.pts_disk_size,
+                        machine_type=config.pts_machine_type,
+                        deferrable=True,
+                    )
+
+                    t = ComputeEngineDeleteInstanceOperator(
+                        task_id=f"delete_vm_{step_name}",
+                        project_id=GCP_PROJECT_PLATFORM,
+                        zone=GCP_ZONE,
+                        resource_id=vm_name,
+                    )
+
+                    chain(u, Label("gce pts step"), r, t)
+
+                elif s.is_dataproc:
+                    s = cast(PTSDataprocStep, s)
+                    u2 = UploadFileOperator(
+                        task_id=f"upload_entrypoint_{step_name}",
+                        project_id=GCP_PROJECT_PLATFORM,
+                        src_path=s.dataproc_script_run_source,
+                        dst_uri=s.dataproc_script_run_uri,
+                    )
+
+                    c = CreateClusterOperator(
+                        task_id="cluster_create_pts",
+                        cluster_name=s.cluster_definition.cluster_name,
+                        cluster_config=s.cluster_definition.cluster_config,
+                        labels=labels,
+                    )
+
+                    r = SubmitJobOperator(
+                        task_id=f"run_{step_name}",
+                        cluster_name=s.cluster_definition.cluster_name,
+                        step_name=step_name,
+                        py_spark_job=s.build_job(),
+                        labels=labels,
+                    )
+
+                    cluster_name = s.cluster_definition.cluster_name
+                    steps_in_cluster = pts_clusters.get(cluster_name, [])
+                    pts_clusters[cluster_name] = [*steps_in_cluster, step_name]
+                    chain(u, Label("dataproc pts step"), u2, c, r)
 
                 e = EmptyOperator(
                     task_id=f"end_{step_name}",
                     trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
                 )
 
-                chain(d, Label("differences found, run step"), u, r, (t, e))
+                if s.is_gce:
+                    chain(t, e)
+                elif s.is_dataproc:
+                    chain(r, e)
                 chain(d, Label("no differences found, skip step"), e)
                 steps[step_name] = {"start": d, "end": e}
 
             pts_step(step_name)
+
+        # delete a cluster after its steps have run
+        for cluster_name, steps_in_cluster in pts_clusters.items():
+            x = DeleteClusterOperator(
+                task_id="cluster_delete_pts",
+                cluster_name=cluster_name,
+                trigger_rule=TriggerRule.ALL_SUCCESS,
+            )
+            for step_name in steps_in_cluster:
+                step = steps[step_name]["end"]
+                x.set_upstream(step)
 
     pts_stage()
 

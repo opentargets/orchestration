@@ -44,7 +44,7 @@ build-backend = "hatchling.build"
 [tool.deptry]
 known_first_party = ["orchestration"]
 pep621_dev_dependency_groups = ["test"]
-
+extend_exclude = ["src/orchestration/assets/**"]
 
 [tool.deptry.per_rule_ignores]
 DEP002 = ["psycopg2-binary", "flask-limiter"]
@@ -53,10 +53,12 @@ DEP002 = ["psycopg2-binary", "flask-limiter"]
 filterwarnings = "ignore::DeprecationWarning"
 addopts = "--doctest-modules --cache-clear"
 testpaths = ["tests", "src/orchestration"]
+
 [tool.ruff]
 target-version = 'py312'
 line-length = 120
 preview = true
+extend-exclude = ["src/orchestration/assets/**"]
 
 [tool.ruff.lint]
 select = [

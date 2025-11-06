@@ -117,6 +117,7 @@ class UnifiedPipelineConfig:
         self.clusters = AppConfig.from_file(
             file_path=config_path / "clusters.yaml",
             template_context={
+                "pts_version": up.get("pts_version"),
                 "gentropy_version": up.get("gentropy_version"),
                 "requester_pays_project_id": GCP_PROJECT_PLATFORM,
             },
