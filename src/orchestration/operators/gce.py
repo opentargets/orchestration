@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import datetime
 import logging
+import random
 import time
 from collections.abc import Sequence
 from functools import cached_property
@@ -34,7 +35,8 @@ if TYPE_CHECKING:
     from typing import Any
 
 CONTAINER_NAME = "workload_container"
-LOGGING_REQUEST_INTERVAL = 5
+LOGGING_REQUEST_INTERVAL = 2
+LOGGING_REQUEST_MAX_INTERVAL = 180
 
 # WARNING
 # After any change in deferrable operators, you must restart the airflow triggerer
@@ -94,6 +96,10 @@ def wait_for_extended_operation(
     return result
 
 
+def _backoff(request_interval: float) -> float:
+    return min(request_interval * random.uniform(2, 2.5), LOGGING_REQUEST_MAX_INTERVAL)
+
+
 class RateLimitedLoggingClient(logging_v2.Client):
     """Client for the Google Cloud Logging service with rate limiting.
 
@@ -120,7 +126,7 @@ class RateLimitedLoggingClient(logging_v2.Client):
         while True:
             try:
                 entries = super().list_entries(*args, **kwargs)
-                self.request_interval = LOGGING_REQUEST_INTERVAL  # Reset the interval on successful requests
+                self.request_interval = _backoff(self.request_interval)
                 break
             except ResourceExhausted:
                 self.log.warning(
@@ -130,6 +136,7 @@ class RateLimitedLoggingClient(logging_v2.Client):
                 time.sleep(self.request_interval)
                 self.request_interval *= 2
 
+        self.request_interval = LOGGING_REQUEST_INTERVAL
         return entries
 
 
@@ -245,7 +252,7 @@ class CloudLoggingAsyncHook(GoogleBaseHook):
                     self.request_interval,
                 )
                 await asyncio.sleep(self.request_interval)
-                self.request_interval *= 2
+                self.request_interval = _backoff(self.request_interval)
             except RetryError as e:
                 self.log.warning(
                     "Error occurred while fetching log entries: %s, retrying after %d seconds",
@@ -253,7 +260,7 @@ class CloudLoggingAsyncHook(GoogleBaseHook):
                     self.request_interval,
                 )
                 await asyncio.sleep(self.request_interval)
-                self.request_interval *= 2
+                self.request_interval = _backoff(self.request_interval)
 
         logs = None
         try:
