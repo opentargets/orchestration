@@ -1,7 +1,7 @@
 ---
 work_path: /mnt/disks/work
 log_level: INFO
-pool: 32
+pool_size: 32
 
 release_uri: '{{release_uri}}'
 scratchpad: {}
@@ -26,12 +26,6 @@ steps:
         - input/disease/mondo.json
       destination: output/disease_phenotype/disease_phenotype.parquet
       transformer: disease_phenotype
-    - name: transform disease_efo for webapp
-      requires:
-        - transform disease_efo
-      source: output/disease/disease.parquet
-      destination: webapp/disease.jsonl
-      transformer: disease_efo_webapp
 
   ##################################################################################################
 
@@ -50,6 +44,46 @@ steps:
       source: input/expression/map_with_efos.json
       destination: intermediate/expression/tissue-translation-map.parquet
       transformer: expression_tissue
+  ##################################################################################################
+
+  #: MOUSE_PHENOTYPES STEP :########################################################################
+  mouse_phenotype:
+    - name: pyspark separate into output and excluded
+      pyspark: mouse_phenotype
+      source:
+        target: output/target
+        mouse_phenotype: input/mouse_phenotype/mouse_phenotypes.json.gz
+      destination:
+        output: output/mouse_phenotype
+        excluded: excluded/mouse_phenotype
+  ##################################################################################################
+
+  #: CHEMICAL PROBES STEP :#########################################################################
+  chemical_probes:
+    - name: pyspark chemical probes
+      pyspark: chemical_probes
+      source:
+        probes_excel: input/target/chemicalprobes/probes.xlsx
+        drugs_csv: input/target/chemicalprobes/probes_links.csv
+      destination:
+        output: intermediate/chemical_probes_evidence.parquet
+  ##################################################################################################
+
+  #: CODING VARIANT STEP :##########################################################################
+  coding_variant:
+    - name: pyspark coding_variant view
+      pyspark: coding_variant
+      source:
+        variant: output/variant
+        target: output/target
+        disease: output/disease
+        evidence_eva: output/evidence/sourceId=eva
+        evidence_eva_somatic: output/evidence/sourceId=eva_somatic
+        evidence_uniprot_variant: output/evidence/sourceId=uniprot_variants
+        evidence_gwas_credible_set: output/evidence/sourceId=gwas_credible_sets
+        credible_set: output/credible_set
+        pharmacogenetics: output/pharmacogenetics
+      destination: view/coding_variant
   ##################################################################################################
 
   #: OPENFDA STEP :#################################################################################
@@ -87,6 +121,20 @@ steps:
       destination: intermediate/target/hpa/subcellular_locations_ssl.parquet
       separator: "\t"
 
+    - name: pyspark gene_essentiality
+      pyspark: gene_essentiality
+      source:
+        models: input/target/gene-essentiality/depmap/Model.csv
+        essential_genes: input/target/gene-essentiality/depmap/CRISPRInferredCommonEssentials.csv
+        gene_effects: input/target/gene-essentiality/depmap/CRISPRGeneEffect.csv
+        gene_expression: input/target/gene-essentiality/depmap/OmicsExpressionProteinCodingGenesTPMLogp1.csv
+        mutation_hotspots: input/target/gene-essentiality/depmap/OmicsSomaticMutationsMatrixHotspot.csv
+        mutation_damaging: input/target/gene-essentiality/depmap/OmicsSomaticMutationsMatrixDamaging.csv
+        depmap_tissue_mapping: input/ot_curation/mappings/biosystem/depmap_uberon_mapping.csv
+      destination: intermediate/target/gene-essentiality/essentiality.parquet
+      settings:
+        keep_only_essentials: true
+
     - name: unzip essentiality matrix
       source: input/target/project-scores/essentiality_matrices.zip
       inner_file: EssentialityMatrices/04_binaryDepScores.tsv
@@ -107,6 +155,11 @@ steps:
       destination: intermediate/target/ensembl/homo_sapiens.parquet
       transformer: ensembl
 
+    - name: transform gnomad
+      source: input/target/gnomad/gnomad.v2.1.1.lof_metrics.by_gene.txt.bgz
+      destination: intermediate/target/gnomad/gnomad_lof_by_gene.txt.gz
+      transformer: gnomad
+
     - name: explode_glob homology
       glob: input/target/homologue/gene_dictionary/*.json
       do:
@@ -114,4 +167,115 @@ steps:
           source: ${match_prefix}/${match_path}${match_stem}.${match_ext}
           destination: intermediate/target/homologue/gene_dictionary/${match_path}${match_stem}.parquet
           transformer: homology
+  ##################################################################################################
+
+  #: EVIDENCE STEP :################################################################################
+  evidence:
+    - name: pyspark project_score
+      pyspark: project_score
+      source:
+        gene_scores: input/evidence/project_score/mapped_diseases.tsv
+        cell_types: input/evidence/project_score/cell_types.tsv
+        cell_passport: input/evidence/cell_passport.csv.gz
+        cell_line_mapping: input/ot_curation/mappings/biosystem/depmap_uberon_mapping.csv
+      destination: intermediate/evidence/project_score.parquet
+
+    - name: pyspark gene_burden
+      pyspark: gene_burden
+      source:
+        az_binary: input/evidence/gene_burden/astrazeneca/azphewas-com-470k-phewas-binary
+        az_quantitative: input/evidence/gene_burden/astrazeneca/azphewas-com-470k-phewas-quantitative
+        az_genes: input/evidence/gene_burden/astrazeneca/azphewas_com_genes_UK_Biobank_470k.csv
+        az_phenotypes: input/evidence/gene_burden/astrazeneca/azphewas_com_phenotypes_UK_Biobank_470k.csv
+        finngen: input/evidence/gene_burden/finngen/finngen.txt.gz
+        finngen_phenotypes: input/evidence/gene_burden/finngen/phenos
+        genebass: input/evidence/gene_burden/genebass/**.parquet
+        cvdi: input/evidence/gene_burden/cvdi.xlsx
+        curated_studies: input/ot_curation/gene_burden/curated_evidence.tsv
+        disease_mappings: input/ot_curation/mappings/disease/manual_string.tsv
+      destination: intermediate/evidence/gene_burden.parquet
+      settings:
+        finngen_release: R12
+
+    - name: pyspark chembl
+      pyspark: chembl
+      source:
+        chembl_evidence: input/evidence/chembl/chembl.json.gz
+        stop_reasons: input/evidence/chembl/stop_reasons.json
+        drug_indications: input/drug/chembl_drug_indication.jsonl
+      destination: intermediate/evidence/chembl.parquet
+
+    - name: pyspark cancer_biomarkers
+      pyspark: cancer_biomarkers
+      source:
+        associations: input/evidence/cancerbiomarkers/associations.tsv
+        source: input/evidence/cancerbiomarkers/sources.jsonl
+        disease: input/evidence/cancerbiomarkers/diseases.jsonl
+        drugs: output/drug_molecule
+      destination: intermediate/evidence/cancer_biomarkers.parquet
+  ##################################################################################################
+
+  #: TIMESERIES STEP :########################################################################
+  timeseries:
+    - name: pyspark timeseries
+      pyspark: timeseries
+      source:
+        evidence: output/evidence
+        disease: output/disease
+      destination:
+        overall_direct: view/timeseries_overall_direct
+        overall_indirect: view/timeseries_overall_indirect
+        by_datasource_direct: view/timeseries_by_datasource_direct
+        by_datasource_indirect: view/timeseries_by_datasource_indirect
+      settings:
+        novelty_scale: 2 # 2 for long tailed slow decays
+        novelty_shift: 3 # 3 for long tailed slow decays
+        novelty_window: 10
+        datasource_weights:
+          - id: gwas_credible_sets
+            weight: 1.0
+          - id: eva
+            weight: 1.0
+          - id: gene_burden
+            weight: 1.0
+          - id: genomics_england
+            weight: 1.0
+          - id: gene2phenotype
+            weight: 1.0
+          - id: uniprot_literature
+            weight: 1.0
+          - id: uniprot_variants
+            weight: 1.0
+          - id: orphanet
+            weight: 1.0
+          - id: clingen
+            weight: 1.0
+          - id: cancer_gene_census
+            weight: 1.0
+          - id: intogen
+            weight: 1.0
+          - id: eva_somatic
+            weight: 1.0
+          - id: cancer_biomarkers
+            weight: 1.0
+          - id: chembl
+            weight: 1.0
+          - id: crispr_screen
+            weight: 1.0
+          - id: crispr
+            weight: 1.0
+          - id: slapenrich
+            weight: 0.5
+          - id: progeny
+            weight: 0.5
+          - id: reactome
+            weight: 1.0
+          - id: sysbio
+            weight: 0.5
+          - id: europepmc
+            weight: 0.2
+          - id: expression_atlas
+            weight: 0.2
+          - id: impc
+            weight: 0.2
   ##################################################################################################
