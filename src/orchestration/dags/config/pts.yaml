@@ -1,8 +1,11 @@
+---
 work_path: /mnt/disks/work
 log_level: INFO
 pool_size: 32
+
 release_uri: '{{release_uri}}'
 scratchpad: {}
+
 steps:
   #: DISEASE STEP :#################################################################################
   disease:
@@ -30,11 +33,13 @@ steps:
     - name: unzip normal tissue
       source: input/expression/normal_tissue.tsv.zip
       destination: intermediate/expression/normal_tissue.tsv
+
     - name: gzip normal tissue
       requires:
         - unzip normal tissue
       source: intermediate/expression/normal_tissue.tsv
       destination: intermediate/expression/normal_tissue.tsv.gz
+
     - name: transform expression tissue
       source: input/expression/map_with_efos.json
       destination: intermediate/expression/tissue-translation-map.parquet
@@ -125,6 +130,7 @@ steps:
       source: input/target/hpa/subcellular_locations_ssl.tsv
       destination: intermediate/target/hpa/subcellular_locations_ssl.parquet
       separator: "\t"
+
     - name: pyspark gene_essentiality
       pyspark: gene_essentiality
       source:
@@ -141,6 +147,7 @@ steps:
       properties:
         spark.driver.memory: 4g
         spark.executor.memory: 2g
+
     - name: unzip essentiality matrix
       source: input/target/project-scores/essentiality_matrices.zip
       inner_file: EssentialityMatrices/04_binaryDepScores.tsv
@@ -151,17 +158,21 @@ steps:
       source: intermediate/target/project-scores/04_binaryDepScores.tsv
       destination: intermediate/target/project-scores/04_binaryDepScores.parquet
       separator: "\t"
+
     - name: csv_to_parquet gene identifier
       source: input/target/project-scores/gene_identifiers_latest.csv.gz
       destination: intermediate/target/project-scores/gene_identifiers_latest.parquet
+
     - name: transform ensembl
       source: input/target/ensembl/homo_sapiens.json
       destination: intermediate/target/ensembl/homo_sapiens.parquet
       transformer: ensembl
+
     - name: transform gnomad
       source: input/target/gnomad/gnomad.v2.1.1.lof_metrics.by_gene.txt.bgz
       destination: intermediate/target/gnomad/gnomad_lof_by_gene.txt.gz
       transformer: gnomad
+
     - name: explode_glob homology
       glob: input/target/homologue/gene_dictionary/*.json
       do:
@@ -204,6 +215,7 @@ steps:
         cell_passport: input/evidence/cell_passport.csv.gz
         cell_line_mapping: input/ot_curation/mappings/biosystem/depmap_uberon_mapping.csv
       destination: intermediate/evidence/project_score.parquet
+
   evidence_gene_burden:
     - name: pyspark gene_burden
       pyspark: gene_burden
@@ -221,6 +233,7 @@ steps:
       destination: intermediate/evidence/gene_burden.parquet
       settings:
         finngen_release: R12
+
   evidence_chembl:
     - name: pyspark chembl
       pyspark: chembl
@@ -229,6 +242,7 @@ steps:
         stop_reasons: input/evidence/chembl/stop_reasons.json
         drug_indications: input/drug/chembl_drug_indication.jsonl
       destination: intermediate/evidence/chembl.parquet
+
   evidence_cancer_biomarkers:
     - name: pyspark cancer_biomarkers
       pyspark: cancer_biomarkers
@@ -238,17 +252,20 @@ steps:
         disease: input/evidence/cancerbiomarkers/diseases.jsonl
         drugs: output/drug_molecule
       destination: intermediate/evidence/cancer_biomarkers.parquet
+
   evidence_orphanet:
     - name: pyspark orphanet
       pyspark: orphanet
       source: input/evidence/orphanet.xml
       destination: intermediate/evidence/orphanet.parquet
+
   evidence_clingen:
     - name: pyspark clingen
       pyspark: clingen
       source:
         evidence: input/evidence/clingen.csv
       destination: intermediate/evidence/clingen.parquet
+
   evidence_impc:
     - name: pyspark impc evidence strings
       pyspark: impc
@@ -269,11 +286,13 @@ steps:
         spark.executor.memory: 2g
       settings:
         score_cutoff: 0.41
+
   evidence_panel_app:
     - name: pyspark panel_app
       pyspark: panel_app
       source: input/evidence/panel_app.tsv
       destination: intermediate/evidence/panel_app.parquet
+
   evidence_crispr_screens:
     - name: pyspark crispr screens
       pyspark: crispr_screens
@@ -282,6 +301,7 @@ steps:
         studies_dir: input/evidence/crispr_screens/brain_studies
         disease_mapping: input/ot_curation/mappings/disease/brain_crispr_studies.tsv
       destination: output/crispr_screens
+
   evidence_gene2phenotype:
     - name: pyspark gene2phenotype
       pyspark: gene2phenotype
@@ -294,6 +314,7 @@ steps:
         skeletal_panel: input/evidence/gene2phenotype/skeletal.csv
         skin_panel: input/evidence/gene2phenotype/skin.csv
       destination: intermediate/evidence/gene2phenotype.parquet
+
   evidence_ppp:
     - name: pyspark ot_crispr
       pyspark: ot_crispr

@@ -1,0 +1,32 @@
+---
+# pass the credentials location to the containers
+services:
+  airflow-init:
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: "/opt/airflow/credentials/adc.json"
+    volumes:
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-}:/opt/airflow/credentials/adc.json:ro
+
+  airflow-cli:
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: "/opt/airflow/credentials/adc.json"
+    volumes:
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-}:/opt/airflow/credentials/adc.json:ro
+
+  airflow-scheduler:
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: "/opt/airflow/credentials/adc.json"
+    volumes:
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-}:/opt/airflow/credentials/adc.json:ro
+
+  airflow-triggerer:
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: "/opt/airflow/credentials/adc.json"
+    volumes:
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-}:/opt/airflow/credentials/adc.json:ro
+
+  airflow-webserver:
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: "/opt/airflow/credentials/adc.json"
+    volumes:
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-}:/opt/airflow/credentials/adc.json:ro

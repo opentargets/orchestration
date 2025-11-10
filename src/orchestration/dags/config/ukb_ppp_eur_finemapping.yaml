@@ -1,0 +1,44 @@
+---
+environment_specs:
+  - name: Prod
+    vars:
+      root_path: gs://ukb_ppp_eur_data
+      date: '20250129'
+      gentropy_ref: '2.0.2-rc.2'
+  - name: Test
+    vars:
+      root_path: gs://ot_orchestration/test/ukb_ppp_eur_data
+      date: '20250129'
+      gentropy_ref: '2.0.2-rc.2'
+
+env: Prod
+
+nodes:
+  - id: generate_manifests
+    kind: Task
+    prerequisites: []
+    params:
+      collected_loci_path: '{root_path}/study_locus_lb_clumped'
+      manifest_prefix: '{root_path}/finemapping_manifests/{date}'
+      output_path: '{root_path}/credible_set_datasets/susie/{date}'
+      log_path: '{root_path}/finemapping_logs/{date}'
+      max_records_per_chunk: 40_000
+
+  - id: finemapping_batch_job
+    kind: Task
+    prerequisites:
+      - generate_manifests
+    params:
+      study_index_path: '{root_path}/study_index'
+    google_batch:
+      entrypoint: /bin/sh
+      image: 'europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:{gentropy_ref}'
+      resource_specs:
+        cpu_milli: 4000
+        memory_mib: 25000
+        boot_disk_mib: 20_000
+      task_specs:
+        max_retry_count: 5
+        max_run_duration: '7200s'
+      policy_specs:
+        machine_type: n2-highmem-4

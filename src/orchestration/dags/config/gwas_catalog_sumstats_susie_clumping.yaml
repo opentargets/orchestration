@@ -1,0 +1,51 @@
+---
+environment_specs:
+  - name: Prod
+    vars:
+      input_path: gs://gwas_catalog_inputs
+      output_path: gs://gwas_catalog_sumstats_susie
+      curation_date: '20251029'
+      sync_date: '20251015'
+
+env: Prod
+
+dataproc:
+  cluster_name: otg-gwas-catalog-sumstat-susie-clumping
+  autoscaling_policy: otg-etl
+  cluster_metadata:
+    GENTROPY_REF: v2.4.2-rc.4
+
+nodes:
+  - id: gwas_catalog_study_index
+    prerequisites: []
+    params:
+      step: gwas_catalog_study_index
+      step.catalog_study_files:
+        - "{input_path}/gentroutils/{sync_date}/gwas_catalog_download_studies.tsv"
+      step.catalog_ancestry_files:
+        - "{input_path}/gentroutils/{sync_date}/gwas_catalog_download_ancestries.tsv"
+      step.study_index_path: "{output_path}/study_index"
+      step.gwas_catalog_study_curation_file: "{input_path}/curation/{curation_date}/curated/GWAS_Catalog_study_curation.tsv"
+      step.sumstats_qc_path: "{input_path}/summary_statistics_qc"
+      step.session.write_mode: overwrite
+      step.session.output_partitions: 1
+  - id: locus_breaker_clumping
+    prerequisites:
+      - gwas_catalog_study_index
+    params:
+      step: locus_breaker_clumping
+      step.summary_statistics_input_path: "{input_path}/harmonised_summary_statistics/*/*.parquet"
+      step.clumped_study_locus_output_path: "{output_path}/study_locus_lb_clumped"
+      step.lbc_baseline_pvalue: 1.0e-5
+      step.lbc_distance_cutoff: 250_000
+      step.lbc_pvalue_threshold: 1.0e-8
+      step.lbc_flanking_distance: 100_000
+      step.large_loci_size: 1_500_000
+      step.wbc_clump_distance: 500_000
+      step.wbc_pvalue_threshold: 1.0e-8
+      step.collect_locus: True
+      step.remove_mhc: True
+      # More memory on driver to speed up the partition discovery
+      # Added spark.sql.sources.parallelPartitionDiscovery.parallelism to allow for discovering ~70k processed sumstats
+      +step.session.extended_spark_conf: "{spark.sql.sources.parallelPartitionDiscovery.parallelism: '100000', spark.driver.memory: '10g'}"
+      step.session.write_mode: overwrite

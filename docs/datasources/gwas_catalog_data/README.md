@@ -1,0 +1,418 @@
+# GWAS Catalog data source
+
+This document was updated on 2025-07-22
+
+Data stored under 4 buckets:
+
+- `gs://gwas_catalog_inputs`
+- `gs://gwas_catalog_sumstats_pics`
+- `gs://gwas_catalog_sumstats_susie`
+- `gs://gwas_catalog_top_hits`
+
+## GWAS Catalog inputs
+
+Bucket `gs://gwas_catalog_inputs` contains:
+
+```bash
+gs://gwas_catalog_inputs/harmonisation_manifest.csv
+gs://gwas_catalog_inputs/curation/
+gs://gwas_catalog_inputs/docs/
+gs://gwas_catalog_inputs/gentroutils/
+gs://gwas_catalog_inputs/harmonisation_summary/
+gs://gwas_catalog_inputs/harmonised_summary_statistics/
+gs://gwas_catalog_inputs/raw_summary_statistics/
+gs://gwas_catalog_inputs/statistics/
+gs://gwas_catalog_inputs/summary_statistics_qc/
+```
+
+### harmonisation_manifest.csv
+
+The `harmonisation_manifest.csv` is the file that is generated before the harmonisation is performed. This is the input file to all google batch jobs that are used to perform Harmonisation and Quality Checks on raw summary statistics. Each row of the manifest represents a single GWAS Catalog study.
+
+The file describes following fields:
+
+- study - study identifier
+- rawSumstatPath - input path for the harmonisation
+- harmonisedSumstatPath - output path of the harmonised study
+- qcPath - output path of the qc results performed on the harmonised study
+- isHarmonised - boolean flag depicting if the `harmonisedSumstatPath` has been found
+- qcPerformed - boolean flag depicting if the `qcPath` has been found
+
+The manifest file gets generated each time the harmonisation dag is triggered and the manifest get's updated with the up-to-date state of the staging bucket.
+
+As the QC step can fail without producing any meaningful metrics (the most common reason is due to empty harmonised summary statistics parquet), the study that fails the QC is considered
+as failing.
+
+> [!NOTE]
+> Rescuing these summary statistics that fail to produce a QC output currently has to be done manually. This can be achieved with deep look into the `harmonisation logs and individual study summaries`. See the `harmonisation_summary` for more details.
+
+<details>
+  <summary>Expand to see the example of manifest file</summary>
+
+```bash
+rawSumstatPath,study,harmonisedSumstatPath,isHarmonised,qcPath,qcPerformed
+gs://gwas_catalog_inputs/raw_summary_statistics/GCST000001-GCST001000/GCST000028/harmonised/17463246-GCST000028-EFO_0001360.h.tsv.gz,GCST000028,gs://gwas_catalog_inputs/harmonised_summary_statistics/GCST000028/,True,gs://gwas_catalog_inputs/summary_statistics_qc/GCST000028/,True
+```
+
+</details>
+
+### curation
+
+This directory contains dated files with manual curation performed on GWAS Catalog.
+
+```{bash}
+gs://gwas_catalog_inputs/curation/202412/GWAS_Catalog_study_curation.tsv
+gs://gwas_catalog_inputs/curation/202505/GWAS_Catalog_study_curation.tsv
+gs://gwas_catalog_inputs/curation/202506/GWAS_Catalog_study_curation.tsv
+gs://gwas_catalog_inputs/curation/202507/GWAS_Catalog_study_curation.tsv
+```
+
+These files are used to curate the summary statistics and are part of the input for the study index generation step. This is crucial part of the process that allows to exclude certain types of studies that can lead to incorrect results in SuSIE finemapping.
+
+### gentroutils
+
+This directory contains files dumped from [ebi ftp](https://ftp.ebi.ac.uk/pub/databases/gwas/releases/latest/). This includes:
+
+```{bash}
+gs://gwas_catalog_inputs/gentroutils/20250708/gwas_catalog_associations_ontology_annotated.tsv <- associations
+gs://gwas_catalog_inputs/gentroutils/20250708/gwas_catalog_download_ancestries.tsv             <- ancestries
+gs://gwas_catalog_inputs/gentroutils/20250708/gwas_catalog_download_studies.tsv                <- studies
+gs://gwas_catalog_inputs/gentroutils/20250708/log.txt                                          <- log file from synchronisation
+```
+
+The `log.txt` file contains the information about the release of the GWAS Catalog that was used to generate the files in this directory. The files in this directory are used to generate the [StudyIndex dataset](https://opentargets.github.io/gentropy/python_api/datasets/study_index/) and are used as input for the top hits (curated associations) credible set generation.
+
+### harmonisation_summary
+
+This is the dataset containing meta information about the status of finemapping. This directory contains per summary statistics file metrics in two files:
+
+- harmonisation_summary (harmonisation.csv)
+- harmonisation_log (harmonisation.log)
+
+The files are stored under the per study directory in the form like below:
+
+```bash
+gs://gwas_catalog_inputs/harmonisation_summary/GCST90077749/202410141529/harmonisation.csv
+gs://gwas_catalog_inputs/harmonisation_summary/GCST90077749/202410141529/harmonisation.log
+gs://gwas_catalog_inputs/harmonisation_summary/GCST90077749/latest/harmonisation.csv
+gs://gwas_catalog_inputs/harmonisation_summary/GCST90077749/latest/harmonisation.log
+```
+
+inside the `dated` and `latest` subdirectories, so subsequent harmonisation runs do not overwrite the existing information.
+
+#### harmonisation.csv
+
+This is the result of the harmonisation script metadata collection.
+
+The file reports following metrics:
+
+- study - study identifier
+- harmonisationExitCode - the return value of the harmonisation spark job performed during the harmonisation script execution. Can be 0 or int, in case it's not 0, this metrics reports that harmonisation task failed for this study.
+- qcExitCode - the return value of the qc spark job performed during the harmonisation script execution. Can be 0 or int, in case it's not 0, this metrics reports that qc task failed for this study.
+- rawSumstatFile - input to the harmonisation
+- rawSumstatFileSize - size of the raw file before unzipping
+- rawUnzippedSumstatFileSize - size of the raw file after unzipping - if this metric is empty, this could mean that the unzipping produced too big file to handle for the google batch task executor resulting in job failure.
+
+<details>
+  <summary>Expand to see the example</summary>
+
+```bash
+study,harmonisationExitCode,qcExitCode,rawSumstatFile,rawSumstatFileSize,rawUnzippedSumstatFileSize
+GCST90077749,0,1,gs://gwas_catalog_inputs/raw_summary_statistics/GCST90077001-GCST90078000/GCST90077749/harmonised/34662886-GCST90077749-EFO_1001919.h.tsv.gz,18M,62M
+```
+
+</details>
+
+#### harmonisation.log
+
+This file contains logs from the harmonisation script collected during it's execution. In case of any issues found in the `harmonisation.csv`, the best way to uncover what happened is to see directly into this file content and look for the `Error` or `Exception`. This file contains entire configuration as well as all the error logs.
+
+<details>
+  <summary>Expand to see the example</summary>
+
+```bash
+[2024.10.14 15:33] Copying raw summary statistics from gs://gwas_catalog_inputs/raw_summary_statistics/GCST90078001-GCST90079000/GCST90079000/harmonised/GCST90079000.h.tsv.gz to GCST90079000.h.tsv.gz
+[2024.10.14 15:34] Raw file size 17M
+[2024.10.14 15:34] Unzipping GCST90079000.h.tsv.gz to GCST90079000.h.tsv
+[2024.10.14 15:34] Unzipped file size 74M
+[2024.10.14 15:34] Running harmonisation on GCST90079000.h.tsv file
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+24/10/14 15:34:18 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+step:
+  session:
+    start_hail: false
+    write_mode: overwrite
+    spark_uri: local[*]
+    hail_home: /app/.venv/lib/python3.10/site-packages/hail
+    extended_spark_conf:
+      spark.jars: https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop3-latest.jar
+      spark.dynamicAllocation.enabled: 'False'
+      spark.driver.memory: 16g
+      spark.kryoserializer.buffer.max: 500m
+      spark.driver.maxResultSize: 5g
+    _target_: gentropy.common.session.Session
+  raw_sumstats_path: GCST90079000.h.tsv
+  out_sumstats_path: gs://gwas_catalog_inputs/harmonised_summary_statistics/GCST90079000/
+  _target_: gentropy.gwas_catalog_sumstat_preprocess.GWASCatalogSumstatsPreprocessStep
+datasets: {}
+
+[2024-10-14 15:34:57,389][py4j.clientserver][INFO] - Closing down clientserver connection
+[2024.10.14 15:34] Harmonisation exit code: 0
+[2024.10.14 15:34] Running qc on gs://gwas*catalog_inputs/harmonised_summary_statistics/GCST90079000/ file
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+24/10/14 15:35:07 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+step:
+session:
+start_hail: false
+write_mode: overwrite
+spark_uri: local[*]
+hail_home: /app/.venv/lib/python3.10/site-packages/hail
+extended_spark_conf:
+spark.jars: https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop3-latest.jar
+spark.dynamicAllocation.enabled: 'False'
+spark.driver.memory: 16g
+spark.kryoserializer.buffer.max: 500m
+spark.driver.maxResultSize: 5g
+\_target*: gentropy.common.session.Session
+gwas*path: gs://gwas_catalog_inputs/harmonised_summary_statistics/GCST90079000/
+output_path: gs://gwas_catalog_inputs/summary_statistics_qc/GCST90079000/
+pval_threshold: 1.0e-08
+\_target*: gentropy.sumstat_qc_step.SummaryStatisticsQCStep
+datasets: {}
+
+[2024-10-14 15:35:53,153][py4j.clientserver][INFO] - Closing down clientserver connection
+[2024.10.14 15:35] QC exit code: 0
+```
+
+</details>
+
+### harmonised_summary_statistics
+
+This directory contains outputs from the Open Targets inhouse ETL harmonisation process described in [GWAS Catalog harmonisation dag](https://github.com/opentargets/orchestration/blob/dev/src/ot_orchestration/dags/gwas_catalog_sumstat_harmonisation.py). The result is the [SummaryStatistics dataset](https://opentargets.github.io/gentropy/python_api/datasets/summary_statistics/) saved in parquet format per summary statistics input file.
+
+### raw_summary_statistics
+
+This directory contains summary statistics in the form of harmonised (by GWAS Catalog) gzipped tsv files that are synced directly from the [GWAS Catalog FTP server](https://ftp.ebi.ac.uk/pub/databases/gwas/summary_statistics/) by a cron job.
+
+### statistics
+
+This directory contains various analysis performed on harmonisation results.
+
+### summary_statistics_qc
+
+This directory contains outputs from the Open Targets inhouse ETL harmonisation process described in [GWAS Catalog harmonisation dag](https://github.com/opentargets/orchestration/blob/dev/src/ot_orchestration/dags/gwas_catalog_sumstat_harmonisation.py). The result is the [summary statistics QC dataset](https://github.com/opentargets/gentropy/blob/dev/src/gentropy/sumstat_qc_step.py) saved in the csv format per summary statistics input file.
+
+---
+
+### Gwas catalog harmonisation & qc dag
+
+The `gwas_catalog_harmonisation` dag is used to perform the harmonisation and quality checks on the raw summary statistics. The dag configuration and topology can be found in `gwas_catalog_harmonisation.yaml` file under the config directory. Since this task is computationally expensive, it is run in parallel by the google batch operators. The dag contains 2 steps:
+
+1. Harmonisation done by [gwas_catalog_sumstat_preprocess](https://opentargets.github.io/gentropy/python_api/steps/gwas_catalog_sumstat_preprocess/)
+2. Quality Control of the harmonised summary statistics done by [sumstat_qc_step](https://opentargets.github.io/gentropy/python_api/steps/summary_statistics_qc/)
+
+To run the dag, one need to prepare the input files and gentropy overwritten docker image.
+
+#### Harmonisation docker image
+
+The image in the `/images/gentropy/Dockerfile` is based on the [gentropy image](https://github.com/opentargets/gentropy/blob/dev/Dockerfile). The additional packages are added to the image to make it compatible with Open Targets infrastructure in google cloud, that include:
+
+- google cloud sdk (with gsutil)
+- bash script to run the gentropy harmonisation pipeline
+
+> [!WARNING]
+> Before running the harmonisation pipeline (`gwas_catalog_harmonisation` dag) it is necessary to update the base docker container to reflect the changes in the `gentropy` image. This is done by running the `make build-gentropy-gcs-image` command run in the root of the repository.
+
+---
+
+## GWAS Catalog top hits
+
+Bucket `gs://gwas_catalog_top_hits` contains:
+
+```bash
+gs://gwas_catalog_top_hits/credible_sets/
+gs://gwas_catalog_top_hits/docs/
+gs://gwas_catalog_top_hits/study_index/
+gs://gwas_catalog_top_hits/study_locus_ld_clumped/
+gs://gwas_catalog_top_hits/study_locus_window_based_clumped/
+```
+
+Data contained in the `top_hits` corresponds to the [GWAS Catalog top associations](https://www.ebi.ac.uk/gwas/docs/methods/criteria#:~:text=statistics%20here.-,Top%20associations,-We%20also%20report)
+
+Data is produced by **gwas_catalog_top_hits DAG**. The dag configuration and topology can be found in `gwas_catalog_top_hits.yaml` file under the config directory.
+
+DAG contains 3 steps:
+
+![gwas_catalog_top_hits](gwas_catalog_top_hits.svg)
+
+1. gwas_catalog_top_hits_ingestion
+2. ld_based_clumping
+3. pics
+
+### gwas_catalog_top_hits_ingestion
+
+The step runs on the dataproc cluster that is used to generate the [study_index dataset](https://opentargets.github.io/gentropy/python_api/datasets/study_index/) and perform [window_based_clumping](https://opentargets.github.io/gentropy/python_api/methods/clumping/) on top associations. The datasets are saved under `gs://gwas_catalog_top_hits/study_index/` and `gs://gwas_catalog_top_hits/study_locus_window_based_clumped/`.
+
+### ld_based_clumping
+
+The step that performs [ld_clumping](https://opentargets.github.io/gentropy/python_api/methods/clumping/) on the results from the previous step. The results from this step are saved under `gs://gwas_catalog_top_hits/study_locus_ld_clumped/`.
+
+### pics
+
+The step that performs [PICS finemapping](https://opentargets.github.io/gentropy/python_api/methods/pics/) based on the ld clumped study locus dataset to obtain the dataset containing credible sets. This dataset is stored under `gs://gwas_catalog_top_hits/credible_sets/`
+
+---
+
+## GWAS Catalog pics summary statistics
+
+Bucket `gs://gwas_catalog_sumstats_pics` contains:
+
+```bash
+gs://gwas_catalog_sumstats_pics/credible_sets/
+gs://gwas_catalog_sumstats_pics/study_index/
+gs://gwas_catalog_sumstats_pics/study_locus_ld_clumped/
+gs://gwas_catalog_sumstats_pics/study_locus_window_based_clumped/
+```
+
+Data contained in the `pics summary statistics` corresponds to the GWAS Catalog summary statistics harmonised to the Open Targets [SummaryStatistics dataset](https://opentargets.github.io/gentropy/python_api/datasets/summary_statistics/).
+
+Data is produced by **gwas_catalog_sumstats_pics DAG**. The dag configuration and topology can be found in `gwas_catalog_sumstats_pics.yaml` file under the config directory.
+
+DAG contains 4 steps:
+
+![gwas_catalog_sumstats_pics](gwas_catalog_sumstats_pics.svg)
+
+1. gwas_catalog_study_index
+2. window_based_clumping
+3. ld_based_clumping
+4. pics
+
+### gwas_catalog_study_index
+
+The step runs on the dataproc cluster that is used to generate the [study_index dataset](https://opentargets.github.io/gentropy/python_api/datasets/study_index/) that is saved under the `gs://gwas_catalog_sumstats_pics/study_index/`
+
+### window_based_clumping
+
+The step that performs the [window_based_clumping](https://opentargets.github.io/gentropy/python_api/methods/clumping/) on harmonised summary statistics. The dataset is saved under `gs://gs://gwas_catalog_sumstats_pics/study_locus_ld_clumped/`.
+
+### ld_based_clumping - sumstats
+
+The step that performs [ld_clumping](https://opentargets.github.io/gentropy/python_api/methods/clumping/) on the results from window based clumping step. The results from this step are saved under `gs://gwas_catalog_top_hits/study_locus_ld_clumped/`.
+
+### pics - sumstats
+
+The step that performs [PICS finemapping](https://opentargets.github.io/gentropy/python_api/methods/pics/) based on the ld clumped study locus dataset to obtain the dataset containing credible sets. This dataset is stored under `gs://gwas_catalog_sumstats_pics/credible_sets/`
+
+## GWAS Catalog susie summary statistics
+
+Bucket `gs://gwas_catalog_sumstats_susie` contains:
+
+```bash
+gs://gwas_catalog_sumstats_susie/credible_set_clean/20250721/
+gs://gwas_catalog_sumstats_susie/credible_set_datasets/
+gs://gwas_catalog_sumstats_susie/docs/
+gs://gwas_catalog_sumstats_susie/finemapping_logs/
+gs://gwas_catalog_sumstats_susie/finemapping_manifests/
+gs://gwas_catalog_sumstats_susie/logs/
+gs://gwas_catalog_sumstats_susie/study_index/
+gs://gwas_catalog_sumstats_susie/study_locus_lb_clumped/
+gs://gwas_catalog_sumstats_susie/study_locus_lb_clumped_repartitionned/
+gs://gwas_catalog_sumstats_susie/susie_logs.parquet/
+```
+
+Data is produced by 2 dags:
+
+- **gwas_catalog_sumstats_susie_clumping**
+
+![gwas_catalog_sumstat_susie_clumping](gwas_catalog_sumstats_susie_clumping.svg)
+
+### gwas_catalog_study_index - sumstats
+
+The step runs on the dataproc cluster that is used to generate the [study_index dataset](https://opentargets.github.io/gentropy/python_api/datasets/study_index/) that is saved under the `gs://gwas_catalog_sumstats_susie/study_index/`.
+
+This step requires following resources to reason about the inclusion or exclusion of the
+gwas studies that were harmonised.
+
+- harmonisation qc results
+- manual curation of the gwas studies (not provided by default)
+
+The reasoning is captured in the study index metadata fields.
+
+### locus_breaker_clumping
+
+This process performs locus clumping on previously harmonised summary statistics and results in [StudyLocus](https://opentargets.github.io/gentropy/python_api/datasets/study_locus/) dataset stored under `gs://gwas_catalog_sumstats_susie/study_locus_lb_clumped`.
+
+- **gwas_catalog_sumstats_susie_finemapping**
+
+![gwas_catalog_sumstat_susie_clumping](gwas_catalog_sumstats_susie_finemapping.svg)
+
+This dag performs fine mapping with SuSiE-inf algorithm on clumped study loci to obtain [Credible sets](https://opentargets.github.io/gentropy/python_api/datasets/study_locus/). This is expensive process and is run on google batch.
+
+Due to infrastructure, the fine mapping process is divided into a 2-step logic:
+
+- [x] Generate manifests - `FinemappingBatchJobManifestOperator`
+- [x] Execute Finemapping batch job (finemapping step per each manifest) - `FinemappingBatchOperator`
+
+1. Tasks performed by `FinemappingBatchJobManifestOperator`
+
+   - Collect all individual loci parquet files
+   - Partition collected loci into batches with with `max_records_per_chunk` as a limit of the batch size.
+   - For each batch create a manifest file that will be imputed to the fine mapping gentropy step
+   - Save the batch manifests to google cloud storage.
+
+2. Tasks performed by `FinemappingBatchOperator`
+
+   - Execute one google batch job per manifest with `n <= max_records_per_chunk` tasks.
+   - Each task executes finemapping step on single `StudyLocus` record.
+
+   > [!WARNING]
+   > For the GWAS Catalog sumstats susie dataset the number of tasks can not exceed 40k due to the
+   > size of the environment payload that is send to each batch task.
+   > `400 Request payload size exceeds the limit: 10485760 bytes`
+
+3. Collect logs
+
+The output of finemapping can be found under the:
+
+- `gs://gwas_catalog_sumstats_susie/credible_set_datasets/` - fine mapped study loci
+- `gs://gwas_catalog_sumstats_susie/finemapping_manifests/` - manifests used during the fine mapping job
+- `gs://gwas_catalog_sumstats_susie/finemapping_logs/` and `gs://gwas_catalog_sumstats_susie/logs/` - logs from the individual finemapping tasks
+
+### Credible set qc
+
+The final credible sets are collected in the `gs://gwas_catalog_sumstats_susie/credible_set_clean/` (dated directory)
+
+#### Parametrization of google batch finemapping job
+
+The configuration of the google batch infrastructure and individual step parameters can be found in `gwas_catalog_sumstats_susie_finemapping.yaml` file.
+To adjust the parameters for google batch infrastructure refer to the `google_batch` block in the node configuration.
+
+> [!WARNING]
+> After running the google batch fine mapping job, ensure that the job tasks have succeeded, otherwise the job requires manual curation.
+
+## Changelog
+
+### 2025-02-05
+
+- [fix: repair SusieFinemapperStep to work with new SL schema #957](https://github.com/opentargets/gentropy/pull/957) resolved [issue](https://github.com/opentargets/issues/issues/3667)
+
+### 2025-04-11
+
+- chore: remove 2024-10-21 credible sets to prevent data duplication.
+
+### 2025-06-11
+
+- chore: unifiy credible sets output directory structure to be now in `gs://gwas_catalog_sumstats_susie/credible_set_datasets`
+
+### 2025-07-22
+
+- chore: [2025/07 manual curation](https://github.com/opentargets/issues/issues/3948)
+- chore: [2025/07 harmonisation](https://github.com/opentargets/issues/issues/3929)
+- chore: [2025/07 finemapping](https://github.com/opentargets/issues/issues/3950)
+- chore: [2025/07 gwas catalog data sync](https://github.com/opentargets/issues/issues/3951)
+- chore: [reharmonisation of MVP studies](https://github.com/opentargets/issues/issues/3949)
+- chore: [removed summary statistics from ftp](https://github.com/opentargets/issues/issues/3957)
+- chore: [reharmonisation of GCST003566](https://github.com/opentargets/issues/issues/3740)
+- chore: [removal of problematic studies](https://github.com/opentargets/issues/issues/3965)

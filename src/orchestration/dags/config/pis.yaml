@@ -1,6 +1,8 @@
+---
 work_path: /mnt/disks/work
 log_level: INFO
 pool_size: 16
+
 release_uri: '{{release_uri}}'
 scratchpad:
   chembl_version: '{{chembl_version}}'
@@ -12,15 +14,18 @@ scratchpad:
   mondo_version: '{{mondo_version}}'
   ot_curation: '{{ot_curation}}'
   probes_drugs_version: '{{probes_drugs_version}}'
+
 steps:
   #: BIOSAMPLE STEP :###############################################################################
   biosample:
     - name: copy cell ontology
       source: https://github.com/obophenotype/cell-ontology/releases/latest/download/cl.json
       destination: input/biosample/cl.json
+
     - name: copy uberon
       source: https://github.com/obophenotype/uberon/releases/latest/download/uberon.json
       destination: input/biosample/uberon.json
+
     - name: copy efo
       source: https://github.com/EBISPOT/efo/releases/download/v${efo_version}/efo.json
       destination: input/biosample/efo.json
@@ -31,13 +36,16 @@ steps:
     - name: copy efo otar_slim
       source: https://github.com/EBISPOT/efo/releases/download/v${efo_version}/efo_otar_slim.json
       destination: input/disease/efo_otar_slim.json
+
     - name: copy hpo
       # we were using v2021-10-10 release until 25.03
       source: https://github.com/obophenotype/human-phenotype-ontology/releases/download/v${hpo_version}/hp-full.json
       destination: input/disease/hp-full.json
+
     - name: copy hpo phenotypes
       source: http://purl.obolibrary.org/obo/hp/hpoa/phenotype.hpoa
       destination: input/disease/phenotype.hpoa
+
     - name: copy mondo
       # we were using v2021-12-30 release until 25.03
       source: https://github.com/monarch-initiative/mondo/releases/download/v${mondo_version}/mondo.json
@@ -49,14 +57,17 @@ steps:
     - name: copy chemical probes
       source: https://www.probes-drugs.org/media/download/probes/pd_export_${probes_drugs_version}_probes_standardized.xlsx
       destination: input/target/chemicalprobes/probes.xlsx
+
     - name: find_latest drugbank annotation
       source: gs://otar001-core/DrugBank/annotation
       scratchpad_key: latest_drugbank_annotation
+
     - name: copy drugbank annotation
       requires:
         - find_latest drugbank annotation
       source: ${latest_drugbank_annotation}
       destination: input/drug/drugbank.csv.gz
+
     - name: elasticsearch chembl drug indication
       url: https://www.ebi.ac.uk/chembl/elk/es
       destination: input/drug/chembl_drug_indication.jsonl
@@ -137,6 +148,7 @@ steps:
           fields:
             - gene_id
             - hgnc_gene_id
+
     - name: solr fetch ontology_ontology
       destination: input/evidence/impc
       url: http://www.ebi.ac.uk/mi/impc/solr/phenodigm/select
@@ -145,6 +157,7 @@ steps:
           fields:
             - mp_id
             - hp_id
+
     - name: solr fetch mouse_model
       destination: input/evidence/impc
       url: http://www.ebi.ac.uk/mi/impc/solr/phenodigm/select
@@ -153,6 +166,7 @@ steps:
           fields:
             - model_id
             - model_phenotypes
+
     - name: solr fetch disease
       destination: input/evidence/impc
       url: http://www.ebi.ac.uk/mi/impc/solr/phenodigm/select
@@ -161,6 +175,7 @@ steps:
           fields:
             - disease_id
             - disease_phenotypes
+
     - name: solr fetch disease_model_summary
       destination: input/evidence/impc
       url: http://www.ebi.ac.uk/mi/impc/solr/phenodigm/select
@@ -176,6 +191,7 @@ steps:
             - disease_model_avg_norm
             - disease_model_max_norm
             - marker_id
+
     - name: solr fetch ontology
       destination: input/evidence/impc
       url: http://www.ebi.ac.uk/mi/impc/solr/phenodigm/select
@@ -185,6 +201,7 @@ steps:
             - ontology
             - phenotype_id
             - phenotype_term
+
     - name: explode impc metadata
       foreach:
         - MGI_Gene_Model_Coord.rpt # Mouse gene mappings
@@ -194,9 +211,11 @@ steps:
         - name: copy ${each}
           source: http://www.informatics.jax.org/downloads/reports/${each}
           destination: input/evidence/impc/${each}
+
     - name: copy gene name
       source: https://storage.googleapis.com/public-download-files/hgnc/tsv/tsv/hgnc_complete_set.txt
       destination: input/target/genenames/hgnc_complete_set.tsv
+
   ##################################################################################################
 
   #: EVIDENCE STEP :################################################################################
@@ -212,62 +231,77 @@ steps:
     - name: find_latest atlas
       source: gs://otar010-atlas
       scratchpad_key: 'latest_atlas'
+
     - name: copy atlas
       requires:
         - find_latest atlas
       source: ${latest_atlas}
       destination: input/evidence/atlas.json.bz2
+
   evidence_cancer_biomarkers:
     - name: copy cancer biomarkers associations
       source: gs://otar000-evidence_input/CancerBiomarkers/data_files/cancerbiomarkers-2018-05-01.tsv
       destination: input/evidence/cancerbiomarkers/associations.tsv
+
     - name: copy cancer biomarkers sources
       source: gs://otar000-evidence_input/CancerBiomarkers/data_files/cancer_biomarker_source.jsonl
       destination: input/evidence/cancerbiomarkers/sources.jsonl
+
     - name: copy cancer biomarkers diseases
       source: gs://otar000-evidence_input/CancerBiomarkers/data_files/cancer_biomarker_disease.jsonl
       destination: input/evidence/cancerbiomarkers/diseases.jsonl
+
   evidence_chembl:
     - name: find_latest chembl
       source: gs://otar008-chembl
       scratchpad_key: 'latest_chembl'
+
     - name: copy chembl
       requires:
         - find_latest chembl
       source: ${latest_chembl}
       destination: input/evidence/chembl/chembl.json.gz
+
     - name: find_latest stop_reasons
       source: gs://otar000-evidence_input/ChEMBL/data_files
       scratchpad_key: 'latest_chembl_stop_reasons'
+
     - name: copy chembl stop reasons
       requires:
         - find_latest stop_reasons
       source: ${latest_chembl_stop_reasons}
       destination: input/evidence/chembl/stop_reasons.json
+
   evidence_clingen:
     - name: copy clingen
       source: https://search.clinicalgenome.org/kb/gene-validity/download
       destination: input/evidence/clingen.csv
+
   evidence_cosmic:
     - name: find_latest cosmic
       source: gs://otar007-cosmic
       pattern: '!hallmarks'
       scratchpad_key: 'latest_cosmic'
+
     - name: copy cosmic
       requires:
         - find_latest cosmic
       source: ${latest_cosmic}
       destination: input/evidence/cosmic.json.gz
+
   evidence_project_score:
     - name: copy sanger cell passport # TODO: check
       source: https://cog.sanger.ac.uk/cmp/download/model_list_latest.csv.gz
       destination: input/evidence/cell_passport.csv.gz
+
     - name: copy project_score cell types
       source: gs://otar000-evidence_input/CRISPR/data_files/project_score_v2/cell_types.tsv
       destination: input/evidence/project_score/cell_types.tsv
+
     - name: copy project_score gene scores
       source: gs://otar000-evidence_input/CRISPR/data_files/project_score_v2/mapped_diseases.tsv
       destination: input/evidence/project_score/mapped_diseases.tsv
+
   evidence_crispr_screens:
     - name: crispr_brain fetch
       destination: input/evidence/crispr_screens
@@ -275,43 +309,52 @@ steps:
       client_id: 92f263647c43525d3e4f181aa7e348f26e32129c0f827321d9261cc9765c56c0
       study_prefix_url: https://storage.googleapis.com/crisprbrain.appspot.com/api-data/
       validate_version: 1
+
   evidence_eva:
     - name: find_latest eva
       source: gs://otar012-eva/disease-target-evidence
       scratchpad_key: 'latest_eva'
+
     - name: copy eva
       requires:
         - find_latest eva
       source: ${latest_eva}
       destination: input/evidence/eva.json.gz
+
   evidence_gene_burden:
     - name: copy gene_burden cvdi
       source: https://static-content.springer.com/esm/art%3A10.1038%2Fs41588-024-01894-5/MediaObjects/41588_2024_1894_MOESM4_ESM.xlsx
       destination: input/evidence/gene_burden/cvdi.xlsx
+
     - name: explode_glob download genebass
       glob: 'gs://otar000-evidence_input/GeneBurden/data_files/genebass_entries/*.parquet'
       do:
         - name: copy genebass ${match_stem}
           source: ${uri}
           destination: input/evidence/gene_burden/genebass/${match_stem}.${match_ext}
+
     - name: copy gene_burden finngen
       source: gs://finngen-public-data-r12/lof/data/finngen_R12_lof.txt.gz
       destination: input/evidence/gene_burden/finngen/finngen.txt.gz
+
     - name: copy gene_burden finngen phenos
       source: https://r12.finngen.fi/api/phenos
       destination: input/evidence/gene_burden/finngen/phenos
+
     - name: explode_glob AZ parquet (binary)
       glob: gs://otar000-evidence_input/GeneBurden/data_files/azphewas-com-470k-phewas-binary/*.parquet
       do:
         - name: copy binary ${match_stem}.parquet
           source: ${uri}
           destination: input/evidence/gene_burden/astrazeneca/azphewas-com-470k-phewas-binary/${match_stem}.parquet
+
     - name: explode_glob AZ parquet (quantitative)
       glob: gs://otar000-evidence_input/GeneBurden/data_files/azphewas-com-470k-phewas-quantitative/*.parquet
       do:
         - name: copy quantitative ${match_stem}.parquet
           source: ${uri}
           destination: input/evidence/gene_burden/astrazeneca/azphewas-com-470k-phewas-quantitative/${match_stem}.parquet
+
     - name: explode AZ CSVs
       foreach:
         - azphewas_com_genes_UK_Biobank_470k.csv
@@ -320,58 +363,73 @@ steps:
         - name: copy ${each}
           source: gs://otar000-evidence_input/GeneBurden/data_files/${each}
           destination: input/evidence/gene_burden/astrazeneca/${each}
+
   evidence_gene2phenotype:
     - name: copy gene2phenotype cancer
       source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Cancer/download/
       destination: input/evidence/gene2phenotype/cancer.csv
+
     - name: copy gene2phenotype cardiac
       source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Cardiac/download/
       destination: input/evidence/gene2phenotype/cardiac.csv
+
     - name: copy gene2phenotype dd
       source: https://www.ebi.ac.uk/gene2phenotype/api/panel/DD/download/
       destination: input/evidence/gene2phenotype/dd.csv
+
     - name: copy gene2phenotype ear
       source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Ear/download/
       destination: input/evidence/gene2phenotype/ear.csv
+
     - name: copy gene2phenotype eye
       source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Eye/download/
       destination: input/evidence/gene2phenotype/eye.csv
+
     - name: copy gene2phenotype skeletal
       source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Skeletal/download/
       destination: input/evidence/gene2phenotype/skeletal.csv
+
     - name: copy gene2phenotype skin
       source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Skin/download/
       destination: input/evidence/gene2phenotype/skin.csv
+
   evidence_panel_app:
     - name: copy panel_app
       source: gs://otar000-evidence_input/GenomicsEngland/data_files/All_genes_20250525_public_v1plus_genes_all_ratings.tsv
       destination: input/evidence/panel_app.tsv
+
   evidence_orphanet:
     - name: copy orphanet
       source: http://www.orphadata.org/data/xml/en_product6.xml
       destination: input/evidence/orphanet.xml
+
   evidence_reactome:
     - name: find_latest reactome
       source: gs://otar006-reactome
       scratchpad_key: 'latest_reactome'
+
     - name: copy reactome
       requires:
         - find_latest reactome
       source: ${latest_reactome}
       destination: input/evidence/reactome.json.gz
+
   evidence_uniprot_literature:
     - name: find_latest uniprot literature
       source: gs://otar000-evidence_input/Uniprot_literature/json
       scratchpad_key: 'latest_uniprot_literature'
+
     - name: copy uniprot_literature
       requires:
         - find_latest uniprot literature
       source: ${latest_uniprot_literature}
       destination: input/evidence/uniprot_literature.json.gz
+
   evidence_uniprot_variants:
     - name: find_latest uniprot_variants
       source: gs://otar000-evidence_input/Uniprot_variants/json
       scratchpad_key: 'latest_uniprot_variants'
+
     - name: copy uniprot_variants
       requires:
         - find_latest uniprot_variants
@@ -384,37 +442,46 @@ steps:
     - name: find_latest validation_lab
       source: gs://otar013-ppp/validation_lab
       scratchpad_key: latest_validation_lab
+
     - name: copy validation_lab
       requires:
         - find_latest validation_lab
       source: ${latest_validation_lab}
       destination: input/evidence/validation_lab.json.gz
+
     - name: explode_glob encore files
       glob: 'gs://otar013-ppp/encore/input/2024.01.11-Freeze4/**/**'
       do:
         - name: copy encore ${match_stem} ${uuid}
           source: ${uri}
           destination: input/evidence/encore/${match_path}${match_stem}.${match_ext}
+
     - name: copy encore config
       source: gs://otar013-ppp/PPP-evidence-configuration/encore_config.json
       destination: input/evidence/encore/config.json
+
     - name: copy sanger cell passport
       source: https://cog.sanger.ac.uk/cmp/download/model_list_latest.csv.gz
       destination: input/evidence/cell_passport.csv.gz
+
     - name: copy ot_curation  depmap_tissue_mapping
       source: https://raw.githubusercontent.com/opentargets/curation/${ot_curation}/mappings/biosystem/depmap_uberon_mapping.csv
       destination: input/evidence/depmap_uberon_mapping.csv
+
     - name: find_latest validation_lab
       source: gs://otar013-ppp/validation_lab
       scratchpad_key: latest_validation_lab
+
     - name: copy validation_lab
       requires:
         - find_latest validation_lab
       source: ${latest_validation_lab}
       destination: input/evidence/validation_lab.json.gz
+
     - name: find_latest ot_crispr
       source: gs://otar013-ppp/ot_crispr
       scratchpad_key: 'latest_ot_crispr'
+
     - name: copy ot_crispr
       requires:
         - find_latest ot_crispr
@@ -427,12 +494,15 @@ steps:
     - name: copy expression hierarchy
       source: https://raw.githubusercontent.com/opentargets/expression_hierarchy/master/process/curation.tsv
       destination: input/expression/expression_hierarchy_curation.tsv
+
     - name: copy tissue translation map
       source: https://raw.githubusercontent.com/opentargets/expression_hierarchy/master/process/map_with_efos.json
       destination: input/expression/map_with_efos.json
+
     - name: copy normal tissues
       source: https://www.proteinatlas.org/download/tsv/normal_tissue.tsv.zip
       destination: input/expression/normal_tissue.tsv.zip
+
     - name: find_latest baseline expression binned
       source: gs://atlas_baseline_expression/baseline_expression_binned
       scratchpad_key: latest_baseline_expression_binned
@@ -441,6 +511,7 @@ steps:
         - find_latest baseline expression binned
       source: ${latest_baseline_expression_binned}
       destination: input/expression/baseline_expression_binned.tsv
+
     - name: find_latest baseline expression counts
       source: gs://atlas_baseline_expression/baseline_expression_counts
       scratchpad_key: latest_baseline_expression_counts
@@ -449,6 +520,7 @@ steps:
         - find_latest baseline expression counts
       source: ${latest_baseline_expression_counts}
       destination: input/expression/baseline_expression_counts.tsv
+
     - name: find_latest baseline expression zscore binned
       source: gs://atlas_baseline_expression/baseline_expression_zscore_binned
       scratchpad_key: latest_baseline_expression_zscore_binned
@@ -471,15 +543,19 @@ steps:
     - name: copy ensembl interactions grch38
       source: https://ftp.ensembl.org/pub/release-${ensembl_version}/gtf/homo_sapiens/Homo_sapiens.GRCh38.${ensembl_version}.chr.gtf.gz
       destination: input/interaction/Homo_sapiens.GRCh38.chr.gtf.gz
+
     - name: copy human 9606 idmapping
       source: https://ftp.ebi.ac.uk/pub/databases/uniprot/current_release/knowledgebase/idmapping/by_organism/HUMAN_9606_idmapping.dat.gz
       destination: input/interaction/HUMAN_9606_idmapping.dat.gz
+
     - name: copy intact interactors
       source: https://ftp.ebi.ac.uk/pub/databases/intact/various/ot_graphdb/current/data/interactor_pair_interactions.json
       destination: input/interaction/intact-interactors.json
+
     - name: copy rna central
       source: https://ftp.ebi.ac.uk/pub/databases/RNAcentral/current_release/id_mapping/database_mappings/ensembl.tsv
       destination: input/interaction/rna_central_ensembl.tsv
+
     - name: find_latest string interactions
       source: gs://otar001-core/stringInteractions
       scratchpad_key: latest_string_interactions
@@ -517,9 +593,11 @@ steps:
     - name: copy blacklisted event
       source: https://raw.githubusercontent.com/opentargets/platform-etl-backend/master/src/main/resources/blacklisted_events.txt
       destination: input/openfda/blacklisted_events.txt
+
     - name: copy openfda archive manifest
       source: https://api.fda.gov/download.json
       destination: input/openfda/fda_events.json
+
     - name: explode_openfda openfda archive
       requires:
         - copy openfda archive manifest
@@ -537,6 +615,7 @@ steps:
     - name: copy otar meta spreadsheet
       source: https://docs.google.com/spreadsheets/d/1CV_shXJy1ACM09HZBB_-3Nl6l_dfkrA26elMAF0ttHs/export?format=csv&gid=1179867447
       destination: input/otar/otar_meta.csv
+
     - name: copy otar project to efo spreadsheet
       source: https://docs.google.com/spreadsheets/d/1CV_shXJy1ACM09HZBB_-3Nl6l_dfkrA26elMAF0ttHs/export?format=csv&gid=72910172
       destination: input/otar/otar_project_to_efo.csv
@@ -552,6 +631,7 @@ steps:
         - find_latest clinpgx annotation
       source: ${latest_clinpgx_annotation}
       destination: input/pharmacogenetics/clinpgx_annotation.json.gz
+
     - name: copy ot_curation extracted phenotypes
       source: https://raw.githubusercontent.com/opentargets/curation/refs/tags/${ot_curation}/pharmacogenetics/pgx_phenotypes.json
       destination: input/pharmacogenetics/phenotypes.json
@@ -562,6 +642,7 @@ steps:
     - name: copy reactome pathways
       source: https://reactome.org/download/current/ReactomePathways.txt
       destination: input/reactome/ReactomePathways.txt
+
     - name: copy reactome pathways relation
       source: https://reactome.org/download/current/ReactomePathwaysRelation.txt
       destination: input/reactome/ReactomePathwaysRelation.txt
@@ -586,42 +667,54 @@ steps:
         - target_components
         - target_type
         - pref_name
+
     - name: copy chemical probes
       source: https://www.probes-drugs.org/media/download/probes/pd_export_${probes_drugs_version}_probes_standardized.xlsx
       destination: input/target/chemicalprobes/probes.xlsx
+
     - name: copy chemical probes links
       source: https://www.probes-drugs.org/media/download/id_mapping/pd_export_${probes_drugs_version}_links_standardized.csv
       destination: input/target/chemicalprobes/probes_links.csv
+
     - name: copy ensembl
       source: https://ftp.ensembl.org/pub/release-${ensembl_version}/json/homo_sapiens/homo_sapiens.json
       destination: input/target/ensembl/homo_sapiens.json
+
     - name: copy gencode
       source: https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_${gencode_version}/gencode.v${gencode_version}.annotation.gff3.gz
       destination: input/target/gencode/gencode.gff3.gz
+
     - name: explode_glob download essentiality files
       glob: 'gs://otar000-evidence_input/Essentiality/DepMap/${depmap_version}/*.csv'
       do:
         - name: copy depmap ${match_stem}
           source: ${uri}
           destination: input/target/gene-essentiality/depmap/${match_stem}.${match_ext}
+
     - name: copy gene name
       source: https://storage.googleapis.com/public-download-files/hgnc/tsv/tsv/hgnc_complete_set.txt
       destination: input/target/genenames/hgnc_complete_set.tsv
+
     - name: copy gnomad
       source: https://storage.googleapis.com/gcp-public-data--gnomad/release/2.1.1/constraint/gnomad.v2.1.1.lof_metrics.by_gene.txt.bgz
       destination: input/target/gnomad/gnomad.v2.1.1.lof_metrics.by_gene.txt.bgz
+
     - name: copy go annotation human eco gpa
       source: https://ftp.ebi.ac.uk/pub/databases/GO/goa/HUMAN/goa_human.gpa.gz
       destination: input/target/go/goa_human_eco.gpa.gz
+
     - name: copy go annotation human gaf
       source: https://ftp.ebi.ac.uk/pub/databases/GO/goa/HUMAN/goa_human.gaf.gz
       destination: input/target/go/goa_human.gaf.gz
+
     - name: copy go annotation human rna gaf
       source: https://ftp.ebi.ac.uk/pub/databases/GO/goa/HUMAN/goa_human_rna.gaf.gz
       destination: input/target/go/goa_human_rna.gaf.gz
+
     - name: copy go ensembl
       source: https://ftp.ebi.ac.uk/pub/databases/RNAcentral/current_release/id_mapping/database_mappings/ensembl.tsv
       destination: input/target/go/ensembl.tsv
+
     - name: find_latest cosmic hallmark
       source: gs://otar007-cosmic
       pattern: 'hallmarks'
@@ -631,6 +724,7 @@ steps:
         - find_latest cosmic hallmark
       source: ${latest_cosmic_hallmark}
       destination: input/target/hallmarks/cosmic-hallmarks.tsv.gz
+
     - name: explode homology
       foreach:
         - caenorhabditis_elegans
@@ -656,12 +750,15 @@ steps:
         - name: copy ${each} ncrna homology
           source: https://ftp.ensembl.org/pub/release-${ensembl_version}/tsv/ensembl-compara/homologies/${each}/Compara.${ensembl_version}.ncrna_default.homologies.tsv.gz
           destination: input/target/homologue/homologies/ncrna-${each}.tsv
+
     - name: copy homology ensembl vertebrates
       source: https://ftp.ensembl.org/pub/release-${ensembl_version}/species_EnsemblVertebrates.txt
       destination: input/target/homologue/species_EnsemblVertebrates.txt
+
     - name: copy hpa subcellular location
       source: https://www.proteinatlas.org/download/tsv/subcellular_location.tsv.zip
       destination: input/target/hpa/subcellular_location.tsv.zip
+
     - name: find_latest hpa subcellular location ssl
       source: gs://otar001-core/subcellularLocations
       scratchpad_key: latest_hpa_subcellular_location_ssl
@@ -670,18 +767,23 @@ steps:
         - find_latest hpa subcellular location ssl
       source: ${latest_hpa_subcellular_location_ssl}
       destination: input/target/hpa/subcellular_locations_ssl.tsv
+
     - name: copy ncbi homosapiens gene info
       source: https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Mammalia/Homo_sapiens.gene_info.gz
       destination: input/target/ncbi/Homo_sapiens.gene_info.gz
+
     - name: copy project score gene identifier
       source: https://cog.sanger.ac.uk/cmp/download/gene_identifiers_latest.csv.gz
       destination: input/target/project-scores/gene_identifiers_latest.csv.gz
+
     - name: copy project score essentiality matrix
       source: https://cog.sanger.ac.uk/cmp/download/essentiality_matrices.zip
       destination: input/target/project-scores/essentiality_matrices.zip
+
     - name: copy reactome ensembl2reactome
       source: https://reactome.org/download/current/Ensembl2Reactome.txt
       destination: input/target/reactome/Ensembl2Reactome.txt
+
     - name: explode ot_curation target safety
       foreach:
         - adverse_effects.tsv
@@ -691,6 +793,7 @@ steps:
         - name: copy ${each}
           source: https://raw.githubusercontent.com/opentargets/curation/refs/tags/${ot_curation}/target_safety/${each}
           destination: input/target/safety/${each}
+
     - name: find_latest toxcast
       source: gs://otar001-core/TargetSafety/data_files/toxcast
       scratchpad_key: latest_toxcast
@@ -699,6 +802,7 @@ steps:
         - find_latest toxcast
       source: ${latest_toxcast}
       destination: input/target/safety/toxcast.tsv
+
     - name: find_latest aopwiki
       source: gs://otar001-core/TargetSafety/data_files/aopwiki
       scratchpad_key: latest_aopwiki
@@ -707,6 +811,7 @@ steps:
         - find_latest aopwiki
       source: ${latest_aopwiki}
       destination: input/target/safety/aopwiki.json
+
     - name: find_latest tep
       source: gs://otar001-core/TEPs
       scratchpad_key: latest_tep
@@ -715,6 +820,7 @@ steps:
         - find_latest tep
       source: ${latest_tep}
       destination: input/target/tep/tep.json.gz
+
     - name: find_latest tractability
       source: gs://otar001-core/Tractability
       scratchpad_key: latest_tractability
@@ -723,9 +829,11 @@ steps:
         - find_latest tractability
       source: ${latest_tractability}
       destination: input/target/tractability/tractability.tsv
+
     - name: copy uniprot
       source: https://rest.uniprot.org/uniprotkb/stream?compressed=true&format=txt&query=%28%28reviewed%3Atrue%29%29%20AND%20%28model_organism%3A9606%29
       destination: input/target/uniprot/uniprot.txt.gz
+
     - name: copy uniprot-ssl
       source: https://rest.uniprot.org/locations/stream?compressed=true&fields=id%2Cname%2Ccategory&format=tsv&query=%28%2A%29
       destination: input/target/uniprot/uniprot-ssl.tsv.gz
@@ -736,9 +844,11 @@ steps:
     - name: copy protein atlas
       source: https://www.proteinatlas.org/download/proteinatlas.json.gz
       destination: input/target_engine/proteinatlas.json.gz
+
     - name: copy uniprot locations
       source: https://rest.uniprot.org/locations/stream?compressed=true&fields=id%2Cname%2Ccategory%2Cgene_ontologies%2Cpart_of%2Cis_a&format=tsv&query=%28%2A%29
       destination: input/target_engine/uniprot_locations.tsv.gz
+
     - name: copy mouse phenotype scores
       source: https://raw.githubusercontent.com/opentargets/target_engine/main/src/data_flow/phenotypeScores/20230825_mousePheScores.csv
       destination: input/target_engine/mouse_pheno_scores.csv
