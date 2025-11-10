@@ -124,7 +124,7 @@ steps:
       step.partition_size: 2_000 # approximate num of variants per partition!
       step.session.write_mode: overwrite
       # INPUTS
-      step.source_paths: # TODO: update
+      step.source_paths:
         - '{{release_uri}}/output/evidence_uniprot_variants'
         - '{{release_uri}}/output/evidence_eva'
         - '{{release_uri}}/input/pharmacogenomics'

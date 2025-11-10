@@ -219,14 +219,6 @@ steps:
   ##################################################################################################
 
   #: EVIDENCE STEP :################################################################################
-  # evidence:
-  #   - name: explode ot_curation files # TODO: check
-  #     foreach:
-  #       - mappings/biosystem/depmap_uberon_mapping.csv
-  #     do:
-  #       - name: copy ${each}
-  #         source: https://raw.githubusercontent.com/opentargets/curation/${ot_curation}/${each}
-  #         destination: input/ot_curation/${each}
   evidence_expression_atlas:
     - name: find_latest atlas
       source: gs://otar010-atlas
@@ -290,7 +282,7 @@ steps:
       destination: input/evidence/cosmic.json.gz
 
   evidence_project_score:
-    - name: copy sanger cell passport # TODO: check
+    - name: copy sanger cell passport
       source: https://cog.sanger.ac.uk/cmp/download/model_list_latest.csv.gz
       destination: input/evidence/cell_passport.csv.gz
 
@@ -302,6 +294,10 @@ steps:
       source: gs://otar000-evidence_input/CRISPR/data_files/project_score_v2/mapped_diseases.tsv
       destination: input/evidence/project_score/mapped_diseases.tsv
 
+    - name: copy ot_curation  depmap_tissue_mapping
+      source: https://raw.githubusercontent.com/opentargets/curation/${ot_curation}/mappings/biosystem/depmap_uberon_mapping.csv
+      destination: input/ot_curation/mappings/biosystem/depmap_uberon_mapping.csv
+
   evidence_crispr_screens:
     - name: crispr_brain fetch
       destination: input/evidence/crispr_screens
@@ -309,6 +305,10 @@ steps:
       client_id: 92f263647c43525d3e4f181aa7e348f26e32129c0f827321d9261cc9765c56c0
       study_prefix_url: https://storage.googleapis.com/crisprbrain.appspot.com/api-data/
       validate_version: 1
+
+    - name: copy crispr_brain mappings
+      source: https://raw.githubusercontent.com/opentargets/curation/refs/heads/master/mappings/disease/brain_crispr_studies.tsv
+      destination: input/ot_curation/mappings/disease/brain_crispr_studies.tsv
 
   evidence_eva:
     - name: find_latest eva
@@ -363,6 +363,15 @@ steps:
         - name: copy ${each}
           source: gs://otar000-evidence_input/GeneBurden/data_files/${each}
           destination: input/evidence/gene_burden/astrazeneca/${each}
+
+    - name: explode ot_curation files
+      foreach:
+        - mappings/disease/manual_string.tsv
+        - gene_burden/curated_evidence.tsv
+      do:
+        - name: copy ${each}
+          source: https://raw.githubusercontent.com/opentargets/curation/refs/heads/${ot_curation}/${each}
+          destination: input/ot_curation/${each}
 
   evidence_gene2phenotype:
     - name: copy gene2phenotype cancer
@@ -466,7 +475,7 @@ steps:
 
     - name: copy ot_curation  depmap_tissue_mapping
       source: https://raw.githubusercontent.com/opentargets/curation/${ot_curation}/mappings/biosystem/depmap_uberon_mapping.csv
-      destination: input/evidence/depmap_uberon_mapping.csv
+      destination: input/ot_curation/mappings/biosystem/depmap_uberon_mapping.csv
 
     - name: find_latest validation_lab
       source: gs://otar013-ppp/validation_lab
@@ -690,6 +699,9 @@ steps:
         - name: copy depmap ${match_stem}
           source: ${uri}
           destination: input/target/gene-essentiality/depmap/${match_stem}.${match_ext}
+    - name: copy ot_curation depmap_tissue_mapping
+      source: https://raw.githubusercontent.com/opentargets/otar/refs/tags/${ot_curation}/gene-essentiality/depmap_uberon_mapping.csv
+      destination: input/ot_curation/mappings/biosystem/depmap_uberon_mapping.csv
 
     - name: copy gene name
       source: https://storage.googleapis.com/public-download-files/hgnc/tsv/tsv/hgnc_complete_set.txt

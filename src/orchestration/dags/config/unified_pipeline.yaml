@@ -51,7 +51,7 @@ steps:
   pis_biosample:
   pis_disease:
   pis_drug:
-  pis_impc: # TODO
+  pis_impc:
   pis_evidence_expression_atlas:
   pis_evidence_cancer_biomarkers:
   pis_evidence_chembl:
@@ -113,7 +113,7 @@ steps:
   pts_target:
     depends_on:
       - pis_target
-      - pis_impc # TODO
+      - pis_impc
   pts_pharmacogenetics:
     depends_on:
       - pis_pharmacogenetics
@@ -138,7 +138,7 @@ steps:
       - pis_evidence_clingen
   pts_evidence_impc:
     depends_on:
-      - pis_impc # TODO
+      - pis_impc
   pts_evidence_panel_app:
     depends_on:
       - pis_evidence_panel_app
