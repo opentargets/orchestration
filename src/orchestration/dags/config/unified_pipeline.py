@@ -61,6 +61,11 @@ class UnifiedPipelineConfig:
                 "efo_version": up.get("efo_version"),
                 "ensembl_version": up.get("ensembl_version"),
                 "gencode_version": up.get("gencode_version"),
+                "depmap_version": up.get("depmap_version"),
+                "hpo_version": up.get("hpo_version"),
+                "mondo_version": up.get("mondo_version"),
+                "ot_curation": up.get("ot_curation"),
+                "probes_drugs_version": up.get("probes_drugs_version"),
             },
         )
         """The internal configuration for PIS steps."""
@@ -112,6 +117,7 @@ class UnifiedPipelineConfig:
         self.clusters = AppConfig.from_file(
             file_path=config_path / "clusters.yaml",
             template_context={
+                "pts_version": up.get("pts_version"),
                 "gentropy_version": up.get("gentropy_version"),
                 "requester_pays_project_id": GCP_PROJECT_PLATFORM,
             },
