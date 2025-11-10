@@ -14,7 +14,7 @@ nodes:
     params:
       step: credible_set_qc
       step.credible_sets_path: gs://gwas_catalog_sumstats_susie/credible_set_datasets
-      step.output_path: gs://gwas_catalog_sumstats_susie/credible_set_clean/20250721
+      step.output_path: gs://gwas_catalog_sumstats_susie/credible_set_clean/20251107
       step.p_value_threshold: 1.0e-5
       step.purity_min_r2: 0.25
       step.n_partitions: 350
