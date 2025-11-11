@@ -13,10 +13,12 @@ steps:
       source: input/disease/efo_otar_slim.json
       destination: output/disease/disease.parquet
       transformer: disease
+
     - name: transform disease_hpo
       source: input/disease/hp-full.json
       destination: output/disease_hpo/disease_hpo.parquet
       transformer: disease_hpo
+
     - name: transform disease_phenotype
       requires:
         - transform disease_efo
@@ -33,7 +35,6 @@ steps:
     - name: unzip normal tissue
       source: input/expression/normal_tissue.tsv.zip
       destination: intermediate/expression/normal_tissue.tsv
-
     - name: gzip normal tissue
       requires:
         - unzip normal tissue
@@ -76,8 +77,9 @@ steps:
       source:
         probes_excel: input/target/chemicalprobes/probes.xlsx
         drugs_csv: input/target/chemicalprobes/probes_links.csv
-      destination:
-        output: intermediate/chemical_probes_evidence.parquet
+      destination: intermediate/chemical_probes_evidence.parquet
+      properties:
+        spark.driver.memory: 8g
   ##################################################################################################
 
   #: CODING VARIANT STEP :##########################################################################
@@ -95,6 +97,9 @@ steps:
         credible_set: output/credible_set
         pharmacogenetics: output/pharmacogenetics
       destination: view/coding_variant
+      properties:
+        spark.driver.memory: 10g
+        spark.executor.memory: 10g
   ##################################################################################################
 
   #: OPENFDA STEP :#################################################################################
@@ -126,27 +131,11 @@ steps:
         - unzip subcellular location
       source: intermediate/target/hpa/subcellular_location.tsv
       destination: intermediate/target/hpa/subcellular_location.tsv.gz
+
     - name: csv_to_parquet subcellular location ssl
       source: input/target/hpa/subcellular_locations_ssl.tsv
       destination: intermediate/target/hpa/subcellular_locations_ssl.parquet
       separator: "\t"
-
-    - name: pyspark gene_essentiality
-      pyspark: gene_essentiality
-      source:
-        models: input/target/gene-essentiality/depmap/Model.csv
-        essential_genes: input/target/gene-essentiality/depmap/CRISPRInferredCommonEssentials.csv
-        gene_effects: input/target/gene-essentiality/depmap/CRISPRGeneEffect.csv
-        gene_expression: input/target/gene-essentiality/depmap/OmicsExpressionProteinCodingGenesTPMLogp1.csv
-        mutation_hotspots: input/target/gene-essentiality/depmap/OmicsSomaticMutationsMatrixHotspot.csv
-        mutation_damaging: input/target/gene-essentiality/depmap/OmicsSomaticMutationsMatrixDamaging.csv
-        depmap_tissue_mapping: input/ot_curation/mappings/biosystem/depmap_uberon_mapping.csv
-      destination: intermediate/target/gene-essentiality/essentiality.parquet
-      settings:
-        keep_only_essentials: true
-      properties:
-        spark.driver.memory: 4g
-        spark.executor.memory: 2g
 
     - name: unzip essentiality matrix
       source: input/target/project-scores/essentiality_matrices.zip
@@ -180,7 +169,12 @@ steps:
           source: ${match_prefix}/${match_path}${match_stem}.${match_ext}
           destination: intermediate/target/homologue/gene_dictionary/${match_path}${match_stem}.parquet
           transformer: homology
+  ##################################################################################################
+
+  #: TARGET_SAFETY STEP :############### - part of target, pyspark tasks must run standalone for now
+  target_safety:
     - name: pyspark safety
+      pyspark: target_safety
       source:
         adverse_events: input/target/safety/adverse_effects.tsv
         safety_risks: input/target/safety/safety_risks.tsv
@@ -189,23 +183,45 @@ steps:
         aopwiki: input/target/safety/aopwiki.json
         pharmacogenetics: intermediate/pharmacogenetics.parquet
       destination: intermediate/target/safety.parquet
-      pyspark: target_safety
+
+  #: TARGET_GENE_ESSENTIALITY STEP :#### - part of target, pyspark tasks must run standalone for now
+  target_gene_essentiality:
+    - name: pyspark gene_essentiality
+      pyspark: gene_essentiality
+      source:
+        models: input/target/gene-essentiality/depmap/Model.csv
+        essential_genes: input/target/gene-essentiality/depmap/CRISPRInferredCommonEssentials.csv
+        gene_effects: input/target/gene-essentiality/depmap/CRISPRGeneEffect.csv
+        gene_expression: input/target/gene-essentiality/depmap/OmicsExpressionProteinCodingGenesTPMLogp1.csv
+        mutation_hotspots: input/target/gene-essentiality/depmap/OmicsSomaticMutationsMatrixHotspot.csv
+        mutation_damaging: input/target/gene-essentiality/depmap/OmicsSomaticMutationsMatrixDamaging.csv
+        depmap_tissue_mapping: input/ot_curation/mappings/biosystem/depmap_uberon_mapping.csv
+      destination: intermediate/target/gene-essentiality/essentiality.parquet
+      settings:
+        keep_only_essentials: true
+      properties:
+        spark.driver.memory: 4g
+        spark.executor.memory: 2g
   ##################################################################################################
 
-  #: PHARMACOGENETICS STEP :#######################################################################
+  #: PHARMACOGENETICS STEP :########################################################################
   pharmacogenetics:
     - name: pyspark pharmacogenetics
+      pyspark: pharmacogenetics
       source:
         clinpgx: input/pharmacogenetics/clinpgx_annotation.json.gz
         phenotypes: input/pharmacogenetics/phenotypes.json
-        openai_api_key_filename: tmp/openai_api_key
+        ontoma_disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
       destination:
         associations: intermediate/pharmacogenetics.parquet
         phenotypes: intermediate/pharmacogenetics/phenotypes.json
-      pyspark: pharmacogenetics
+      settings:
+        openai_token_filename: /var/run/secrets/openai_token
+      properties:
+        spark.jars.packages: com.johnsnowlabs.nlp:spark-nlp_2.12:6.1.3
   ##################################################################################################
 
-  #: EVIDENCE STEP :################################################################################
+  #: EVIDENCE_PROJECT_SCORE STEP :##################################################################
   evidence_project_score:
     - name: pyspark project_score
       pyspark: project_score
@@ -215,7 +231,9 @@ steps:
         cell_passport: input/evidence/cell_passport.csv.gz
         cell_line_mapping: input/ot_curation/mappings/biosystem/depmap_uberon_mapping.csv
       destination: intermediate/evidence/project_score.parquet
+  ##################################################################################################
 
+  #: EVIDENCE_GENE_BURDEN STEP :####################################################################
   evidence_gene_burden:
     - name: pyspark gene_burden
       pyspark: gene_burden
@@ -233,7 +251,9 @@ steps:
       destination: intermediate/evidence/gene_burden.parquet
       settings:
         finngen_release: R12
+  ##################################################################################################
 
+  #: EVIDENCE_CHEMBl STEP :#########################################################################
   evidence_chembl:
     - name: pyspark chembl
       pyspark: chembl
@@ -242,8 +262,9 @@ steps:
         stop_reasons: input/evidence/chembl/stop_reasons.json
         drug_indications: input/drug/chembl_drug_indication.jsonl
       destination: intermediate/evidence/chembl.parquet
+    ##################################################################################################
 
-  evidence_cancer_biomarkers:
+    #: EVIDENCE_CANCER_BIOMARKERS STEP :##############################################################
     - name: pyspark cancer_biomarkers
       pyspark: cancer_biomarkers
       source:
@@ -252,47 +273,61 @@ steps:
         disease: input/evidence/cancerbiomarkers/diseases.jsonl
         drugs: output/drug_molecule
       destination: intermediate/evidence/cancer_biomarkers.parquet
+  ##################################################################################################
 
+  #: EVIDENCE_ORPHANET STEP :#######################################################################
   evidence_orphanet:
     - name: pyspark orphanet
       pyspark: orphanet
-      source: input/evidence/orphanet.xml
+      source:
+        evidence: input/evidence/orphanet.xml
+        ontoma_disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
+        ontoma_disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
       destination: intermediate/evidence/orphanet.parquet
+      properties:
+        spark.jars.packages: com.johnsnowlabs.nlp:spark-nlp_2.12:6.1.3
+  ##################################################################################################
 
+  #: EVIDENCE_CLINGEN STEP :#######################################################################
   evidence_clingen:
     - name: pyspark clingen
       pyspark: clingen
       source:
         evidence: input/evidence/clingen.csv
+        ontoma_disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
+        ontoma_disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
       destination: intermediate/evidence/clingen.parquet
+      properties:
+        spark.jars.packages: com.johnsnowlabs.nlp:spark-nlp_2.12:6.1.3
+  ##################################################################################################
 
+  #: EVIDENCE_IMPC STEP :###########################################################################
   evidence_impc:
     - name: pyspark impc evidence strings
       pyspark: impc
       source:
-        solr_gene_gene: input/evidence/impc/impc_solr_gene_gene.csv
-        solr_ontology_ontology: input/evidence/impc/impc_solr_ontology_ontology.csv
-        solr_mouse_model: input/evidence/impc/impc_solr_mouse_model.csv
-        solr_disease: input/evidence/impc/impc_solr_disease.csv
-        solr_disease_model_summary: input/evidence/impc/impc_solr_disease_model_summary.csv
-        solr_ontology: input/evidence/impc/impc_solr_ontology.csv
-        hgnc_gene_mappings: input/target/genenames/hgnc_complete_set.txt
+        solr_gene_gene: input/evidence/impc/gene_gene.csv
+        solr_ontology_ontology: input/evidence/impc/ontology_ontology.csv
+        solr_mouse_model: input/evidence/impc/mouse_model.csv
+        solr_disease: input/evidence/impc/disease.csv
+        solr_disease_model_summary: input/evidence/impc/disease_model_summary.csv
+        solr_ontology: input/evidence/impc/ontology.csv
+        hgnc_gene_mappings: input/target/genenames/hgnc_complete_set.tsv
         mouse_gene_mappings: input/evidence/impc/MGI_Gene_Model_Coord.rpt
         mouse_pubmed_refs: input/evidence/impc/MGI_PhenoGenoMP.rpt
         mp_ontology: input/evidence/impc/mp.owl
+        ontoma_disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
+        ontoma_disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
       destination: intermediate/evidence/impc.parquet
+      settings:
+        score_cutoff: 0.41
       properties:
         spark.driver.memory: 4g
         spark.executor.memory: 2g
-      settings:
-        score_cutoff: 0.41
+        spark.jars.packages: com.johnsnowlabs.nlp:spark-nlp_2.12:6.1.3
+  ##################################################################################################
 
-  evidence_panel_app:
-    - name: pyspark panel_app
-      pyspark: panel_app
-      source: input/evidence/panel_app.tsv
-      destination: intermediate/evidence/panel_app.parquet
-
+  #: EVIDENCE_CRISPR_SCREENS STEP :#################################################################
   evidence_crispr_screens:
     - name: pyspark crispr screens
       pyspark: crispr_screens
@@ -301,7 +336,9 @@ steps:
         studies_dir: input/evidence/crispr_screens/brain_studies
         disease_mapping: input/ot_curation/mappings/disease/brain_crispr_studies.tsv
       destination: output/crispr_screens
+  ##################################################################################################
 
+  #: EVIDENCE_GENE2PHENOTYPE STEP :#################################################################
   evidence_gene2phenotype:
     - name: pyspark gene2phenotype
       pyspark: gene2phenotype
@@ -313,8 +350,14 @@ steps:
         eye_panel: input/evidence/gene2phenotype/eye.csv
         skeletal_panel: input/evidence/gene2phenotype/skeletal.csv
         skin_panel: input/evidence/gene2phenotype/skin.csv
+        ontoma_disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
+        ontoma_disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
       destination: intermediate/evidence/gene2phenotype.parquet
+      properties:
+        spark.jars.packages: com.johnsnowlabs.nlp:spark-nlp_2.12:6.1.3
+  ##################################################################################################
 
+  #: EVIDENCE PPP STEP :############################################################################
   evidence_ppp:
     - name: pyspark ot_crispr
       pyspark: ot_crispr
@@ -324,7 +367,23 @@ steps:
       destination: intermediate/evidence/ot_crispr.parquet
   ##################################################################################################
 
-  #: TIMESERIES STEP :########################################################################
+  #: ONTOMA STEP :##################################################################################
+  ontoma:
+    - name: pyspark ontoma generate lookup tables
+      pyspark: ontoma_lut_generation
+      source:
+        disease_index: output/disease/disease.parquet
+        ot_disease_curation: input/ontoma/ot_disease_curation.tsv
+        eva_clinvar: input/ontoma/eva_clinvar.txt
+        clinvar_xrefs: input/ontoma/clinvar_xrefs.txt
+      destination:
+        disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
+        disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
+      properties:
+        spark.jars.packages: com.johnsnowlabs.nlp:spark-nlp_2.12:6.1.3
+  ##################################################################################################
+
+  #: TIMESERIES STEP :##############################################################################
   timeseries:
     - name: pyspark timeseries
       pyspark: timeseries

@@ -57,7 +57,11 @@ function main() {
 
     pip uninstall -y pts
     echo "Install package..."
-    run_with_retry uv pip install --no-break-system-packages --system "pts @ git+${REPO_URI}.git@${PTS_REF}"
+    run_with_retry uv pip install --no-break-system-packages --system "pts @ git+${REPO_URI}.git@dataproc"
+    echo "Get openai token secret..."
+    mkdir -p /var/run/secrets
+    gcloud secrets versions access latest --secret="openai-token" > /var/run/secrets/openai_token
+    chmod 400 /var/run/secrets/openai_token
 }
 
 main
