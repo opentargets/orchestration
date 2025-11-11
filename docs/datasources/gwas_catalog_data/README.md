@@ -86,7 +86,7 @@ gs://gwas_catalog_inputs/gentroutils/latest/stats.json                          
 
 Note that the `latest` directory contains copies of the most recent files. The dated directories contain historical versions of the files.
 
-The `stats.json` file contains the information about the release of the GWAS Catalog that was used to generate the files in this directory. 
+The `stats.json` file contains the information about the release of the GWAS Catalog that was used to generate the files in this directory.
 
 The files in this directory are used to generate the [StudyIndex dataset](https://opentargets.github.io/gentropy/python_api/datasets/study_index/) and are used as input for the top hits (curated associations) credible set generation.
 
