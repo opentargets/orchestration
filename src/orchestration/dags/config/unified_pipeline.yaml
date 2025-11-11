@@ -115,7 +115,7 @@ steps:
   pts_validate_evidence_epmc:
     depends_on:
       - etl_literature
-  pts_validate_evidence_gwas_credible_set:
+  pts_validate_evidence_gwas_credible_sets:
     depends_on:
       - gentropy_l2g_evidence
   pts_validate_evidence_expression_atlas:
@@ -212,7 +212,7 @@ steps:
       - pts_disease
       - pts_validate_evidence_impc
       - pts_validate_evidence_epmc
-      - pts_validate_evidence_gwas_credible_set
+      - pts_validate_evidence_gwas_credible_sets
       - pts_validate_evidence_expression_atlas
       - pts_validate_evidence_cancer_biomarkers
       - pts_validate_evidence_chembl
@@ -291,7 +291,7 @@ steps:
     depends_on:
       - pts_validate_evidence_impc
       - pts_validate_evidence_epmc
-      - pts_validate_evidence_gwas_credible_set
+      - pts_validate_evidence_gwas_credible_sets
       - pts_validate_evidence_expression_atlas
       - pts_validate_evidence_cancer_biomarkers
       - pts_validate_evidence_chembl
@@ -313,7 +313,7 @@ steps:
     depends_on:
       - pts_validate_evidence_impc
       - pts_validate_evidence_epmc
-      - pts_validate_evidence_gwas_credible_set
+      - pts_validate_evidence_gwas_credible_sets
       - pts_validate_evidence_expression_atlas
       - pts_validate_evidence_cancer_biomarkers
       - pts_validate_evidence_chembl

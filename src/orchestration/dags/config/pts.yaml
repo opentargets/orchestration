@@ -88,10 +88,10 @@ steps:
         variant: output/variant
         target: output/target
         disease: output/disease
-        evidence_eva: output/evidence/sourceId=eva
-        evidence_eva_somatic: output/evidence/sourceId=eva_somatic
-        evidence_uniprot_variants: output/evidence/sourceId=uniprot_variants
-        evidence_gwas_credible_set: output/evidence/sourceId=gwas_credible_sets
+        evidence_eva: output/evidence_eva
+        evidence_eva_somatic: output/evidence_eva_somatic
+        evidence_uniprot_variants: output/evidence_uniprot_variants
+        evidence_gwas_credible_sets: output/evidence_gwas_credible_sets
         credible_set: output/credible_set
         pharmacogenetics: output/pharmacogenetics
       destination: view/coding_variant
