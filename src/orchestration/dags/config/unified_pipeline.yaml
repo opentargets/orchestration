@@ -114,6 +114,12 @@ steps:
   pts_target:
     depends_on:
       - pis_target
+  pts_target_safety:
+    depends_on:
+      - pis_target
+  pts_target_gene_essentiality:
+    depends_on:
+      - pis_target
   pts_impc:
     depends_on:
       - pis_impc
@@ -268,6 +274,8 @@ steps:
       - pts_disease
       - pts_target
       - etl_reactome
+      - pts_target_safety
+      - pts_target_gene_essentiality
   etl_drug:
     num_partitions: 1
     depends_on:
