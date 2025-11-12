@@ -314,7 +314,7 @@ steps:
       validate_version: 1
 
     - name: copy crispr_brain mappings
-      source: https://raw.githubusercontent.com/opentargets/curation/refs/heads/master/mappings/disease/brain_crispr_studies.tsv
+      source: https://raw.githubusercontent.com/opentargets/curation/refs/tags/${ot_curation}/mappings/disease/brain_crispr_studies.tsv
       destination: input/ot_curation/mappings/disease/brain_crispr_studies.tsv
   ##################################################################################################
 
@@ -380,7 +380,7 @@ steps:
         - gene_burden/curated_evidence.tsv
       do:
         - name: copy ${each}
-          source: https://raw.githubusercontent.com/opentargets/curation/refs/heads/${ot_curation}/${each}
+          source: https://raw.githubusercontent.com/opentargets/curation/refs/tags/${ot_curation}/${each}
           destination: input/ot_curation/${each}
   ##################################################################################################
 

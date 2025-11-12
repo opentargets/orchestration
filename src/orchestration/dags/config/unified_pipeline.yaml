@@ -24,7 +24,7 @@ gencode_version: '49'
 depmap_version: '2025Q2'
 hpo_version: '2025-01-16'
 mondo_version: '2025-02-04'
-ot_curation: '25.12'
+ot_curation: '25.12.1'
 probes_drugs_version: '02_2025'
 gnomad_version: '4.1'
 
