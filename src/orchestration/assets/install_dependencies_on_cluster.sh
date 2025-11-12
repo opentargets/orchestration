@@ -57,8 +57,11 @@ function main() {
 
     pip uninstall -y pts
     echo "Install package..."
-    run_with_retry uv pip install --no-break-system-packages --system "pts @ git+${REPO_URI}.git@dataproc"
+    # install spark-nlp dependencies
+    run_with_retry uv pip install pandas scipy numpy pyarrow --system --no-break-system-packages --upgrade
+    run_with_retry uv pip install --no-break-system-packages --system "pts @ git+${REPO_URI}.git@${PTS_REF}"
     echo "Get openai token secret..."
+    # add openai token secret
     mkdir -p /var/run/secrets
     gcloud secrets versions access latest --secret="openai-token" > /var/run/secrets/openai_token
     chown root:112 /var/run/secrets/openai_token # 112 is the 'hadoop' group
