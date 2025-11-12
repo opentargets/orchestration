@@ -61,7 +61,8 @@ function main() {
     echo "Get openai token secret..."
     mkdir -p /var/run/secrets
     gcloud secrets versions access latest --secret="openai-token" > /var/run/secrets/openai_token
-    chmod 400 /var/run/secrets/openai_token
+    chown root:112 /var/run/secrets/openai_token # 112 is the 'hadoop' group
+    chmod 440 /var/run/secrets/openai_token
 }
 
 main
