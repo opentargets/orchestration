@@ -158,7 +158,7 @@ steps:
       transformer: ensembl
 
     - name: transform gnomad
-      source: input/target/gnomad/gnomad.v2.1.1.lof_metrics.by_gene.txt.bgz
+      source: input/target/gnomad/gnomad_constraint_metrics.tsv
       destination: intermediate/target/gnomad/gnomad_lof_by_gene.txt.gz
       transformer: gnomad
 

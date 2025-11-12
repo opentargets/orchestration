@@ -14,6 +14,7 @@ scratchpad:
   mondo_version: '{{mondo_version}}'
   ot_curation: '{{ot_curation}}'
   probes_drugs_version: '{{probes_drugs_version}}'
+  gnomad_version: '{{gnomad_version}}'
 
 steps:
   #: BIOSAMPLE STEP :###############################################################################
@@ -590,6 +591,16 @@ steps:
       destination: input/interaction/string-interactions.txt.gz
   ##################################################################################################
 
+  #: ENHANCER TO GENE STEP
+  enhancer_to_gene:
+    - name: explode_glob rE2G interval
+      glob: gs://interval_data/datasets/ENCODE-rE2G/processed_E2G_2507.parquet/*.parquet
+      do:
+        - name: copy rE2G interval ${match_stem}
+          source: ${match_prefix}/${match_path}${match_stem}.${match_ext}
+          destination: output/enhancer_to_gene/${uuid}.parquet
+          ##################################################################################################
+
   #: L2G STEP :#####################################################################################
   l2g:
     - name: explode_glob l2g gold_standard
@@ -735,8 +746,8 @@ steps:
       destination: input/target/genenames/hgnc_complete_set.tsv
 
     - name: copy gnomad
-      source: https://storage.googleapis.com/gcp-public-data--gnomad/release/2.1.1/constraint/gnomad.v2.1.1.lof_metrics.by_gene.txt.bgz
-      destination: input/target/gnomad/gnomad.v2.1.1.lof_metrics.by_gene.txt.bgz
+      source: https://storage.googleapis.com/gcp-public-data--gnomad/release/${gnomad_version}/constraint/gnomad.v${gnomad_version}.constraint_metrics.tsv
+      destination: input/target/gnomad/gnomad_constraint_metrics.tsv
 
     - name: copy go annotation human eco gpa
       source: https://ftp.ebi.ac.uk/pub/databases/GO/goa/HUMAN/goa_human.gpa.gz
