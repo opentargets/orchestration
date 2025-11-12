@@ -80,33 +80,7 @@ steps:
       step.valid_study_locus_path: '{{release_uri}}/output/credible_set'
       step.invalid_study_locus_path: '{{release_uri}}/excluded/credible_set'
 
-  # TODO: which coloc?
-  colocalisation_coloc:
-    params:
-      step: colocalisation
-      step.session.write_mode: overwrite
-      step.session.output_partitions: 25
-      step.colocalisation_method: Coloc
-      +step.colocalisation_method_params: '{priorc1: 1e-4, priorc2: 1e-4, priorc12: 1e-5}'
-      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.memoryOverhead: '1g', spark.executor.cores: '4'}"
-      # INPUTS
-      step.credible_set_path: '{{release_uri}}/output/credible_set'
-      # OUTPUTS
-      step.coloc_path: '{{release_uri}}/output/colocalisation_coloc'
-
-  colocalisation_ecaviar:
-    params:
-      step: colocalisation
-      step.session.write_mode: overwrite
-      step.session.output_partitions: 25
-      step.colocalisation_method: ECaviar
-      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.memoryOverhead: '1g', spark.executor.cores: '4'}"
-      # INPUTS
-      step.credible_set_path: '{{release_uri}}/output/credible_set'
-      # OUTPUTS
-      step.coloc_path: '{{release_uri}}/output/colocalisation_ecaviar'
-
-  colocalisation_colocpip_and_ecaviar:
+  colocalisation:
     params:
       step: colocalisation
       step.session.write_mode: overwrite

@@ -391,11 +391,8 @@ with DAG(
                 "step.valid_study_locus_path": gsp("gentropy_credible_set", "step.valid_study_locus_path"),
                 "step.invalid_study_locus_path": gsp("gentropy_credible_set", "step.invalid_study_locus_path"),
             },
-            "gentropy_colocalisation_coloc": {
-                "step.coloc_path": gsp("gentropy_colocalisation_coloc", "step.coloc_path"),
-            },
-            "gentropy_colocalisation_ecaviar": {
-                "step.coloc_path": gsp("gentropy_colocalisation_ecaviar", "step.coloc_path"),
+            "gentropy_colocalisation": {
+                "step.coloc_path": gsp("gentropy_colocalisation", "step.coloc_path"),
             },
             "gentropy_variant_partition": {
                 "step.output_path": gsp("gentropy_variant_partition", "step.output_path"),
