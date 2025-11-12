@@ -258,9 +258,10 @@ steps:
         stop_reasons: input/evidence/chembl/stop_reasons.json
         drug_indications: input/drug/chembl_drug_indication.jsonl
       destination: intermediate/evidence/chembl.parquet
-    ##################################################################################################
+  ##################################################################################################
 
-    #: EVIDENCE_CANCER_BIOMARKERS STEP :##############################################################
+  #: EVIDENCE_CANCER_BIOMARKERS STEP :################################################################
+  evidence_cancer_biomarkers:
     - name: pyspark cancer_biomarkers
       pyspark: cancer_biomarkers
       source:

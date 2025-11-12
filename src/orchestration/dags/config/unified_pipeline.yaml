@@ -89,6 +89,10 @@ steps:
   pts_disease:
     depends_on:
       - pis_disease
+  pts_ontoma:
+    depends_on:
+      - pis_ontoma
+      - pts_disease
   pts_expression:
     depends_on:
       - pis_expression
@@ -116,6 +120,7 @@ steps:
   pts_pharmacogenetics:
     depends_on:
       - pis_pharmacogenetics
+      - pts_ontoma
   # Evidence not processed by PTS
   pts_validate_evidence_epmc:
     depends_on:
@@ -170,18 +175,21 @@ steps:
   pts_evidence_orphanet:
     depends_on:
       - pis_evidence_orphanet
+      - pts_ontoma
   pts_validate_evidence_orphanet:
     depends_on:
       - pts_evidence_orphanet
   pts_evidence_clingen:
     depends_on:
       - pis_evidence_clingen
+      - pts_ontoma
   pts_validate_evidence_clingen:
     depends_on:
       - pts_evidence_clingen
   pts_evidence_impc:
     depends_on:
       - pis_impc
+      - pts_ontoma
   pts_validate_evidence_impc:
     num_partitions: 100
     depends_on:
@@ -201,6 +209,7 @@ steps:
   pts_evidence_gene2phenotype:
     depends_on:
       - pis_evidence_gene2phenotype
+      - pts_ontoma
   pts_validate_evidence_gene2phenotype:
     depends_on:
       - pts_evidence_gene2phenotype
