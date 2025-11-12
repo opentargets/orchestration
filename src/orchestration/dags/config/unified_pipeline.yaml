@@ -74,6 +74,7 @@ steps:
   pis_expression:
   pis_go:
   pis_interaction:
+  pis_enhancer_to_gene:
   pis_l2g:
   pis_literature:
   pis_openfda:
