@@ -524,7 +524,7 @@ steps:
       destination: input/expression/map_with_efos.json
 
     - name: copy normal tissues
-      source: https://www.proteinatlas.org/download/tsv/normal_tissue.tsv.zip
+      source: https://www.proteinatlas.org/download/tsv/normal_ihc_tissues.tsv.zip
       destination: input/expression/normal_tissue.tsv.zip
 
     - name: find_latest baseline expression binned
@@ -592,9 +592,6 @@ steps:
 
   #: L2G STEP :#####################################################################################
   l2g:
-    - name: copy l2g model
-      source: gs://ot_orchestration/benchmarks/l2g/fm0/v5.1_best_cv/locus_to_gene_model/classifier.skops
-      destination: etc/model/l2g_prediction/classifier.skops
     - name: explode_glob l2g gold_standard
       glob: gs://genetics-portal-dev-analysis/yt4/2506_release/training_set/20250625_gentropy_paper_v1.json/*.json
       do:
@@ -730,7 +727,7 @@ steps:
           destination: input/target/gene-essentiality/depmap/${match_stem}.${match_ext}
 
     - name: copy ot_curation depmap_tissue_mapping
-      source: https://raw.githubusercontent.com/opentargets/otar/refs/tags/${ot_curation}/gene-essentiality/depmap_uberon_mapping.csv
+      source: https://raw.githubusercontent.com/opentargets/otar/refs/tags/${ot_curation}/mappings/biosystem/depmap_uberon_mapping.csv
       destination: input/ot_curation/mappings/biosystem/depmap_uberon_mapping.csv
 
     - name: copy gene name
