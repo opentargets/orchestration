@@ -34,6 +34,7 @@ steps:
   expression:
     - name: unzip normal tissue
       source: input/expression/normal_tissue.tsv.zip
+      inner_file: normal_ihc_tissues.tsv
       destination: intermediate/expression/normal_tissue.tsv
     - name: gzip normal tissue
       requires:
