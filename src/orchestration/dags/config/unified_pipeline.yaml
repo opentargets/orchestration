@@ -379,17 +379,13 @@ steps:
   gentropy_l2g_feature_matrix:
     depends_on:
       - gentropy_colocalisation
-      - gentropy_variant
   gentropy_l2g_training:
     depends_on:
       - pis_l2g
       - etl_interaction
-      - gentropy_credible_set
-      - gentropy_variant
       - gentropy_l2g_feature_matrix
   gentropy_l2g_prediction:
     depends_on:
-      - gentropy_l2g_feature_matrix
       - gentropy_l2g_training
   gentropy_l2g_evidence:
     depends_on:
