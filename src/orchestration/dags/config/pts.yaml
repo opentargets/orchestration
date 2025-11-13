@@ -213,8 +213,6 @@ steps:
         phenotypes: intermediate/pharmacogenetics/phenotypes.json
       settings:
         openai_token_filename: /var/run/secrets/openai_token
-      properties:
-        spark.jars.packages: com.johnsnowlabs.nlp:spark-nlp_2.12:6.1.3
   ##################################################################################################
 
   #: EVIDENCE_PROJECT_SCORE STEP :##################################################################
@@ -281,8 +279,6 @@ steps:
         ontoma_disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
         ontoma_disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
       destination: intermediate/evidence/orphanet.parquet
-      properties:
-        spark.jars.packages: com.johnsnowlabs.nlp:spark-nlp_2.12:6.1.3
   ##################################################################################################
 
   #: EVIDENCE_CLINGEN STEP :#######################################################################
@@ -294,8 +290,6 @@ steps:
         ontoma_disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
         ontoma_disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
       destination: intermediate/evidence/clingen.parquet
-      properties:
-        spark.jars.packages: com.johnsnowlabs.nlp:spark-nlp_2.12:6.1.3
   ##################################################################################################
 
   #: EVIDENCE_IMPC STEP :###########################################################################
@@ -321,7 +315,6 @@ steps:
       properties:
         spark.driver.memory: 4g
         spark.executor.memory: 2g
-        spark.jars.packages: com.johnsnowlabs.nlp:spark-nlp_2.12:6.1.3
   ##################################################################################################
 
   #: EVIDENCE_CRISPR_SCREENS STEP :#################################################################
@@ -350,8 +343,6 @@ steps:
         ontoma_disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
         ontoma_disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
       destination: intermediate/evidence/gene2phenotype.parquet
-      properties:
-        spark.jars.packages: com.johnsnowlabs.nlp:spark-nlp_2.12:6.1.3
   ##################################################################################################
 
   #: EVIDENCE PPP STEP :############################################################################
@@ -376,8 +367,6 @@ steps:
       destination:
         disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
         disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
-      properties:
-        spark.jars.packages: com.johnsnowlabs.nlp:spark-nlp_2.12:6.1.3
   ##################################################################################################
 
   #: TIMESERIES STEP :##############################################################################
