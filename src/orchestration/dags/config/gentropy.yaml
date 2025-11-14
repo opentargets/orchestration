@@ -213,7 +213,7 @@ steps:
           - "gentropy"
         options:
           step: locus_to_gene
-          step.session.write_mode: append
+          step.session.write_mode: overwrite
           step.run_mode: predict
           step.session.output_partitions: 1
           step.l2g_threshold: 0.05
@@ -223,12 +223,14 @@ steps:
           # INPUTS
           step.hf_hub_repo_id: 'opentargets/locus_to_gene_{{l2g_training_version}}'
           step.feature_matrix_path: '{{release_uri}}/intermediate/l2g_feature_matrix'
-          step.credible_set_path: '$INPUT_PARTITION' # The env value $cs_partition differs within each machine.
+          step.credible_set_path: '$INPUT_PARTITION' # The env value $INPUT_PARTITION differs within each machine.
           # OUTPUTS
-          step.predictions_path: '{{release_uri}}/output/l2g_prediction'
+          step.predictions_path: '$OUTPUT_PARTITION'
         manifest_kwargs:
-          # Job partitioninig depends on the number of credible_set parquet files.
+          # Job partitioninig depends on the number of credible_set parquet files found in the input glob.
           input_glob: '{{release_uri}}/output/credible_set/**.parquet'
+          # With output_partitions = 1, each input is mapped to 1 output.
+          output_prefix: '{{release_uri}}/output/l2g_prediction'
     google_batch:
       entrypoint: /usr/bin/bash
       image: 'ghcr.io/opentargets/gentropy:{{gentropy_version}}'
