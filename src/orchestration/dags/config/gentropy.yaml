@@ -227,7 +227,7 @@ steps:
           # OUTPUTS
           step.predictions_path: '$OUTPUT_PARTITION'
         manifest_kwargs:
-          # Job partitioninig depends on the number of credible_set parquet files found in the input glob.
+          # Job partitionninig depends on the number of credible_set parquet files found in the input glob.
           input_glob: '{{release_uri}}/output/credible_set/**.parquet'
           # With output_partitions = 1, each input is mapped to 1 output.
           output_prefix: '{{release_uri}}/output/l2g_prediction'
@@ -251,7 +251,7 @@ steps:
       step.locus_to_gene_threshold: 0.05
       # INPUTS
       step.credible_set_path: '{{release_uri}}/output/credible_set'
-      step.locus_to_gene_predictions_path: '{{release_uri}}/output/l2g_prediction'
+      step.locus_to_gene_predictions_path: '{{release_uri}}/output/l2g_prediction/*'
       step.study_index_path: '{{release_uri}}/output/study'
       # OUTPUTS
       step.evidence_output_path: '{{release_uri}}/intermediate/evidence/l2g_evidence'
