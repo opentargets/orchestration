@@ -18,6 +18,7 @@ from airflow.utils.trigger_rule import TriggerRule
 
 from orchestration.dags.config.unified_pipeline import UnifiedPipelineConfig
 from orchestration.models.pts_step import PTSDataprocStep, pts_step_from_config
+from orchestration.operators.batch.generic import BatchIndexOperator, BatchJobOperator
 from orchestration.operators.batch.vep import VepAnnotateOperator
 from orchestration.operators.dataproc import (
     ClusterConfig,
@@ -375,7 +376,12 @@ with DAG(
     # ==============================================================================================
     def gsp(step_name: str, param_name: str) -> dict[str, Any]:
         step_config = config.step_specific_config(step_name)
-        step_params = step_config.get("params", {})
+        if "google_batch_index_specs" in step_config:
+            batch_index_specs = step_config.get("google_batch_index_specs", {})
+            manifest_genrator_specs = batch_index_specs.get("manifest_generator_specs", {})
+            step_params = manifest_genrator_specs.get("options", {})
+        else:
+            step_params = step_config.get("params", {})
         return step_params.get(param_name)
 
     def gentropy_step_differs(step_name: str) -> list[Differ]:
@@ -515,6 +521,30 @@ with DAG(
                                 config=config.step_specific_config(step_name),
                                 labels=labels,
                             )
+
+                        case "gentropy_l2g_prediction":
+
+                            @task_group(group_id=step_name + "_batch_jobs")
+                            def l2g_prediction_batch_jobs(step_name: str) -> None:
+                                i = BatchIndexOperator(
+                                    task_id=f"build_{step_name}",
+                                    batch_index_specs=config.step_specific_config(step_name).get(
+                                        "google_batch_index_specs", {}
+                                    ),
+                                )
+                                b = BatchJobOperator.partial(
+                                    job_name=resource_name("l2g_prediction"),
+                                    task_id=f"run_{step_name}",
+                                    google_batch=config.step_specific_config(step_name).get("google_batch", {}),
+                                    project_id=GCP_PROJECT_PLATFORM,
+                                    labels=labels,
+                                ).expand(batch_index_row=i.output)
+                                chain(i, b)
+
+                            r = l2g_prediction_batch_jobs(step_name)
+
+                        case _:
+                            raise ValueError(f"Unknown gentropy step without cluster: {step_name}")
 
                 e = EmptyOperator(
                     task_id=f"end_{step_name}",
