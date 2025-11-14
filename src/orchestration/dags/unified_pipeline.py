@@ -378,8 +378,8 @@ with DAG(
         step_config = config.step_specific_config(step_name)
         if "google_batch_index_specs" in step_config:
             batch_index_specs = step_config.get("google_batch_index_specs", {})
-            manifest_genrator_specs = batch_index_specs.get("manifest_generator_specs", {})
-            step_params = manifest_genrator_specs.get("options", {})
+            manifest_generator_specs = batch_index_specs.get("manifest_generator_specs", {})
+            step_params = manifest_generator_specs.get("options", {})
         else:
             step_params = step_config.get("params", {})
         return step_params.get(param_name)
