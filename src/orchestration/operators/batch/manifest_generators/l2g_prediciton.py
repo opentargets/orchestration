@@ -32,13 +32,14 @@ class GentropyStepGoogleBatchManifestGenerator(ProtoManifestGenerator):
             gcp_conn_id (str, optional): Google cloud connection. Defaults to "google_cloud_default".
 
         The `manifest_kwargs` represent the way to partition the input dataset. The default value provided should be
-        {"input_glob": "gs://bucket_name/some/prefix/**.ext"}. Depending on the number of files that match the `input_glob`
-        the computed google batch job definition will have corresponding number of tasks.
+        {"input_glob": "gs://bucket_name/some/prefix/**.ext", "output_prefix": "gs://bucket_name/some/output/prefix"}.
+        Depending on the number of files that match the `input_glob` the computed google batch job definition will have corresponding number of tasks.
         """
         self.commands = commands
         self.options = options
         self.gcs_hook = GCSHook(gcp_conn_id=gcp_conn_id)
-        self.input_glob = GCSPath(manifest_kwargs["input_glob"])
+        self.input_glob = GCSPath(manifest_kwargs.get("input_glob", ""))
+        self.output_prefix = GCSPath(manifest_kwargs.get("output_prefix", ""))
 
     @classmethod
     def from_generator_config(cls, specs: ManifestGeneratorSpecs) -> GentropyStepGoogleBatchManifestGenerator:
@@ -72,4 +73,10 @@ class GentropyStepGoogleBatchManifestGenerator(ProtoManifestGenerator):
 
         if len(files) == 0:
             raise AirflowSkipException(f"No files found under {self.input_glob} glob")
-        return [{"INPUT_PARTITION": f"{protocol}://{bucket_name}/{file}"} for file in files]
+        return [
+            {
+                "INPUT_PARTITION": f"{protocol}://{bucket_name}/{file}",
+                "OUTPUT_PARTITION": f"{self.output_prefix.gcs_path}/{file}",
+            }
+            for file in files
+        ]
