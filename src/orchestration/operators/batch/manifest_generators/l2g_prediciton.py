@@ -72,4 +72,4 @@ class GentropyStepGoogleBatchManifestGenerator(ProtoManifestGenerator):
 
         if len(files) == 0:
             raise AirflowSkipException(f"No files found under {self.input_glob} glob")
-        return [{"input_partition": f"{protocol}://{bucket_name}/{file}"} for file in files]
+        return [{"INPUT_PARTITION": f"{protocol}://{bucket_name}/{file}"} for file in files]
