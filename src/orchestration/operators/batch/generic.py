@@ -10,7 +10,7 @@ from airflow.providers.google.cloud.operators.cloud_batch import CloudBatchSubmi
 from orchestration.operators.batch.batch_index import BatchCommands, BatchEnvironments, BatchIndexRow
 from orchestration.operators.batch.manifest_generators import ProtoManifestGenerator
 from orchestration.operators.batch.manifest_generators.harmonisation import HarmonisationManifestGenerator
-from orchestration.operators.batch.manifest_generators.l2g_prediciton import GentropyStepGoogleBatchManifestGenerator
+from orchestration.operators.batch.manifest_generators.l2g_prediction import GentropyStepGoogleBatchManifestGenerator
 from orchestration.types import GoogleBatchIndexSpecs, GoogleBatchSpecs
 from orchestration.utils.batch import create_batch_job, create_task_spec
 from orchestration.utils.common import GCP_PROJECT_GENETICS, GCP_REGION
@@ -66,7 +66,7 @@ class BatchJobOperator(CloudBatchSubmitJobOperator):
     """Generic Batch Job operator.
 
     This operator has to be used in conjunction to the BatchIndexOperator.
-    It runs the google batch jobs defined defined by the BatchIndexOperator.
+    It runs the google batch jobs defined by the BatchIndexOperator.
     """
 
     def __init__(
