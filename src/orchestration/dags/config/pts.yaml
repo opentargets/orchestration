@@ -55,14 +55,14 @@ steps:
       source:
         target: output/target
         # IMPC source files
-        solr_gene_gene: input/evidence/impc/impc_solr_gene_gene.csv
-        solr_mouse_model: input/evidence/impc/impc_solr_mouse_model.csv
-        solr_disease_model_summary: input/evidence/impc/impc_solr_disease_model_summary.csv
-        solr_ontology: input/evidence/impc/impc_solr_ontology.csv
+        solr_gene_gene: input/impc/gene_gene.csv
+        solr_mouse_model: input/impc/mouse_model.csv
+        solr_disease_model_summary: input/impc/disease_model_summary.csv
+        solr_ontology: input/impc/ontology.csv
         hgnc_gene_mappings: input/target/genenames/hgnc_complete_set.txt
-        mouse_gene_mappings: input/evidence/impc/MGI_Gene_Model_Coord.rpt
-        mouse_pubmed_refs: input/evidence/impc/MGI_PhenoGenoMP.rpt
-        mp_ontology: input/evidence/impc/mp.owl
+        mouse_gene_mappings: input/impc/MGI_Gene_Model_Coord.rpt
+        mouse_pubmed_refs: input/impc/MGI_PhenoGenoMP.rpt
+        mp_ontology: input/impc/mp.json
       destination:
         output: output/mouse_phenotype
         excluded: excluded/mouse_phenotype
@@ -286,16 +286,16 @@ steps:
     - name: pyspark impc evidence strings
       pyspark: impc
       source:
-        solr_gene_gene: input/evidence/impc/gene_gene.csv
-        solr_ontology_ontology: input/evidence/impc/ontology_ontology.csv
-        solr_mouse_model: input/evidence/impc/mouse_model.csv
-        solr_disease: input/evidence/impc/disease.csv
-        solr_disease_model_summary: input/evidence/impc/disease_model_summary.csv
-        solr_ontology: input/evidence/impc/ontology.csv
+        solr_gene_gene: input/impc/gene_gene.csv
+        solr_ontology_ontology: input/impc/ontology_ontology.csv
+        solr_mouse_model: input/impc/mouse_model.csv
+        solr_disease: input/impc/disease.csv
+        solr_disease_model_summary: input/impc/disease_model_summary.csv
+        solr_ontology: input/impc/ontology.csv
         hgnc_gene_mappings: input/target/genenames/hgnc_complete_set.tsv
-        mouse_gene_mappings: input/evidence/impc/MGI_Gene_Model_Coord.rpt
-        mouse_pubmed_refs: input/evidence/impc/MGI_PhenoGenoMP.rpt
-        mp_ontology: input/evidence/impc/mp.owl
+        mouse_gene_mappings: input/impc/MGI_Gene_Model_Coord.rpt
+        mouse_pubmed_refs: input/impc/MGI_PhenoGenoMP.rpt
+        mp_ontology: input/impc/mp.json
         ontoma_disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
         ontoma_disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
       destination: intermediate/evidence/impc.parquet

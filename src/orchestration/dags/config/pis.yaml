@@ -142,7 +142,7 @@ steps:
   #: IMPC STEP :####################################################################################
   impc:
     - name: solr fetch gene_gene
-      destination: input/evidence/impc
+      destination: input/impc
       url: http://www.ebi.ac.uk/mi/impc/solr/phenodigm/select
       queries:
         - data_type: gene_gene
@@ -151,7 +151,7 @@ steps:
             - hgnc_gene_id
 
     - name: solr fetch ontology_ontology
-      destination: input/evidence/impc
+      destination: input/impc
       url: http://www.ebi.ac.uk/mi/impc/solr/phenodigm/select
       queries:
         - data_type: ontology_ontology
@@ -160,7 +160,7 @@ steps:
             - hp_id
 
     - name: solr fetch mouse_model
-      destination: input/evidence/impc
+      destination: input/impc
       url: http://www.ebi.ac.uk/mi/impc/solr/phenodigm/select
       queries:
         - data_type: mouse_model
@@ -169,7 +169,7 @@ steps:
             - model_phenotypes
 
     - name: solr fetch disease
-      destination: input/evidence/impc
+      destination: input/impc
       url: http://www.ebi.ac.uk/mi/impc/solr/phenodigm/select
       queries:
         - data_type: disease
@@ -178,7 +178,7 @@ steps:
             - disease_phenotypes
 
     - name: solr fetch disease_model_summary
-      destination: input/evidence/impc
+      destination: input/impc
       url: http://www.ebi.ac.uk/mi/impc/solr/phenodigm/select
       batch_size: 100000000
       queries:
@@ -194,7 +194,7 @@ steps:
             - marker_id
 
     - name: solr fetch ontology
-      destination: input/evidence/impc
+      destination: input/impc
       url: http://www.ebi.ac.uk/mi/impc/solr/phenodigm/select
       queries:
         - data_type: ontology
@@ -211,7 +211,7 @@ steps:
       do:
         - name: copy ${each}
           source: http://www.informatics.jax.org/downloads/reports/${each}
-          destination: input/evidence/impc/${each}
+          destination: input/impc/${each}
 
     - name: copy gene name
       source: https://storage.googleapis.com/public-download-files/hgnc/tsv/tsv/hgnc_complete_set.txt
