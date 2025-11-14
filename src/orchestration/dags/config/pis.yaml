@@ -207,7 +207,7 @@ steps:
       foreach:
         - MGI_Gene_Model_Coord.rpt # Mouse gene mappings
         - MGI_PhenoGenoMP.rpt # Mouse PubMed references
-        - mp.owl # Mammalian Phenotype ontology
+        - mp.json # Mammalian Phenotype ontology
       do:
         - name: copy ${each}
           source: http://www.informatics.jax.org/downloads/reports/${each}
@@ -796,10 +796,10 @@ steps:
           destination: input/target/homologue/gene_dictionary/${each}.json
         - name: copy ${each} protein homology
           source: https://ftp.ensembl.org/pub/release-${ensembl_version}/tsv/ensembl-compara/homologies/${each}/Compara.${ensembl_version}.protein_default.homologies.tsv.gz
-          destination: input/target/homologue/homologies/protein-${each}.tsv
+          destination: input/target/homologue/homologies/protein-${each}.tsv.gz
         - name: copy ${each} ncrna homology
           source: https://ftp.ensembl.org/pub/release-${ensembl_version}/tsv/ensembl-compara/homologies/${each}/Compara.${ensembl_version}.ncrna_default.homologies.tsv.gz
-          destination: input/target/homologue/homologies/ncrna-${each}.tsv
+          destination: input/target/homologue/homologies/ncrna-${each}.tsv.gz
 
     - name: copy homology ensembl vertebrates
       source: https://ftp.ensembl.org/pub/release-${ensembl_version}/species_EnsemblVertebrates.txt

@@ -66,9 +66,6 @@ steps:
       destination:
         output: output/mouse_phenotype
         excluded: excluded/mouse_phenotype
-      properties:
-        spark.driver.memory: 2g
-        spark.executor.memory: 1g
   ##################################################################################################
 
   #: CHEMICAL PROBES STEP :#########################################################################
@@ -79,8 +76,6 @@ steps:
         probes_excel: input/target/chemicalprobes/probes.xlsx
         drugs_csv: input/target/chemicalprobes/probes_links.csv
       destination: intermediate/chemical_probes_evidence.parquet
-      properties:
-        spark.driver.memory: 8g
   ##################################################################################################
 
   #: CODING VARIANT STEP :##########################################################################
@@ -98,9 +93,6 @@ steps:
         credible_set: output/credible_set
         pharmacogenetics: output/pharmacogenetics
       destination: view/coding_variant
-      properties:
-        spark.driver.memory: 10g
-        spark.executor.memory: 10g
   ##################################################################################################
 
   #: OPENFDA STEP :#################################################################################
@@ -195,9 +187,6 @@ steps:
       destination: intermediate/target/gene-essentiality/essentiality.parquet
       settings:
         keep_only_essentials: true
-      properties:
-        spark.driver.memory: 4g
-        spark.executor.memory: 2g
   ##################################################################################################
 
   #: PHARMACOGENETICS STEP :########################################################################
@@ -312,9 +301,6 @@ steps:
       destination: intermediate/evidence/impc.parquet
       settings:
         score_cutoff: 0.41
-      properties:
-        spark.driver.memory: 4g
-        spark.executor.memory: 2g
   ##################################################################################################
 
   #: EVIDENCE_CRISPR_SCREENS STEP :#################################################################
