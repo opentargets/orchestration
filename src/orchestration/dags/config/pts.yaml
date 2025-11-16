@@ -1,4 +1,3 @@
----
 work_path: /mnt/disks/work
 log_level: INFO
 pool_size: 32
@@ -422,8 +421,8 @@ steps:
         disease_path: output/disease
         publication_date_lut: input/literature/literature_export
       destination:
-        failed_evidence: excluded/evidence/gwas_credible_set
-        evidence: output/evidence_gwas_credible_set
+        failed_evidence: excluded/evidence/gwas_credible_sets
+        evidence: output/evidence_gwas_credible_sets
       settings:
         evidence_format: parquet
         score_expression: resourceScore
@@ -554,6 +553,19 @@ steps:
           WHEN CONCAT_WS('', clinicalSignificances) RLIKE '(?i)protect' THEN 'protect'
           ELSE null
           END
+        direction_on_target_expression: |
+          CASE
+            WHEN variantFunctionalConsequenceId IN (
+              'SO_0001589',
+              'SO_0001587',
+              'SO_0001574',
+              'SO_0001575',
+              'SO_0002012',
+              'SO_0001578',
+              'SO_0001893'
+            ) THEN 'LoF'
+            ELSE null
+          END
 
   evidence_postprocess_eva_somatic:
     - name: pyspark evidence_postprocess
@@ -632,7 +644,19 @@ steps:
           WHEN CONCAT_WS('', clinicalSignificances) RLIKE '(?i)protect' THEN 'protect'
           ELSE null
           END
-
+        direction_on_target_expression: |
+          CASE
+            WHEN variantFunctionalConsequenceId IN (
+              'SO_0001589',
+              'SO_0001587',
+              'SO_0001574',
+              'SO_0001575',
+              'SO_0002012',
+              'SO_0001578',
+              'SO_0001893'
+            ) THEN 'LoF'
+            ELSE null
+          END
   evidence_postprocess_uniprot_variants:
     - name: pyspark evidence_postprocess
       pyspark: evidence_postprocess
@@ -739,8 +763,8 @@ steps:
         disease_path: output/disease
         publication_date_lut: input/literature/literature_export
       destination:
-        failed_evidence: excluded/evidence/cancerbiomarkers
-        evidence: output/evidence_cancerbiomarkers
+        failed_evidence: excluded/evidence/cancer_biomarkers
+        evidence: output/evidence_cancer_biomarkers
       settings:
         evidence_format: parquet
         datasource_id: cancer_biomarkers
@@ -764,6 +788,7 @@ steps:
         target_path: output/target
         disease_path: output/disease
         publication_date_lut: input/literature/literature_export
+        mechanism_of_action: output/drug_mechanism_of_action
       destination:
         failed_evidence: excluded/evidence/chembl
         evidence: output/evidence_chembl
@@ -826,7 +851,8 @@ steps:
           - datasourceId
           - drugId
           - urls
-        direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'risk' ELSE 'noEvaluable' END
+        direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'protect' ELSE 'noEvaluable' END
+        direction_on_target_expression: moaType
 
   evidence_reactome:
     - name: pyspark evidence_postprocess
@@ -877,6 +903,7 @@ steps:
           - biologicalModelAllelicComposition
           - diseaseFromSource
         direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'risk' ELSE 'noEvaluable' END
+        direction_on_target_expression: CASE WHEN diseaseId IS NOT NULL THEN 'Lof' ELSE 'noEvaluable' END
 
   evidence_postprocess_orphanet:
     - name: pyspark evidence_postprocess
@@ -900,6 +927,12 @@ steps:
           - datasourceId
           - diseaseFromSourceId
         direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'risk' ELSE 'noEvaluable' END
+        direction_on_target_expression: |
+          CASE
+            WHEN variantFunctionalConsequenceId == 'SO_0002315' THEN 'GoF'
+            WHEN variantFunctionalConsequenceId == 'SO_0002317' THEN 'LoF'
+            ELSE null
+          END
 
   evidence_postprocess_gene2phenotype:
     - name: pyspark evidence_postprocess
@@ -935,6 +968,12 @@ steps:
           - allelicRequirements
           - studyId
         direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'risk' ELSE 'noEvaluable' END
+        direction_on_target_expression: |
+          CASE
+            WHEN variantFunctionalConsequenceId == 'SO_0002315' THEN 'GoF'
+            WHEN variantFunctionalConsequenceId == 'SO_0002317' THEN 'LoF'
+            ELSE null
+          END
 
   evidence_postprocess_gene_burden:
     - name: pyspark evidence_postprocess
@@ -960,13 +999,13 @@ steps:
           - diseaseFromSource
           - statisticalMethod
           - projectId
-        direction_on_disease_expression: |
+        direction_on_trait_expression: |
           CASE WHEN oddsRatio > 1.0 THEN 'risk'
           WHEN oddsRatio < 1.0 THEN 'protect'
           WHEN beta > 0.0 THEN 'risk'
           WHEN beta < 0.0 THEN 'protect'
-          ELSE 'noEvaluable'
           END
+        direction_on_target_expression: "'LoF'"
 
   evidence_postprocess_crispr_screens:
     - name: pyspark evidence_postprocess
@@ -1084,7 +1123,7 @@ steps:
           - diseaseId
           - datasourceId
         direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'risk' ELSE 'noEvaluable' END
-
+        direction_on_target_expression: "CASE \n  WHEN TSorOncogene == 'oncogene' THEN 'GoF'\n  WHEN TSorOncogene == 'tsg' THEN 'LoF'\n  ELSE null\nEND\n          #magic___^_^___line\n"
   evidence_postprocess_ot_crispr:
     - name: pyspark evidence_postprocess
       pyspark: evidence_postprocess
@@ -1145,8 +1184,8 @@ steps:
         disease_path: output/disease
         publication_date_lut: input/literature/literature_export
       destination:
-        failed_evidence: excluded/evidence/validation_lab
-        evidence: output/evidence_validation_lab
+        failed_evidence: excluded/evidence/ot_crispr_validation
+        evidence: output/evidence_ot_crispr_validation
       settings:
         evidence_format: json
         datasource_id: ot_crispr_validation
@@ -1162,4 +1201,4 @@ steps:
           - diseaseCellLines
           - primaryProjectId
 
-  #################################################################################################
+        #################################################################################################
