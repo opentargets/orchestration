@@ -13,7 +13,7 @@ is_ppp: false
 
 # Versions for software and data
 pis_version: '25.2.3-dev.24'
-pts_version: '25.3.1-dev.11'
+pts_version: '25.3.1-dev.12'
 etl_version: '25.4.4'
 gentropy_version: '3.0.0-rc.1'
 vep_version: 'release_115.2'
@@ -120,15 +120,12 @@ steps:
   pts_target_gene_essentiality:
     depends_on:
       - pis_target
-  pts_impc:
-    depends_on:
-      - pis_impc
   pts_pharmacogenetics:
     depends_on:
       - pis_pharmacogenetics
       - pts_ontoma
   # Evidence not processed by PTS
-  pts_evidence_postprocess_epmc:
+  pts_evidence_postprocess_europepmc:
     depends_on:
       - etl_literature
   pts_evidence_postprocess_gwas_credible_sets:
@@ -140,7 +137,10 @@ steps:
   pts_evidence_postprocess_cosmic:
     depends_on:
       - pis_evidence_cosmic
-  pts_evidence_postprocess_eva:
+  pts_evidence_postprocess_clinvar:
+    depends_on:
+      - pis_evidence_eva
+  pts_evidence_postprocess_clinvar_somatic:
     depends_on:
       - pis_evidence_eva
   pts_evidence_postprocess_reactome:
@@ -240,7 +240,7 @@ steps:
     depends_on:
       - pts_disease
       - pts_evidence_postprocess_impc
-      - pts_evidence_postprocess_epmc
+      - pts_evidence_postprocess_europepmc
       - pts_evidence_postprocess_gwas_credible_sets
       - pts_evidence_postprocess_expression_atlas
       - pts_evidence_postprocess_cancer_biomarkers
@@ -249,7 +249,7 @@ steps:
       - pts_evidence_postprocess_cosmic
       - pts_evidence_postprocess_project_score
       - pts_evidence_postprocess_crispr_screens
-      - pts_evidence_postprocess_eva
+      - pts_evidence_postprocess_clinvar
       - pts_evidence_postprocess_gene_burden
       - pts_evidence_postprocess_gene2phenotype
       - pts_evidence_postprocess_panel_app
@@ -322,7 +322,7 @@ steps:
   etl_association:
     depends_on:
       - pts_evidence_postprocess_impc
-      - pts_evidence_postprocess_epmc
+      - pts_evidence_postprocess_europepmc
       - pts_evidence_postprocess_gwas_credible_sets
       - pts_evidence_postprocess_expression_atlas
       - pts_evidence_postprocess_cancer_biomarkers
@@ -331,7 +331,8 @@ steps:
       - pts_evidence_postprocess_cosmic
       - pts_evidence_postprocess_project_score
       - pts_evidence_postprocess_crispr_screens
-      - pts_evidence_postprocess_eva
+      - pts_evidence_postprocess_clinvar
+      - pts_evidence_postprocess_clinvar_somatic
       - pts_evidence_postprocess_gene_burden
       - pts_evidence_postprocess_gene2phenotype
       - pts_evidence_postprocess_panel_app
@@ -344,7 +345,7 @@ steps:
   etl_association_otf:
     depends_on:
       - pts_evidence_postprocess_impc
-      - pts_evidence_postprocess_epmc
+      - pts_evidence_postprocess_europepmc
       - pts_evidence_postprocess_gwas_credible_sets
       - pts_evidence_postprocess_expression_atlas
       - pts_evidence_postprocess_cancer_biomarkers
@@ -353,7 +354,8 @@ steps:
       - pts_evidence_postprocess_cosmic
       - pts_evidence_postprocess_project_score
       - pts_evidence_postprocess_crispr_screens
-      - pts_evidence_postprocess_eva
+      - pts_evidence_postprocess_clinvar
+      - pts_evidence_postprocess_clinvar_somatic
       - pts_evidence_postprocess_gene_burden
       - pts_evidence_postprocess_gene2phenotype
       - pts_evidence_postprocess_panel_app
@@ -394,7 +396,8 @@ steps:
   gentropy_variant_partition:
     depends_on:
       - pts_evidence_postprocess_uniprot_variants
-      - pts_evidence_postprocess_eva
+      - pts_evidence_postprocess_clinvar
+      - pts_evidence_postprocess_clinvar_somatic
       - etl_pharmacogenomics
       - gentropy_credible_set
   gentropy_variant_annotation:

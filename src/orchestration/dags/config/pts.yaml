@@ -567,7 +567,7 @@ steps:
             ELSE null
           END
 
-  evidence_postprocess_eva_somatic:
+  evidence_postprocess_clinvar_somatic:
     - name: pyspark evidence_postprocess
       pyspark: evidence_postprocess
       source:
@@ -854,7 +854,7 @@ steps:
         direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'protect' ELSE 'noEvaluable' END
         direction_on_target_expression: moaType
 
-  evidence_reactome:
+  evidence_postprocess_reactome:
     - name: pyspark evidence_postprocess
       pyspark: evidence_postprocess
       source:
@@ -1033,7 +1033,7 @@ steps:
     - name: pyspark evidence_postprocess
       pyspark: evidence_postprocess
       source:
-        evidence_path: intermediate/evidence/literature_cooccurrence
+        evidence_path: intermediate/literature_cooccurrence
         target_path: output/target
         disease_path: output/disease
         publication_date_lut: input/literature/literature_export
