@@ -125,7 +125,6 @@ steps:
         - black_box_warning
         - molecule_synonyms
         - cross_references
-        - chebi_par_id
         - molecule_structures
     - name: elasticsearch chembl target
       url: https://www.ebi.ac.uk/chembl/elk/es
@@ -616,6 +615,14 @@ steps:
     - name: copy literature
       source: https://ftp.ebi.ac.uk/pub/databases/pmc/DOI/PMID_PMCID_DOI.csv.gz
       destination: input/literature/PMID_PMCID_DOI.csv.gz
+
+    - name: explode_glob literature dating lut
+      glob: gs://otar000-evidence_input/literature_export/*.json.gz
+      do:
+        - name: copy literature dating lut ${match_stem}
+          source: ${match_prefix}/${match_path}${match_stem}.${match_ext}
+          destination: input/literature/literature_export/${uuid}.json.gz
+
   ##################################################################################################
 
   #: ONTOMA STEP :##################################################################################

@@ -57,7 +57,7 @@ clusters:
     num_masters: 3
     num_workers: 20
     worker_machine_type: n1-highmem-32
-    worker_disk_size: 512
+    worker_disk_size: 1024
     internal_ip_only: false
     metadata:
       GENTROPY_REF: 'v{{gentropy_version}}'
@@ -67,7 +67,7 @@ clusters:
       'spark:spark.stage.maxConsecutiveAttempts': '10'
       'spark:spark.sql.adaptive.enabled': 'true'
       'spark:spark.sql.files.maxPartitionBytes': '1073741824'
-      'spark:spark.task.maxFailures': '10'
+      'spark:spark.task.maxFailures': '15'
       'yarn:spark.shuffle.io.serverThreads': '50'
     init_actions_uris:
       - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'

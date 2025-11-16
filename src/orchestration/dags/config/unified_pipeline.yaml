@@ -128,129 +128,137 @@ steps:
       - pis_pharmacogenetics
       - pts_ontoma
   # Evidence not processed by PTS
-  pts_validate_evidence_epmc:
+  pts_evidence_postprocess_epmc:
     depends_on:
       - etl_literature
-  pts_validate_evidence_gwas_credible_sets:
+  pts_evidence_postprocess_gwas_credible_sets:
     depends_on:
       - gentropy_l2g_evidence
-  pts_validate_evidence_expression_atlas:
+  pts_evidence_postprocess_expression_atlas:
     depends_on:
       - pis_evidence_expression_atlas
-  pts_validate_evidence_cosmic:
+  pts_evidence_postprocess_cosmic:
     depends_on:
       - pis_evidence_cosmic
-  pts_validate_evidence_eva:
+  pts_evidence_postprocess_eva:
     depends_on:
       - pis_evidence_eva
-  pts_validate_evidence_reactome:
+  pts_evidence_postprocess_reactome:
     depends_on:
       - pis_evidence_reactome
-  pts_validate_evidence_uniprot_literature:
+  pts_evidence_postprocess_uniprot_literature:
     depends_on:
       - pis_evidence_uniprot_literature
-  pts_validate_evidence_uniprot_variants:
+  pts_evidence_postprocess_uniprot_variants:
     depends_on:
       - pis_evidence_uniprot_variants
+  pts_evidence_postprocess_encore:
+    ppp_only: true
+    depends_on:
+      - pis_evidence_ppp # TODO: split
+  pts_evidence_postprocess_validation_lab:
+    ppp_only: true
+    depends_on:
+      - pis_evidence_ppp # TODO: split
   # Evidence processed by PTS
   pts_evidence_project_score:
     depends_on:
       - pis_evidence_project_score
-  pts_validate_evidence_project_score:
+  pts_evidence_postprocess_project_score:
     depends_on:
       - pts_evidence_project_score
   pts_evidence_gene_burden:
     depends_on:
       - pis_evidence_gene_burden
-  pts_validate_evidence_gene_burden:
+  pts_evidence_postprocess_gene_burden:
     depends_on:
       - pts_evidence_gene_burden
   pts_evidence_chembl:
     depends_on:
       - pis_evidence_chembl
       - pis_drug
-  pts_validate_evidence_chembl:
+  pts_evidence_postprocess_chembl:
     depends_on:
       - pts_evidence_chembl
   pts_evidence_cancer_biomarkers:
     depends_on:
       - pis_evidence_cancer_biomarkers
       - etl_drug
-  pts_validate_evidence_cancer_biomarkers:
+  pts_evidence_postprocess_cancer_biomarkers:
     depends_on:
       - pts_evidence_cancer_biomarkers
   pts_evidence_orphanet:
     depends_on:
       - pis_evidence_orphanet
       - pts_ontoma
-  pts_validate_evidence_orphanet:
+  pts_evidence_postprocess_orphanet:
     depends_on:
       - pts_evidence_orphanet
   pts_evidence_clingen:
     depends_on:
       - pis_evidence_clingen
       - pts_ontoma
-  pts_validate_evidence_clingen:
+  pts_evidence_postprocess_clingen:
     depends_on:
       - pts_evidence_clingen
   pts_evidence_impc:
     depends_on:
       - pis_impc
       - pts_ontoma
-  pts_validate_evidence_impc:
+  pts_evidence_postprocess_impc:
     num_partitions: 100
     depends_on:
       - pts_evidence_impc
   pts_evidence_panel_app:
     depends_on:
       - pis_evidence_panel_app
-  pts_validate_evidence_panel_app:
+  pts_evidence_postprocess_panel_app:
     depends_on:
       - pts_evidence_panel_app
   pts_evidence_crispr_screens:
     depends_on:
       - pis_evidence_crispr_screens
-  pts_validate_evidence_crispr_screens:
+  pts_evidence_postprocess_crispr_screens:
     depends_on:
       - pts_evidence_crispr_screens
   pts_evidence_gene2phenotype:
     depends_on:
       - pis_evidence_gene2phenotype
       - pts_ontoma
-  pts_validate_evidence_gene2phenotype:
+  pts_evidence_postprocess_gene2phenotype:
     depends_on:
       - pts_evidence_gene2phenotype
-  pts_evidence_ppp:
+  pts_evidence_ot_crispr:
     ppp_only: true
     depends_on:
       - pis_evidence_ppp
-  pts_validate_evidence_ppp:
+  pts_evidence_postprocess_ot_crispr:
     ppp_only: true
     depends_on:
-      - pts_evidence_ppp
+      - pts_evidence_ot_crispr
   pts_timeseries:
     depends_on:
       - pts_disease
-      - pts_validate_evidence_impc
-      - pts_validate_evidence_epmc
-      - pts_validate_evidence_gwas_credible_sets
-      - pts_validate_evidence_expression_atlas
-      - pts_validate_evidence_cancer_biomarkers
-      - pts_validate_evidence_chembl
-      - pts_validate_evidence_clingen
-      - pts_validate_evidence_cosmic
-      - pts_validate_evidence_project_score
-      - pts_validate_evidence_crispr_screens
-      - pts_validate_evidence_eva
-      - pts_validate_evidence_gene_burden
-      - pts_validate_evidence_gene2phenotype
-      - pts_validate_evidence_panel_app
-      - pts_validate_evidence_orphanet
-      - pts_validate_evidence_reactome
-      - pts_validate_evidence_uniprot_literature
-      - pts_validate_evidence_uniprot_variants
+      - pts_evidence_postprocess_impc
+      - pts_evidence_postprocess_epmc
+      - pts_evidence_postprocess_gwas_credible_sets
+      - pts_evidence_postprocess_expression_atlas
+      - pts_evidence_postprocess_cancer_biomarkers
+      - pts_evidence_postprocess_chembl
+      - pts_evidence_postprocess_clingen
+      - pts_evidence_postprocess_cosmic
+      - pts_evidence_postprocess_project_score
+      - pts_evidence_postprocess_crispr_screens
+      - pts_evidence_postprocess_eva
+      - pts_evidence_postprocess_gene_burden
+      - pts_evidence_postprocess_gene2phenotype
+      - pts_evidence_postprocess_panel_app
+      - pts_evidence_postprocess_orphanet
+      - pts_evidence_postprocess_reactome
+      - pts_evidence_postprocess_uniprot_literature
+      - pts_evidence_postprocess_uniprot_variants
     depends_on_ppp:
-      - pts_validate_evidence_ppp
+      - pts_evidence_postprocess_ppp
   # ETL STEPS
   etl_expression:
     num_partitions: 4
@@ -313,52 +321,52 @@ steps:
       - pts_mouse_phenotype
   etl_association:
     depends_on:
-      - pts_validate_evidence_impc
-      - pts_validate_evidence_epmc
-      - pts_validate_evidence_gwas_credible_sets
-      - pts_validate_evidence_expression_atlas
-      - pts_validate_evidence_cancer_biomarkers
-      - pts_validate_evidence_chembl
-      - pts_validate_evidence_clingen
-      - pts_validate_evidence_cosmic
-      - pts_validate_evidence_project_score
-      - pts_validate_evidence_crispr_screens
-      - pts_validate_evidence_eva
-      - pts_validate_evidence_gene_burden
-      - pts_validate_evidence_gene2phenotype
-      - pts_validate_evidence_panel_app
-      - pts_validate_evidence_orphanet
-      - pts_validate_evidence_reactome
-      - pts_validate_evidence_uniprot_literature
-      - pts_validate_evidence_uniprot_variants
+      - pts_evidence_postprocess_impc
+      - pts_evidence_postprocess_epmc
+      - pts_evidence_postprocess_gwas_credible_sets
+      - pts_evidence_postprocess_expression_atlas
+      - pts_evidence_postprocess_cancer_biomarkers
+      - pts_evidence_postprocess_chembl
+      - pts_evidence_postprocess_clingen
+      - pts_evidence_postprocess_cosmic
+      - pts_evidence_postprocess_project_score
+      - pts_evidence_postprocess_crispr_screens
+      - pts_evidence_postprocess_eva
+      - pts_evidence_postprocess_gene_burden
+      - pts_evidence_postprocess_gene2phenotype
+      - pts_evidence_postprocess_panel_app
+      - pts_evidence_postprocess_orphanet
+      - pts_evidence_postprocess_reactome
+      - pts_evidence_postprocess_uniprot_literature
+      - pts_evidence_postprocess_uniprot_variants
     depends_on_ppp:
-      - pts_validate_evidence_ppp
+      - pts_evidence_postprocess_ppp
   etl_association_otf:
     depends_on:
-      - pts_validate_evidence_impc
-      - pts_validate_evidence_epmc
-      - pts_validate_evidence_gwas_credible_sets
-      - pts_validate_evidence_expression_atlas
-      - pts_validate_evidence_cancer_biomarkers
-      - pts_validate_evidence_chembl
-      - pts_validate_evidence_clingen
-      - pts_validate_evidence_cosmic
-      - pts_validate_evidence_project_score
-      - pts_validate_evidence_crispr_screens
-      - pts_validate_evidence_eva
-      - pts_validate_evidence_gene_burden
-      - pts_validate_evidence_gene2phenotype
-      - pts_validate_evidence_panel_app
-      - pts_validate_evidence_orphanet
-      - pts_validate_evidence_reactome
-      - pts_validate_evidence_uniprot_literature
-      - pts_validate_evidence_uniprot_variants
+      - pts_evidence_postprocess_impc
+      - pts_evidence_postprocess_epmc
+      - pts_evidence_postprocess_gwas_credible_sets
+      - pts_evidence_postprocess_expression_atlas
+      - pts_evidence_postprocess_cancer_biomarkers
+      - pts_evidence_postprocess_chembl
+      - pts_evidence_postprocess_clingen
+      - pts_evidence_postprocess_cosmic
+      - pts_evidence_postprocess_project_score
+      - pts_evidence_postprocess_crispr_screens
+      - pts_evidence_postprocess_eva
+      - pts_evidence_postprocess_gene_burden
+      - pts_evidence_postprocess_gene2phenotype
+      - pts_evidence_postprocess_panel_app
+      - pts_evidence_postprocess_orphanet
+      - pts_evidence_postprocess_reactome
+      - pts_evidence_postprocess_uniprot_literature
+      - pts_evidence_postprocess_uniprot_variants
     depends_on_ppp:
-      - pts_validate_evidence_ppp
+      - pts_evidence_postprocess_ppp
   etl_known_drug:
     num_partitions: 2
     depends_on:
-      - pts_validate_evidence_chembl
+      - pts_evidence_postprocess_chembl
   etl_search:
     depends_on:
       - etl_association
@@ -385,8 +393,8 @@ steps:
       - gentropy_credible_set
   gentropy_variant_partition:
     depends_on:
-      - pts_validate_evidence_uniprot_variants
-      - pts_validate_evidence_eva
+      - pts_evidence_postprocess_uniprot_variants
+      - pts_evidence_postprocess_eva
       - etl_pharmacogenomics
       - gentropy_credible_set
   gentropy_variant_annotation:
