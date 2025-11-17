@@ -90,7 +90,7 @@ steps:
         evidence_uniprot_variant: output/evidence_uniprot_variants
         evidence_gwas_credible_set: output/evidence_gwas_credible_sets
         credible_set: output/credible_set
-        pharmacogenetics: output/pharmacogenetics
+        pharmacogenetics: output/pharmacogenomics
       destination: view/coding_variant
   ##################################################################################################
 
