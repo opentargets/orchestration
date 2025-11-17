@@ -524,7 +524,7 @@ steps:
       destination: input/expression/map_with_efos.json
 
     - name: copy normal tissues
-      source: https://www.proteinatlas.org/download/tsv/normal_ihc_tissues.tsv.zip
+      source: https://www.proteinatlas.org/download/tsv/normal_ihc_data.tsv.zip
       destination: input/expression/normal_tissue.tsv.zip
 
     - name: find_latest baseline expression binned
