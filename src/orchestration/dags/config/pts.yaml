@@ -87,8 +87,8 @@ steps:
         disease: output/disease
         evidence_eva: output/evidence_eva
         evidence_eva_somatic: output/evidence_eva_somatic
-        evidence_uniprot_variants: output/evidence_uniprot_variants
-        evidence_gwas_credible_sets: output/evidence_gwas_credible_sets
+        evidence_uniprot_variant: output/evidence_uniprot_variants
+        evidence_gwas_credible_set: output/evidence_gwas_credible_sets
         credible_set: output/credible_set
         pharmacogenetics: output/pharmacogenetics
       destination: view/coding_variant
@@ -1123,7 +1123,13 @@ steps:
           - diseaseId
           - datasourceId
         direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'risk' ELSE 'noEvaluable' END
-        direction_on_target_expression: "CASE \n  WHEN TSorOncogene == 'oncogene' THEN 'GoF'\n  WHEN TSorOncogene == 'tsg' THEN 'LoF'\n  ELSE null\nEND\n          #magic___^_^___line\n"
+        direction_on_target_expression: |
+          CASE
+            WHEN TSorOncogene == 'oncogene' THEN 'GoF'
+            WHEN TSorOncogene == 'tsg' THEN 'LoF'
+            ELSE null
+          END
+
   evidence_postprocess_ot_crispr:
     - name: pyspark evidence_postprocess
       pyspark: evidence_postprocess

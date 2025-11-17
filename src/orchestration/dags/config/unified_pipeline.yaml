@@ -105,6 +105,7 @@ steps:
   pts_coding_variant:
     depends_on:
       - gentropy_variant
+      - pts_evidence_postprocess_gwas_credible_sets
   pts_openfda:
     depends_on:
       - pis_openfda
@@ -409,6 +410,7 @@ steps:
   gentropy_l2g_feature_matrix:
     depends_on:
       - gentropy_colocalisation
+      - gentropy_variant
   gentropy_l2g_training:
     depends_on:
       - pis_l2g

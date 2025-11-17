@@ -101,12 +101,12 @@ steps:
       step.source_paths:
         - '{{release_uri}}/output/evidence_uniprot_variants'
         - '{{release_uri}}/output/evidence_eva'
-        - '{{release_uri}}/input/pharmacogenomics'
+        - '{{release_uri}}/output/pharmacogenomics'
         - '{{release_uri}}/output/credible_set'
       step.source_formats:
-        - json
-        - json
-        - json
+        - parquet
+        - parquet
+        - parquet
         - parquet
       # OUTPUTS
       step.output_path: '{{release_uri}}/intermediate/variant_partition'
