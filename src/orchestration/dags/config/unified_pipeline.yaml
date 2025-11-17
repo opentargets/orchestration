@@ -15,7 +15,7 @@ is_ppp: false
 pis_version: '25.2.3-dev.24'
 pts_version: '25.3.1-dev.12'
 etl_version: '25.4.4'
-gentropy_version: '3.0.0-rc.1'
+gentropy_version: '3.0.0-dev.1'
 vep_version: 'release_115.2'
 chembl_version: '36'
 efo_version: '3.83.0'
