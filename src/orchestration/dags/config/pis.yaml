@@ -478,7 +478,7 @@ steps:
         - cohorts.tsv
       do:
         - name: copy ${each}
-          source: gs://otar000-evidence_input/IntOgen/data_files/2024.06//${each}
+          source: gs://otar000-evidence_input/IntOgen/data_files/2024.06/${each}
           destination: input/evidence/intogen/${each}
 
     - name: copy ot_curation disease_mapping
