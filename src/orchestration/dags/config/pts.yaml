@@ -1007,7 +1007,7 @@ steps:
         evidence_path: intermediate/evidence/intogen.parquet
         target_path: output/target
         disease_path: output/disease
-        publication_date_lut: intermediate/literature_export
+        publication_date_lut: input/literature/literature_export
       destination:
         failed_evidence: excluded/evidence/intogen
         evidence: output/evidence_intogen
