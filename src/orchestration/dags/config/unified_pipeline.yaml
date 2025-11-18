@@ -256,7 +256,6 @@ steps:
       - pts_evidence_postprocess_cosmic
       - pts_evidence_postprocess_project_score
       - pts_evidence_postprocess_crispr_screens
-      - pts_evidence_postprocess_crispr
       - pts_evidence_postprocess_clinvar
       - pts_evidence_postprocess_clinvar_somatic
       - pts_evidence_postprocess_gene_burden
@@ -341,7 +340,6 @@ steps:
       - pts_evidence_postprocess_cosmic
       - pts_evidence_postprocess_project_score
       - pts_evidence_postprocess_crispr_screens
-      - pts_evidence_postprocess_crispr
       - pts_evidence_postprocess_clinvar
       - pts_evidence_postprocess_clinvar_somatic
       - pts_evidence_postprocess_gene_burden
@@ -366,7 +364,6 @@ steps:
       - pts_evidence_postprocess_cosmic
       - pts_evidence_postprocess_project_score
       - pts_evidence_postprocess_crispr_screens
-      - pts_evidence_postprocess_crispr
       - pts_evidence_postprocess_clinvar
       - pts_evidence_postprocess_clinvar_somatic
       - pts_evidence_postprocess_gene_burden
