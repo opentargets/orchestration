@@ -13,7 +13,7 @@ is_ppp: false
 
 # Versions for software and data
 pis_version: '25.2.3-dev.26'
-pts_version: '25.3.1-dev.13'
+pts_version: '25.3.1-dev.15'
 etl_version: '25.4.4'
 gentropy_version: '3.0.0-dev.1'
 vep_version: 'release_115.2'
@@ -230,6 +230,12 @@ steps:
   pts_evidence_postprocess_gene2phenotype:
     depends_on:
       - pts_evidence_gene2phenotype
+  pts_evidence_intogen:
+    depends_on:
+      - pis_evidence_intogen
+  pts_evidence_postprocess_intogen:
+    depends_on:
+      - pts_evidence_intogen
   pts_evidence_ot_crispr:
     ppp_only: true
     depends_on:
@@ -240,7 +246,6 @@ steps:
       - pts_evidence_ot_crispr
   pts_timeseries:
     depends_on:
-      - pts_disease
       - pts_evidence_postprocess_impc
       - pts_evidence_postprocess_europepmc
       - pts_evidence_postprocess_gwas_credible_sets
@@ -251,11 +256,14 @@ steps:
       - pts_evidence_postprocess_cosmic
       - pts_evidence_postprocess_project_score
       - pts_evidence_postprocess_crispr_screens
+      - pts_evidence_postprocess_crispr
       - pts_evidence_postprocess_clinvar
+      - pts_evidence_postprocess_clinvar_somatic
       - pts_evidence_postprocess_gene_burden
       - pts_evidence_postprocess_gene2phenotype
       - pts_evidence_postprocess_panel_app
       - pts_evidence_postprocess_orphanet
+      - pts_evidence_postprocess_intogen
       - pts_evidence_postprocess_reactome
       - pts_evidence_postprocess_uniprot_literature
       - pts_evidence_postprocess_uniprot_variants
@@ -333,12 +341,14 @@ steps:
       - pts_evidence_postprocess_cosmic
       - pts_evidence_postprocess_project_score
       - pts_evidence_postprocess_crispr_screens
+      - pts_evidence_postprocess_crispr
       - pts_evidence_postprocess_clinvar
       - pts_evidence_postprocess_clinvar_somatic
       - pts_evidence_postprocess_gene_burden
       - pts_evidence_postprocess_gene2phenotype
       - pts_evidence_postprocess_panel_app
       - pts_evidence_postprocess_orphanet
+      - pts_evidence_postprocess_intogen
       - pts_evidence_postprocess_reactome
       - pts_evidence_postprocess_uniprot_literature
       - pts_evidence_postprocess_uniprot_variants
@@ -356,12 +366,14 @@ steps:
       - pts_evidence_postprocess_cosmic
       - pts_evidence_postprocess_project_score
       - pts_evidence_postprocess_crispr_screens
+      - pts_evidence_postprocess_crispr
       - pts_evidence_postprocess_clinvar
       - pts_evidence_postprocess_clinvar_somatic
       - pts_evidence_postprocess_gene_burden
       - pts_evidence_postprocess_gene2phenotype
       - pts_evidence_postprocess_panel_app
       - pts_evidence_postprocess_orphanet
+      - pts_evidence_postprocess_intogen
       - pts_evidence_postprocess_reactome
       - pts_evidence_postprocess_uniprot_literature
       - pts_evidence_postprocess_uniprot_variants

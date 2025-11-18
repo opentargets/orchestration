@@ -479,7 +479,7 @@ steps:
       do:
         - name: copy ${each}
           source: gs://otar000-evidence_input/IntOgen/data_files/2024.06//${each}
-          destination: input/evidence/${each}
+          destination: input/evidence/intogen/${each}
 
     - name: copy ot_curation disease_mapping
       source: https://raw.githubusercontent.com/opentargets/curation/${ot_curation}/mappings/disease/cancer2EFO_mappings.tsv
