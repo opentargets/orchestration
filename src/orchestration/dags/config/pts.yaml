@@ -302,8 +302,8 @@ steps:
         score_cutoff: 0.41
   ##################################################################################################
 
-  #: EVIDENCE_PANELAPP STEP :#######################################################################
-  evidence_panelapp:
+  #: EVIDENCE PANEL APP STEP :#######################################################################
+  evidence_panel_app:
     - name: pyspark panel_app
       pyspark: panel_app
       source:
