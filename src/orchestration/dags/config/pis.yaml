@@ -470,6 +470,22 @@ steps:
       destination: input/evidence/uniprot_variants.json.gz
   ##################################################################################################
 
+  #: EVIDENCE_INTOGEN STEP :#######################################################################
+  evidence_intogen:
+    - name: explode intogen files
+      foreach:
+        - Compendium_Cancer_Genes.tsv
+        - cohorts.tsv
+      do:
+        - name: copy ${each}
+          source: gs://otar000-evidence_input/IntOgen/data_files/2024.06//${each}
+          destination: input/evidence/${each}
+
+    - name: copy ot_curation disease_mapping
+      source: https://raw.githubusercontent.com/opentargets/curation/${ot_curation}/mappings/disease/cancer2EFO_mappings.tsv
+      destination: input/ot_curation/mappings/disease/cancer2EFO_mappings.tsv
+  ##################################################################################################
+
   #: EVIDENCE_PPP STEP :############################################################################
   evidence_ppp:
     - name: find_latest validation_lab
