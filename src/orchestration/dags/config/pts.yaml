@@ -880,7 +880,7 @@ steps:
         failed_evidence: excluded/evidence/reactome
         evidence: output/evidence_reactome
       settings:
-        evidence_format: parquet
+        evidence_format: json
         datasource_id: reactome
         score_expression: "1.0"
         unique_fields:
