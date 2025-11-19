@@ -76,7 +76,6 @@ with DAG(
     #   d. Diff   — the state and decide the step does not need to run.
     #   e. End    — the step (does nothing).
     # ==============================================================================================
-    @task_group(group_id="pis_stage")
     def pis_stage() -> None:
         for step_name in config.steps("pis_"):
 
@@ -147,7 +146,6 @@ with DAG(
     #   d. Diff   — the state and decide the step does not need to run.
     #   e. End    — the step (does nothing).
     # ==============================================================================================
-    @task_group(group_id="pts_stage")
     def pts_stage() -> None:
         pts_clusters = {}  # map of cluster_name to a list of step_names
         for step_name in config.steps("pts_"):
@@ -276,7 +274,6 @@ with DAG(
     # After all steps have run:
     #   x. Delete          — the cluster, if it was created.
     # ==============================================================================================
-    @task_group(group_id="etl_stage")
     def etl_stage() -> None:
         cluster_name = "etl"
 
@@ -457,7 +454,6 @@ with DAG(
     # After all steps assigned to each cluster have run:
     #   x. Delete          — the cluster for those steps.
     # ==============================================================================================
-    @task_group(group_id="gentropy_stage")
     def gentropy_stage() -> None:
         gentropy_clusters = {}  # map of cluster_name to a list of step_names
         gentropy_steps = {}  # map of step_name to airflow task
