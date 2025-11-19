@@ -954,8 +954,8 @@ steps:
         direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'risk' ELSE 'noEvaluable' END
         direction_on_target_expression: |
           CASE
-            WHEN variantFunctionalConsequenceId == 'SO_0002315' THEN 'GoF'
-            WHEN variantFunctionalConsequenceId == 'SO_0002317' THEN 'LoF'
+            WHEN variantFunctionalConsequenceId == 'SO_0002053' THEN 'GoF'
+            WHEN variantFunctionalConsequenceId == 'SO_0002054' THEN 'LoF'
             ELSE null
           END
 
