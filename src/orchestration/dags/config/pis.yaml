@@ -615,7 +615,7 @@ steps:
   #: ENHANCER TO GENE STEP
   enhancer_to_gene:
     - name: explode_glob rE2G interval
-      glob: gs://interval_data/datasets/ENCODE-rE2G/processed_E2G_2507.parquet/*.parquet
+      glob: gs://interval_data/datasets/ENCODE-rE2G/processed_E2G_2509_filtered.parquet/*.parquet
       do:
         - name: copy rE2G interval ${match_stem}
           source: ${match_prefix}/${match_path}${match_stem}.${match_ext}
