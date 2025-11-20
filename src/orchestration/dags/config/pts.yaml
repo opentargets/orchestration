@@ -384,7 +384,7 @@ steps:
     - name: pyspark timeseries
       pyspark: timeseries
       source:
-        evidence: output/evidence_*
+        evidence: output/casted/evidence_*
         disease: output/disease
       destination:
         overall_direct: view/timeseries_overall_direct
