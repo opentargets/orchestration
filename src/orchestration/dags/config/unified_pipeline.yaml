@@ -13,7 +13,7 @@ is_ppp: false
 
 # Versions for software and data
 pis_version: '25.2.3-dev.27'
-pts_version: '25.3.1-dev.17'
+pts_version: '25.3.1-dev.18'
 etl_version: '25.4.4'
 gentropy_version: '3.0.0-dev.1'
 vep_version: 'release_115.2'
