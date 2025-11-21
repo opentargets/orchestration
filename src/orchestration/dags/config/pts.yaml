@@ -1100,7 +1100,7 @@ steps:
     - name: pyspark evidence_postprocess
       pyspark: evidence_postprocess
       source:
-        evidence_path: intermediate/literature_cooccurrence
+        evidence_path: intermediate/evidence/literature_epmc
         target_path: output/target
         disease_path: output/disease
         publication_date_lut: input/literature/literature_export
@@ -1108,7 +1108,7 @@ steps:
         failed_evidence: excluded/evidence/europepmc
         evidence: output/evidence_europepmc
       settings:
-        evidence_format: parquet
+        evidence_format: json
         datasource_id: europepmc
         score_expression: array_min(array(resourceScore / 100.0, 1.0))
         unique_fields:
