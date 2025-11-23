@@ -299,7 +299,7 @@ steps:
         ontoma_disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
       destination: intermediate/evidence/impc.parquet
       settings:
-        score_cutoff: 0.41
+        score_cutoff: 41
   ##################################################################################################
 
   #: EVIDENCE PANEL APP STEP :#######################################################################
