@@ -229,7 +229,8 @@ steps:
         genebass: input/evidence/gene_burden/genebass/**.parquet
         cvdi: input/evidence/gene_burden/cvdi.xlsx
         curated_studies: input/ot_curation/gene_burden/curated_evidence.tsv
-        disease_mappings: input/ot_curation/mappings/disease/manual_string.tsv
+        ontoma_disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
+        ontoma_disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
       destination: intermediate/evidence/gene_burden.parquet
       settings:
         finngen_release: R12
