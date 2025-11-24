@@ -185,7 +185,7 @@ steps:
         depmap_tissue_mapping: input/ot_curation/mappings/biosystem/depmap_uberon_mapping.csv
       destination: intermediate/target/gene-essentiality/essentiality.parquet
       settings:
-        keep_only_essentials: true
+        keep_only_essentials: false
   ##################################################################################################
 
   #: PHARMACOGENETICS STEP :########################################################################
@@ -385,7 +385,7 @@ steps:
     - name: pyspark timeseries
       pyspark: timeseries
       source:
-        evidence: output/casted/evidence_europepmc
+        evidence: output/evidence_*
         disease: output/disease
       destination:
         overall_direct: view/timeseries_overall_direct
