@@ -877,7 +877,7 @@ steps:
           - datasourceId
           - drugId
           - urls
-        direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'protect' ELSE 'noEvaluable' END
+        direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'protect' END
         direction_on_target_expression: moaType
 
   evidence_postprocess_reactome:
@@ -928,8 +928,8 @@ steps:
           - targetInModel
           - biologicalModelAllelicComposition
           - diseaseFromSource
-        direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'risk' ELSE 'noEvaluable' END
-        direction_on_target_expression: CASE WHEN diseaseId IS NOT NULL THEN 'Lof' ELSE 'noEvaluable' END
+        direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'risk' END
+        direction_on_target_expression: CASE WHEN diseaseId IS NOT NULL THEN 'LoF' END
 
   evidence_postprocess_orphanet:
     - name: pyspark evidence_postprocess
@@ -952,7 +952,7 @@ steps:
           - diseaseId
           - datasourceId
           - diseaseFromSourceId
-        direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'risk' ELSE 'noEvaluable' END
+        direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'risk' END
         direction_on_target_expression: |
           CASE
             WHEN variantFunctionalConsequenceId == 'SO_0002053' THEN 'GoF'
@@ -993,7 +993,7 @@ steps:
           - diseaseFromSource
           - allelicRequirements
           - studyId
-        direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'risk' ELSE 'noEvaluable' END
+        direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'risk' END
         direction_on_target_expression: |
           CASE
             WHEN variantFunctionalConsequenceId == 'SO_0002315' THEN 'GoF'
@@ -1022,7 +1022,7 @@ steps:
           - diseaseId
           - datasourceId
           - cohortShortName
-        direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'risk' ELSE 'noEvaluable' END
+        direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'risk' END
         direction_on_target_expression: |
           CASE
             WHEN mutatedSamples IS NOT NULL AND
@@ -1190,7 +1190,7 @@ steps:
           - targetFromSourceId
           - diseaseId
           - datasourceId
-        direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'risk' ELSE 'noEvaluable' END
+        direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'risk' END
         direction_on_target_expression: |
           CASE
             WHEN TSorOncogene == 'oncogene' THEN 'GoF'
