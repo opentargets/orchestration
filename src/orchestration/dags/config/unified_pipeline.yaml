@@ -403,6 +403,7 @@ steps:
     depends_on:
       - gentropy_study
   gentropy_colocalisation:
+    num_partitions: 200
     depends_on:
       - gentropy_credible_set
   gentropy_variant_partition:
