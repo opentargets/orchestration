@@ -770,9 +770,13 @@ steps:
       source: https://raw.githubusercontent.com/opentargets/curation/refs/tags/${ot_curation}/mappings/biosystem/depmap_uberon_mapping.csv
       destination: input/ot_curation/mappings/biosystem/depmap_uberon_mapping.csv
 
-    - name: copy gene name
+    - name: copy gene name tsv
       source: https://storage.googleapis.com/public-download-files/hgnc/tsv/tsv/hgnc_complete_set.txt
       destination: input/target/genenames/hgnc_complete_set.tsv
+
+    - name: copy gene name json
+      source: https://storage.googleapis.com/public-download-files/hgnc/json/json/hgnc_complete_set.json
+      destination: input/target/genenames/hgnc_complete_set.json
 
     - name: copy gnomad
       source: https://storage.googleapis.com/gcp-public-data--gnomad/release/${gnomad_version}/constraint/gnomad.v${gnomad_version}.constraint_metrics.tsv
