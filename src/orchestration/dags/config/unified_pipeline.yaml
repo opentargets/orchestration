@@ -245,6 +245,7 @@ steps:
     depends_on:
       - pts_evidence_ot_crispr
   pts_timeseries:
+    ppp_only: true
     depends_on:
       - pts_evidence_postprocess_impc
       - pts_evidence_postprocess_europepmc
