@@ -99,13 +99,13 @@ steps:
       step.session.write_mode: overwrite
       # INPUTS
       step.source_paths:
-        - '{{release_uri}}/output/evidence_uniprot_variants'
-        - '{{release_uri}}/output/evidence_eva'
+        - '{{release_uri}}/input/evidence/uniprot_variants.json.gz'
+        - '{{release_uri}}/input/evidence/eva.json.gz'
         - '{{release_uri}}/output/pharmacogenomics'
         - '{{release_uri}}/output/credible_set'
       step.source_formats:
-        - parquet
-        - parquet
+        - json
+        - json
         - parquet
         - parquet
       # OUTPUTS
