@@ -408,11 +408,10 @@ steps:
       - gentropy_credible_set
   gentropy_variant_partition:
     depends_on:
-      - pts_evidence_postprocess_uniprot_variants
-      - pts_evidence_postprocess_clinvar
-      - pts_evidence_postprocess_clinvar_somatic
       - etl_pharmacogenomics
       - gentropy_credible_set
+      - pis_evidence_uniprot_variants
+      - pis_evidence_eva
   gentropy_variant_annotation:
     depends_on:
       - gentropy_variant_partition
