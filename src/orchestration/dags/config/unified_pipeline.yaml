@@ -136,32 +136,50 @@ steps:
   pts_evidence_postprocess_expression_atlas:
     depends_on:
       - pis_evidence_expression_atlas
+      - etl_target
+      - pts_disease
   pts_evidence_postprocess_cosmic:
     depends_on:
       - pis_evidence_cosmic
+      - etl_target
+      - pts_disease
   pts_evidence_postprocess_clinvar:
     depends_on:
       - pis_evidence_eva
+      - etl_target
+      - pts_disease
   pts_evidence_postprocess_clinvar_somatic:
     depends_on:
       - pis_evidence_eva
+      - etl_target
+      - pts_disease
   pts_evidence_postprocess_reactome:
     depends_on:
       - pis_evidence_reactome
+      - etl_target
+      - pts_disease
   pts_evidence_postprocess_uniprot_literature:
     depends_on:
       - pis_evidence_uniprot_literature
+      - etl_target
+      - pts_disease
   pts_evidence_postprocess_uniprot_variants:
     depends_on:
       - pis_evidence_uniprot_variants
+      - etl_target
+      - pts_disease
   pts_evidence_postprocess_encore:
     ppp_only: true
     depends_on:
       - pis_evidence_ppp # TODO: split
+      - etl_target
+      - pts_disease
   pts_evidence_postprocess_validation_lab:
     ppp_only: true
     depends_on:
       - pis_evidence_ppp # TODO: split
+      - etl_target
+      - pts_disease
   # Evidence processed by PTS
   pts_evidence_project_score:
     depends_on:
@@ -169,12 +187,16 @@ steps:
   pts_evidence_postprocess_project_score:
     depends_on:
       - pts_evidence_project_score
+      - etl_target
+      - pts_disease
   pts_evidence_gene_burden:
     depends_on:
       - pis_evidence_gene_burden
   pts_evidence_postprocess_gene_burden:
     depends_on:
       - pts_evidence_gene_burden
+      - etl_target
+      - pts_disease
   pts_evidence_chembl:
     depends_on:
       - pis_evidence_chembl
@@ -182,6 +204,8 @@ steps:
   pts_evidence_postprocess_chembl:
     depends_on:
       - pts_evidence_chembl
+      - etl_drug
+      - pts_disease
   pts_evidence_cancer_biomarkers:
     depends_on:
       - pis_evidence_cancer_biomarkers
@@ -196,6 +220,7 @@ steps:
   pts_evidence_postprocess_orphanet:
     depends_on:
       - pts_evidence_orphanet
+      - etl_target
   pts_evidence_clingen:
     depends_on:
       - pis_evidence_clingen
@@ -203,6 +228,7 @@ steps:
   pts_evidence_postprocess_clingen:
     depends_on:
       - pts_evidence_clingen
+      - etl_target
   pts_evidence_impc:
     depends_on:
       - pis_impc
@@ -211,18 +237,23 @@ steps:
     num_partitions: 100
     depends_on:
       - pts_evidence_impc
+      - etl_target
   pts_evidence_panel_app:
     depends_on:
       - pis_evidence_panel_app
+      - pts_ontoma
   pts_evidence_postprocess_panel_app:
     depends_on:
       - pts_evidence_panel_app
+      - etl_target
   pts_evidence_crispr_screens:
     depends_on:
       - pis_evidence_crispr_screens
   pts_evidence_postprocess_crispr_screens:
     depends_on:
       - pts_evidence_crispr_screens
+      - etl_target
+      - pts_disease
   pts_evidence_gene2phenotype:
     depends_on:
       - pis_evidence_gene2phenotype
@@ -230,12 +261,15 @@ steps:
   pts_evidence_postprocess_gene2phenotype:
     depends_on:
       - pts_evidence_gene2phenotype
+      - etl_target
   pts_evidence_intogen:
     depends_on:
       - pis_evidence_intogen
   pts_evidence_postprocess_intogen:
     depends_on:
       - pts_evidence_intogen
+      - etl_target
+      - pts_disease
   pts_evidence_ot_crispr:
     ppp_only: true
     depends_on:
@@ -244,6 +278,8 @@ steps:
     ppp_only: true
     depends_on:
       - pts_evidence_ot_crispr
+      - etl_target
+      - pts_disease
   pts_timeseries:
     ppp_only: true
     depends_on:
