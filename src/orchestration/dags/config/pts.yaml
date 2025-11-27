@@ -313,8 +313,6 @@ steps:
         ontoma_disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
         ontoma_disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
       destination: intermediate/evidence/panel_app.parquet
-      properties:
-        spark.jars.packages: com.johnsnowlabs.nlp:spark-nlp_2.12:6.1.3
   ##################################################################################################
 
   #: EVIDENCE_CRISPR_SCREENS STEP :#################################################################

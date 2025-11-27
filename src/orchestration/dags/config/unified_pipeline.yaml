@@ -119,6 +119,7 @@ steps:
   pts_target_safety:
     depends_on:
       - pis_target
+      - pts_pharmacogenetics
   pts_target_gene_essentiality:
     depends_on:
       - pis_target
