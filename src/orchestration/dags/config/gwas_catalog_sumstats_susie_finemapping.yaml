@@ -26,7 +26,7 @@ nodes:
     params:
       study_index_path: '{output_path}/study_index'
     google_batch:
-      image: 'europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:{GENTROPY_REF}'
+      image: 'ghcr.io/opentargets/gentropy:{GENTROPY_REF}'
       entrypoint: /usr/bin/bash
       resource_specs:
         cpu_milli: 4000
