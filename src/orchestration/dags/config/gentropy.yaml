@@ -47,7 +47,7 @@ steps:
     params:
       step: credible_set_validation
       step.session.write_mode: overwrite
-      step.session.output_partitions: 25
+      step.session.output_partitions: 200 # 200 Needed for parallelization of predictions
       step.invalid_qc_reasons:
         - DUPLICATED_STUDYLOCUS_ID
         - AMBIGUOUS_STUDY
@@ -204,21 +204,45 @@ steps:
       step.model_path: '{{release_uri}}/etc/model/locus_to_gene_model/classifier.skops'
 
   l2g_prediction:
-    params:
-      step: locus_to_gene
-      step.run_mode: predict
-      step.session.write_mode: overwrite
-      step.session.output_partitions: 20
-      step.l2g_threshold: 0.05
-      step.download_from_hub: true
-      step.explain_predictions: true
-      +step.session.extended_spark_conf: "{spark.rpc.message.maxSize:'2046'}"
-      # INPUTS
-      step.hf_hub_repo_id: opentargets/locus_to_gene_{{l2g_training_version}}
-      step.feature_matrix_path: '{{release_uri}}/intermediate/l2g_feature_matrix'
-      step.credible_set_path: '{{release_uri}}/output/credible_set'
-      # OUTPUTS
-      step.predictions_path: '{{release_uri}}/output/l2g_prediction'
+    cluster: false
+    google_batch_index_specs:
+      manifest_generator_label: "gentropy-step"
+      manifest_generator_specs:
+        commands:
+          - -c
+          - "gentropy"
+        options:
+          step: locus_to_gene
+          step.session.write_mode: overwrite
+          step.run_mode: predict
+          step.session.output_partitions: 1
+          step.l2g_threshold: 0.05
+          step.download_from_hub: true
+          step.explain_predictions: true
+          +step.session.extended_spark_conf: "{spark.jars:https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop3-latest.jar}"
+          # INPUTS
+          step.hf_hub_repo_id: 'opentargets/locus_to_gene_{{l2g_training_version}}'
+          step.feature_matrix_path: '{{release_uri}}/intermediate/l2g_feature_matrix'
+          step.credible_set_path: '$INPUT_PARTITION' # The env value $INPUT_PARTITION differs within each machine.
+          # OUTPUTS
+          step.predictions_path: '$OUTPUT_PARTITION'
+        manifest_kwargs:
+          # Job partitionninig depends on the number of credible_set parquet files found in the input glob.
+          input_glob: '{{release_uri}}/output/credible_set/**.parquet'
+          # With output_partitions = 1, each input is mapped to 1 output.
+          output_prefix: '{{release_uri}}/output/l2g_prediction'
+    google_batch:
+      entrypoint: /usr/bin/bash
+      image: 'ghcr.io/opentargets/gentropy:{{gentropy_version}}'
+      resource_specs:
+        cpu_milli: 2000
+        memory_mib: 7000
+        boot_disk_mib: 4000
+      task_specs:
+        max_retry_count: 0
+        max_run_duration: "1h"
+      policy_specs:
+        machine_type: n1-standard-2
 
   l2g_evidence:
     params:
@@ -227,7 +251,7 @@ steps:
       step.locus_to_gene_threshold: 0.05
       # INPUTS
       step.credible_set_path: '{{release_uri}}/output/credible_set'
-      step.locus_to_gene_predictions_path: '{{release_uri}}/output/l2g_prediction'
+      step.locus_to_gene_predictions_path: '{{release_uri}}/output/l2g_prediction/*'
       step.study_index_path: '{{release_uri}}/output/study'
       # OUTPUTS
       step.evidence_output_path: '{{release_uri}}/intermediate/evidence/l2g_evidence'
