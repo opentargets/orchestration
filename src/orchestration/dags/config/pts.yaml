@@ -1172,7 +1172,7 @@ steps:
     - name: pyspark evidence_postprocess
       pyspark: evidence_postprocess
       source:
-        evidence_path: input/evidence/cosmic.json
+        evidence_path: input/evidence/cosmic.json.gz
         target_path: output/target
         disease_path: output/disease
         publication_date_lut: input/literature/literature_export

@@ -282,7 +282,7 @@ steps:
       requires:
         - find_latest cosmic
       source: ${latest_cosmic}
-      destination: input/evidence/cosmic.json
+      destination: input/evidence/cosmic.json.gz
 
   #: EVIDENCE_PROJECT_SCORE STEP :##################################################################
   evidence_project_score:
