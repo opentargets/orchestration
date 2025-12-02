@@ -546,7 +546,7 @@ with DAG(
 
                 chain(d, Label("differences found, run step"), u, c, r, e)
                 chain(d, Label("no differences found, skip step"), e)
-                steps[step_name] = {"start": e, "end": e}
+                steps[step_name] = {"start": d, "end": e}
 
             gentropy_step(step_name)
 
