@@ -2,56 +2,117 @@
 name: Build and Push to Artifact Registry
 
 on:
-  push:
-    branches:
-      - dev
-    paths:
-      - images/gentropy/scripts/harmonise-sumstats.sh
-      - images/gentropy/Dockerfile
   workflow_dispatch:
 
 env:
-  PROJECT_ID: open-targets-genetics-dev
-  REGION: europe-west1
-  GAR_LOCATION: europe-west1-docker.pkg.dev/open-targets-genetics-dev
-  REPOSITORY: gentropy-app
-  PYTHON_VERSION_DEFAULT: '3.12.9'
+  GCP_PROJECT_ID: open-targets-genetics-dev
+  GCP_REGION: europe-west1
+  TAG: "${{ github.ref_name}}"
+  REPO: "${{ github.event.repository.name}}"
 
 jobs:
-  build-push-artifact:
-    runs-on: ubuntu-latest
+  build-to-ghcr-and-gar:
+    if: startsWith(github.ref, 'refs/tags/v')
+    name: Build docker image and push to GHCR and GAR
+    runs-on: ubuntu-22.04
+
+    permissions:
+      packages: write
+      contents: read
+      attestations: write
+      id-token: write
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - id: prepare
+        name: Prepare the action and log details
+        shell: bash
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: |
+          TAG=$(echo $TAG | sed 's/^v//')
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "The tag for this build is $TAG"
+          echo "The repo name is: $REPO"
+          echo "Github context:\n$GITHUB_CONTEXT"
 
-      - name: auth
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GC_SERVICE_ACCOUNT_KEY }}
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Use gcloud CLI
-        run: gcloud info
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+      - id: checkout
+        name: Check out repo
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Docker auth
-        run: |-
-          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3.6.0
+        with:
+          image: tonistiigi/binfmt:qemu-v7.0.0-28
 
-      - name: Quick Docker build (gentropy image overloaded with orchestration logic, AMD64 only, with layer cache)
+      - id: auth-ghcr
+        name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: auth-google
+        name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          token_format: access_token
+          project_id: ${{ env.GCP_PROJECT_ID }}
+          service_account: github-actions@open-targets-genetics-dev.iam.gserviceaccount.com
+          workload_identity_provider: projects/234703259993/locations/global/workloadIdentityPools/github/providers/opentargets
+          access_token_lifetime: 1800s
+
+      - id: auth-gar
+        name: Login to Google Artifact Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.GCP_REGION }}-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth-google.outputs.access_token }}
+
+      - id: push-harmonisation
+        name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          platforms: linux/amd64
-          push: true
-          tags: ${{ env.GAR_LOCATION }}/${{ env.REPOSITORY }}/ot_gentropy:${{ github.ref_name }}
+          platforms: linux/amd64,linux/arm64
           context: .
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
           file: images/gentropy/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}-harmonisation:latest
+            ghcr.io/${{ github.repository }}-harmonisation:${{ env.TAG }}
+            ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/opentargets/harmonisation:latest
+            ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/opentargets/harmonisation:${{ env.TAG }}
+
+      - id: push-service
+        name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          platforms: linux/amd64,linux/arm64
+          context: .
+          file: Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ env.TAG }}
+            ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/opentargets/${{ env.REPO }}:latest
+            ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/opentargets/${{ env.REPO }}:${{ env.TAG }}
+
+      - id: generate-attestations-harmonisation
+        name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-name: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/opentargets/harmonisation
+          subject-digest: ${{ steps.push-harmonisation.outputs.digest }}
+          push-to-registry: true
+
+      - id: generate-attestations-service
+        name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-name: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/opentargets/${{ env.REPO }}
+          subject-digest: ${{ steps.push-service.outputs.digest }}
+          push-to-registry: true

@@ -38,7 +38,7 @@ nodes:
     google_batch:
       entrypoint: /usr/bin/bash
       parallelism: 200
-      image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/ot_gentropy:dev
+      image: ghcr.io/opentargets/orchestration-harmonisation:25.12-staging.5
       resource_specs:
         cpu_milli: 4000
         memory_mib: 8000
