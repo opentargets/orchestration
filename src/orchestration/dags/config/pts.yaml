@@ -386,10 +386,10 @@ steps:
         evidence: output/evidence_*
         disease: output/disease
       destination:
-        overall_direct: view/timeseries_overall_direct
-        overall_indirect: view/timeseries_overall_indirect
-        by_datasource_direct: view/timeseries_by_datasource_direct
-        by_datasource_indirect: view/timeseries_by_datasource_indirect
+        overall_direct: output/timeseries_overall_direct
+        overall_indirect: output/timeseries_overall_indirect
+        by_datasource_direct: output/timeseries_by_datasource_direct
+        by_datasource_indirect: output/timeseries_by_datasource_indirect
       settings:
         novelty_scale: 2 # 2 for long tailed slow decays
         novelty_shift: 3 # 3 for long tailed slow decays
