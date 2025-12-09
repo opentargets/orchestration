@@ -84,7 +84,7 @@ steps:
     params:
       step: colocalisation
       step.session.write_mode: overwrite
-      step.session.output_partitions: 25
+      step.session.output_partitions: 200
       step.colocalisation_method: coloc_pip_ecaviar
       +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.memoryOverhead: '1g', spark.executor.cores: '4'}"
       # INPUTS
