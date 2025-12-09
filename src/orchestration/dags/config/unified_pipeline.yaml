@@ -12,10 +12,10 @@ run_name: 'il/25.12-testrun-2'
 is_ppp: false
 
 # Versions for software and data
-pis_version: '25.2.3-dev.27'
-pts_version: '25.3.1-dev.22'
-etl_version: '25.4.5-rc.1'
-gentropy_version: '3.1.0-rc.1'
+pis_version: '25.12.0'
+pts_version: '25.12.0'
+etl_version: '25.12.0'
+gentropy_version: '3.1.0'
 vep_version: 'release_115.2'
 chembl_version: '36'
 efo_version: '3.83.0'
