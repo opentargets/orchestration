@@ -3,7 +3,7 @@ environment_specs:
   - name: Prod
     vars:
       output_path: gs://gwas_catalog_sumstats_susie
-      GENTROPY_REF: 2.4.2-rc.4
+      GENTROPY_REF: 2.4.2-rc.8
 
 env: Prod
 
@@ -13,7 +13,7 @@ nodes:
     prerequisites: []
     params:
       collected_loci_path: '{output_path}/study_locus_lb_clumped'
-      manifest_prefix: '{output_path}/finemapping_manifests/20250721'
+      manifest_prefix: '{output_path}/finemapping_manifests/20251105'
       output_path: '{output_path}/credible_set_datasets'
       #!WARNING: DO NOT CHANGE THE DATE for the log_path, as it is used to back reference the already fine-mapped loci.
       log_path: '{output_path}/finemapping_logs/20250204'
@@ -26,7 +26,7 @@ nodes:
     params:
       study_index_path: '{output_path}/study_index'
     google_batch:
-      image: 'europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:{GENTROPY_REF}'
+      image: 'ghcr.io/opentargets/gentropy:{GENTROPY_REF}'
       entrypoint: /usr/bin/bash
       resource_specs:
         cpu_milli: 4000

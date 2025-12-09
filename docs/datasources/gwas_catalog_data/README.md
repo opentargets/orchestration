@@ -23,6 +23,7 @@ gs://gwas_catalog_inputs/harmonised_summary_statistics/
 gs://gwas_catalog_inputs/raw_summary_statistics/
 gs://gwas_catalog_inputs/statistics/
 gs://gwas_catalog_inputs/summary_statistics_qc/
+gs://gwas_catalog_inputs/sync_dump/
 ```
 
 ### harmonisation_manifest.csv
@@ -61,26 +62,33 @@ gs://gwas_catalog_inputs/raw_summary_statistics/GCST000001-GCST001000/GCST000028
 This directory contains dated files with manual curation performed on GWAS Catalog.
 
 ```{bash}
-gs://gwas_catalog_inputs/curation/202412/GWAS_Catalog_study_curation.tsv
-gs://gwas_catalog_inputs/curation/202505/GWAS_Catalog_study_curation.tsv
-gs://gwas_catalog_inputs/curation/202506/GWAS_Catalog_study_curation.tsv
-gs://gwas_catalog_inputs/curation/202507/GWAS_Catalog_study_curation.tsv
+gs://gwas_catalog_inputs/curation/latest/curated/GWAS_Catalog_study_curation.tsv
+gs://gwas_catalog_inputs/curation/latest/raw/GWAS_Catalog_study_curation.tsv
 ```
 
 These files are used to curate the summary statistics and are part of the input for the study index generation step. This is crucial part of the process that allows to exclude certain types of studies that can lead to incorrect results in SuSIE finemapping.
+
+Note that the `latest` directory contains copies of the most recent curation files. The dated directories contain historical versions of the curation files.
+
+- `curated/` - contains the manually curated version of the file
+- `raw/` - contains the version of the file before manual curation
 
 ### gentroutils
 
 This directory contains files dumped from [ebi ftp](https://ftp.ebi.ac.uk/pub/databases/gwas/releases/latest/). This includes:
 
 ```{bash}
-gs://gwas_catalog_inputs/gentroutils/20250708/gwas_catalog_associations_ontology_annotated.tsv <- associations
-gs://gwas_catalog_inputs/gentroutils/20250708/gwas_catalog_download_ancestries.tsv             <- ancestries
-gs://gwas_catalog_inputs/gentroutils/20250708/gwas_catalog_download_studies.tsv                <- studies
-gs://gwas_catalog_inputs/gentroutils/20250708/log.txt                                          <- log file from synchronisation
+gs://gwas_catalog_inputs/gentroutils/latest/gwas_catalog_associations_ontology_annotated.tsv <- associations
+gs://gwas_catalog_inputs/gentroutils/latest/gwas_catalog_download_ancestries.tsv             <- ancestries
+gs://gwas_catalog_inputs/gentroutils/latest/gwas_catalog_download_studies.tsv                <- studies
+gs://gwas_catalog_inputs/gentroutils/latest/stats.json                                       <- result of calling the `https://www.ebi.ac.uk/gwas/api/search/stats` during the sync process
 ```
 
-The `log.txt` file contains the information about the release of the GWAS Catalog that was used to generate the files in this directory. The files in this directory are used to generate the [StudyIndex dataset](https://opentargets.github.io/gentropy/python_api/datasets/study_index/) and are used as input for the top hits (curated associations) credible set generation.
+Note that the `latest` directory contains copies of the most recent files. The dated directories contain historical versions of the files.
+
+The `stats.json` file contains the information about the release of the GWAS Catalog that was used to generate the files in this directory.
+
+The files in this directory are used to generate the [StudyIndex dataset](https://opentargets.github.io/gentropy/python_api/datasets/study_index/) and are used as input for the top hits (curated associations) credible set generation.
 
 ### harmonisation_summary
 
@@ -196,6 +204,10 @@ This directory contains outputs from the Open Targets inhouse ETL harmonisation 
 
 This directory contains summary statistics in the form of harmonised (by GWAS Catalog) gzipped tsv files that are synced directly from the [GWAS Catalog FTP server](https://ftp.ebi.ac.uk/pub/databases/gwas/summary_statistics/) by a cron job.
 
+as of 2025-06 the file also contains the `yaml metadata` files that stored in the ftp.
+
+The synchronization process is described in [ebi_to_gcp repository](https://github.com/opentargets/ebi-to-gcp)
+
 ### statistics
 
 This directory contains various analysis performed on harmonisation results.
@@ -203,6 +215,14 @@ This directory contains various analysis performed on harmonisation results.
 ### summary_statistics_qc
 
 This directory contains outputs from the Open Targets inhouse ETL harmonisation process described in [GWAS Catalog harmonisation dag](https://github.com/opentargets/orchestration/blob/dev/src/ot_orchestration/dags/gwas_catalog_sumstat_harmonisation.py). The result is the [summary statistics QC dataset](https://github.com/opentargets/gentropy/blob/dev/src/gentropy/sumstat_qc_step.py) saved in the csv format per summary statistics input file.
+
+### sync_dump
+
+This directory contains dump of the metadata yaml files into a single parquet for easier querying. The full description is in [ebi-to-gcp repository](https://github.com/opentargets/ebi-to-gcp?tab=readme-ov-file#yaml-dump).
+
+```bash
+gs://gwas_catalog_inputs/sync_dump/latest/sync_dump_latest.parquet
+```
 
 ---
 
@@ -318,7 +338,7 @@ gs://gwas_catalog_sumstats_susie/finemapping_manifests/
 gs://gwas_catalog_sumstats_susie/logs/
 gs://gwas_catalog_sumstats_susie/study_index/
 gs://gwas_catalog_sumstats_susie/study_locus_lb_clumped/
-gs://gwas_catalog_sumstats_susie/study_locus_lb_clumped_repartitionned/
+gs://gwas_catalog_sumstats_susie/study_locus_lut/
 gs://gwas_catalog_sumstats_susie/susie_logs.parquet/
 ```
 
@@ -416,3 +436,8 @@ To adjust the parameters for google batch infrastructure refer to the `google_ba
 - chore: [removed summary statistics from ftp](https://github.com/opentargets/issues/issues/3957)
 - chore: [reharmonisation of GCST003566](https://github.com/opentargets/issues/issues/3740)
 - chore: [removal of problematic studies](https://github.com/opentargets/issues/issues/3965)
+
+### 2025-11-10
+
+- chore: [25.12 GWAS Catalog update preparation](https://github.com/opentargets/issues/issues/4130)
+- chore: [ebi-to-gcp sync update](https://github.com/opentargets/issues/issues/3955)
