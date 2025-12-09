@@ -76,7 +76,7 @@ class GentropyStepGoogleBatchManifestGenerator(ProtoManifestGenerator):
         return [
             {
                 "INPUT_PARTITION": f"{protocol}://{bucket_name}/{file}",
-                "OUTPUT_PARTITION": f"{self.output_prefix.gcs_path}/{file}",
+                "OUTPUT_PARTITION": f"{self.output_prefix.gcs_path}/{file.split('/')[-1]}",
             }
             for file in files
         ]

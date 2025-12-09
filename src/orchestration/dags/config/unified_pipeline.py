@@ -66,6 +66,7 @@ class UnifiedPipelineConfig:
                 "mondo_version": up.get("mondo_version"),
                 "ot_curation": up.get("ot_curation"),
                 "probes_drugs_version": up.get("probes_drugs_version"),
+                "gnomad_version": up.get("gnomad_version"),
             },
         )
         """The internal configuration for PIS steps."""

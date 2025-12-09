@@ -394,11 +394,8 @@ with DAG(
                 "step.valid_study_locus_path": gsp("gentropy_credible_set", "step.valid_study_locus_path"),
                 "step.invalid_study_locus_path": gsp("gentropy_credible_set", "step.invalid_study_locus_path"),
             },
-            "gentropy_colocalisation_coloc": {
-                "step.coloc_path": gsp("gentropy_colocalisation_coloc", "step.coloc_path"),
-            },
-            "gentropy_colocalisation_ecaviar": {
-                "step.coloc_path": gsp("gentropy_colocalisation_ecaviar", "step.coloc_path"),
+            "gentropy_colocalisation": {
+                "step.coloc_path": gsp("gentropy_colocalisation", "step.coloc_path"),
             },
             "gentropy_variant_partition": {
                 "step.output_path": gsp("gentropy_variant_partition", "step.output_path"),
@@ -549,7 +546,7 @@ with DAG(
 
                 chain(d, Label("differences found, run step"), u, c, r, e)
                 chain(d, Label("no differences found, skip step"), e)
-                steps[step_name] = {"start": e, "end": e}
+                steps[step_name] = {"start": d, "end": e}
 
             gentropy_step(step_name)
 

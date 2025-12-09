@@ -61,11 +61,10 @@ class DiffOperator(BaseBranchOperator):
     ) -> None:
         super().__init__(*args, **kwargs)
         self.project_id = project_id
-        self.stage_name = step_name.split("_", 1)[0]
         self.step_name = step_name
         self.differs = differs
-        self.diff_yes_task = diff_yes_task or f"{self.stage_name}_stage.{step_name}.upload_config_{step_name}"
-        self.diff_no_task = diff_no_task or f"{self.stage_name}_stage.{step_name}.end_{step_name}"
+        self.diff_yes_task = diff_yes_task or f"{step_name}.upload_config_{step_name}"
+        self.diff_no_task = diff_no_task or f"{step_name}.end_{step_name}"
         self.config = config
         self.gcp_conn_id = gcp_conn_id
         self.impersonation_chain = impersonation_chain

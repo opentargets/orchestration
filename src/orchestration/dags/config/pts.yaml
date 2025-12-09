@@ -1,4 +1,3 @@
----
 work_path: /mnt/disks/work
 log_level: INFO
 pool_size: 32
@@ -13,10 +12,12 @@ steps:
       source: input/disease/efo_otar_slim.json
       destination: output/disease/disease.parquet
       transformer: disease
+
     - name: transform disease_hpo
       source: input/disease/hp-full.json
       destination: output/disease_hpo/disease_hpo.parquet
       transformer: disease_hpo
+
     - name: transform disease_phenotype
       requires:
         - transform disease_efo
@@ -26,13 +27,13 @@ steps:
         - input/disease/mondo.json
       destination: output/disease_phenotype/disease_phenotype.parquet
       transformer: disease_phenotype
-
   ##################################################################################################
 
   #: EXPRESSION STEP :##############################################################################
   expression:
     - name: unzip normal tissue
       source: input/expression/normal_tissue.tsv.zip
+      inner_file: normal_ihc_data.tsv
       destination: intermediate/expression/normal_tissue.tsv
     - name: gzip normal tissue
       requires:
@@ -48,11 +49,19 @@ steps:
 
   #: MOUSE_PHENOTYPES STEP :########################################################################
   mouse_phenotype:
-    - name: pyspark separate into output and excluded
+    - name: pyspark generate from IMPC and validate with target
       pyspark: mouse_phenotype
       source:
         target: output/target
-        mouse_phenotype: input/mouse_phenotype/mouse_phenotypes.json.gz
+        # IMPC source files
+        solr_gene_gene: input/impc/gene_gene.csv
+        solr_mouse_model: input/impc/mouse_model.csv
+        solr_disease_model_summary: input/impc/disease_model_summary.csv
+        solr_ontology: input/impc/ontology.csv
+        hgnc_gene_mappings: input/target/genenames/hgnc_complete_set.tsv
+        mouse_gene_mappings: input/impc/MGI_Gene_Model_Coord.rpt
+        mouse_pubmed_refs: input/impc/MGI_PhenoGenoMP.rpt
+        mp_ontology: input/impc/mp.json
       destination:
         output: output/mouse_phenotype
         excluded: excluded/mouse_phenotype
@@ -65,8 +74,7 @@ steps:
       source:
         probes_excel: input/target/chemicalprobes/probes.xlsx
         drugs_csv: input/target/chemicalprobes/probes_links.csv
-      destination:
-        output: intermediate/chemical_probes_evidence.parquet
+      destination: intermediate/chemical_probes_evidence.parquet
   ##################################################################################################
 
   #: CODING VARIANT STEP :##########################################################################
@@ -77,12 +85,12 @@ steps:
         variant: output/variant
         target: output/target
         disease: output/disease
-        evidence_eva: output/evidence/sourceId=eva
-        evidence_eva_somatic: output/evidence/sourceId=eva_somatic
-        evidence_uniprot_variant: output/evidence/sourceId=uniprot_variants
-        evidence_gwas_credible_set: output/evidence/sourceId=gwas_credible_sets
+        evidence_eva: output/evidence_eva
+        evidence_eva_somatic: output/evidence_eva_somatic
+        evidence_uniprot_variant: output/evidence_uniprot_variants
+        evidence_gwas_credible_set: output/evidence_gwas_credible_sets
         credible_set: output/credible_set
-        pharmacogenetics: output/pharmacogenetics
+        pharmacogenetics: output/pharmacogenomics
       destination: view/coding_variant
   ##################################################################################################
 
@@ -121,20 +129,6 @@ steps:
       destination: intermediate/target/hpa/subcellular_locations_ssl.parquet
       separator: "\t"
 
-    - name: pyspark gene_essentiality
-      pyspark: gene_essentiality
-      source:
-        models: input/target/gene-essentiality/depmap/Model.csv
-        essential_genes: input/target/gene-essentiality/depmap/CRISPRInferredCommonEssentials.csv
-        gene_effects: input/target/gene-essentiality/depmap/CRISPRGeneEffect.csv
-        gene_expression: input/target/gene-essentiality/depmap/OmicsExpressionProteinCodingGenesTPMLogp1.csv
-        mutation_hotspots: input/target/gene-essentiality/depmap/OmicsSomaticMutationsMatrixHotspot.csv
-        mutation_damaging: input/target/gene-essentiality/depmap/OmicsSomaticMutationsMatrixDamaging.csv
-        depmap_tissue_mapping: input/ot_curation/mappings/biosystem/depmap_uberon_mapping.csv
-      destination: intermediate/target/gene-essentiality/essentiality.parquet
-      settings:
-        keep_only_essentials: true
-
     - name: unzip essentiality matrix
       source: input/target/project-scores/essentiality_matrices.zip
       inner_file: EssentialityMatrices/04_binaryDepScores.tsv
@@ -155,11 +149,6 @@ steps:
       destination: intermediate/target/ensembl/homo_sapiens.parquet
       transformer: ensembl
 
-    - name: transform gnomad
-      source: input/target/gnomad/gnomad.v2.1.1.lof_metrics.by_gene.txt.bgz
-      destination: intermediate/target/gnomad/gnomad_lof_by_gene.txt.gz
-      transformer: gnomad
-
     - name: explode_glob homology
       glob: input/target/homologue/gene_dictionary/*.json
       do:
@@ -169,8 +158,53 @@ steps:
           transformer: homology
   ##################################################################################################
 
-  #: EVIDENCE STEP :################################################################################
-  evidence:
+  #: TARGET_SAFETY STEP :############### - part of target, pyspark tasks must run standalone for now
+  target_safety:
+    - name: pyspark safety
+      pyspark: target_safety
+      source:
+        adverse_events: input/target/safety/adverse_effects.tsv
+        safety_risks: input/target/safety/safety_risks.tsv
+        brennan: input/target/safety/secondary_pharmacology.json
+        toxcast: input/target/safety/toxcast.tsv
+        aopwiki: input/target/safety/aopwiki.json
+        pharmacogenetics: intermediate/pharmacogenetics.parquet
+      destination: intermediate/target/safety.parquet
+
+  #: TARGET_GENE_ESSENTIALITY STEP :#### - part of target, pyspark tasks must run standalone for now
+  target_gene_essentiality:
+    - name: pyspark gene_essentiality
+      pyspark: gene_essentiality
+      source:
+        models: input/target/gene-essentiality/depmap/Model.csv
+        essential_genes: input/target/gene-essentiality/depmap/CRISPRInferredCommonEssentials.csv
+        gene_effects: input/target/gene-essentiality/depmap/CRISPRGeneEffect.csv
+        gene_expression: input/target/gene-essentiality/depmap/OmicsExpressionProteinCodingGenesTPMLogp1.csv
+        mutation_hotspots: input/target/gene-essentiality/depmap/OmicsSomaticMutationsMatrixHotspot.csv
+        mutation_damaging: input/target/gene-essentiality/depmap/OmicsSomaticMutationsMatrixDamaging.csv
+        depmap_tissue_mapping: input/ot_curation/mappings/biosystem/depmap_uberon_mapping.csv
+      destination: intermediate/target/gene-essentiality/essentiality.parquet
+      settings:
+        keep_only_essentials: false
+  ##################################################################################################
+
+  #: PHARMACOGENETICS STEP :########################################################################
+  pharmacogenetics:
+    - name: pyspark pharmacogenetics
+      pyspark: pharmacogenetics
+      source:
+        clinpgx: input/pharmacogenetics/clinpgx_annotation.json.gz
+        phenotypes: input/pharmacogenetics/phenotypes.json
+        ontoma_disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
+      destination:
+        associations: intermediate/pharmacogenetics.parquet
+        phenotypes: intermediate/pharmacogenetics/phenotypes.json
+      settings:
+        openai_token_filename: /var/run/secrets/openai_token
+  ##################################################################################################
+
+  #: EVIDENCE_PROJECT_SCORE STEP :##################################################################
+  evidence_project_score:
     - name: pyspark project_score
       pyspark: project_score
       source:
@@ -179,7 +213,10 @@ steps:
         cell_passport: input/evidence/cell_passport.csv.gz
         cell_line_mapping: input/ot_curation/mappings/biosystem/depmap_uberon_mapping.csv
       destination: intermediate/evidence/project_score.parquet
+  ##################################################################################################
 
+  #: EVIDENCE_GENE_BURDEN STEP :####################################################################
+  evidence_gene_burden:
     - name: pyspark gene_burden
       pyspark: gene_burden
       source:
@@ -192,11 +229,15 @@ steps:
         genebass: input/evidence/gene_burden/genebass/**.parquet
         cvdi: input/evidence/gene_burden/cvdi.xlsx
         curated_studies: input/ot_curation/gene_burden/curated_evidence.tsv
-        disease_mappings: input/ot_curation/mappings/disease/manual_string.tsv
+        ontoma_disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
+        ontoma_disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
       destination: intermediate/evidence/gene_burden.parquet
       settings:
         finngen_release: R12
+  ##################################################################################################
 
+  #: EVIDENCE_CHEMBl STEP :#########################################################################
+  evidence_chembl:
     - name: pyspark chembl
       pyspark: chembl
       source:
@@ -204,7 +245,10 @@ steps:
         stop_reasons: input/evidence/chembl/stop_reasons.json
         drug_indications: input/drug/chembl_drug_indication.jsonl
       destination: intermediate/evidence/chembl.parquet
+  ##################################################################################################
 
+  #: EVIDENCE_CANCER_BIOMARKERS STEP :################################################################
+  evidence_cancer_biomarkers:
     - name: pyspark cancer_biomarkers
       pyspark: cancer_biomarkers
       source:
@@ -215,12 +259,131 @@ steps:
       destination: intermediate/evidence/cancer_biomarkers.parquet
   ##################################################################################################
 
-  #: TIMESERIES STEP :########################################################################
+  #: EVIDENCE_ORPHANET STEP :#######################################################################
+  evidence_orphanet:
+    - name: pyspark orphanet
+      pyspark: orphanet
+      source:
+        evidence: input/evidence/orphanet.xml
+        ontoma_disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
+        ontoma_disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
+      destination: intermediate/evidence/orphanet.parquet
+  ##################################################################################################
+
+  #: EVIDENCE_CLINGEN STEP :#######################################################################
+  evidence_clingen:
+    - name: pyspark clingen
+      pyspark: clingen
+      source:
+        evidence: input/evidence/clingen.csv
+        ontoma_disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
+        ontoma_disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
+      destination: intermediate/evidence/clingen.parquet
+  ##################################################################################################
+
+  #: EVIDENCE_IMPC STEP :###########################################################################
+  evidence_impc:
+    - name: pyspark impc evidence strings
+      pyspark: impc
+      source:
+        solr_gene_gene: input/impc/gene_gene.csv
+        solr_ontology_ontology: input/impc/ontology_ontology.csv
+        solr_mouse_model: input/impc/mouse_model.csv
+        solr_disease: input/impc/disease.csv
+        solr_disease_model_summary: input/impc/disease_model_summary.csv
+        solr_ontology: input/impc/ontology.csv
+        hgnc_gene_mappings: input/target/genenames/hgnc_complete_set.tsv
+        mouse_gene_mappings: input/impc/MGI_Gene_Model_Coord.rpt
+        mouse_pubmed_refs: input/impc/MGI_PhenoGenoMP.rpt
+        mp_ontology: input/impc/mp.json
+        ontoma_disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
+        ontoma_disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
+      destination: intermediate/evidence/impc.parquet
+      settings:
+        score_cutoff: 41
+  ##################################################################################################
+
+  #: EVIDENCE PANEL APP STEP :#######################################################################
+  evidence_panel_app:
+    - name: pyspark panel_app
+      pyspark: panel_app
+      source:
+        evidence: input/evidence/panelapp/panel_app.tsv
+        panels: input/evidence/panelapp/panels.jsonl
+        ontoma_disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
+        ontoma_disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
+      destination: intermediate/evidence/panel_app.parquet
+  ##################################################################################################
+
+  #: EVIDENCE_CRISPR_SCREENS STEP :#################################################################
+  evidence_crispr_screens:
+    - name: pyspark crispr screens
+      pyspark: crispr_screens
+      source:
+        screens: input/evidence/crispr_screens/brain_screens.json.gz
+        studies_dir: input/evidence/crispr_screens/brain_studies
+        disease_mapping: input/ot_curation/mappings/disease/brain_crispr_studies.tsv
+      destination: intermediate/evidence/crispr_screens.parquet
+  ##################################################################################################
+
+  #: EVIDENCE_GENE2PHENOTYPE STEP :#################################################################
+  evidence_gene2phenotype:
+    - name: pyspark gene2phenotype
+      pyspark: gene2phenotype
+      source:
+        cancer_panel: input/evidence/gene2phenotype/cancer.csv
+        cardiac_panel: input/evidence/gene2phenotype/cardiac.csv
+        developmental_panel: input/evidence/gene2phenotype/dd.csv
+        ear_panel: input/evidence/gene2phenotype/ear.csv
+        eye_panel: input/evidence/gene2phenotype/eye.csv
+        skeletal_panel: input/evidence/gene2phenotype/skeletal.csv
+        skin_panel: input/evidence/gene2phenotype/skin.csv
+        ontoma_disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
+        ontoma_disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
+      destination: intermediate/evidence/gene2phenotype.parquet
+  ##################################################################################################
+
+  #: EVIDENCE_INTOGEN STEP :#######################################################################
+  evidence_intogen:
+    - name: pyspark intogen
+      pyspark: intogen
+      source:
+        genes: input/evidence/intogen/Compendium_Cancer_Genes.tsv
+        cohorts: input/evidence/intogen/cohorts.tsv
+        disease_mapping: input/ot_curation/mappings/disease/cancer2EFO_mappings.tsv
+      destination: intermediate/evidence/intogen.parquet
+  ##################################################################################################
+
+  #: EVIDENCE PPP STEP :############################################################################
+  evidence_ot_crispr:
+    - name: pyspark ot_crispr
+      pyspark: ot_crispr
+      source:
+        study_table: input/evidence/ot_crispr/config.tsv
+        ot_crispr_data: input/evidence/ot_crispr
+      destination: intermediate/evidence/ot_crispr.parquet
+  ##################################################################################################
+
+  #: ONTOMA STEP :##################################################################################
+  ontoma:
+    - name: pyspark ontoma generate lookup tables
+      pyspark: ontoma_lut_generation
+      source:
+        disease_index: output/disease/disease.parquet
+        ot_disease_curation: input/ontoma/ot_disease_curation.tsv
+        eva_clinvar: input/ontoma/eva_clinvar.txt
+        clinvar_xrefs: input/ontoma/clinvar_xrefs.txt
+      destination:
+        disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
+        disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
+  ##################################################################################################
+
+  #: TIMESERIES STEP :##############################################################################
   timeseries:
     - name: pyspark timeseries
       pyspark: timeseries
       source:
-        evidence: output/evidence
+        evidence: output/evidence_*
         disease: output/disease
       destination:
         overall_direct: view/timeseries_overall_direct
@@ -252,8 +415,6 @@ steps:
             weight: 1.0
           - id: cancer_gene_census
             weight: 1.0
-          - id: intogen
-            weight: 1.0
           - id: eva_somatic
             weight: 1.0
           - id: cancer_biomarkers
@@ -264,14 +425,8 @@ steps:
             weight: 1.0
           - id: crispr
             weight: 1.0
-          - id: slapenrich
-            weight: 0.5
-          - id: progeny
-            weight: 0.5
           - id: reactome
             weight: 1.0
-          - id: sysbio
-            weight: 0.5
           - id: europepmc
             weight: 0.2
           - id: expression_atlas
@@ -279,3 +434,843 @@ steps:
           - id: impc
             weight: 0.2
   ##################################################################################################
+
+  #: EVIDENCE POST PROCESS STEP :###################################################################
+  evidence_postprocess_gwas_credible_sets:
+    - name: pyspark evidence_postprocess
+      pyspark: evidence_postprocess
+      source:
+        evidence_path: intermediate/evidence/l2g_evidence
+        target_path: output/target
+        disease_path: output/disease
+        publication_date_lut: input/literature/literature_export
+      destination:
+        failed_evidence: excluded/evidence/gwas_credible_sets
+        evidence: output/evidence_gwas_credible_sets
+      settings:
+        evidence_format: parquet
+        score_expression: resourceScore
+        datasource_id: gwas_credible_sets
+        unique_fields:
+          - targetId
+          - targetFromSourceId
+          - diseaseId
+          - datasourceId
+          - studyLocusId
+
+  evidence_postprocess_expression_atlas:
+    - name: pyspark evidence_postprocess
+      pyspark: evidence_postprocess
+      source:
+        evidence_path: input/evidence/atlas.json.bz2
+        target_path: output/target
+        disease_path: output/disease
+        publication_date_lut: input/literature/literature_export
+      destination:
+        failed_evidence: excluded/evidence/expression_atlas
+        evidence: output/evidence_expression_atlas
+      settings:
+        evidence_format: json
+        datasource_id: expression_atlas
+        score_expression: 'array_min(array(1.0, pvalue_linear_score(resourceScore) * (abs(log2FoldChangeValue) / 10) * (log2FoldChangePercentileRank / 100)))'
+        unique_fields:
+          - targetId
+          - targetFromSourceId
+          - diseaseId
+          - datasourceId
+          - contrast
+          - studyId
+        excluded_biotypes:
+          - "IG_C_pseudogene"
+          - "IG_J_pseudogene"
+          - "IG_pseudogene"
+          - "IG_V_pseudogene"
+          - "polymorphic_pseudogene"
+          - "processed_pseudogene"
+          - "pseudogene"
+          - "rRNA"
+          - "rRNA_pseudogene"
+          - "snoRNA"
+          - "snRNA"
+          - "transcribed_processed_pseudogene"
+          - "transcribed_unitary_pseudogene"
+          - "transcribed_unprocessed_pseudogene"
+          - "TR_J_pseudogene"
+          - "TR_V_pseudogene"
+          - "unitary_pseudogene"
+          - "unprocessed_pseudogene"
+
+  evidence_postprocess_clinvar:
+    - name: pyspark evidence_postprocess
+      pyspark: evidence_postprocess
+      source:
+        evidence_path: input/evidence/eva.json.gz
+        target_path: output/target
+        disease_path: output/disease
+        publication_date_lut: input/literature/literature_export
+      destination:
+        failed_evidence: excluded/evidence/eva
+        evidence: output/evidence_eva
+      settings:
+        evidence_format: json
+        datasource_id: eva
+        score_expression: |
+          coalesce(
+            array_max(
+              transform(
+                clinicalSignificances,
+                x -> element_at(
+                  map(
+                    'association not found', 0.0,
+                    'benign', 0.0,
+                    'not provided', 0.0,
+                    'likely benign', 0.0,
+                    'likely risk allele', 0.3,
+                    'low penetrance', 0.3,
+                    'conflicting interpretations of pathogenicity', 0.3,
+                    'conflicting data from submitters', 0.3,
+                    'other', 0.3,
+                    'uncertain significance', 0.3,
+                    'uncertain risk allele', 0.3,
+                    'established risk allele', 0.5,
+                    'risk factor', 0.5,
+                    'affects', 0.5,
+                    'likely pathogenic', 0.7,
+                    'confers sensitivity', 0.9,
+                    'association', 0.9,
+                    'drug response', 0.9,
+                    'protective', 0.9,
+                    'pathogenic', 0.9
+                  ),
+                  x
+                )
+              )
+            ),
+            0.0
+          ) + coalesce(
+            element_at(
+              map(
+                'practice guideline', 0.1,
+                'reviewed by expert panel', 0.07,
+                'criteria provided, multiple submitters, no conflicts', 0.05,
+                'criteria provided, conflicting interpretations', 0.02,
+                'criteria provided, single submitter', 0.02,
+                'no assertion for the individual variant', 0.0,
+                'no assertion criteria provided', 0.0,
+                'no assertion provided', 0.0
+              ),
+              confidence
+            ),
+            0.0
+          )
+        unique_fields:
+          - targetId
+          - targetFromSourceId
+          - diseaseId
+          - datasourceId
+          - studyId
+          - variantId
+        direction_on_trait_expression: |
+          CASE WHEN CONCAT_WS('', clinicalSignificances) RLIKE '(?i)pathogenic'
+          AND CONCAT_WS('', clinicalSignificances) RLIKE '(?i)protect' THEN null
+          WHEN CONCAT_WS('', clinicalSignificances) RLIKE '(?i)pathogenic' THEN 'risk'
+          WHEN CONCAT_WS('', clinicalSignificances) RLIKE '(?i)protect' THEN 'protect'
+          ELSE null
+          END
+        direction_on_target_expression: |
+          CASE
+            WHEN variantFunctionalConsequenceId IN (
+              'SO_0001589',
+              'SO_0001587',
+              'SO_0001574',
+              'SO_0001575',
+              'SO_0002012',
+              'SO_0001578',
+              'SO_0001893'
+            ) THEN 'LoF'
+            ELSE null
+          END
+
+  evidence_postprocess_clinvar_somatic:
+    - name: pyspark evidence_postprocess
+      pyspark: evidence_postprocess
+      source:
+        evidence_path: input/evidence/eva.json.gz
+        target_path: output/target
+        disease_path: output/disease
+        publication_date_lut: input/literature/literature_export
+      destination:
+        failed_evidence: excluded/evidence/eva_somatic
+        evidence: output/evidence_eva_somatic
+      settings:
+        evidence_format: json
+        datasource_id: eva_somatic
+        score_expression: |
+          coalesce(
+            array_max(
+              transform(
+                clinicalSignificances,
+                x -> element_at(
+                  map(
+                    'association not found', 0.0,
+                    'benign', 0.0,
+                    'not provided', 0.0,
+                    'likely benign', 0.0,
+                    'likely risk allele', 0.3,
+                    'conflicting interpretations of pathogenicity', 0.3,
+                    'conflicting data from submitters', 0.3,
+                    'other', 0.3,
+                    'uncertain significance', 0.3,
+                    'low penetrance', 0.3,
+                    'uncertain risk allele', 0.3,
+                    'established risk allele', 0.5,
+                    'risk factor', 0.5,
+                    'affects', 0.5,
+                    'likely pathogenic', 0.7,
+                    'confers sensitivity', 0.9,
+                    'association', 0.9,
+                    'drug response', 0.9,
+                    'protective', 0.9,
+                    'pathogenic', 0.9
+                  ),
+                  x
+                )
+              )
+            ),
+            0.0
+          ) + coalesce(
+            element_at(
+              map(
+                'practice guideline', 0.1,
+                'reviewed by expert panel', 0.07,
+                'criteria provided, multiple submitters, no conflicts', 0.05,
+                'criteria provided, conflicting interpretations', 0.02,
+                'criteria provided, single submitter', 0.02,
+                'no assertion for the individual variant', 0.0,
+                'no assertion criteria provided', 0.0,
+                'no assertion provided', 0.0
+              ),
+              confidence
+            ),
+            0.0
+          )
+        unique_fields:
+          - targetId
+          - targetFromSourceId
+          - diseaseId
+          - datasourceId
+          - studyId
+          - variantId
+        direction_on_trait_expression: |
+          CASE WHEN CONCAT_WS('', clinicalSignificances) RLIKE '(?i)pathogenic'
+          AND CONCAT_WS('', clinicalSignificances) RLIKE '(?i)protect' THEN null
+          WHEN CONCAT_WS('', clinicalSignificances) RLIKE '(?i)pathogenic' THEN 'risk'
+          WHEN CONCAT_WS('', clinicalSignificances) RLIKE '(?i)protect' THEN 'protect'
+          ELSE null
+          END
+        direction_on_target_expression: |
+          CASE
+            WHEN variantFunctionalConsequenceId IN (
+              'SO_0001589',
+              'SO_0001587',
+              'SO_0001574',
+              'SO_0001575',
+              'SO_0002012',
+              'SO_0001578',
+              'SO_0001893'
+            ) THEN 'LoF'
+            ELSE null
+          END
+  evidence_postprocess_uniprot_variants:
+    - name: pyspark evidence_postprocess
+      pyspark: evidence_postprocess
+      source:
+        evidence_path: input/evidence/uniprot_variants.json.gz
+        target_path: output/target
+        disease_path: output/disease
+        publication_date_lut: input/literature/literature_export
+      destination:
+        failed_evidence: excluded/evidence/uniprot_variants
+        evidence: output/evidence_uniprot_variants
+      settings:
+        evidence_format: json
+        datasource_id: uniprot_variants
+        score_expression: |
+          element_at(
+            map(
+              'high', 1.0,
+              'medium', 0.5
+            ),
+            confidence
+          )
+        unique_fields:
+          - targetId
+          - targetFromSourceId
+          - diseaseId
+          - datasourceId
+          - diseaseFromSource
+          - variantRsId
+          - variantId
+          - literature
+
+  evidence_postprocess_uniprot_literature:
+    - name: pyspark evidence_postprocess
+      pyspark: evidence_postprocess
+      source:
+        evidence_path: input/evidence/uniprot_literature.json.gz
+        target_path: output/target
+        disease_path: output/disease
+        publication_date_lut: input/literature/literature_export
+      destination:
+        failed_evidence: excluded/evidence/uniprot_literature
+        evidence: output/evidence_uniprot_literature
+      settings:
+        evidence_format: json
+        datasource_id: uniprot_literature
+        score_expression: |
+          element_at(
+            map(
+              'high', 1.0,
+              'medium', 0.5
+            ),
+            confidence
+          )
+        unique_fields:
+          - targetId
+          - targetFromSourceId
+          - diseaseId
+          - datasourceId
+          - diseaseFromSource
+
+  evidence_postprocess_clingen:
+    - name: pyspark evidence_postprocess
+      pyspark: evidence_postprocess
+      source:
+        evidence_path: intermediate/evidence/clingen.parquet
+        target_path: output/target
+        disease_path: output/disease
+        publication_date_lut: input/literature/literature_export
+      destination:
+        failed_evidence: excluded/evidence/clingen
+        evidence: output/evidence_clingen
+      settings:
+        datasource_id: clingen
+        evidence_format: parquet
+        score_expression: |
+          element_at(
+            map(
+              'No Known Disease Relationship', 0.01,
+              'Refuted', 0.01,
+              'Disputed', 0.01,
+              'Limited', 0.01,
+              'Moderate', 0.5,
+              'Strong', 1.0,
+              'Definitive', 1.0
+            ),
+            confidence
+          )
+        unique_fields:
+          - targetId
+          - targetFromSourceId
+          - diseaseId
+          - datasourceId
+          - diseaseFromSource
+          - studyId
+          - allelicRequirements
+
+  evidence_postprocess_cancer_biomarkers:
+    - name: pyspark evidence_postprocess
+      pyspark: evidence_postprocess
+      source:
+        evidence_path: intermediate/evidence/cancer_biomarkers.parquet
+        target_path: output/target
+        disease_path: output/disease
+        publication_date_lut: input/literature/literature_export
+      destination:
+        failed_evidence: excluded/evidence/cancer_biomarkers
+        evidence: output/evidence_cancer_biomarkers
+      settings:
+        evidence_format: parquet
+        datasource_id: cancer_biomarkers
+        score_expression: "1.0"
+        unique_fields:
+          - targetId
+          - targetFromSourceId
+          - diseaseId
+          - datasourceId
+          - biomarkerName
+          - confidence
+          - diseaseFromSource
+          - drugFromSource
+          - drugResponse
+
+  evidence_postprocess_chembl:
+    - name: pyspark evidence_postprocess
+      pyspark: evidence_postprocess
+      source:
+        evidence_path: intermediate/evidence/chembl.parquet
+        target_path: output/target
+        disease_path: output/disease
+        publication_date_lut: input/literature/literature_export
+        mechanism_of_action: output/drug_mechanism_of_action
+      destination:
+        failed_evidence: excluded/evidence/chembl
+        evidence: output/evidence_chembl
+      settings:
+        evidence_format: parquet
+        datasource_id: chembl
+        score_expression: |
+          element_at(
+            map(
+              cast(0.5 as double),
+              0.05,
+              cast(1.0 as double),
+              0.1,
+              cast(2.0 as double),
+              0.2,
+              cast(3.0 as double),
+              0.7,
+              cast(4.0 as double),
+              1.0
+            ),
+            clinicalPhase
+          ) *
+          case
+          when studyStopReasonCategories is null then
+            double(1.0)
+          else
+            array_min(
+              transform(
+                studyStopReasonCategories,
+                x -> element_at(
+                  map(
+                    'Another study', double(1.0),
+                    'Business or administrative', double(1.0),
+                    'COVID-19', double(1.0),
+                    'Ethical reason', double(1.0),
+                    'Insufficient data', double(1.0),
+                    'Insufficient enrollment', double(1.0),
+                    'Interim analysis', double(1.0),
+                    'Invalid reason', double(1.0),
+                    'Logistics or resources', double(1.0),
+                    'Met endpoint', double(1.0),
+                    'Negative', double(0.5),
+                    'No context', double(1.0),
+                    'Regulatory', double(1.0),
+                    'Safety or side effects', double(0.5),
+                    'Study design', double(1.0),
+                    'Study staff moved', double(1.0),
+                    'Success', double(1.0),
+                    'Uncategorised', double(1.0)
+                  ),
+                  x
+                )
+              )
+            )
+          end
+        unique_fields:
+          - targetId
+          - targetFromSourceId
+          - diseaseId
+          - datasourceId
+          - drugId
+          - urls
+        direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'protect' END
+        direction_on_target_expression: moaType
+
+  evidence_postprocess_reactome:
+    - name: pyspark evidence_postprocess
+      pyspark: evidence_postprocess
+      source:
+        evidence_path: input/evidence/reactome.json.gz
+        target_path: output/target
+        disease_path: output/disease
+        publication_date_lut: input/literature/literature_export
+      destination:
+        failed_evidence: excluded/evidence/reactome
+        evidence: output/evidence_reactome
+      settings:
+        evidence_format: json
+        datasource_id: reactome
+        score_expression: "1.0"
+        unique_fields:
+          - targetId
+          - targetFromSourceId
+          - diseaseId
+          - datasourceId
+          - variantAminoacidDescriptions
+          - targetModulation
+          - reactionId
+
+  evidence_postprocess_impc:
+    - name: pyspark evidence_postprocess
+      pyspark: evidence_postprocess
+      source:
+        evidence_path: intermediate/evidence/impc.parquet
+        target_path: output/target
+        disease_path: output/disease
+        publication_date_lut: input/literature/literature_export
+      destination:
+        failed_evidence: excluded/evidence/impc
+        evidence: output/evidence_impc
+      settings:
+        evidence_format: parquet
+        datasource_id: impc
+        score_expression: "resourceScore / 100"
+        unique_fields:
+          - targetId
+          - targetFromSourceId
+          - diseaseId
+          - datasourceId
+          - biologicalModelGeneticBackground
+          - targetInModel
+          - biologicalModelAllelicComposition
+          - diseaseFromSource
+        direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'risk' END
+        direction_on_target_expression: CASE WHEN diseaseId IS NOT NULL THEN 'LoF' END
+
+  evidence_postprocess_orphanet:
+    - name: pyspark evidence_postprocess
+      pyspark: evidence_postprocess
+      source:
+        evidence_path: intermediate/evidence/orphanet.parquet
+        target_path: output/target
+        disease_path: output/disease
+        publication_date_lut: input/literature/literature_export
+      destination:
+        failed_evidence: excluded/evidence/orphanet
+        evidence: output/evidence_orphanet
+      settings:
+        evidence_format: parquet
+        datasource_id: orphanet
+        score_expression: "element_at(map('Assessed', 1.0, 'Not yet assessed', 0.5), confidence)"
+        unique_fields:
+          - targetId
+          - targetFromSourceId
+          - diseaseId
+          - datasourceId
+          - diseaseFromSourceId
+        direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'risk' END
+        direction_on_target_expression: |
+          CASE
+            WHEN variantFunctionalConsequenceId == 'SO_0002053' THEN 'GoF'
+            WHEN variantFunctionalConsequenceId == 'SO_0002054' THEN 'LoF'
+            ELSE null
+          END
+
+  evidence_postprocess_gene2phenotype:
+    - name: pyspark evidence_postprocess
+      pyspark: evidence_postprocess
+      source:
+        evidence_path: intermediate/evidence/gene2phenotype.parquet
+        target_path: output/target
+        disease_path: output/disease
+        publication_date_lut: input/literature/literature_export
+      destination:
+        failed_evidence: excluded/evidence/gene2phenotype
+        evidence: output/evidence_gene2phenotype
+      settings:
+        evidence_format: parquet
+        datasource_id: gene2phenotype
+        score_expression: |
+          element_at(
+            map(
+              'definitive', 1.0,
+              'both RD and IF', 1.0,
+              'strong', 1.0,
+              'moderate', 0.5,
+              'limited', 0.01
+            ),
+            confidence
+          )
+        unique_fields:
+          - targetId
+          - targetFromSourceId
+          - diseaseId
+          - datasourceId
+          - diseaseFromSource
+          - allelicRequirements
+          - studyId
+        direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'risk' END
+        direction_on_target_expression: |
+          CASE
+            WHEN variantFunctionalConsequenceId == 'SO_0002315' THEN 'GoF'
+            WHEN variantFunctionalConsequenceId == 'SO_0002317' THEN 'LoF'
+            ELSE null
+          END
+
+  evidence_postprocess_intogen:
+    - name: pyspark evidence_postprocess
+      pyspark: evidence_postprocess
+      source:
+        evidence_path: intermediate/evidence/intogen.parquet
+        target_path: output/target
+        disease_path: output/disease
+        publication_date_lut: input/literature/literature_export
+      destination:
+        failed_evidence: excluded/evidence/intogen
+        evidence: output/evidence_intogen
+      settings:
+        evidence_format: parquet
+        datasource_id: intogen
+        score_expression: pvalue_linear_score(resourceScore, 0.1, 1e-10, 0.25, 1.0)
+        unique_fields:
+          - targetId
+          - targetFromSourceId
+          - diseaseId
+          - datasourceId
+          - cohortShortName
+        direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'risk' END
+        direction_on_target_expression: |
+          CASE
+            WHEN mutatedSamples IS NOT NULL AND
+              exists(
+                transform(
+                  mutatedSamples,
+                  x -> x.functionalConsequenceId
+                ), y -> y IN ("SO_0002054")
+              )
+            THEN 'LoF'
+            WHEN mutatedSamples IS NOT NULL AND
+              exists(
+                transform(
+                  mutatedSamples,
+                  x -> x.functionalConsequenceId
+                ), y -> y IN ("SO_0002053")
+              )
+            THEN 'GoF'
+          END
+
+  evidence_postprocess_gene_burden:
+    - name: pyspark evidence_postprocess
+      pyspark: evidence_postprocess
+      source:
+        evidence_path: intermediate/evidence/gene_burden.parquet
+        target_path: output/target
+        disease_path: output/disease
+        publication_date_lut: input/literature/literature_export
+      destination:
+        failed_evidence: excluded/evidence/gene_burden
+        evidence: output/evidence_gene_burden
+      settings:
+        evidence_format: parquet
+        datasource_id: gene_burden
+        score_expression: pvalue_linear_score(resourceScore, 1e-7, 1e-17, 0.25, 1.0)
+        unique_fields:
+          - targetId
+          - targetFromSourceId
+          - diseaseId
+          - datasourceId
+          - ancestryId
+          - diseaseFromSource
+          - statisticalMethod
+          - projectId
+        direction_on_trait_expression: |
+          CASE WHEN oddsRatio > 1.0 THEN 'risk'
+          WHEN oddsRatio < 1.0 THEN 'protect'
+          WHEN beta > 0.0 THEN 'risk'
+          WHEN beta < 0.0 THEN 'protect'
+          END
+        direction_on_target_expression: "'LoF'"
+
+  evidence_postprocess_crispr_screens:
+    - name: pyspark evidence_postprocess
+      pyspark: evidence_postprocess
+      source:
+        evidence_path: intermediate/evidence/crispr_screens.parquet
+        target_path: output/target
+        disease_path: output/disease
+        publication_date_lut: input/literature/literature_export
+      destination:
+        failed_evidence: excluded/evidence/crispr_screen
+        evidence: output/evidence_crispr_screen
+      settings:
+        evidence_format: parquet
+        datasource_id: crispr_screen
+        score_expression: pvalue_linear_score(resourceScore, 0.5, 0.005, 0.0, 1.0)
+        unique_fields:
+          - targetId
+          - targetFromSourceId
+          - diseaseId
+          - datasourceId
+          - studyId
+
+  evidence_postprocess_europepmc:
+    - name: pyspark evidence_postprocess
+      pyspark: evidence_postprocess
+      source:
+        evidence_path: intermediate/evidence/literature_epmc
+        target_path: output/target
+        disease_path: output/disease
+        publication_date_lut: input/literature/literature_export
+      destination:
+        failed_evidence: excluded/evidence/europepmc
+        evidence: output/evidence_europepmc
+      settings:
+        evidence_format: json
+        datasource_id: europepmc
+        score_expression: array_min(array(resourceScore / 100.0, 1.0))
+        unique_fields:
+          - targetId
+          - targetFromSourceId
+          - diseaseId
+          - datasourceId
+          - literature
+
+  evidence_postprocess_panel_app:
+    - name: pyspark evidence_postprocess
+      pyspark: evidence_postprocess
+      source:
+        evidence_path: intermediate/evidence/panel_app.parquet
+        target_path: output/target
+        disease_path: output/disease
+        publication_date_lut: input/literature/literature_export
+      destination:
+        failed_evidence: excluded/evidence/panel_app
+        evidence: output/evidence_genomics_england
+      settings:
+        evidence_format: parquet
+        datasource_id: genomics_england
+        score_expression: |
+          element_at(
+            map(
+              'amber', 0.5,
+              'green', 1.0
+            ),
+            confidence
+          )
+        unique_fields:
+          - targetId
+          - targetFromSourceId
+          - diseaseId
+          - datasourceId
+          - diseaseFromSource
+          - studyId
+
+  evidence_postprocess_project_score:
+    - name: pyspark evidence_postprocess
+      pyspark: evidence_postprocess
+      source:
+        evidence_path: intermediate/evidence/project_score.parquet
+        target_path: output/target
+        disease_path: output/disease/
+        publication_date_lut: input/literature/literature_export/
+      destination:
+        failed_evidence: excluded/evidence/crispr
+        evidence: output/evidence_crispr
+      settings:
+        evidence_format: parquet
+        datasource_id: crispr
+        score_expression: linear_rescale(resourceScore, 41.5, 100, 0.415, 1.0)
+        unique_fields:
+          - targetId
+          - targetFromSourceId
+          - diseaseId
+          - datasourceId
+
+  evidence_postprocess_cosmic:
+    - name: pyspark evidence_postprocess
+      pyspark: evidence_postprocess
+      source:
+        evidence_path: input/evidence/cosmic.json.gz
+        target_path: output/target
+        disease_path: output/disease
+        publication_date_lut: input/literature/literature_export
+      destination:
+        failed_evidence: excluded/evidence/cancer_gene_census
+        evidence: output/evidence_cancer_gene_census
+      settings:
+        evidence_format: json
+        datasource_id: cancer_gene_census
+        score_expression: resourceScore
+        unique_fields:
+          - targetId
+          - targetFromSourceId
+          - diseaseId
+          - datasourceId
+        direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'risk' END
+        direction_on_target_expression: |
+          CASE
+            WHEN TSorOncogene == 'oncogene' THEN 'GoF'
+            WHEN TSorOncogene == 'tsg' THEN 'LoF'
+            ELSE null
+          END
+
+  evidence_postprocess_ot_crispr:
+    - name: pyspark evidence_postprocess
+      pyspark: evidence_postprocess
+      source:
+        evidence_path: intermediate/evidence/ot_crispr.parquet
+        target_path: output/target
+        disease_path: output/disease
+        publication_date_lut: input/literature/literature_export
+      destination:
+        failed_evidence: excluded/evidence/ot_crispr
+        evidence: output/evidence_ot_crispr
+      settings:
+        evidence_format: parquet
+        datasource_id: ot_crispr
+        score_expression: "1.0"
+        unique_fields:
+          - targetId
+          - targetFromSourceId
+          - diseaseId
+          - datasourceId
+          - studyId
+          - diseaseFromSourceMappedId
+          - targetFromSourceId
+          - resourceScore
+          - statisticalTestTail
+
+  evidence_postprocess_encore:
+    - name: pyspark evidence_postprocess
+      pyspark: evidence_postprocess
+      source:
+        evidence_path: input/evidence/encore.json.gz
+        target_path: output/target
+        disease_path: output/disease
+        publication_date_lut: input/literature/literature_export
+      destination:
+        failed_evidence: excluded/evidence/encore
+        evidence: output/evidence_encore
+      settings:
+        evidence_format: json
+        datasource_id: encore
+        score_expression: pvalue_linear_score(geneticInteractionPValue, 1.0, 0.01, 0.0, 1.0)
+        unique_fields:
+          - targetId
+          - targetFromSourceId
+          - diseaseId
+          - datasourceId
+          - targetFromSourceId
+          - interactingTargetFromSourceId
+          - diseaseFromSourceMappedId
+          - diseaseCellLines
+
+  evidence_postprocess_validation_lab:
+    - name: pyspark evidence_postprocess
+      pyspark: evidence_postprocess
+      source:
+        evidence_path: input/evidence/validation_lab.json.gz
+        target_path: output/target
+        disease_path: output/disease
+        publication_date_lut: input/literature/literature_export
+      destination:
+        failed_evidence: excluded/evidence/ot_crispr_validation
+        evidence: output/evidence_ot_crispr_validation
+      settings:
+        evidence_format: json
+        datasource_id: ot_crispr_validation
+        score_expression: resourceScore
+        unique_fields:
+          - targetId
+          - targetFromSourceId
+          - diseaseId
+          - datasourceId
+          - targetFromSourceId
+          - diseaseFromSourceMappedId
+          - resourceScore
+          - diseaseCellLines
+          - primaryProjectId
+
+        #################################################################################################
