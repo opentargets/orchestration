@@ -305,7 +305,9 @@ steps:
       - pts_evidence_postprocess_uniprot_literature
       - pts_evidence_postprocess_uniprot_variants
     depends_on_ppp:
-      - pts_evidence_postprocess_ppp
+      - pts_evidence_postprocess_ot_crispr
+      - pts_evidence_postprocess_encore
+      - pts_evidence_postprocess_validation_lab
   # ETL STEPS
   etl_expression:
     num_partitions: 4
@@ -389,7 +391,9 @@ steps:
       - pts_evidence_postprocess_uniprot_literature
       - pts_evidence_postprocess_uniprot_variants
     depends_on_ppp:
-      - pts_evidence_postprocess_ppp
+      - pts_evidence_postprocess_ot_crispr
+      - pts_evidence_postprocess_encore
+      - pts_evidence_postprocess_validation_lab
   etl_association_otf:
     depends_on:
       - pts_evidence_postprocess_impc
@@ -413,7 +417,9 @@ steps:
       - pts_evidence_postprocess_uniprot_literature
       - pts_evidence_postprocess_uniprot_variants
     depends_on_ppp:
-      - pts_evidence_postprocess_ppp
+      - pts_evidence_postprocess_ot_crispr
+      - pts_evidence_postprocess_encore
+      - pts_evidence_postprocess_validation_lab
   etl_known_drug:
     num_partitions: 2
     depends_on:
