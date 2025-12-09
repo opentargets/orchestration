@@ -525,14 +525,16 @@ steps:
       source: ${latest_validation_lab}
       destination: input/evidence/validation_lab.json.gz
 
-    - name: find_latest ot_crispr
-      source: gs://otar013-ppp/ot_crispr
-      scratchpad_key: 'latest_ot_crispr'
-    - name: copy ot_crispr
-      requires:
-        - find_latest ot_crispr
-      source: ${latest_ot_crispr}
-      destination: input/evidence/ot_crispr.json.gz
+    - name: copy ot_crispr config
+      source: gs://otar013-ppp/PPP-evidence-configuration/raw_study_table.tsv
+      destination: input/evidence/ot_crispr/config.json
+
+    - name: explode_glob ot_crispr files
+      glob: 'gs://otar013-ppp/ot_crispr/input_data_filtered/**/**'
+      do:
+        - name: copy ot_crispr ${match_stem} ${uuid}
+          source: ${uri}
+          destination: input/evidence/ot_crispr/data/${match_path}${match_stem}.${match_ext}
   ##################################################################################################
 
   #: EXPRESSION STEP :##############################################################################

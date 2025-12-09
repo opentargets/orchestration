@@ -360,7 +360,7 @@ steps:
       pyspark: ot_crispr
       source:
         study_table: input/evidence/ot_crispr/config.tsv
-        ot_crispr_data: input/evidence/ot_crispr
+        ot_crispr_data: input/evidence/ot_crispr/data
       destination: intermediate/evidence/ot_crispr.parquet
   ##################################################################################################
 
