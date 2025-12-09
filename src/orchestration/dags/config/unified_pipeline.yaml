@@ -1,5 +1,5 @@
 ---
-release_name: '25.12'
+release_name: '25.12-ppp'
 
 # If `is_dev` is true:
 #   * the bucket used for the run will be `opentargets-pipeline-runs`
