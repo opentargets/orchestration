@@ -10,8 +10,8 @@ clusters:
     metadata:
       PTS_REF: 'v{{pts_version}}'
     properties:
-      "yarn.scheduler.maximum-allocation-mb": '55296'
-      "yarn.nodemanager.resource.memory-mb": '55296'
+      "yarn:yarn.scheduler.maximum-allocation-mb": '25296'
+      "yarn:yarn.nodemanager.resource.memory-mb": '25296'
       'spark:spark.driver.memory': '14894m'
       'spark:spark.executor.memory': '14894m'
       'spark:spark.driver.cores': '10'
