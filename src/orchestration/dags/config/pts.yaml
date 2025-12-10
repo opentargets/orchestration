@@ -186,8 +186,6 @@ steps:
       destination: intermediate/target/gene-essentiality/essentiality.parquet
       settings:
         keep_only_essentials: false
-      properties:
-        'spark.sql.autoBroadcastJoinThreshold' : '-1'
   ##################################################################################################
 
   #: PHARMACOGENETICS STEP :########################################################################
