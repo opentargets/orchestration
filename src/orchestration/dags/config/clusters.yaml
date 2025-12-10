@@ -3,15 +3,26 @@ clusters:
   pts:
     image_version: '2.3'
     num_masters: 1
-    num_workers: 0 # single-node mode
-    master_machine_type: n1-standard-32
+    master_machine_type: n1-highmem-64
     master_disk_size: 128
     idle_delete_ttl: 3600
     internal_ip_only: false
     metadata:
       PTS_REF: 'v{{pts_version}}'
     properties:
-      'spark:spark.driver.memory': '48g'
+      'spark:spark.driver.memory': '44g'
+      'spark:spark.executor.memory': '44g'
+      'spark:spark.executor.cores': '31'
+      'spark:spark.driver.cores': '31'
+      'spark:spark.memory.fraction': '0.6'
+      'spark:spark.memory.storageFraction': '0.5'
+      'spark:spark.offHeap.size': '0'
+      'spark:spark.executor.memoryOverheadFactor': '0.2'
+      'spark:spark.sql.adaptive.enabled': 'true'
+      'spark:spark.serializer' : 'org.apache.spark.serializer.KryoSerializer'
+      'spark:spark.executor.extraJavaOptions' : '-XX:+UseG1GC'
+      'spark:spark.dynamicAllocation.maxExecutors': '2'
+      'spark:spark.dynamicAllocation.enabled': 'true'
       'spark:spark.jars.packages': 'com.johnsnowlabs.nlp:spark-nlp_2.12:6.1.3'
     init_actions_uris:
       - 'gs://opentargets-pipelines/up/pts/install_dependencies_on_cluster.sh'
