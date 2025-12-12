@@ -3,7 +3,7 @@ clusters:
   pts:
     image_version: '2.3'
     num_masters: 1
-    num_workers: 0
+    num_workers: 0 # single-node mode
     master_machine_type: n1-standard-32
     master_disk_size: 128
     idle_delete_ttl: 3600
