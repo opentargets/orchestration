@@ -18,14 +18,14 @@ clusters:
       'yarn:yarn.scheduler.maximum-allocation-vcores': '10'
       'yarn:yarn.nodemanager.resource.cpu-vcores': '10'
 
-      # (5 executors + 1 driver) x 5 cores = 30 cores in total 
+      # (5 executors + 1 driver) x 5 cores = 30 cores in total
       # Each node has 15G + 1.5G overhead = 16.5G memory
       # 6 x 16.5G = 99G memory in total which leaves 20G for OS
       'spark:spark.executor.memory': '14894m'
       'spark:spark.executor.cores': '5'
       'spark:spark.memory.fraction': '0.6'
       'spark:spark.offHeap.size': '0'
-      'spark:spark.driver.memory' : '14894m'
+      'spark:spark.driver.memory': '14894m'
       'spark:spark.driver.cores': '5'
       'spark:spark.executor.memoryOverheadFactor': '0.1'
 
