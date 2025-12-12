@@ -4,7 +4,7 @@ clusters:
     image_version: '2.3'
     num_masters: 1
     num_workers: 0
-    master_machine_type: n1-highmem-32
+    master_machine_type: n1-standard-32
     master_disk_size: 128
     idle_delete_ttl: 3600
     internal_ip_only: false
