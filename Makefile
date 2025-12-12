@@ -28,13 +28,13 @@ clean-vm: ## Destroy the Airflow development VM
 	fi
 
 ### DEVELOPMENT TARGETS ###
-test: ## Run unit tests
+test: sync ## Run unit tests
 	@uv run pytest
 
 check: format test ## run all checks
 
 sync:
-	@uv sync --all-extras --dev
+	@uv sync --all-groups --dev
 
 .git/hooks/commit-msg:
 	@uv run pre-commit install --hook-type commit-msg

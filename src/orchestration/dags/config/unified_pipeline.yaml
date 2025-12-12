@@ -1,21 +1,21 @@
 ---
-release_name: '25.12'
+release_name: '25.12-ppp'
 
 # If `is_dev` is true:
-#   * the bucket used for the run will be `open-targets-pipeline-runs`
+#   * the bucket used for the run will be `opentargets-pipeline-runs`
 #   * the prefix inside the bucket will be `run_name`
 #         which defaults to a timestamp if not provided.
 is_dev: true
-run_name: 'il/25.12-testrun-2'
+run_name: 'szsz/25.12-ppp-testrun-3'
 
 # Whether this will be a partner preview platform release (PPP)
-is_ppp: false
+is_ppp: true
 
 # Versions for software and data
 pis_version: '25.12.0'
-pts_version: '25.12.0'
-etl_version: '25.12.0'
-gentropy_version: '3.1.0'
+pts_version: '25.12.1'
+etl_version: '25.12.1'
+gentropy_version: '3.1.1'
 vep_version: 'release_115.2'
 chembl_version: '36'
 efo_version: '3.83.0'
@@ -305,7 +305,9 @@ steps:
       - pts_evidence_postprocess_uniprot_literature
       - pts_evidence_postprocess_uniprot_variants
     depends_on_ppp:
-      - pts_evidence_postprocess_ppp
+      - pts_evidence_postprocess_ot_crispr
+      - pts_evidence_postprocess_encore
+      - pts_evidence_postprocess_validation_lab
   # ETL STEPS
   etl_expression:
     num_partitions: 4
@@ -389,7 +391,9 @@ steps:
       - pts_evidence_postprocess_uniprot_literature
       - pts_evidence_postprocess_uniprot_variants
     depends_on_ppp:
-      - pts_evidence_postprocess_ppp
+      - pts_evidence_postprocess_ot_crispr
+      - pts_evidence_postprocess_encore
+      - pts_evidence_postprocess_validation_lab
   etl_association_otf:
     depends_on:
       - pts_evidence_postprocess_impc
@@ -413,7 +417,9 @@ steps:
       - pts_evidence_postprocess_uniprot_literature
       - pts_evidence_postprocess_uniprot_variants
     depends_on_ppp:
-      - pts_evidence_postprocess_ppp
+      - pts_evidence_postprocess_ot_crispr
+      - pts_evidence_postprocess_encore
+      - pts_evidence_postprocess_validation_lab
   etl_known_drug:
     num_partitions: 2
     depends_on:

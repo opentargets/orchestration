@@ -11,7 +11,37 @@ clusters:
     metadata:
       PTS_REF: 'v{{pts_version}}'
     properties:
-      'spark:spark.driver.memory': '48g'
+      # Configuration optimized for single node workloads.
+      # These yarn settings are set to increase the max allocations per executor for yarn
+      'yarn:yarn.scheduler.maximum-allocation-mb': '25296'
+      'yarn:yarn.nodemanager.resource.memory-mb': '25296'
+      'yarn:yarn.scheduler.maximum-allocation-vcores': '10'
+      'yarn:yarn.nodemanager.resource.cpu-vcores': '10'
+
+      # (5 executors + 1 driver) x 5 cores = 30 cores in total
+      # Each node has 15G + 1.5G overhead = 16.5G memory
+      # 6 x 16.5G = 99G memory in total which leaves 20G for OS
+      'spark:spark.executor.memory': '14894m'
+      'spark:spark.executor.cores': '5'
+      'spark:spark.memory.fraction': '0.6'
+      'spark:spark.offHeap.size': '0'
+      'spark:spark.driver.memory': '14894m'
+      'spark:spark.driver.cores': '5'
+      'spark:spark.executor.memoryOverheadFactor': '0.1'
+
+      # Scale at most to 6 executors when dynamically resizing the job
+      'spark:spark.dynamicAllocation.enabled': 'true'
+      'spark:spark.dynamicAllocation.maxExecutors': '6'
+      'spark:spark.sql.adaptive.enabled': 'true'
+
+      # 0.5 of the executor memory is allocated for storage
+      'spark:spark.memory.storageFraction': '0.5'
+      'spark:spark.serializer': 'org.apache.spark.serializer.KryoSerializer'
+
+      # Faster garbage collection
+      'spark:spark.executor.extraJavaOptions': '-XX:+UseG1GC'
+
+      # Spark NLP package
       'spark:spark.jars.packages': 'com.johnsnowlabs.nlp:spark-nlp_2.12:6.1.3'
     init_actions_uris:
       - 'gs://opentargets-pipelines/up/pts/install_dependencies_on_cluster.sh'

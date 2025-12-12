@@ -511,7 +511,7 @@ steps:
     # OT_crispr => generate evience.
     - name: copy ot_crispr config
       source: gs://otar013-ppp/PPP-evidence-configuration/raw_study_table.tsv
-      destination: input/evidence/ot_crispr/config.json
+      destination: input/evidence/ot_crispr/config.tsv
 
     - name: explode_glob ot_crispr files
       glob: 'gs://otar013-ppp/ot_crispr/input_data_filtered/**/**'

@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = "==3.12.*"
 
 [[package]]
@@ -2932,7 +2932,7 @@ wheels = [
 
 [[package]]
 name = "orchestration"
-version = "1.0.0"
+version = "25.12.1"
 source = { editable = "." }
 dependencies = [
     { name = "apache-airflow", extra = ["async", "celery", "google"] },
@@ -2949,17 +2949,15 @@ dependencies = [
     { name = "requests" },
 ]
 
-[package.optional-dependencies]
-test = [
-    { name = "pytest" },
-]
-
 [package.dev-dependencies]
 dev = [
     { name = "deptry" },
     { name = "graphviz" },
     { name = "pre-commit" },
     { name = "ruff" },
+]
+test = [
+    { name = "pytest" },
 ]
 
 [package.metadata]
@@ -2974,11 +2972,9 @@ requires-dist = [
     { name = "pandas", specifier = "==2.1.4" },
     { name = "psycopg2-binary", specifier = "==2.9.10" },
     { name = "pyhocon", specifier = "==0.3.61" },
-    { name = "pytest", marker = "extra == 'test'", specifier = "==8.3.5" },
     { name = "pyyaml", specifier = "==6.0.2" },
     { name = "requests", specifier = "==2.32.3" },
 ]
-provides-extras = ["test"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -2987,6 +2983,7 @@ dev = [
     { name = "pre-commit", specifier = "==4.2.0" },
     { name = "ruff", specifier = "==0.11.7" },
 ]
+test = [{ name = "pytest", specifier = "==8.3.5" }]
 
 [[package]]
 name = "ordered-set"

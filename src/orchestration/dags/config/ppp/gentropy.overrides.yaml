@@ -17,8 +17,23 @@ steps:
         - gs://eqtl_catalogue_processed_otar_internal_data/otar2077/microglia/gentropy/study_index/*
         - gs://eqtl_catalogue_processed_otar_internal_data/otar2077/MAGE_OTAR/gentropy/study_index/*
         - gs://eqtl_catalogue_processed_otar_internal_data/otar2077/IBDverse/gentropy/study_index/*
+        - gs://eqtl_catalogue_processed_otar_internal_data/otar2077/GTEx_v10_majiq/gentropy/output/study_index/*
         - gs://finngen_ukb_mvp_meta_data/study_index/
-
+      step.invalid_qc_reasons:
+        - UNRESOLVED_TARGET
+        - UNRESOLVED_DISEASE
+        - UNKNOWN_STUDY_TYPE
+        - DUPLICATED_STUDY
+        - UNKNOWN_BIOSAMPLE
+        - FAILED_MEAN_BETA_CHECK
+        - FAILED_PZ_CHECK
+        - FAILED_GC_LAMBDA_CHECK
+        - NO_OT_CURATION
+        - CASE_CASE_STUDY_DESIGN
+        # PPP
+        - DEPRECATED_PROJECT
+      step.deprecated_project_ids:
+        - GTEx # GTEx v8 studies from eqtl Catalogue are swapped with newly ingested GTEX-v10
   credible_set:
     params:
       step.study_locus_path:
@@ -32,6 +47,7 @@ steps:
         - gs://eqtl_catalogue_processed_otar_internal_data/otar2077/microglia/gentropy/study_locus/*
         - gs://eqtl_catalogue_processed_otar_internal_data/otar2077/MAGE_OTAR/gentropy/study_locus/*
         - gs://eqtl_catalogue_processed_otar_internal_data/otar2077/IBDverse/gentropy/study_locus/*
+        - gs://eqtl_catalogue_processed_otar_internal_data/otar2077/GTEx_v10_majiq/gentropy/output/study_locus/*
         - gs://finngen_ukb_mvp_meta_data/credible_sets/
 
   variant:
