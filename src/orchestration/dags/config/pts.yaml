@@ -74,6 +74,7 @@ steps:
       source:
         probes_excel: input/target/chemicalprobes/probes.xlsx
         drugs_csv: input/target/chemicalprobes/probes_links.csv
+        chembl_molecule: intermediate/chembl_molecule
       destination: intermediate/chemical_probes_evidence.parquet
   ##################################################################################################
 
@@ -168,7 +169,7 @@ steps:
         brennan: input/target/safety/secondary_pharmacology.json
         toxcast: input/target/safety/toxcast.tsv
         aopwiki: input/target/safety/aopwiki.json
-        pharmacogenetics: intermediate/pharmacogenetics.parquet
+        pharmacogenetics: output/pharmacogenomics
       destination: intermediate/target/safety.parquet
 
   #: TARGET_GENE_ESSENTIALITY STEP :#### - part of target, pyspark tasks must run standalone for now
@@ -196,11 +197,16 @@ steps:
         clinpgx: input/pharmacogenetics/clinpgx_annotation.json.gz
         phenotypes: input/pharmacogenetics/phenotypes.json
         ontoma_disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
+        chembl_molecule: intermediate/chembl_molecule
+        drug_mechanism_of_action: output/drug_mechanism_of_action
       destination:
-        associations: intermediate/pharmacogenetics.parquet
+        associations: output/pharmacogenomics
         phenotypes: intermediate/pharmacogenetics/phenotypes.json
       settings:
         openai_token_filename: /var/run/secrets/openai_token
+      properties:
+        "spark.jars.packages": "com.johnsnowlabs.nlp:spark-nlp_2.12:6.1.3"
+
   ##################################################################################################
 
   #: EVIDENCE_PROJECT_SCORE STEP :##################################################################
@@ -378,6 +384,66 @@ steps:
         disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
   ##################################################################################################
 
+  #: DRUG_WARNING STEP :############################################################################
+  drug_warning:
+    - name: pyspark drug_warning
+      pyspark: drug_warning
+      source: input/drug/chembl_drug_warning.jsonl
+      destination: output/drug_warning
+  ##################################################################################################
+
+  #: DRUG_MECHANISM_OF_ACTION STEP :###############################################################
+  drug_mechanism_of_action:
+    - name: pyspark drug_mechanism_of_action
+      pyspark: drug_mechanism_of_action
+      source:
+        chembl_mechanism: input/drug/chembl_mechanism.jsonl
+        chembl_target: input/drug/chembl_target.jsonl
+        target: output/target
+      destination: output/drug_mechanism_of_action
+  ##################################################################################################
+
+  #: CHEMBL_MOLECULE STEP :#########################################################################
+  chembl_molecule:
+    - name: pyspark chembl_molecule
+      pyspark: chembl_molecule
+      source:
+        chembl_molecule: input/drug/chembl_molecule.jsonl
+        drugbank: input/drug/drugbank.csv.gz
+      destination: intermediate/chembl_molecule
+  ##################################################################################################
+
+  #: DRUG_MOLECULE STEP :##########################################################################
+  drug_molecule:
+    - name: pyspark drug_molecule
+      pyspark: drug_molecule
+      source:
+        molecule: intermediate/chembl_molecule
+        chemical_probes: intermediate/chemical_probes_evidence.parquet
+        mechanism_of_action: output/drug_mechanism_of_action
+        drug_warning: output/drug_warning
+        indication: input/drug/chembl_drug_indication.jsonl
+        disease: output/disease
+      destination: output/drug_molecule
+  ##################################################################################################
+
+  #: TARGET_PRIORITISATION STEP :###################################################################
+  target_prioritisation:
+    - name: pyspark target_prioritisation
+      pyspark: target_prioritisation
+      source:
+        targets: output/target
+        mouse_phenotypes: output/mouse_phenotype
+        molecule: output/drug_molecule
+        mechanism_of_action: output/drug_mechanism_of_action
+        hpa_data: input/target_engine/proteinatlas.json.gz
+        uniprot_slterms: input/target_engine/uniprot_locations.tsv.gz
+        mouse_pheno_scores: input/target_engine/mouse_pheno_scores.csv
+      destination: output/target_prioritisation
+      properties:
+        spark.driver.memory: 16g
+  ##################################################################################################
+
   #: TIMESERIES STEP :##############################################################################
   timeseries:
     - name: pyspark timeseries
@@ -386,10 +452,10 @@ steps:
         evidence: output/evidence_*
         disease: output/disease
       destination:
-        overall_direct: output/timeseries_overall_direct
-        overall_indirect: output/timeseries_overall_indirect
-        by_datasource_direct: output/timeseries_by_datasource_direct
-        by_datasource_indirect: output/timeseries_by_datasource_indirect
+        overall_direct: view/timeseries_overall_direct
+        overall_indirect: view/timeseries_overall_indirect
+        by_datasource_direct: view/timeseries_by_datasource_direct
+        by_datasource_indirect: view/timeseries_by_datasource_indirect
       settings:
         novelty_scale: 2 # 2 for long tailed slow decays
         novelty_shift: 3 # 3 for long tailed slow decays
@@ -472,7 +538,7 @@ steps:
       settings:
         evidence_format: json
         datasource_id: expression_atlas
-        score_expression: 'array_min(array(1.0, pvalue_linear_score(resourceScore) * (abs(log2FoldChangeValue) / 10) * (log2FoldChangePercentileRank / 100)))'
+        score_expression: "array_min(array(1.0, pvalue_linear_score(resourceScore) * (abs(log2FoldChangeValue) / 10) * (log2FoldChangePercentileRank / 100)))"
         unique_fields:
           - targetId
           - targetFromSourceId

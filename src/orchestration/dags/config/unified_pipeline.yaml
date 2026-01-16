@@ -103,6 +103,7 @@ steps:
   pts_chemical_probes:
     depends_on:
       - pis_target
+      - pts_chembl_molecule
   pts_coding_variant:
     depends_on:
       - gentropy_variant
@@ -126,7 +127,33 @@ steps:
   pts_pharmacogenetics:
     depends_on:
       - pis_pharmacogenetics
+      - pts_chembl_molecule
+      - pts_drug_mechanism_of_action
       - pts_ontoma
+  # Drug Processing Steps
+  pts_drug_warning:
+    depends_on:
+      - pis_drug
+  pts_chembl_molecule:
+    depends_on:
+      - pis_drug
+  pts_drug_mechanism_of_action:
+    depends_on:
+      - pis_drug
+      - pts_target
+  pts_drug_molecule:
+    depends_on:
+      - pts_chembl_molecule
+      - pts_drug_mechanism_of_action
+      - pts_drug_warning
+      - pts_chemical_probes
+      - pts_disease
+  pts_target_prioritisation:
+    depends_on:
+      - pis_target_engine
+      - pts_mouse_phenotype
+      - pts_drug_molecule
+      - pts_drug_mechanism_of_action
   # Evidence not processed by PTS
   pts_evidence_postprocess_europepmc:
     depends_on:
@@ -205,12 +232,12 @@ steps:
   pts_evidence_postprocess_chembl:
     depends_on:
       - pts_evidence_chembl
-      - etl_drug
+      - pts_drug_mechanism_of_action
       - pts_disease
   pts_evidence_cancer_biomarkers:
     depends_on:
       - pis_evidence_cancer_biomarkers
-      - etl_drug
+      - pts_drug_molecule
   pts_evidence_postprocess_cancer_biomarkers:
     depends_on:
       - pts_evidence_cancer_biomarkers
@@ -334,12 +361,6 @@ steps:
       - etl_reactome
       - pts_target_safety
       - pts_target_gene_essentiality
-  etl_drug:
-    num_partitions: 1
-    depends_on:
-      - pis_drug
-      - pts_disease
-      - etl_target
   etl_search_facet:
     depends_on:
       - pts_disease
@@ -352,22 +373,12 @@ steps:
   etl_openfda:
     depends_on:
       - pts_openfda
-      - etl_drug
+      - pts_drug_molecule
   etl_literature:
     num_partitions: 1000
     depends_on:
       - pis_literature
-      - etl_drug
-  etl_pharmacogenomics:
-    num_partitions: 1
-    depends_on:
-      - pts_pharmacogenetics
-      - etl_drug
-  etl_target_engine:
-    depends_on:
-      - pis_target_engine
-      - etl_drug
-      - pts_mouse_phenotype
+      - pts_drug_molecule
   etl_association:
     depends_on:
       - pts_evidence_postprocess_impc
@@ -420,10 +431,6 @@ steps:
       - pts_evidence_postprocess_ot_crispr
       - pts_evidence_postprocess_encore
       - pts_evidence_postprocess_validation_lab
-  etl_known_drug:
-    num_partitions: 2
-    depends_on:
-      - pts_evidence_postprocess_chembl
   etl_search:
     depends_on:
       - etl_association
@@ -451,7 +458,7 @@ steps:
       - gentropy_credible_set
   gentropy_variant_partition:
     depends_on:
-      - etl_pharmacogenomics
+      - pts_pharmacogenetics
       - gentropy_credible_set
       - pis_evidence_uniprot_variants
       - pis_evidence_eva
