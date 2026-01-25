@@ -38,7 +38,7 @@ nodes:
     google_batch:
       entrypoint: /usr/bin/bash
       parallelism: 200
-      image: ghcr.io/opentargets/orchestration-harmonisation:25.12-staging.5
+      image: ghcr.io/opentargets/orchestration-harmonisation:26.1-staging.1
       resource_specs:
         cpu_milli: 4000
         memory_mib: 8000
