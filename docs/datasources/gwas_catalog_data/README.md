@@ -445,4 +445,3 @@ To adjust the parameters for google batch infrastructure refer to the `google_ba
 ### 2026-01-27
 
 - chore: [26.02 GWAS Catalog update preparation](https://github.com/opentargets/issues/issues/4190)
-
