@@ -170,7 +170,19 @@ class ClusterConfig:
         Returns:
             Cluster: The Dataproc cluster.
         """
-        return ClusterGenerator(**asdict(self)).make()
+        config = ClusterGenerator(**asdict(self)).make()
+        # Ensure that the c4- machine types have the right disk config
+        # TODO: Refactor once we are sure we need the c4- machine types
+        if self.worker_machine_type.startswith("c4-"):
+            config["worker_config"]["disk_config"]["boot_disk_type"] = "hyperdisk-balanced"
+            config["worker_config"]["disk_config"]["boot_disk_provisioned_iops"] = 6_000
+            # Default is 140+ 1.5 x 500GiB
+            config["worker_config"]["disk_config"]["boot_disk_provisioned_throughput"] = 500
+        if self.master_machine_type.startswith("c4-"):
+            config["master_config"]["disk_config"]["boot_disk_type"] = "hyperdisk-balanced"
+            config["master_config"]["disk_config"]["boot_disk_provisioned_iops"] = 6_000
+            config["master_config"]["disk_config"]["boot_disk_provisioned_throughput"] = 500
+        return config
 
 
 class ClusterDefinition(NamedTuple):

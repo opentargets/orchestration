@@ -1,21 +1,21 @@
 ---
-release_name: '25.12-ppp'
+release_name: '26.01-interval-qc-2'
 
 # If `is_dev` is true:
 #   * the bucket used for the run will be `opentargets-pipeline-runs`
 #   * the prefix inside the bucket will be `run_name`
 #         which defaults to a timestamp if not provided.
 is_dev: true
-run_name: 'szsz/25.12-ppp-testrun-3'
+run_name: 'szsz/testrun-interval-qc-2'
 
 # Whether this will be a partner preview platform release (PPP)
 is_ppp: true
 
 # Versions for software and data
-pis_version: '25.12.0'
+pis_version: '26.0.0-dev+3954.1'
 pts_version: '25.12.1'
 etl_version: '25.12.1'
-gentropy_version: '3.2.0-rc.1'
+gentropy_version: '3.2.0-dev.6'
 vep_version: 'release_115.2'
 chembl_version: '36'
 efo_version: '3.83.0'
@@ -49,6 +49,7 @@ gnomad_version: '4.1'
 #
 steps:
   # PIS STEPS
+  pis_encode:
   pis_biosample:
   pis_disease:
   pis_drug:
@@ -436,6 +437,11 @@ steps:
   gentropy_biosample:
     depends_on:
       - pis_biosample
+  gentropy_enhancer_to_gene:
+    depends_on:
+      - pis_encode
+      - etl_target
+      - gentropy_biosample
   gentropy_study:
     depends_on:
       - pts_target
@@ -465,7 +471,7 @@ steps:
     depends_on:
       - gentropy_colocalisation
       - gentropy_variant
-      - pis_enhancer_to_gene
+      - gentropy_enhancer_to_gene
   gentropy_l2g_training:
     depends_on:
       - pis_l2g

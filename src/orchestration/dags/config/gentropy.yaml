@@ -231,3 +231,31 @@ steps:
       step.study_index_path: '{{release_uri}}/output/study'
       # OUTPUTS
       step.evidence_output_path: '{{release_uri}}/intermediate/evidence/l2g_evidence'
+
+  enhancer_to_gene:
+    params:
+      step: interval_e2g
+      step.session.write_mode: overwrite
+      step.session.output_partitions: 30
+      step.min_valid_score: 0.6
+      step.max_valid_score: 1.0
+      step.invalid_qc_reasons:
+        - UNRESOLVED_TARGET
+        - UNKNOWN_BIOSAMPLE
+        - SCORE_OUTSIDE_BOUNDS
+        - UNKNOWN_INTERVAL_TYPE
+        - AMBIGUOUS_SCORE
+        - UNKNOWN_PROJECT_ID
+        - INVALID_CHROMOSOME
+        - INVALID_RANGE
+        - AMBIGUOUS_INTERVAL_TYPE
+
+      # INPUTS
+      step.target_index_path: gs://open-targets-pipeline-runs/szsz/25.12-ppp-testrun-3/output/target #'{{release_uri}}/output/target'
+      step.biosample_index_path: gs://open-targets-pipeline-runs/szsz/25.12-ppp-testrun-3/output/biosample #'{{release_uri}}/output/biosample'
+      step.biosample_mapping_path: '{{release_uri}}/input/encode/rE2G/biosample_mapping.csv'
+      step.chromosome_contig_index_path: '{{release_uri}}/input/chromosome/chromosome.parquet'
+      step.interval_source: '{{release_uri}}/input/encode/rE2G/datasets/*.bed.gz'
+      # OUTPUTS
+      step.valid_output_path: '{{release_uri}}/output/enhancer_to_gene'
+      step.invalid_output_path: '{{release_uri}}/excluded/enhancer_to_gene'
