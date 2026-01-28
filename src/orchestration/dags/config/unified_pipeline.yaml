@@ -12,7 +12,7 @@ run_name: 'szsz/testrun-interval-qc-2'
 is_ppp: true
 
 # Versions for software and data
-pis_version: '26.1.0-dev.1'
+pis_version: '26.0.0-dev+3954.1'
 pts_version: '25.12.1'
 etl_version: '25.12.1'
 gentropy_version: '3.2.0-dev.6'
