@@ -427,6 +427,36 @@ steps:
       destination: output/drug_molecule
   ##################################################################################################
 
+  #: CLINICAL_REPORT STEP :#######################################################################
+  clinical_report:
+    - name: transform clinical_report
+      source:
+        chembl_molecule: intermediate/chembl_molecule
+        disease: output/disease
+      destination:
+        output: output/clinical_report
+        excluded: excluded/clinical_report
+      transformer: clinical_report
+  ##################################################################################################
+
+  #: CLINICAL_INDICATION STEP :####################################################################
+  clinical_indication:
+    - name: transform clinical_indication
+      source: output/clinical_report
+      destination: output/clinical_indication
+      transformer: clinical_indication
+  ##################################################################################################
+
+  #: CLINICAL_TARGET STEP :#######################################################################
+  clinical_target:
+    - name: transform clinical_target
+      source:
+        clinical_report: output/clinical_report
+        drug_mechanism_of_action: output/drug_mechanism_of_action
+      destination: output/clinical_target
+      transformer: clinical_target
+  ##################################################################################################
+
   #: TARGET_PRIORITISATION STEP :###################################################################
   target_prioritisation:
     - name: pyspark target_prioritisation

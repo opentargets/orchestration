@@ -148,6 +148,18 @@ steps:
       - pts_drug_warning
       - pts_chemical_probes
       - pts_disease
+  # Clinical Steps
+  pts_clinical_report:
+    depends_on:
+      - pts_chembl_molecule
+      - pts_disease
+  pts_clinical_indication:
+    depends_on:
+      - pts_clinical_report
+  pts_clinical_target:
+    depends_on:
+      - pts_clinical_report
+      - pts_drug_mechanism_of_action
   pts_target_prioritisation:
     depends_on:
       - pis_target_engine
