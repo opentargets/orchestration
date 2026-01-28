@@ -609,7 +609,7 @@ steps:
       destination: input/encode/rE2G/biosample_mapping.csv
 
     - name: copy encode rE2G manifest
-    # NOTE: excluded samples from query have divergent schemas that do not conform to expected rE2G format
+      # NOTE: excluded samples from query have divergent schemas that do not conform to expected rE2G format
       source: https://www.encodeproject.org/report.tsv?type=File&searchTerm=encode-re2g+thresholded&output_type=thresholded+element+gene+links&status=released&limit=all&accession!=ENCFF094BVF&accession!=ENCFF269DKY
       destination: input/encode/rE2G/download_manifest.tsv
 
@@ -619,7 +619,7 @@ steps:
       manifest: input/encode/rE2G/download_manifest.tsv
       columns:
         accession: 'Accession'
-        url_stem:  'Download URL'
+        url_stem: 'Download URL'
       expand: # COPY task template
         name: copy encode rE2G ${accession}
         source: https://www.encodeproject.org${url_stem}
@@ -940,4 +940,3 @@ steps:
       source: https://raw.githubusercontent.com/opentargets/target_engine/main/src/data_flow/phenotypeScores/20230825_mousePheScores.csv
       destination: input/target_engine/mouse_pheno_scores.csv
   ##################################################################################################
-
