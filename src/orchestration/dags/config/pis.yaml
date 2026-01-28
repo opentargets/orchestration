@@ -610,7 +610,7 @@ steps:
 
     - name: copy encode rE2G manifest
       # NOTE: excluded samples from query have divergent schemas that do not conform to expected rE2G format
-      source: https://www.encodeproject.org/report.tsv?type=File&searchTerm=encode-re2g+thresholded&output_type=thresholded+element+gene+links&status=released&limit=all&accession!=ENCFF094BVF&accession!=ENCFF269DKY
+      source: https://www.encodeproject.org/report.tsv?type=File&searchTerm=encode-re2g+thresholded&output_type=thresholded+element+gene+links&status=released&limit=all&accession!=ENCFF094BVF&accession!=ENCFF269DKY # yamllint disable-line rule:line-length
       destination: input/encode/rE2G/download_manifest.tsv
 
     - name: crawl_encode rE2G manifest
