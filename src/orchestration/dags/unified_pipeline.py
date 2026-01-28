@@ -418,6 +418,10 @@ with DAG(
             "gentropy_l2g_evidence": {
                 "step.evidence_output_path": gsp("gentropy_l2g_evidence", "step.evidence_output_path"),
             },
+            "gentropy_enhancer_to_gene": {
+                "step.valid_output_path": gsp("gentropy_enhancer_to_gene", "step.valid_output_path"),
+                "step.invalid_output_path": gsp("gentropy_enhancer_to_gene", "step.invalid_output_path"),
+            },
         }
 
         default_differs = [
