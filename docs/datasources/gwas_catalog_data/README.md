@@ -441,3 +441,7 @@ To adjust the parameters for google batch infrastructure refer to the `google_ba
 
 - chore: [25.12 GWAS Catalog update preparation](https://github.com/opentargets/issues/issues/4130)
 - chore: [ebi-to-gcp sync update](https://github.com/opentargets/issues/issues/3955)
+
+### 2026-01-27
+
+- chore: [26.02 GWAS Catalog update preparation](https://github.com/opentargets/issues/issues/4190)
