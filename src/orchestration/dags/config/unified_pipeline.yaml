@@ -242,7 +242,6 @@ steps:
   pts_evidence_postprocess_chembl:
     depends_on:
       - pts_evidence_chembl
-      - pts_drug_mechanism_of_action
   pts_evidence_cancer_biomarkers:
     depends_on:
       - pis_evidence_cancer_biomarkers
