@@ -3,7 +3,7 @@ environment_specs:
   - name: Prod
     vars:
       output_path: gs://gwas_catalog_sumstats_susie
-      GENTROPY_REF: 2.4.2-rc.8
+      GENTROPY_REF: 3.2.0-rc.2
 
 env: Prod
 
@@ -13,7 +13,7 @@ nodes:
     prerequisites: []
     params:
       collected_loci_path: '{output_path}/study_locus_lb_clumped'
-      manifest_prefix: '{output_path}/finemapping_manifests/20251105'
+      manifest_prefix: '{output_path}/finemapping_manifests/20260130'
       output_path: '{output_path}/credible_set_datasets'
       #!WARNING: DO NOT CHANGE THE DATE for the log_path, as it is used to back reference the already fine-mapped loci.
       log_path: '{output_path}/finemapping_logs/20250204'
