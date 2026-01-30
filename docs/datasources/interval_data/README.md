@@ -1,6 +1,6 @@
 # Interval datasets
 
-This docuement was update on 2025-04-11
+This document was update on 2026-01-30.
 
 Data source comes from the following publications:
 See more information at the [gentropy documentation](https://opentargets.github.io/gentropy/python_api/datasources/intervals/_intervals/)
@@ -13,10 +13,8 @@ See more information at the [gentropy documentation](https://opentargets.github.
 * rE2G (ENCODE)
 
 ```{bash}
-gs://interval_data/datasets/intervals.db <- duckdb database with interval datasets collapsed (not up to date)
 gs://interval_data/datasets/ENCODE-rE2G/ <- original rE2G data
 gs://interval_data/datasets/andersson2014/ <- original Andersson et al. data
-gs://interval_data/datasets/epiractionV1.6/ <- original epiraction data
 gs://interval_data/datasets/epiractionV1.6_bgzip/  <- transformed to bgzip indexed by tabix format
 gs://interval_data/datasets/javierre_2016_preprocessed/
 gs://interval_data/datasets/jung2019/ <- original Jung et al. data
@@ -31,8 +29,6 @@ Since the source Epiraction data is available in gzipped format, the following t
 * sorting
 * bgzip compression
 * indexing with tabix
-
-The original data is available at `gs://interval_data/datasets/epiractionV1.6/` and the transformed data is available at `gs://interval_data/datasets/epiractionV1.6_bgzip/`.
 
 ## rE2G
 
@@ -51,3 +47,7 @@ The query manifest ia available at `gs://interval_data/datasets/ENCODE-rE2G/2025
 ### 2025-07-22
 
 * chore: updated readme with latest information about new interval datasets.
+
+### 2026-01-30
+
+* chore: cleanup of old interval datasets.

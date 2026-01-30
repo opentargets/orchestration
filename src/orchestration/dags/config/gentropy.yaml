@@ -70,7 +70,7 @@ steps:
       step.study_locus_path:
         - gs://gwas_catalog_top_hits/credible_sets/
         - gs://gwas_catalog_sumstats_pics/credible_sets/
-        - gs://gwas_catalog_sumstats_susie/credible_set_clean/20251107/
+        - gs://gwas_catalog_sumstats_susie/credible_set_clean/20260130/
         - gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie_patched_v2/
         - gs://ukb_ppp_eur_data/credible_set_clean/20250129/
         - gs://finngen_data/r12/credible_set_datasets/susie/
@@ -251,8 +251,8 @@ steps:
         - AMBIGUOUS_INTERVAL_TYPE
 
       # INPUTS
-      step.target_index_path: gs://open-targets-pipeline-runs/szsz/25.12-ppp-testrun-3/output/target #'{{release_uri}}/output/target'
-      step.biosample_index_path: gs://open-targets-pipeline-runs/szsz/25.12-ppp-testrun-3/output/biosample #'{{release_uri}}/output/biosample'
+      step.target_index_path: '{{release_uri}}/output/target'
+      step.biosample_index_path: '{{release_uri}}/output/biosample'
       step.biosample_mapping_path: '{{release_uri}}/input/encode/rE2G/biosample_mapping.csv'
       step.chromosome_contig_index_path: '{{release_uri}}/input/chromosome/chromosome.parquet'
       step.interval_source: '{{release_uri}}/input/encode/rE2G/datasets/*.bed.gz'
