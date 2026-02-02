@@ -1,11 +1,9 @@
 ---
 dataproc:
-  python_main_module: gs://genetics_etl_python_playground/initialisation/cli.py
-  cluster_metadata:
-    GENTROPY_REF: v2.3.0-rc.5
-  cluster_init_script: gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh
   cluster_name: gnomad-preprocess
   autoscaling_policy: otg-etl
+  cluster_metadata:
+    GENTROPY_REF: v3.2.0-rc.2
   allow_efm: false
   num_workers: 2
 
@@ -14,6 +12,7 @@ nodes:
     kind: Task
     prerequisites: []
     params:
+      step: ld_index
       step.ld_index_out: gs://gnomad_data_2/ld_index/v2.1.1
   - id: gnomad_variants
     kind: Task
