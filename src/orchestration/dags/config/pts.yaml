@@ -421,7 +421,6 @@ steps:
         molecule: intermediate/chembl_molecule
         chemical_probes: intermediate/chemical_probes_evidence.parquet
         mechanism_of_action: output/drug_mechanism_of_action
-        drug_warning: output/drug_warning
         clinical_report: output/clinical_report
         disease: output/disease
       destination: output/drug_molecule
@@ -433,6 +432,7 @@ steps:
       source:
         chembl_molecule: intermediate/chembl_molecule
         disease: output/disease
+        drug_warning: output/drug_warning
       destination:
         output: output/clinical_report
         excluded: excluded/clinical_report

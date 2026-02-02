@@ -143,7 +143,6 @@ steps:
   pts_drug_molecule:
     depends_on:
       - pts_drug_mechanism_of_action
-      - pts_drug_warning
       - pts_chemical_probes
       - pts_clinical_report
   # Clinical Steps
@@ -151,6 +150,7 @@ steps:
     depends_on:
       - pts_chembl_molecule
       - pts_disease
+      - pts_drug_warning
   pts_clinical_indication:
     depends_on:
       - pts_clinical_report
