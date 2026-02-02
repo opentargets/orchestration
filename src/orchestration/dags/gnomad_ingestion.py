@@ -15,16 +15,18 @@ with DAG(
     description="Open Targets Genetics — Gnomad Ingestion",
     default_args=shared_dag_args,
     **shared_dag_kwargs,
-):
+) as dag:
     tasks = {}
     for step in config["nodes"]:
         task = submit_gentropy_step(
             cluster_name=config["dataproc"]["cluster_name"],
             step_name=step["id"],
-            python_main_module=config["dataproc"]["python_main_module"],
             params=step["params"],
         )
         tasks[step["id"]] = task
     chain_dependencies(nodes=config["nodes"], tasks_or_task_groups=tasks)
+    generate_dataproc_task_chain(tasks=list(tasks.values()), **config["dataproc"])
 
-    dag = generate_dataproc_task_chain(tasks=list(tasks.values()), **config["dataproc"])
+
+if __name__ == "__main__":
+    dag.test()

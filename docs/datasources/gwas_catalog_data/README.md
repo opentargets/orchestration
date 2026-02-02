@@ -1,6 +1,6 @@
 # GWAS Catalog data source
 
-This document was updated on 2025-07-22
+This document was updated on 2026-01-30.
 
 Data stored under 4 buckets:
 
@@ -330,7 +330,7 @@ The step that performs [PICS finemapping](https://opentargets.github.io/gentropy
 Bucket `gs://gwas_catalog_sumstats_susie` contains:
 
 ```bash
-gs://gwas_catalog_sumstats_susie/credible_set_clean/20250721/
+gs://gwas_catalog_sumstats_susie/credible_set_clean/20260130/
 gs://gwas_catalog_sumstats_susie/credible_set_datasets/
 gs://gwas_catalog_sumstats_susie/docs/
 gs://gwas_catalog_sumstats_susie/finemapping_logs/
@@ -444,4 +444,9 @@ To adjust the parameters for google batch infrastructure refer to the `google_ba
 
 ### 2026-01-27
 
-- chore: [26.02 GWAS Catalog update preparation](https://github.com/opentargets/issues/issues/4190)
+- chore: [2026/01 harmonisation](https://github.com/opentargets/issues/issues/4207)
+
+### 2026-01-30
+
+- chore: [2026/01 pics run](https://github.com/opentargets/issues/issues/4210)
+- chore: [2026/01 susie run](https://github.com/opentargets/issues/issues/4209)

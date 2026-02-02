@@ -4,8 +4,7 @@ environment_specs:
     vars:
       input_path: gs://gwas_catalog_inputs
       output_path: gs://gwas_catalog_top_hits
-      sync_date: '20251101' # Update sync date as the GWAS Catalog introduced bug in 25.10.15 release (associations file was truncated)
-      # NOTE: The bug was fixed in 2025.11.01 release
+      sync_date: '20260119'
       gnomad_path: gs://gnomad_data_2
 
 env: Prod
@@ -14,7 +13,7 @@ dataproc:
   cluster_name: otg-tophit-gwascatalog
   autoscaling_policy: otg-gwascatalog-tophit
   cluster_metadata:
-    GENTROPY_REF: v2.4.2-rc.4
+    GENTROPY_REF: v3.2.0-rc.2
   num_workers: 2
 
 nodes:
