@@ -1,3 +1,4 @@
+---
 work_path: /mnt/disks/work
 log_level: INFO
 pool_size: 32
@@ -22,9 +23,9 @@ steps:
       requires:
         - transform disease_efo
       source:
-        - output/disease/disease.parquet
-        - input/disease/phenotype.hpoa
-        - input/disease/mondo.json
+        disease_path: output/disease/disease.parquet
+        phenotype_path: input/disease/phenotype.hpoa
+        mondo_path: input/disease/mondo.json
       destination: output/disease_phenotype/disease_phenotype.parquet
       transformer: disease_phenotype
   ##################################################################################################
@@ -1274,3 +1275,18 @@ steps:
           - primaryProjectId
 
         #################################################################################################
+
+  #: Association on the fly STEP :#######################################################################
+  association_otf:
+    - name: pyspark association_otf
+      pyspark: association_otf
+      properties:
+        spark.driver.memory: "20g"
+      source:
+        disease: output/disease
+        evidence: output/evidence_*
+        target: output/target
+        association_direct: output/association_overall_direct
+        association_indirect: output/association_overall_indirect
+      destination: view/association_otf
+  ##################################################################################################
