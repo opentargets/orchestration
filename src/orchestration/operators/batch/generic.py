@@ -6,6 +6,7 @@ import time
 
 from airflow.models.baseoperator import BaseOperator
 from airflow.providers.google.cloud.operators.cloud_batch import CloudBatchSubmitJobOperator
+from google.cloud.batch import LifecyclePolicy
 
 from orchestration.operators.batch.batch_index import BatchCommands, BatchEnvironments, BatchIndexRow
 from orchestration.operators.batch.manifest_generators import ProtoManifestGenerator

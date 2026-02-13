@@ -215,7 +215,7 @@ steps:
         memory_mib: 7000
         boot_disk_mib: 4000
       task_specs:
-        max_retry_count: 0
+        max_retry_count: 2
         max_run_duration: "1h"
       policy_specs:
         machine_type: n1-standard-2

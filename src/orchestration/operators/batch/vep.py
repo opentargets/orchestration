@@ -165,14 +165,6 @@ class VepAnnotateOperator(GoogleCloudBaseOperator):
                 resource_specs=self.google_batch["resource_specs"],
                 task_specs=self.google_batch["task_specs"],
                 entrypoint=self.google_batch["entrypoint"],
-                lifecycle_policies=[
-                    LifecyclePolicy(
-                        action=LifecyclePolicy.Action.RETRY_TASK,
-                        action_condition=LifecyclePolicy.ActionCondition(
-                            exit_codes=[50001]
-                        ),  # retry on spot preemption
-                    )
-                ],
             ),
             task_env=create_task_env(environments),
             policy_specs=self.google_batch["policy_specs"],

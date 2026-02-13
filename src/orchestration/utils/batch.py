@@ -57,6 +57,15 @@ def create_task_spec(
         TaskSpec: The task specification.
     """
     time_duration = time_to_seconds(task_specs["max_run_duration"])
+    # See https://docs.cloud.google.com/batch/docs/troubleshooting#reserved-exit-codes
+    default_lifecycle_policies = [
+        (
+            LifecyclePolicy(
+                action=LifecyclePolicy.Action.RETRY_TASK,
+                action_condition=LifecyclePolicy.ActionCondition(exit_codes=[50001, 50002, 50003, 50004, 50005]),
+            ),
+        )
+    ]
     parameters = {
         "runnables": [create_container_runnable(image, commands=commands, **kwargs)],
         "compute_resource": ComputeResource(
@@ -67,8 +76,7 @@ def create_task_spec(
         "max_retry_count": task_specs["max_retry_count"],
         "max_run_duration": f"{time_duration}s",  # type: ignore
     }
-    if lifecycle_policies:
-        parameters["lifecycle_policies"] = lifecycle_policies
+    parameters.setdefault("lifecycle_policies", lifecycle_policies or default_lifecycle_policies)
     return TaskSpec(**parameters)
 
 
