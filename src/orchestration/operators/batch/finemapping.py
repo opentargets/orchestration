@@ -5,7 +5,6 @@ from collections.abc import Sequence
 
 from airflow.models.baseoperator import BaseOperator
 from airflow.providers.google.cloud.operators.cloud_batch import CloudBatchSubmitJobOperator
-from google.cloud.batch import LifecyclePolicy
 
 from orchestration.types import GoogleBatchSpecs
 from orchestration.utils.batch import create_batch_job, create_task_env, create_task_spec
@@ -181,14 +180,6 @@ class FinemappingBatchOperator(CloudBatchSubmitJobOperator):
                     commands=self.susie_finemapping_command,
                     task_specs=google_batch["task_specs"],
                     resource_specs=google_batch["resource_specs"],
-                    lifecycle_policies=[
-                        LifecyclePolicy(
-                            action=LifecyclePolicy.Action.RETRY_TASK,
-                            action_condition=LifecyclePolicy.ActionCondition(
-                                exit_codes=[50001]  # Task failed due to preemption.
-                            ),
-                        ),
-                    ],
                     entrypoint=google_batch["entrypoint"],
                 ),
                 task_env=create_task_env(var_list=[{"LOCUS_INDEX": str(idx)} for idx in range(manifest[2])]),
