@@ -5,7 +5,6 @@ from collections.abc import Sequence
 
 from airflow.models.baseoperator import BaseOperator
 from airflow.providers.google.cloud.operators.cloud_batch import CloudBatchSubmitJobOperator
-from google.cloud.batch import LifecyclePolicy
 
 from orchestration.types import GoogleBatchSpecs
 from orchestration.utils.batch import create_batch_job, create_task_env, create_task_spec

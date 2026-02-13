@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, cast
 from airflow.exceptions import AirflowException
 from airflow.providers.google.cloud.hooks.cloud_batch import CloudBatchHook
 from airflow.providers.google.cloud.operators.cloud_base import GoogleCloudBaseOperator
-from google.cloud.batch import JobStatus, LifecyclePolicy
+from google.cloud.batch import JobStatus
 from google.cloud.batch_v1 import Job
 from google.cloud.storage import Client
 
