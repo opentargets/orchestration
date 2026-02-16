@@ -1274,3 +1274,21 @@ steps:
           - primaryProjectId
 
         #################################################################################################
+
+  #: VEP View generation STEP :#####################################################################
+  vep_view:
+    - name: pyspark generate vep view
+      pyspark: vep_view
+      source:
+        credible_set: output/credible_set
+        study_table: output/study
+        l2g_table: output/l2g_prediction
+        biosample: output/biosample
+      destination:
+        vep_data_header:  intermediate/vep_view_header.tsv
+        vep_data_all: intermediate/vep_view
+        vep_data_gwas: intermediate/vep_view_gwas
+        vep_data_qtl: intermediate/vep_view_qtl
+      properties:
+        spark.driver.memory: 16g
+  ##################################################################################################
