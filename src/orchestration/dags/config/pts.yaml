@@ -22,9 +22,9 @@ steps:
       requires:
         - transform disease_efo
       source:
-        - output/disease/disease.parquet
-        - input/disease/phenotype.hpoa
-        - input/disease/mondo.json
+        disease_path: output/disease/disease.parquet
+        phenotype_path: input/disease/phenotype.hpoa
+        mondo_path: input/disease/mondo.json
       destination: output/disease_phenotype/disease_phenotype.parquet
       transformer: disease_phenotype
   ##################################################################################################
