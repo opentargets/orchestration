@@ -1292,3 +1292,19 @@ steps:
       properties:
         spark.driver.memory: 16g
   ##################################################################################################
+
+  #: Association on the fly STEP :#######################################################################
+  association_otf:
+    - name: pyspark association_otf
+      pyspark: association_otf
+      properties:
+        spark.driver.memory: "20g"
+      source:
+        disease: output/disease
+        evidence: output/evidence_*
+        target: output/target
+        association_direct: output/association_overall_direct
+        association_indirect: output/association_overall_indirect
+      destination: view/association_otf
+  ##################################################################################################
+  
