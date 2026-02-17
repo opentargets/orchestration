@@ -378,61 +378,95 @@ steps:
         disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
   ##################################################################################################
 
-  #: TIMESERIES STEP :##############################################################################
-  timeseries:
-    - name: pyspark timeseries
-      pyspark: timeseries
+  #: ASSOCIATION STEP :##############################################################################
+  association:
+    - name: pyspark association
+      pyspark: association
       source:
         evidence: output/evidence_*
         disease: output/disease
       destination:
-        overall_direct: output/timeseries_overall_direct
-        overall_indirect: output/timeseries_overall_indirect
-        by_datasource_direct: output/timeseries_by_datasource_direct
-        by_datasource_indirect: output/timeseries_by_datasource_indirect
+        overall_direct: output/association_overall_direct
+        overall_indirect: output/association_overall_indirect
+        by_datasource_direct: output/association_by_datasource_direct
+        by_datasource_indirect: output/association_by_datasource_indirect
+        by_datatype_direct: output/association_by_datatype_direct
+        by_datatype_indirect: output/association_by_datatype_indirect
+        temporary: intermediate/indirect_association_intermediate
       settings:
         novelty_scale: 2 # 2 for long tailed slow decays
         novelty_shift: 3 # 3 for long tailed slow decays
         novelty_window: 10
         datasource_weights:
-          - id: gwas_credible_sets
+          - datasourceId: gwas_credible_sets
             weight: 1.0
-          - id: eva
+            datatypeId: genetic_association
+          - datasourceId: eva
             weight: 1.0
-          - id: gene_burden
+            datatypeId: genetic_association
+          - datasourceId: gene_burden
             weight: 1.0
-          - id: genomics_england
+            datatypeId: genetic_association
+          - datasourceId: genomics_england
             weight: 1.0
-          - id: gene2phenotype
+            datatypeId: genetic_literature
+          - datasourceId: gene2phenotype
             weight: 1.0
-          - id: uniprot_literature
+            datatypeId: genetic_literature
+          - datasourceId: uniprot_literature
             weight: 1.0
-          - id: uniprot_variants
+            datatypeId: genetic_literature
+          - datasourceId: uniprot_variants
             weight: 1.0
-          - id: orphanet
+            datatypeId: genetic_association
+          - datasourceId: orphanet
             weight: 1.0
-          - id: clingen
+            datatypeId: genetic_association
+          - datasourceId: clingen
             weight: 1.0
-          - id: cancer_gene_census
+            datatypeId: genetic_literature
+          - datasourceId: cancer_gene_census
             weight: 1.0
-          - id: eva_somatic
+            datatypeId: somatic_mutation
+          - datasourceId: eva_somatic
             weight: 1.0
-          - id: cancer_biomarkers
+            datatypeId: somatic_mutation
+          - datasourceId: cancer_biomarkers
             weight: 1.0
-          - id: chembl
+            datatypeId: affected_pathway
+          - datasourceId: chembl
             weight: 1.0
-          - id: crispr_screen
+            datatypeId: known_drug
+          - datasourceId: crispr_screen
             weight: 1.0
-          - id: crispr
+            datatypeId: affected_pathway
+          - datasourceId: intogen
             weight: 1.0
-          - id: reactome
+            datatypeId: somatic_mutation
+          - datasourceId: crispr
             weight: 1.0
-          - id: europepmc
+            datatypeId: affected_pathway
+          - datasourceId: reactome
+            weight: 1.0
+            datatypeId: affected_pathway
+          - datasourceId: europepmc
             weight: 0.2
-          - id: expression_atlas
+            datatypeId: literature
+          - datasourceId: expression_atlas
             weight: 0.2
-          - id: impc
+            datatypeId: rna_expression
+          - datasourceId: impc
             weight: 0.2
+            datatypeId: animal_model
+          - datasourceId: ot_crispr
+            weight: 0.5
+            datatypeId: ot_partner
+          - datasourceId: ot_crispr_validation
+            weight: 0.5
+            datatypeId: ot_validation_lab
+          - datasourceId: encore
+            weight: 0.5
+            datatypeId: ot_partner
   ##################################################################################################
 
   #: EVIDENCE POST PROCESS STEP :###################################################################
@@ -1274,8 +1308,7 @@ steps:
           - resourceScore
           - diseaseCellLines
           - primaryProjectId
-
-        #################################################################################################
+  #################################################################################################
 
   #: VEP View generation STEP :#####################################################################
   vep_view:
@@ -1309,4 +1342,3 @@ steps:
         association_indirect: output/association_overall_indirect
       destination: view/association_otf
   ##################################################################################################
-  
