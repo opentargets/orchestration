@@ -242,15 +242,14 @@ steps:
         finngen_release: R12
   ##################################################################################################
 
-  #: EVIDENCE_CHEMBl STEP :#########################################################################
-  evidence_chembl:
-    - name: pyspark chembl
-      pyspark: chembl
+  #: EVIDENCE_CLINICAL_PRECEDENCE STEP :############################################################
+  evidence_clinical_precedence:
+    - name: pyspark clinical_precedence
+      pyspark: clinical_precedence
       source:
-        stop_reasons: input/evidence/chembl/stop_reasons.json
         clinical_report: output/clinical_report
         drug_mechanism_of_action: output/drug_mechanism_of_action
-      destination: intermediate/evidence/chembl.parquet
+      destination: intermediate/evidence/clinical_precedence.parquet
   ##################################################################################################
 
   #: EVIDENCE_CANCER_BIOMARKERS STEP :################################################################
@@ -900,62 +899,64 @@ steps:
           - drugFromSource
           - drugResponse
 
-  evidence_postprocess_chembl:
+  evidence_postprocess_clinical_precedence:
     - name: pyspark evidence_postprocess
       pyspark: evidence_postprocess
       source:
-        evidence_path: intermediate/evidence/chembl.parquet
+        evidence_path: intermediate/evidence/clinical_precedence.parquet
         target_path: output/target
         disease_path: output/disease
         publication_date_lut: input/literature/literature_export
-        mechanism_of_action: output/drug_mechanism_of_action
       destination:
-        failed_evidence: excluded/evidence/chembl
-        evidence: output/evidence_chembl
+        failed_evidence: excluded/evidence/clinical_precedence
+        evidence: output/evidence_clinical_precedence
       settings:
         evidence_format: parquet
-        datasource_id: chembl
+        datasource_id: clinical_precedence
         score_expression: |
           element_at(
             map(
-              cast(0.5 as double),
-              0.05,
-              cast(1.0 as double),
-              0.1,
-              cast(2.0 as double),
-              0.2,
-              cast(3.0 as double),
-              0.7,
-              cast(4.0 as double),
-              1.0
+              'APPROVED', 1.0,
+              'PHASE_4', 1.0,
+              'WITHDRAWN', 1.0,
+              'PREAPPROVAL', 0.8,
+              'PHASE_3', 0.7,
+              'PHASE_2_3', 0.5,
+              'PHASE_2', 0.2,
+              'PHASE_1_2', 0.15,
+              'PHASE_1', 0.1,
+              'EARLY_PHASE_1', 0.05,
+              'IND', 0.05,
+              'PRECLINICAL', 0.01,
+              'UNKNOWN', 0.01
             ),
-            clinicalPhase
+            clinicalStage
           ) *
           case
-          when studyStopReasonCategories is null then
+          when trialStopReasonCategories is null then
             double(1.0)
           else
             array_min(
               transform(
-                studyStopReasonCategories,
+                trialStopReasonCategories,
                 x -> element_at(
                   map(
-                    'Another study', double(1.0),
-                    'Business or administrative', double(1.0),
-                    'COVID-19', double(1.0),
-                    'Ethical reason', double(1.0),
-                    'Insufficient data', double(1.0),
-                    'Insufficient enrollment', double(1.0),
-                    'Interim analysis', double(1.0),
-                    'Invalid reason', double(1.0),
-                    'Logistics or resources', double(1.0),
-                    'Met endpoint', double(1.0),
+                    'Another_Study', double(1.0),
+                    'Business_Administrative', double(1.0),
+                    'Covid19', double(1.0),
+                    'Ethical_Reason', double(1.0),
+                    'Insufficient_Data', double(1.0),
+                    'Insufficient_Enrollment', double(1.0),
+                    'Interim_Analysis', double(1.0),
+                    'Invalid_Reason', double(1.0),
+                    'Logistics_Resources', double(1.0),
+                    'Endpoint_Met', double(1.0),
                     'Negative', double(0.5),
-                    'No context', double(1.0),
+                    'No_Context', double(1.0),
                     'Regulatory', double(1.0),
-                    'Safety or side effects', double(0.5),
-                    'Study design', double(1.0),
-                    'Study staff moved', double(1.0),
+                    'Safety_Sideeffects', double(0.5),
+                    'Study_Design', double(1.0),
+                    'Study_Staff_Moved', double(1.0),
                     'Success', double(1.0),
                     'Uncategorised', double(1.0)
                   ),
@@ -970,9 +971,7 @@ steps:
           - diseaseId
           - datasourceId
           - drugId
-          - urls
         direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'protect' END
-        direction_on_target_expression: moaType
 
   evidence_postprocess_reactome:
     - name: pyspark evidence_postprocess

@@ -56,7 +56,7 @@ steps:
   pis_ontoma:
   pis_evidence_expression_atlas:
   pis_evidence_cancer_biomarkers:
-  pis_evidence_chembl:
+  # pis_evidence_chembl removed: clinical_precedence reads from clinical_report + drug_moa
   pis_evidence_clingen:
   pis_evidence_cosmic:
   pis_evidence_project_score:
@@ -234,14 +234,13 @@ steps:
       - pts_evidence_gene_burden
       - etl_target
       - pts_disease
-  pts_evidence_chembl:
+  pts_evidence_clinical_precedence:
     depends_on:
-      - pis_evidence_chembl
       - pts_clinical_report
       - pts_drug_mechanism_of_action
-  pts_evidence_postprocess_chembl:
+  pts_evidence_postprocess_clinical_precedence:
     depends_on:
-      - pts_evidence_chembl
+      - pts_evidence_clinical_precedence
   pts_evidence_cancer_biomarkers:
     depends_on:
       - pis_evidence_cancer_biomarkers
@@ -324,7 +323,7 @@ steps:
       - pts_evidence_postprocess_gwas_credible_sets
       - pts_evidence_postprocess_expression_atlas
       - pts_evidence_postprocess_cancer_biomarkers
-      - pts_evidence_postprocess_chembl
+      - pts_evidence_postprocess_clinical_precedence
       - pts_evidence_postprocess_clingen
       - pts_evidence_postprocess_cosmic
       - pts_evidence_postprocess_project_score
@@ -394,7 +393,7 @@ steps:
       - pts_evidence_postprocess_gwas_credible_sets
       - pts_evidence_postprocess_expression_atlas
       - pts_evidence_postprocess_cancer_biomarkers
-      - pts_evidence_postprocess_chembl
+      - pts_evidence_postprocess_clinical_precedence
       - pts_evidence_postprocess_clingen
       - pts_evidence_postprocess_cosmic
       - pts_evidence_postprocess_project_score
@@ -420,7 +419,7 @@ steps:
       - pts_evidence_postprocess_gwas_credible_sets
       - pts_evidence_postprocess_expression_atlas
       - pts_evidence_postprocess_cancer_biomarkers
-      - pts_evidence_postprocess_chembl
+      - pts_evidence_postprocess_clinical_precedence
       - pts_evidence_postprocess_clingen
       - pts_evidence_postprocess_cosmic
       - pts_evidence_postprocess_project_score
