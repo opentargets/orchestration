@@ -633,11 +633,12 @@ steps:
   #: LITERATURE STEP :##############################################################################
   literature:
     - name: copy literature
-      source: https://ftp.ebi.ac.uk/pub/databases/pmc/DOI/PMID_PMCID_DOI.csv.gz
+      # source: https://ftp.ebi.ac.uk/pub/databases/pmc/DOI/PMID_PMCID_DOI.csv.gz - forbidden location
+      source: gs://otar025-epmc/PMID_PMCID_DOI/2025.12/PMID_PMCID_DOI.csv.gz
       destination: input/literature/PMID_PMCID_DOI.csv.gz
 
     - name: explode_glob literature dating lut
-      glob: gs://otar000-evidence_input/literature_export/*.json.gz
+      glob: gs://otar000-evidence_input/literature_export/2026.03/*.json.gz
       do:
         - name: copy literature dating lut ${match_stem}
           source: ${match_prefix}/${match_path}${match_stem}.${match_ext}
