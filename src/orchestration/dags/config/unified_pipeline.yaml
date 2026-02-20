@@ -11,22 +11,30 @@ run_name: 'ds/26.03-test2'
 # Whether this will be a partner preview platform release (PPP)
 is_ppp: false
 
+# Where to get the config files from for this run from.
+# Note: for development/testing, you can comment the next two lines, and copy
+#       those files into `src/orchestration/dags/config/`
+pis_config: https://github.com/opentargets/pis/raw/refs/heads/otter26/config.yaml
+pts_config: https://github.com/opentargets/pts/raw/refs/heads/otter26/config.yaml
+etl_config: https://github.com/opentargets/platform-etl-backend/raw/refs/heads/fix-config/src/main/resources/reference.conf
+
 # Versions for software and data
 pis_version: '26.03.0-dev.2'
 pts_version: '26.3.0-dev.6'
 etl_version: '26.3.0-dev1' # Needs to be updated
 gentropy_version: '3.2.0-rc.3'
 vep_version: 'release_115.2'
+
 chembl_version: '36'
 efo_version: '3.87.0'
 ensembl_version: '115'
-gencode_version: '49'
 depmap_version: '2025Q3'
+gencode_version: '49'
+gnomad_version: '4.1'
 hpo_version: '2026-02-16'
 mondo_version: '2026-02-03'
 ot_curation: '26.03.0-dev1'
 probes_drugs_version: '02_2025'
-gnomad_version: '4.1'
 
 # Dependency graph
 # ----------------

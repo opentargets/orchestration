@@ -39,6 +39,8 @@ class UnifiedPipelineConfig:
         """Used for labelling resources."""
         self.release_uri: str = f"gs://open-targets-pre-data-releases/{up.get('release_name')}"
         """The place where the production release files are read from and/or written to."""
+        self.work_path: str = "/mnt/disks/work"
+        """The path used by Otter-based apps to write intermediate files."""
         self.is_dev = up.get("is_dev", True)
         """Whether this is a development or production run."""
         self.dev_uri = f"gs://opentargets-pipeline-runs/{self.run_name}" if self.is_dev else None
@@ -50,13 +52,18 @@ class UnifiedPipelineConfig:
         """Whether this is a ppp run or public platform run."""
         self.num_partitions = 20
         """The default number of partitions for steps using spark that do not specify it."""
-
-        data_sources_exclude = "[]" if self.is_ppp else '["ot_crispr", "encore", "ot_crispr_validation"]'
+        self.pis_config_location = up.get("pis_config", config_path / "pis.yaml")
+        """The URI where the PIS config file is located."""
+        self.pts_config_location = up.get("pts_config", config_path / "pts.yaml")
+        """The URI where the PTS config file is located."""
+        self.etl_config_location = up.get("etl_config", config_path / "etl.conf")
+        """The URI where the ETL config file is located."""
 
         self.pis = AppConfig.from_file(
-            file_path=config_path / "pis.yaml",
+            file_path=self.pis_config_location,
             template_context={
                 "release_uri": self.dev_uri or self.release_uri,
+                "work_path": self.work_path,
                 "chembl_version": up.get("chembl_version"),
                 "efo_version": up.get("efo_version"),
                 "ensembl_version": up.get("ensembl_version"),
@@ -71,34 +78,22 @@ class UnifiedPipelineConfig:
         )
         """The internal configuration for PIS steps."""
 
-        if self.is_ppp:
-            self.pis = self.pis.overwrite(config_path / "ppp" / "pis.override.yaml")
-        """The internal configuration for PIS steps, with PPP-specific overrides."""
-
         self.pts = AppConfig.from_file(
-            file_path=config_path / "pts.yaml",
+            file_path=self.pts_config_location,
             template_context={
                 "release_uri": self.dev_uri or self.release_uri,
+                "work_path": self.work_path,
             },
         )
         """The internal configuration for PTS steps."""
 
-        if self.is_ppp:
-            self.pts = self.pts.overwrite(config_path / "ppp" / "pts.override.yaml")
-        """The internal configuration for PTS steps, with PPP-specific overrides."""
-
         self.etl = AppConfig.from_file(
-            file_path=config_path / "etl.conf",
+            file_path=self.etl_config_location,
             template_context={
                 "release_uri": self.dev_uri or self.release_uri,
-                "data_sources_exclude": data_sources_exclude,
             },
         )
         """The internal configuration for ETL steps."""
-
-        if self.is_ppp:
-            self.etl = self.etl.overwrite(config_path / "ppp" / "etl.overrides.conf")
-        """The internal configuration for ETL steps, with PPP-specific overrides."""
 
         self.gentropy = AppConfig.from_file(
             file_path=config_path / "gentropy.yaml",
@@ -110,10 +105,8 @@ class UnifiedPipelineConfig:
             },
         )
         """The internal configuration for GENTROPY steps."""
-
         if self.is_ppp:
             self.gentropy = self.gentropy.overwrite(config_path / "ppp" / "gentropy.overrides.yaml")
-        """The internal configuration for GENTROPY steps, with PPP-specific overrides."""
 
         self.clusters = AppConfig.from_file(
             file_path=config_path / "clusters.yaml",

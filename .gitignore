@@ -22,3 +22,8 @@ plan.out
 
 # airflow logs
 logs
+
+# config files
+src/orchestration/dags/config/pis.yaml
+src/orchestration/dags/config/pts.yaml
+src/orchestration/dags/config/etl.conf

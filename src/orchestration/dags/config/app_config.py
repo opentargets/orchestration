@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pyhocon
+import requests
 import yaml
 from deepdiff.diff import DeepDiff
 
@@ -68,12 +69,18 @@ class AppConfig:
         Returns:
             AppConfig: An instance of AppConfig.
         """
-        if isinstance(file_path, Path):
-            file_path = str(file_path.resolve())
-        m = IOManager().resolve(path=file_path)
-        if client and isinstance(m, GCSPath):
-            m._client = client
-        conf = m.load_str()
+        if isinstance(file_path, str) and file_path.startswith("https://"):
+            r = requests.get(file_path, timeout=10)
+            r.raise_for_status()
+            conf = r.text
+        else:
+            if isinstance(file_path, Path):
+                file_path = str(file_path.resolve())
+            m = IOManager().resolve(path=file_path)
+            if client and isinstance(m, GCSPath):
+                m._client = client
+            conf = m.load_str()
+
         parser = _parsers.get(file_path.split(".")[-1])
 
         c = cls(raw_config=conf, parser=parser, template_context=template_context)
