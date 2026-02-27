@@ -58,21 +58,9 @@ steps:
     - name: copy chemical probes
       source: https://www.probes-drugs.org/media/download/probes/pd_export_${probes_drugs_version}_probes_standardized.xlsx
       destination: input/target/chemicalprobes/probes.xlsx
-
     - name: copy drugbank annotation
       source: https://ftp.ebi.ac.uk/pub/databases/chembl/UniChem/data/wholeSourceMapping/src_id1/src1src2.txt.gz
       destination: input/drug/drugbank.csv.gz
-
-    - name: elasticsearch chembl drug indication
-      url: https://www.ebi.ac.uk/chembl/elk/es
-      destination: input/drug/chembl_drug_indication.jsonl
-      index: chembl_${chembl_version}_drug_indication
-      fields:
-        - _metadata
-        - molecule_chembl_id
-        - efo_id
-        - max_phase_for_ind
-        - indication_refs
     - name: elasticsearch chembl drug warning
       url: https://www.ebi.ac.uk/chembl/elk/es
       destination: input/drug/chembl_drug_warning.jsonl
@@ -236,27 +224,6 @@ steps:
     - name: copy cancer biomarkers diseases
       source: gs://otar000-evidence_input/CancerBiomarkers/data_files/cancer_biomarker_disease.jsonl
       destination: input/evidence/cancerbiomarkers/diseases.jsonl
-  ##################################################################################################
-
-  #: EVIDENCE_CHEMBL STEP :#########################################################################
-  evidence_chembl:
-    - name: find_latest chembl
-      source: gs://otar008-chembl
-      scratchpad_key: 'latest_chembl'
-    - name: copy chembl
-      requires:
-        - find_latest chembl
-      source: ${latest_chembl}
-      destination: input/evidence/chembl/chembl.json.gz
-
-    - name: find_latest stop_reasons
-      source: gs://otar000-evidence_input/ChEMBL/data_files
-      scratchpad_key: 'latest_chembl_stop_reasons'
-    - name: copy chembl stop reasons
-      requires:
-        - find_latest stop_reasons
-      source: ${latest_chembl_stop_reasons}
-      destination: input/evidence/chembl/stop_reasons.json
   ##################################################################################################
 
   #: EVIDENCE_CLINGEN STEP :########################################################################
@@ -954,21 +921,3 @@ steps:
         source: https://www.encodeproject.org${url_stem}
         destination: input/encode-rE2G/${accession}.bed.gz
   ##################################################################################################
-
-  #: EPIraction INGESTION STEP :########################################################################
-  epiraction:
-    - name: copy encode epiraction manifest
-      source: https://www.encodeproject.org/report.tsv?type=File&searchTerm=epiraction+thresholded&output_type=thresholded+element+gene+links&status=released&limit=all
-      destination: input/epiraction/epiraction_manifest.tsv
-
-    - name: crawl_encode epiraction manifest
-      requires:
-        - copy encode epiraction manifest
-      manifest: input/epiraction/epiraction_manifest.tsv
-      columns:
-        accession: 'Accession'
-        url_stem: 'Download URL'
-      expand: # COPY task template
-        name: copy encode epiraction ${accession}
-        source: https://www.encodeproject.org${url_stem}
-        destination: input/epiraction/${accession}.bed.gz
