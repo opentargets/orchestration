@@ -19,6 +19,8 @@ steps:
         - gs://eqtl_catalogue_processed_otar_internal_data/otar2077/IBDverse/gentropy/study_index/*
         - gs://eqtl_catalogue_processed_otar_internal_data/otar2077/GTEx_v10_majiq/gentropy/output/study_index/*
         - gs://finngen_ukb_mvp_meta_data/study_index/
+        - gs://eqtlgen_data/single_cell_eqtl/260301/study/
+        - gs://eqtlgen_data/coeqtl/260301/study/
       step.invalid_qc_reasons:
         - UNRESOLVED_TARGET
         - UNRESOLVED_DISEASE
@@ -49,6 +51,8 @@ steps:
         - gs://eqtl_catalogue_processed_otar_internal_data/otar2077/IBDverse/gentropy/study_locus/*
         - gs://eqtl_catalogue_processed_otar_internal_data/otar2077/GTEx_v10_majiq/gentropy/output/study_locus/*
         - gs://finngen_ukb_mvp_meta_data/credible_sets/
+        - gs://eqtlgen_data/single_cell_eqtl/260301/credible_set/
+        - gs://eqtlgen_data/coeqtl/260301/credible_set/
 
   variant:
     params:
