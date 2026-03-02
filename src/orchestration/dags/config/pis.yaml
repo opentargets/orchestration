@@ -32,6 +32,16 @@ steps:
       destination: input/biosample/efo.json
   ##################################################################################################
 
+  #: CLINICAL_REPORT STEP :########################################################################
+  clinical_report:
+    - name: explode_glob clinical_report
+      glob: gs://ot-team/irene/clinical_mining/2026-03-02/input/clinical_report/**/**
+      do:
+        - name: copy clinical_report ${match_stem} ${uuid}
+          source: ${uri}
+          destination: input/clinical_report/${match_path}/${match_stem}.${match_ext}
+  ##################################################################################################
+
   #: DISEASE STEP :#################################################################################
   disease:
     - name: copy efo otar_slim
@@ -125,78 +135,59 @@ steps:
     - name: solr fetch gene_gene
       destination: input/impc
       url: http://www.ebi.ac.uk/mi/impc/solr/phenodigm/select
-      queries:
-        - data_type: gene_gene
-          fields:
-            - gene_id
-            - hgnc_gene_id
+      data_type: gene_gene
+      fields:
+        - gene_id
+        - hgnc_gene_id
 
     - name: solr fetch ontology_ontology
       destination: input/impc
       url: http://www.ebi.ac.uk/mi/impc/solr/phenodigm/select
-      queries:
-        - data_type: ontology_ontology
-          fields:
-            - mp_id
-            - hp_id
+      data_type: ontology_ontology
+      fields:
+        - mp_id
+        - hp_id
 
     - name: solr fetch mouse_model
       destination: input/impc
       url: http://www.ebi.ac.uk/mi/impc/solr/phenodigm/select
       queries:
-        - data_type: mouse_model
-          fields:
-            - model_id
-            - model_phenotypes
+      data_type: mouse_model
+      fields:
+        - model_id
+        - model_phenotypes
 
     - name: solr fetch disease
       destination: input/impc
       url: http://www.ebi.ac.uk/mi/impc/solr/phenodigm/select
-      queries:
-        - data_type: disease
-          fields:
-            - disease_id
-            - disease_phenotypes
+      data_type: disease
+      fields:
+        - disease_id
+        - disease_phenotypes
 
     - name: solr fetch disease_model_summary
       destination: input/impc
       url: http://www.ebi.ac.uk/mi/impc/solr/phenodigm/select
       batch_size: 100000000
-      queries:
-        - data_type: disease_model_summary
-          fields:
-            - model_id
-            - model_genetic_background
-            - model_description
-            - disease_id
-            - disease_term
-            - disease_model_avg_norm
-            - disease_model_max_norm
-            - marker_id
+      data_type: disease_model_summary
+      fields:
+        - model_id
+        - model_genetic_background
+        - model_description
+        - disease_id
+        - disease_term
+        - disease_model_avg_norm
+        - disease_model_max_norm
+        - marker_id
 
     - name: solr fetch ontology
       destination: input/impc
       url: http://www.ebi.ac.uk/mi/impc/solr/phenodigm/select
-      queries:
-        - data_type: ontology
-          fields:
-            - ontology
-            - phenotype_id
-            - phenotype_term
-
-    - name: explode impc metadata
-      foreach:
-        - MGI_Gene_Model_Coord.rpt # Mouse gene mappings
-        - MGI_PhenoGenoMP.rpt # Mouse PubMed references
-        - mp.json # Mammalian Phenotype ontology
-      do:
-        - name: copy ${each}
-          source: http://www.informatics.jax.org/downloads/reports/${each}
-          destination: input/impc/${each}
-
-    - name: copy gene name
-      source: https://storage.googleapis.com/public-download-files/hgnc/tsv/tsv/hgnc_complete_set.txt
-      destination: input/target/genenames/hgnc_complete_set.tsv
+      data_type: ontology
+      fields:
+        - ontology
+        - phenotype_id
+        - phenotype_term
   ##################################################################################################
 
   #: EVIDENCE_EXPRESSION_ATLAS STEP :###############################################################
@@ -571,20 +562,20 @@ steps:
 
     - name: copy encode rE2G manifest
       # NOTE: excluded samples from query have divergent schemas that do not conform to expected rE2G format
-      source: https://www.encodeproject.org/report.tsv?type=File&searchTerm=encode-re2g+thresholded&output_type=thresholded+element+gene+links&status=released&limit=all&accession!=ENCFF094BVF&accession!=ENCFF269DKY # yamllint disable-line rule:line-length
+      source: https://www.encodeproject.org/report.tsv?type=File&searchTerm=encode-re2g+thresholded&output_type=thresholded+element+gene+links&status=released&limit=all&accession!=ENCFF094BVF&accession!=ENCFF269DKY
       destination: input/encode/rE2G/download_manifest.tsv
 
     - name: crawl_encode rE2G manifest
       requires:
         - copy encode rE2G manifest
-      manifest: input/encode/rE2G/download_manifest.tsv
-      columns:
-        accession: 'Accession'
-        url_stem: 'Download URL'
-      expand: # COPY task template
-        name: copy encode rE2G ${accession}
-        source: https://www.encodeproject.org${url_stem}
-        destination: input/encode/rE2G/datasets/${accession}.bed.gz
+      source: input/encode/rE2G/download_manifest.tsv
+      destination: input/encode/rE2G/source_list_file.txt
+
+    - name: copy_many encode rE2G datasets
+      requires:
+        - crawl_encode rE2G manifest
+      source_list_file: input/encode/rE2G/source_list_file.txt
+      destination: input/encode/rE2G/datasets
   ##################################################################################################
 
   #: L2G STEP :#####################################################################################
@@ -641,7 +632,7 @@ steps:
     - name: explode_openfda openfda archive
       requires:
         - copy openfda archive manifest
-      json_path: input/openfda/fda_events.json
+      source: input/openfda/fda_events.json
       jq_filter: '.results.drug.event.partitions[].file'
       prefix: 'https://download.open.fda.gov/drug/event/'
       do:
@@ -888,18 +879,18 @@ steps:
   ##################################################################################################
 
   #: TARGET_ENGINE STEP :###########################################################################
-  target_engine:
+  pis_target_prioritisation:
     - name: copy protein atlas
       source: https://www.proteinatlas.org/download/proteinatlas.json.gz
-      destination: input/target_engine/proteinatlas.json.gz
+      destination: input/target_prioritisation/proteinatlas.json.gz
 
     - name: copy uniprot locations
       source: https://rest.uniprot.org/locations/stream?compressed=true&fields=id%2Cname%2Ccategory%2Cgene_ontologies%2Cpart_of%2Cis_a&format=tsv&query=%28%2A%29
-      destination: input/target_engine/uniprot_locations.tsv.gz
+      destination: input/target_prioritisation/uniprot_locations.tsv.gz
 
     - name: copy mouse phenotype scores
       source: https://raw.githubusercontent.com/opentargets/target_engine/main/src/data_flow/phenotypeScores/20230825_mousePheScores.csv
-      destination: input/target_engine/mouse_pheno_scores.csv
+      destination: input/target_prioritisation/mouse_pheno_scores.csv
   ##################################################################################################
 
   #: ENCODE INGESTION STEP :########################################################################

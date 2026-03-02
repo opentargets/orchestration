@@ -12,10 +12,10 @@ run_name: 'ds/26.03-test3'
 is_ppp: false
 
 # Versions for software and data
-pis_version: '26.03.0-dev.3'
-pts_version: '26.3.0-dev.8'
+pis_version: '26.03.0-dev.4'
+pts_version: '26.3.0-dev.16'
 etl_version: '26.3.0-dev3'
-gentropy_version: '3.2.0-rc.4'
+gentropy_version: '3.2.0-rc.4'  
 vep_version: 'release_115.2'
 chembl_version: '36'
 efo_version: '3.87.0'
@@ -50,6 +50,7 @@ gnomad_version: '4.1'
 steps:
   # PIS STEPS
   pis_encode:
+  pis_clinical_report:
   pis_biosample:
   pis_disease:
   pis_drug:
@@ -85,8 +86,11 @@ steps:
   pis_reactome:
   pis_so:
   pis_target:
-  pis_target_engine:
+  pis_target_prioritisation:
   # PTS STEPS
+  pts_go:
+    depends_on:
+      - pis_go
   pts_disease:
     depends_on:
       - pis_disease
@@ -103,10 +107,12 @@ steps:
   pts_chemical_probes:
     depends_on:
       - pis_target
+      - pts_chembl_molecule
   pts_coding_variant:
     depends_on:
       - gentropy_variant
-      - pts_evidence_postprocess_gwas_credible_sets
+      - pts_association
+      - pts_pharmacogenetics
   pts_openfda:
     depends_on:
       - pis_openfda
@@ -118,7 +124,6 @@ steps:
       - pis_target
   pts_target_safety:
     depends_on:
-      - pis_target
       - pts_pharmacogenetics
   pts_target_gene_essentiality:
     depends_on:
@@ -127,6 +132,8 @@ steps:
     depends_on:
       - pis_pharmacogenetics
       - pts_ontoma
+      - pts_chembl_molecule
+      - pts_drug_mechanism_of_action
   # Evidence not processed by PTS
   pts_evidence_postprocess_europepmc:
     depends_on:
@@ -200,6 +207,7 @@ steps:
   pts_evidence_project_score:
     depends_on:
       - pis_evidence_project_score
+      - pts_ontoma
   pts_evidence_postprocess_project_score:
     depends_on:
       - pts_evidence_project_score
@@ -215,20 +223,17 @@ steps:
       - etl_target
       - pts_disease
       - pis_literature
-  pts_evidence_chembl:
+  pts_evidence_clinical_precedence:
     depends_on:
-      - pis_evidence_chembl
-      - pis_drug
-  pts_evidence_postprocess_chembl:
+      - pts_clinical_report
+      - pts_drug_mechanism_of_action
+  pts_evidence_postprocess_clinical_precedence:
     depends_on:
-      - pts_evidence_chembl
-      - etl_drug
-      - pts_disease
-      - pis_literature
+      - pts_evidence_clinical_precedence
   pts_evidence_cancer_biomarkers:
     depends_on:
       - pis_evidence_cancer_biomarkers
-      - etl_drug
+      - pts_drug_molecule
   pts_evidence_postprocess_cancer_biomarkers:
     depends_on:
       - pts_evidence_cancer_biomarkers
@@ -315,6 +320,41 @@ steps:
       - etl_target
       - pts_disease
       - pis_literature
+
+  # clinical mining updates:
+  pts_drug_warning:
+    depends_on:
+      - pis_drug
+  pts_chembl_molecule:
+    depends_on:
+      - pis_drug
+  pts_drug_mechanism_of_action:
+    depends_on:
+      - pis_drug
+      - pts_target
+  pts_drug_molecule:
+    depends_on:
+      - pts_chemical_probes
+      - pts_drug_mechanism_of_action
+      - pts_clinical_report
+  pts_clinical_report:
+    depends_on:
+      - pis_clinical_report
+      - pts_chembl_molecule
+      - pts_disease
+      - pts_drug_warning
+  pts_clinical_indication:
+    depends_on:
+      - pts_clinical_report
+  pts_clinical_target:
+    depends_on:
+      - pts_clinical_report
+      - pts_drug_mechanism_of_action
+  pts_target_prioritisation:
+    depends_on:
+      - pts_drug_molecule
+      - pts_drug_mechanism_of_action
+      - pis_target_prioritisation
   pts_association:
     ppp_only: false
     depends_on:
@@ -323,7 +363,7 @@ steps:
       - pts_evidence_postprocess_gwas_credible_sets
       - pts_evidence_postprocess_expression_atlas
       - pts_evidence_postprocess_cancer_biomarkers
-      - pts_evidence_postprocess_chembl
+      - pts_evidence_postprocess_clinical_precedence
       - pts_evidence_postprocess_clingen
       - pts_evidence_postprocess_cosmic
       - pts_evidence_postprocess_project_score
@@ -346,10 +386,6 @@ steps:
     ppp_only: false
     depends_on:
       - pts_association
-  pts_vep_view:
-    ppp_only: false
-    depends_on:
-      - gentropy_l2g_prediction
   # ETL STEPS
   etl_expression:
     num_partitions: 4
@@ -376,12 +412,6 @@ steps:
       - etl_reactome
       - pts_target_safety
       - pts_target_gene_essentiality
-  etl_drug:
-    num_partitions: 1
-    depends_on:
-      - pis_drug
-      - pts_disease
-      - etl_target
   etl_search_facet:
     depends_on:
       - pts_disease
@@ -394,26 +424,13 @@ steps:
   etl_openfda:
     depends_on:
       - pts_openfda
-      - etl_drug
+      - pts_drug_molecule
   etl_literature:
     num_partitions: 1000
     depends_on:
       - pis_literature
-      - etl_drug
-  etl_pharmacogenomics:
-    num_partitions: 1
-    depends_on:
-      - pts_pharmacogenetics
-      - etl_drug
-  etl_target_engine:
-    depends_on:
-      - pis_target_engine
-      - etl_drug
-      - pts_mouse_phenotype
-  etl_known_drug:
-    num_partitions: 2
-    depends_on:
-      - pts_evidence_postprocess_chembl
+      - pts_drug_molecule
+
   etl_search:
     depends_on:
       - pts_association
@@ -446,7 +463,7 @@ steps:
       - gentropy_credible_set
   gentropy_variant_partition:
     depends_on:
-      - etl_pharmacogenomics
+      - pts_pharmacogenetics
       - gentropy_credible_set
       - pis_evidence_uniprot_variants
       - pis_evidence_eva

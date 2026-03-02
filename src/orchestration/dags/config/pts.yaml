@@ -412,7 +412,7 @@ steps:
       source:
         chembl_mechanism: input/drug/chembl_mechanism.jsonl
         chembl_target: input/drug/chembl_target.jsonl
-        target: output/target
+        target: intermediate/target/ensembl/homo_sapiens.parquet
       destination: output/drug_mechanism_of_action
   ##################################################################################################
 
@@ -471,10 +471,6 @@ steps:
       destination:
         output: output/clinical_report/clinical_report.parquet
       settings:
-        aact_db_type: postgresql
-        aact_db_uri: localhost:5432/aact
-        chembl_db_type: postgresql
-        chembl_db_uri: localhost:5432/chembl_36
         ner_batch_size: 256
       pyspark: clinical_report
   ##################################################################################################
@@ -520,9 +516,9 @@ steps:
         mouse_phenotypes: output/mouse_phenotype
         molecule: output/drug_molecule
         mechanism_of_action: output/drug_mechanism_of_action
-        hpa_data: input/target_engine/proteinatlas.json.gz
-        uniprot_slterms: input/target_engine/uniprot_locations.tsv.gz
-        mouse_pheno_scores: input/target_engine/mouse_pheno_scores.csv
+        hpa_data: input/target_prioritisation/proteinatlas.json.gz
+        uniprot_slterms: input/target_prioritisation/uniprot_locations.tsv.gz
+        mouse_pheno_scores: input/target_prioritisation/mouse_pheno_scores.csv
       destination: output/target_prioritisation
       properties:
         spark.driver.memory: 16g
@@ -656,7 +652,7 @@ steps:
       settings:
         evidence_format: json
         datasource_id: expression_atlas
-        score_expression: 'array_min(array(1.0, pvalue_linear_score(resourceScore) * (abs(log2FoldChangeValue) / 10) * (log2FoldChangePercentileRank / 100)))'
+        score_expression: "array_min(array(1.0, pvalue_linear_score(resourceScore) * (abs(log2FoldChangeValue) / 10) * (log2FoldChangePercentileRank / 100)))"
         unique_fields:
           - targetId
           - targetFromSourceId
@@ -1471,8 +1467,6 @@ steps:
   association_otf:
     - name: pyspark association_otf
       pyspark: association_otf
-      properties:
-        spark.driver.memory: '20g'
       source:
         disease: output/disease
         evidence: output/evidence_*
