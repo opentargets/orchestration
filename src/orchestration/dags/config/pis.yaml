@@ -875,8 +875,8 @@ steps:
       destination: input/target/uniprot/uniprot-ssl.tsv.gz
   ##################################################################################################
 
-  #: TARGET_ENGINE STEP :###########################################################################
-  pis_target_prioritisation:
+  #: TARGET_PRIORITISATION STEP :###################################################################
+  target_prioritisation:
     - name: copy protein atlas
       source: https://www.proteinatlas.org/download/proteinatlas.json.gz
       destination: input/target_prioritisation/proteinatlas.json.gz
