@@ -108,8 +108,8 @@ steps:
     - name: explode_glob transform openfda drug events
       glob: input/openfda/**/*.zip
       do:
-        - name: transform ${match_path}${match_stem}
-          source: ${match_prefix}/${match_path}/${match_stem}.${match_ext}
+        - name: transform ${match_path}/${match_stem}
+          source: ${uri}
           destination: intermediate/openfda/${uuid}.parquet
           transformer: openfda
   ##################################################################################################
@@ -162,8 +162,8 @@ steps:
       glob: input/target/homologue/gene_dictionary/*.json
       do:
         - name: transform ${match_stem} to parquet
-          source: ${match_prefix}/${match_path}/${match_stem}.${match_ext}
-          destination: intermediate/target/homologue/gene_dictionary/${match_path}${match_stem}.parquet
+          source: ${uri}
+          destination: intermediate/target/homologue/gene_dictionary/${match_path}/${match_stem}.parquet
           transformer: homology
   ##################################################################################################
 
@@ -652,7 +652,7 @@ steps:
       settings:
         evidence_format: json
         datasource_id: expression_atlas
-        score_expression: "array_min(array(1.0, pvalue_linear_score(resourceScore) * (abs(log2FoldChangeValue) / 10) * (log2FoldChangePercentileRank / 100)))"
+        score_expression: 'array_min(array(1.0, pvalue_linear_score(resourceScore) * (abs(log2FoldChangeValue) / 10) * (log2FoldChangePercentileRank / 100)))'
         unique_fields:
           - targetId
           - targetFromSourceId
