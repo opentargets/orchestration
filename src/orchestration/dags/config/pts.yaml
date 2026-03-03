@@ -146,6 +146,7 @@ steps:
       requires:
         - unzip essentiality matrix
       source: intermediate/target/project-scores/04_binaryDepScores.tsv
+      local_source: True
       destination: intermediate/target/project-scores/04_binaryDepScores.parquet
       separator: "\t"
 
