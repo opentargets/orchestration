@@ -147,6 +147,7 @@ steps:
       fields:
         - mp_id
         - hp_id
+      strict: False
 
     - name: solr fetch mouse_model
       destination: input/impc
