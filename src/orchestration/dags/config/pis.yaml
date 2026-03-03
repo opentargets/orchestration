@@ -288,12 +288,9 @@ steps:
       source: https://static-content.springer.com/esm/art%3A10.1038%2Fs41588-024-01894-5/MediaObjects/41588_2024_1894_MOESM4_ESM.xlsx
       destination: input/evidence/gene_burden/cvdi.xlsx
 
-    - name: explode_glob download genebass
-      glob: 'gs://otar000-evidence_input/GeneBurden/data_files/genebass_entries/*.parquet'
-      do:
-        - name: copy genebass ${match_stem}
-          source: ${uri}
-          destination: input/evidence/gene_burden/genebass/${match_stem}.${match_ext}
+    - name: copy_many download genebass
+      sources: gs://otar000-evidence_input/GeneBurden/data_files/genebass_entries/*.parquet
+      destination: input/evidence/gene_burden/genebass/
 
     - name: copy gene_burden finngen
       source: gs://finngen-public-data-r12/lof/data/finngen_R12_lof.txt.gz
@@ -593,10 +590,10 @@ steps:
       destination: input/literature/PMID_PMCID_DOI.csv.gz
 
     - name: explode_glob literature dating lut
-      glob: gs://otar000-evidence_input/literature_export/*.json.gz
+      glob: gs://otar000-evidence_input/literature_export/2026_03/*.json.gz
       do:
         - name: copy literature dating lut ${match_stem}
-          source: ${uri}
+          source: ${match_prefix}/${match_path}/${match_stem}.${match_ext}
           destination: input/literature/literature_export/${uuid}.json.gz
 
   ##################################################################################################
