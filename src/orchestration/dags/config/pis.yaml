@@ -49,7 +49,6 @@ steps:
       destination: input/disease/efo_otar_slim.json
 
     - name: copy hpo
-      # we were using v2021-10-10 release until 25.03
       source: https://github.com/obophenotype/human-phenotype-ontology/releases/download/v${hpo_version}/hp-full.json
       destination: input/disease/hp-full.json
 
@@ -68,9 +67,11 @@ steps:
     - name: copy chemical probes
       source: https://www.probes-drugs.org/media/download/probes/pd_export_${probes_drugs_version}_probes_standardized.xlsx
       destination: input/target/chemicalprobes/probes.xlsx
+
     - name: copy drugbank annotation
       source: https://ftp.ebi.ac.uk/pub/databases/chembl/UniChem/data/wholeSourceMapping/src_id1/src1src2.txt.gz
       destination: input/drug/drugbank.csv.gz
+
     - name: elasticsearch chembl drug warning
       url: https://www.ebi.ac.uk/chembl/elk/es
       destination: input/drug/chembl_drug_warning.jsonl
@@ -250,6 +251,7 @@ steps:
         - find_latest cosmic
       source: ${latest_cosmic}
       destination: input/evidence/cosmic.json.gz
+  ##################################################################################################
 
   #: EVIDENCE_PROJECT_SCORE STEP :##################################################################
   evidence_project_score:
@@ -265,7 +267,7 @@ steps:
       source: gs://otar000-evidence_input/CRISPR/data_files/project_score_v2/mapped_diseases.tsv
       destination: input/evidence/project_score/mapped_diseases.tsv
 
-    - name: copy ot_curation  depmap_tissue_mapping
+    - name: copy ot_curation depmap_tissue_mapping
       source: https://raw.githubusercontent.com/opentargets/curation/${ot_curation}/mappings/biosystem/depmap_uberon_mapping.csv
       destination: input/ot_curation/mappings/biosystem/depmap_uberon_mapping.csv
   ##################################################################################################
@@ -350,31 +352,31 @@ steps:
   #: EVIDENCE_GENE2PHENOTYPE STEP :#################################################################
   evidence_gene2phenotype:
     - name: copy gene2phenotype cancer
-      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Cancer/download/
+      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Cancer/download
       destination: input/evidence/gene2phenotype/cancer.csv
 
     - name: copy gene2phenotype cardiac
-      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Cardiac/download/
+      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Cardiac/download
       destination: input/evidence/gene2phenotype/cardiac.csv
 
     - name: copy gene2phenotype dd
-      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/DD/download/
+      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/DD/download
       destination: input/evidence/gene2phenotype/dd.csv
 
     - name: copy gene2phenotype ear
-      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Ear/download/
+      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Ear/download
       destination: input/evidence/gene2phenotype/ear.csv
 
     - name: copy gene2phenotype eye
-      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Eye/download/
+      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Eye/download
       destination: input/evidence/gene2phenotype/eye.csv
 
     - name: copy gene2phenotype skeletal
-      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Skeletal/download/
+      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Skeletal/download
       destination: input/evidence/gene2phenotype/skeletal.csv
 
     - name: copy gene2phenotype skin
-      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Skin/download/
+      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Skin/download
       destination: input/evidence/gene2phenotype/skin.csv
   ##################################################################################################
 
@@ -900,24 +902,4 @@ steps:
     - name: copy mouse phenotype scores
       source: https://raw.githubusercontent.com/opentargets/target_engine/main/src/data_flow/phenotypeScores/20230825_mousePheScores.csv
       destination: input/target_prioritisation/mouse_pheno_scores.csv
-  ##################################################################################################
-
-  #: ENCODE INGESTION STEP :########################################################################
-  encode_rE2G:
-    - name: copy encode rE2G manifest
-      # NOTE: excluded samples from query have divergent schemas that do not conform to expected rE2G format
-      source: https://www.encodeproject.org/report.tsv?type=File&searchTerm=encode-re2g+thresholded&output_type=thresholded+element+gene+links&status=released&limit=all&accession!=ENCFF094BVF&accession!=ENCFF269DKY
-      destination: input/encode-rE2G/e2g_manifest.tsv
-
-    - name: crawl_encode rE2G manifest
-      requires:
-        - copy encode rE2G manifest
-      manifest: input/encode-rE2G/e2g_manifest.tsv
-      columns:
-        accession: 'Accession'
-        url_stem: 'Download URL'
-      expand: # COPY task template
-        name: copy encode rE2G ${accession}
-        source: https://www.encodeproject.org${url_stem}
-        destination: input/encode-rE2G/${accession}.bed.gz
   ##################################################################################################
