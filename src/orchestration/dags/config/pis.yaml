@@ -303,9 +303,12 @@ steps:
       source: https://static-content.springer.com/esm/art%3A10.1038%2Fs41588-024-01894-5/MediaObjects/41588_2024_1894_MOESM4_ESM.xlsx
       destination: input/evidence/gene_burden/cvdi.xlsx
 
-    - name: copy_many download genebass
-      sources: gs://otar000-evidence_input/GeneBurden/data_files/genebass_entries/*.parquet
-      destination: input/evidence/gene_burden/genebass/
+    - name: explode_glob download genebass
+      glob: 'gs://otar000-evidence_input/GeneBurden/data_files/genebass_entries/*.parquet'
+      do:
+        - name: copy genebass ${match_stem}
+          source: ${uri}
+          destination: input/evidence/gene_burden/genebass/${match_stem}.${match_ext}
 
     - name: copy gene_burden finngen
       source: gs://finngen-public-data-r12/lof/data/finngen_R12_lof.txt.gz
@@ -315,19 +318,13 @@ steps:
       source: https://r12.finngen.fi/api/phenos
       destination: input/evidence/gene_burden/finngen/phenos
 
-    - name: explode_glob AZ parquet (binary)
-      glob: gs://otar000-evidence_input/GeneBurden/data_files/azphewas-com-470k-phewas-binary/*.parquet
-      do:
-        - name: copy binary ${match_stem}.parquet
-          source: ${uri}
-          destination: input/evidence/gene_burden/astrazeneca/azphewas-com-470k-phewas-binary/${match_stem}.parquet
+    - name: copy_many AZ parquet (quantitative)
+      sources: gs://otar000-evidence_input/GeneBurden/data_files/azphewas-com-470k-phewas-quantitative/*.parquet
+      destination: input/evidence/gene_burden/astrazeneca/azphewas-com-470k-phewas-quantitative
 
-    - name: explode_glob AZ parquet (quantitative)
-      glob: gs://otar000-evidence_input/GeneBurden/data_files/azphewas-com-470k-phewas-quantitative/*.parquet
-      do:
-        - name: copy quantitative ${match_stem}.parquet
-          source: ${uri}
-          destination: input/evidence/gene_burden/astrazeneca/azphewas-com-470k-phewas-quantitative/${match_stem}.parquet
+    - name: copy_many AZ parquet (binary)
+      sources: gs://otar000-evidence_input/GeneBurden/data_files/azphewas-com-470k-phewas-quantitative/*.parquet
+      destination: input/evidence/gene_burden/astrazeneca/azphewas-com-470k-phewas-quantitative
 
     - name: explode AZ CSVs
       foreach:
