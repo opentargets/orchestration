@@ -288,7 +288,7 @@ steps:
   #: EVIDENCE_EVA STEP :############################################################################
   evidence_eva:
     - name: find_latest eva
-      source: gs://otar012-eva/disease-target-evidence
+      source: gs://otar012-eva/disease-target-evidence/*
       scratchpad_key: 'latest_eva'
     - name: copy eva
       requires:
