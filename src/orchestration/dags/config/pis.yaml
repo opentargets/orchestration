@@ -244,7 +244,6 @@ steps:
   evidence_cosmic:
     - name: find_latest cosmic
       source: gs://otar007-cosmic
-      pattern: '!hallmarks'
       scratchpad_key: 'latest_cosmic'
     - name: copy cosmic
       requires:
@@ -766,8 +765,7 @@ steps:
       destination: input/target/go/ensembl.tsv
 
     - name: find_latest cosmic hallmark
-      source: gs://otar007-cosmic
-      pattern: 'hallmarks'
+      source: gs://otar007-cosmic/hallmarks
       scratchpad_key: 'latest_cosmic_hallmark'
     - name: copy cosmic
       requires:
