@@ -155,10 +155,14 @@ steps:
       source: input/target/project-scores/gene_identifiers_latest.csv.gz
       destination: intermediate/target/project-scores/gene_identifiers_latest.parquet
 
+    - name: download ensembl
+      source: input/target/ensembl/homo_sapiens.json
     - name: transform ensembl
+      requires:
+        - download ensembl
+      transformer: ensembl
       source: input/target/ensembl/homo_sapiens.json
       destination: intermediate/target/ensembl/homo_sapiens.parquet
-      transformer: ensembl
 
     - name: explode_glob homology
       glob: input/target/homologue/gene_dictionary/*.json
