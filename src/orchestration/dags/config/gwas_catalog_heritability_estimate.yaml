@@ -1,0 +1,36 @@
+---
+steps:
+  heritability_estimate:
+    cluster: false
+    google_batch_index_specs:
+      manifest_generator_label: "heritability-estimate"
+      manifest_generator_specs:
+        commands:
+          - -c
+          - gentropy
+        options:
+          # gentropy CLI options specific to heritability estimation.  Each
+          # environment variable below will be overridden on a per‑partition basis
+          # by the manifest generator.
+          step: heritability_estimate
+          step.session.write_mode: overwrite
+          step.session.output_partitions: 1
+          step.summary_statistics_input_path: '$INPUT_PARTITION'
+          step.study_index_input_path: '{{release_uri}}/output/study'
+          step.ldscore_base_path: '{{release_uri}}/input/ldscore'
+          step.heritability_output_path: '$OUTPUT_PARTITION'
+        manifest_kwargs:
+          input_glob: '{{release_uri}}/input/harmonised_summary_statistics/**.parquet'
+          output_prefix: '{{release_uri}}/output/heritability_estimates'
+    google_batch:
+      entrypoint: /usr/bin/bash
+      image: 'ghcr.io/opentargets/gentropy:{{gentropy_version}}'
+      resource_specs:
+        cpu_milli: 2000
+        memory_mib: 7000
+        boot_disk_mib: 4000
+      task_specs:
+        max_retry_count: 2
+        max_run_duration: '1h'
+      policy_specs:
+        machine_type: n1-standard-2
