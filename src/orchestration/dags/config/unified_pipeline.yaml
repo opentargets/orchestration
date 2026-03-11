@@ -382,6 +382,10 @@ steps:
       - pts_evidence_postprocess_ot_crispr
       - pts_evidence_postprocess_encore
       - pts_evidence_postprocess_validation_lab
+  pts_association_timeseries_view:
+    ppp_only: true
+    depends_on:
+      - pts_association
   pts_association_otf:
     ppp_only: false
     depends_on:
