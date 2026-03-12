@@ -415,7 +415,7 @@ steps:
   etl_search_facet:
     depends_on:
       - pts_disease
-      - etl_go
+      - pts_go
       - etl_target
   etl_interaction:
     depends_on:
