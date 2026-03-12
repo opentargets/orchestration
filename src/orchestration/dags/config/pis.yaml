@@ -323,8 +323,8 @@ steps:
       destination: input/evidence/gene_burden/astrazeneca/azphewas-com-470k-phewas-quantitative
 
     - name: copy_many AZ parquet (binary)
-      sources: gs://otar000-evidence_input/GeneBurden/data_files/azphewas-com-470k-phewas-quantitative/*.parquet
-      destination: input/evidence/gene_burden/astrazeneca/azphewas-com-470k-phewas-quantitative
+      sources: gs://otar000-evidence_input/GeneBurden/data_files/azphewas-com-470k-phewas-binary/*.parquet
+      destination: input/evidence/gene_burden/astrazeneca/azphewas-com-470k-phewas-binary
 
     - name: explode AZ CSVs
       foreach:
