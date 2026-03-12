@@ -83,6 +83,7 @@ clusters:
 
   gentropy_colocalisation:
     image_version: '2.2'
+    zone: 'europe-west1-b'
     autoscaling_policy: otg-efm
     num_masters: 3
     num_workers: 20
