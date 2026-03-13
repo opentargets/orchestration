@@ -1541,3 +1541,25 @@ steps:
       properties:
         spark.driver.memory: 12g
   ##################################################################################################
+
+  #: RELEASE METRICS STEP :##########################################################################
+  release_metrics:
+    - name: transform release_metrics
+      transformer: release_metrics
+      source:
+        evidence: output/evidence_*
+        evidence_failed: excluded/evidence/*
+        associations_source_direct: output/association_by_datasource_direct
+        associations_source_indirect: output/association_by_datasource_indirect
+        diseases: output/disease
+        targets: output/target
+        drugs: output/drug_molecule
+      destination:
+        parquet: metrics.parquet
+      settings:
+        ot_release: '{{release_name}}'
+        upload_to_hf_hub: true
+        hf_token_filename: /var/run/secrets/hf_token
+        hf_repo_id: opentargets/ot-release-metrics
+        hf_data_dir: metrics
+  ##################################################################################################

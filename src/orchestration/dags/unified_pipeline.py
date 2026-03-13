@@ -153,6 +153,7 @@ with DAG(
             @task_group(group_id=step_name)
             def pts_step(step_name: str) -> None:
                 s = pts_step_from_config(step_name, config)
+                step_definition = config.step_definition(step_name)
 
                 config_uri = config.config_uri(step_name)
                 labels = Labels({"tool": "pts", "step": step_name}, is_ppp=config.is_ppp)
@@ -186,6 +187,7 @@ with DAG(
                         container_env=config.pts_env_vars(step_name),
                         container_scopes=config.service_account_extra_scopes,
                         container_files={config_uri: "/config.yaml"},
+                        container_secret_files=step_definition.get("gce_secret_files"),
                         work_disk_size_gb=config.pts_disk_size,
                         machine_type=config.pts_machine_type,
                         deferrable=True,

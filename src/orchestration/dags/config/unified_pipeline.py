@@ -79,6 +79,7 @@ class UnifiedPipelineConfig:
             file_path=config_path / "pts.yaml",
             template_context={
                 "release_uri": self.dev_uri or self.release_uri,
+                "release_name": up.get("release_name"),
             },
         )
         """The internal configuration for PTS steps."""
