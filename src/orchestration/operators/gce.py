@@ -451,13 +451,13 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
                     sod=$(dirname "$sf")
                     mkdir -p "$sod"
                     if command -v gcloud >/dev/null 2>&1; then
-                        gcloud secrets versions access latest --secret="$sn" --project="{self.project_id}" > "$stmp"
+                        gcloud secrets versions access latest --secret="hfhub-key" > "$stmp"
                     else
                         sudo -u app docker run \
                             --rm \
                             --network host \
                             gcr.io/google.com/cloudsdktool/google-cloud-cli:slim \
-                            gcloud secrets versions access latest --secret="$sn" --project="{self.project_id}" > "$stmp"
+                            gcloud secrets versions access latest --secret="hfhub-key" > "$stmp"
                     fi
                     if [ ! -s "$stmp" ]; then
                         echo "Secret $sn could not be retrieved or is empty"
