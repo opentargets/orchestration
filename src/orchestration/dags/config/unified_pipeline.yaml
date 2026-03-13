@@ -393,8 +393,6 @@ steps:
   pts_release_metrics:
     depends_on:
       - pts_association
-    gce_secret_files:
-      hfhub-key: /var/run/secrets/hf_token
   # ETL STEPS
   etl_expression:
     num_partitions: 4

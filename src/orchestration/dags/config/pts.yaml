@@ -1546,19 +1546,28 @@ steps:
   release_metrics:
     - name: transform release_metrics
       transformer: release_metrics
-      source:
-        evidence: output/evidence_*
-        evidence_failed: excluded/evidence/*
-        associations_source_direct: output/association_by_datasource_direct/*.parquet
-        associations_source_indirect: output/association_by_datasource_indirect/*.parquet
-        diseases: output/disease/*.parquet
-        targets: output/target/*.parquet
-        drugs: output/drug_molecule/*.parquet
+      source: {}
       destination:
         parquet: metrics.parquet
       settings:
         ot_release: '{{release_name}}'
-        upload_to_hf_hub: true
+        metric_scopes:
+          - /output/*
+          - /excluded/evidence/*
+        rich_dataset_whitelist:
+          - /output/evidence_*
+          - /excluded/evidence/*
+          - /output/association_by_datasource_direct
+          - /output/association_by_datasource_indirect
+          - /output/disease
+          - /output/target
+          - /output/drug_molecule
+          - /output/variant
+          - /output/study
+          - /output/credible_set
+          - /output/clinical_report
+          - /output/biosample
+        upload_to_hf_hub: false
         hf_token_filename: /var/run/secrets/hf_token
         hf_repo_id: opentargets/ot-release-metrics
         hf_data_dir: metrics
