@@ -417,6 +417,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
 
         return dedent(f"""
             #!/bin/bash
+            set -euo pipefail
             set -v
             {init_work_disk}
             useradd -m app
@@ -446,9 +447,23 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
                     sn=${{secret_names[$s]}}
                     sd=${{secret_dest[$s]}}
                     sf="/home/app/${{sd#/}}"
+                    stmp="${{sf}}.tmp"
                     sod=$(dirname "$sf")
                     mkdir -p "$sod"
-                    gcloud secrets versions access latest --secret="$sn" > "$sf"
+                    if command -v gcloud >/dev/null 2>&1; then
+                        gcloud secrets versions access latest --secret="$sn" --project="{self.project_id}" > "$stmp"
+                    else
+                        sudo -u app docker run \
+                            --rm \
+                            --network host \
+                            gcr.io/google.com/cloudsdktool/google-cloud-cli:slim \
+                            gcloud secrets versions access latest --secret="$sn" --project="{self.project_id}" > "$stmp"
+                    fi
+                    if [ ! -s "$stmp" ]; then
+                        echo "Secret $sn could not be retrieved or is empty"
+                        exit 1
+                    fi
+                    mv "$stmp" "$sf"
                     chmod 400 "$sf"
                 done
             fi
