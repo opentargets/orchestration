@@ -1549,11 +1549,11 @@ steps:
       source:
         evidence: output/evidence_*
         evidence_failed: excluded/evidence/*
-        associations_source_direct: output/association_by_datasource_direct
-        associations_source_indirect: output/association_by_datasource_indirect
-        diseases: output/disease
-        targets: output/target
-        drugs: output/drug_molecule
+        associations_source_direct: output/association_by_datasource_direct/*.parquet
+        associations_source_indirect: output/association_by_datasource_indirect/*.parquet
+        diseases: output/disease/*.parquet
+        targets: output/target/*.parquet
+        drugs: output/drug_molecule/*.parquet
       destination:
         parquet: metrics.parquet
       settings:
