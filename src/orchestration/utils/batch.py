@@ -59,11 +59,9 @@ def create_task_spec(
     time_duration = time_to_seconds(task_specs["max_run_duration"])
     # See https://docs.cloud.google.com/batch/docs/troubleshooting#reserved-exit-codes
     default_lifecycle_policies = [
-        (
-            LifecyclePolicy(
-                action=LifecyclePolicy.Action.RETRY_TASK,
-                action_condition=LifecyclePolicy.ActionCondition(exit_codes=[50001, 50002, 50003, 50004, 50005]),
-            ),
+        LifecyclePolicy(
+            action=LifecyclePolicy.Action.RETRY_TASK,
+            action_condition=LifecyclePolicy.ActionCondition(exit_codes=[50001, 50002, 50003, 50004, 50005]),
         )
     ]
     parameters = {

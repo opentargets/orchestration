@@ -23,8 +23,7 @@ from airflow.exceptions import AirflowSkipException
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 
 from orchestration.operators.batch.batch_index import BatchIndex
-from orchestration.operators.batch.manifest_generators import \
-    ProtoManifestGenerator
+from orchestration.operators.batch.manifest_generators import ProtoManifestGenerator
 from orchestration.types import ManifestGeneratorSpecs
 from orchestration.utils.path import GCSPath
 
@@ -64,9 +63,7 @@ class HeritabilityManifestGenerator(ProtoManifestGenerator):
         self.output_prefix = GCSPath(manifest_kwargs.get("output_prefix", ""))
 
     @classmethod
-    def from_generator_config(
-        cls, specs: ManifestGeneratorSpecs
-    ) -> "HeritabilityManifestGenerator":
+    def from_generator_config(cls, specs: ManifestGeneratorSpecs) -> "HeritabilityManifestGenerator":
         """Construct a generator from configuration specs.
 
         This method is invoked by the ``BatchIndexOperator`` when
@@ -95,64 +92,61 @@ class HeritabilityManifestGenerator(ProtoManifestGenerator):
         )
 
     def build_vars_list(self) -> list[dict[str, str]]:
-        """Build the list of variables for each batch task.
+        """Build one batch job per study directory."""
+        dataset_root = self.input_glob.gcs_path.rstrip("/")
 
-        This method enumerates all files that match the input glob.  For
-        each input file it derives a corresponding output path under
-        ``output_prefix`` using the basename of the file.  Before
-        adding a task entry, it checks whether the output file already
-        exists on GCS and skips it if present.  If no new tasks are
-        required, an ``AirflowSkipException`` is raised to short‑circuit
-        job creation.
+        if not dataset_root.startswith("gs://"):
+            raise ValueError(f"Expected gs:// path, got {dataset_root}")
 
-        Returns
-        -------
-        list[dict[str, str]]
-            A list of environment variable mappings used by
-            ``BatchIndexOperator``.
-        """
-        protocol = self.input_glob.segments.get("protocol")
-        bucket_name = self.input_glob.segments.get("root")
-        prefix = self.input_glob.segments.get("prefix")
-        match_glob = self.input_glob.segments.get("filename")
+        without_scheme = dataset_root[len("gs://") :]
+        bucket_name, root_prefix = without_scheme.split("/", 1)
+        root_prefix = root_prefix.rstrip("/") + "/"
 
-        # Retrieve all candidate files from the input glob.
-        files = self.gcs_hook.list(
+        blobs = self.gcs_hook.list(
             bucket_name=bucket_name,
-            prefix=f"{prefix}/" if prefix else "",
-            match_glob=match_glob,
+            prefix=root_prefix,
         )
 
-        vars_list: list[dict[str, str]] = []
-        for file in files:
-            # Construct full GCS path for the input partition.
-            input_path = f"{protocol}://{bucket_name}/{file}"
-            # Derive the output filename from the last path segment of the
-            # input file to avoid recreating the entire directory structure.
-            output_filename = file.split("/")[-1]
-            output_path = f"{self.output_prefix.gcs_path}/{output_filename}"
+        study_dirs: set[str] = set()
 
-            # Skip processing if the output already exists.
+        for blob in blobs:
+            rel = blob[len(root_prefix) :]
+            if not rel:
+                continue
+
+            parts = rel.split("/")
+            # Expect STUDY_ID/<file>
+            if len(parts) >= 2 and parts[0]:
+                study_dirs.add(parts[0])
+
+        vars_list: list[dict[str, str]] = []
+
+        for study_dir in sorted(study_dirs):
+            input_path = f"{dataset_root}/{study_dir}"
+            output_path = f"{self.output_prefix.gcs_path.rstrip('/')}/{study_dir}"
+
             output_gcs = GCSPath(output_path)
             try:
                 exists = output_gcs.exists()
             except Exception:
-                # In case the existence check fails due to network or
-                # authentication errors, pessimistically assume the file
-                # does not exist so it will be regenerated.
                 exists = False
+
             if exists:
                 continue
-            vars_list.append(
-                {
-                    "INPUT_PARTITION": input_path,
-                    "OUTPUT_PARTITION": output_path,
-                }
-            )
+
+            vars_list.append({
+                "INPUT_PARTITION": input_path,
+                "OUTPUT_PARTITION": output_path,
+            })
+
+        print(f"dataset_root={dataset_root}")
+        print(f"root_prefix={root_prefix}")
+        print(f"n_blobs={len(blobs)}")
+        print(f"n_study_dirs={len(study_dirs)}")
+        print(f"study_dirs_sample={sorted(study_dirs)[:10]}")
+        print(f"n_vars_list={len(vars_list)}")
 
         if not vars_list:
-            raise AirflowSkipException(
-                f"No files to process under {self.input_glob.gcs_path}; "
-                "all heritability estimates appear to exist."
-            )
-        return vars_list        return vars_list
+            raise AirflowSkipException(f"No study directories found to process under {dataset_root}")
+
+        return vars_list
