@@ -30,12 +30,14 @@ steps:
         - CASE_CASE_STUDY_DESIGN
       # INPUTS
       step.study_index_path:
-        - gs://gwas_catalog_top_hits/study_index
-        - gs://gwas_catalog_sumstats_susie/study_index
-        - gs://gwas_catalog_sumstats_pics/study_index
-        - gs://eqtl_catalogue_data/study_index
-        - gs://ukb_ppp_eur_data/study_index
-        - gs://finngen_data/r12/study_index
+        # GWAS
+        - '{{release_uri}}/input/gwas/study/gcca'
+        - '{{release_uri}}/input/gwas/study/gcss_pics'
+        - '{{release_uri}}/input/gwas/study/gcss_susie'
+        - '{{release_uri}}/input/gwas/study/finngen'
+        # molQTL
+        - '{{release_uri}}/input/molqtl/study/eqtl_catalogue'
+        - '{{release_uri}}/input/molqtl/study/ukb_ppp_eur'
       step.target_index_path: '{{release_uri}}/output/target'
       step.disease_index_path: '{{release_uri}}/output/disease'
       step.biosample_index_path: '{{release_uri}}/output/biosample'
@@ -68,12 +70,14 @@ steps:
       step.trans_qtl_threshold: 5_000_000
       # INPUTS
       step.study_locus_path:
-        - gs://gwas_catalog_top_hits/credible_sets/
-        - gs://gwas_catalog_sumstats_pics/credible_sets/
-        - gs://gwas_catalog_sumstats_susie/credible_set_clean/20260130/
-        - gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie_patched_v2/
-        - gs://ukb_ppp_eur_data/credible_set_clean/20250129/
-        - gs://finngen_data/r12/credible_set_datasets/susie/
+        # GWAS
+        - '{{release_uri}}/input/gwas/credible_set/gcca'
+        - '{{release_uri}}/input/gwas/credible_set/gcss_pics'
+        - '{{release_uri}}/input/gwas/credible_set/gcss_susie'
+        - '{{release_uri}}/input/gwas/credible_set/finngen'
+        # molQTL
+        - '{{release_uri}}/input/molqtl/credible_set/eqtl_catalogue'
+        - '{{release_uri}}/input/molqtl/credible_set/ukb_ppp_eur'
       step.study_index_path: '{{release_uri}}/output/study'
       step.target_index_path: '{{release_uri}}/output/target'
       # OUTPUTS
@@ -175,7 +179,7 @@ steps:
       # INPUTS
       step.credible_set_path: '{{release_uri}}/output/credible_set'
       step.feature_matrix_path: '{{release_uri}}/intermediate/l2g_feature_matrix'
-      step.gold_standard_curation_path: '{{release_uri}}/input/l2g/gold_standard.json'
+      step.gold_standard_curation_path: '{{release_uri}}/input/l2g/gold_standard'
       # OUTPUTS
       step.model_path: '{{release_uri}}/etc/model/locus_to_gene_model/classifier.skops'
 
