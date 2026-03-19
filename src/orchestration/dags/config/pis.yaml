@@ -705,7 +705,7 @@ steps:
         - coeqtl
       do:
         - name: copy_many molqtl eQTLGen ${each} study
-          sources: gs://eqtlgen_data/${each}/260301/study_index/*.parquet
+          sources: gs://eqtlgen_data/${each}/260301/study/*.parquet
           destination: input/molqtl/study/eQTLGen/${each}
 
         - name: copy_many molqtl eQTLGen ${each} credible sets
