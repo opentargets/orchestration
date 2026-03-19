@@ -1,6 +1,6 @@
 [project]
 name = "orchestration"
-version = "25.12.1"
+version = "25.03.0"
 description = "Open Targets Data Pipeline Orchestration"
 authors = [{ name = "Open Targets Core Team", email = "devs@opentargets.net" }]
 readme = "README.md"
