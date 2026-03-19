@@ -32,6 +32,16 @@ steps:
       destination: input/biosample/efo.json
   ##################################################################################################
 
+  #: CLINICAL_REPORT STEP :########################################################################
+  clinical_report:
+    - name: explode_glob clinical_report
+      glob: gs://ot-team/irene/clinical_mining/2026-03-12/input/clinical_report/**/**
+      do:
+        - name: copy clinical_report ${match_stem} ${uuid}
+          source: ${uri}
+          destination: input/clinical_report/${match_path}/${match_stem}.${match_ext}
+  ##################################################################################################
+
   #: DISEASE STEP :#################################################################################
   disease:
     - name: copy efo otar_slim
@@ -39,7 +49,6 @@ steps:
       destination: input/disease/efo_otar_slim.json
 
     - name: copy hpo
-      # we were using v2021-10-10 release until 25.03
       source: https://github.com/obophenotype/human-phenotype-ontology/releases/download/v${hpo_version}/hp-full.json
       destination: input/disease/hp-full.json
 
@@ -59,26 +68,10 @@ steps:
       source: https://www.probes-drugs.org/media/download/probes/pd_export_${probes_drugs_version}_probes_standardized.xlsx
       destination: input/target/chemicalprobes/probes.xlsx
 
-    - name: find_latest drugbank annotation
-      source: gs://otar001-core/DrugBank/annotation
-      scratchpad_key: latest_drugbank_annotation
-
     - name: copy drugbank annotation
-      requires:
-        - find_latest drugbank annotation
-      source: ${latest_drugbank_annotation}
+      source: https://ftp.ebi.ac.uk/pub/databases/chembl/UniChem/data/wholeSourceMapping/src_id1/src1src2.txt.gz
       destination: input/drug/drugbank.csv.gz
 
-    - name: elasticsearch chembl drug indication
-      url: https://www.ebi.ac.uk/chembl/elk/es
-      destination: input/drug/chembl_drug_indication.jsonl
-      index: chembl_${chembl_version}_drug_indication
-      fields:
-        - _metadata
-        - molecule_chembl_id
-        - efo_id
-        - max_phase_for_ind
-        - indication_refs
     - name: elasticsearch chembl drug warning
       url: https://www.ebi.ac.uk/chembl/elk/es
       destination: input/drug/chembl_drug_warning.jsonl
@@ -143,64 +136,60 @@ steps:
     - name: solr fetch gene_gene
       destination: input/impc
       url: http://www.ebi.ac.uk/mi/impc/solr/phenodigm/select
-      queries:
-        - data_type: gene_gene
-          fields:
-            - gene_id
-            - hgnc_gene_id
+      data_type: gene_gene
+      fields:
+        - gene_id
+        - hgnc_gene_id
 
     - name: solr fetch ontology_ontology
       destination: input/impc
       url: http://www.ebi.ac.uk/mi/impc/solr/phenodigm/select
-      queries:
-        - data_type: ontology_ontology
-          fields:
-            - mp_id
-            - hp_id
+      data_type: ontology_ontology
+      fields:
+        - mp_id
+        - hp_id
+      strict: False
 
     - name: solr fetch mouse_model
       destination: input/impc
       url: http://www.ebi.ac.uk/mi/impc/solr/phenodigm/select
       queries:
-        - data_type: mouse_model
-          fields:
-            - model_id
-            - model_phenotypes
+      data_type: mouse_model
+      fields:
+        - model_id
+        - model_phenotypes
 
     - name: solr fetch disease
       destination: input/impc
       url: http://www.ebi.ac.uk/mi/impc/solr/phenodigm/select
-      queries:
-        - data_type: disease
-          fields:
-            - disease_id
-            - disease_phenotypes
+      data_type: disease
+      fields:
+        - disease_id
+        - disease_phenotypes
 
     - name: solr fetch disease_model_summary
       destination: input/impc
       url: http://www.ebi.ac.uk/mi/impc/solr/phenodigm/select
       batch_size: 100000000
-      queries:
-        - data_type: disease_model_summary
-          fields:
-            - model_id
-            - model_genetic_background
-            - model_description
-            - disease_id
-            - disease_term
-            - disease_model_avg_norm
-            - disease_model_max_norm
-            - marker_id
+      data_type: disease_model_summary
+      fields:
+        - model_id
+        - model_genetic_background
+        - model_description
+        - disease_id
+        - disease_term
+        - disease_model_avg_norm
+        - disease_model_max_norm
+        - marker_id
 
     - name: solr fetch ontology
       destination: input/impc
       url: http://www.ebi.ac.uk/mi/impc/solr/phenodigm/select
-      queries:
-        - data_type: ontology
-          fields:
-            - ontology
-            - phenotype_id
-            - phenotype_term
+      data_type: ontology
+      fields:
+        - ontology
+        - phenotype_id
+        - phenotype_term
 
     - name: explode impc metadata
       foreach:
@@ -244,27 +233,6 @@ steps:
       destination: input/evidence/cancerbiomarkers/diseases.jsonl
   ##################################################################################################
 
-  #: EVIDENCE_CHEMBL STEP :#########################################################################
-  evidence_chembl:
-    - name: find_latest chembl
-      source: gs://otar008-chembl
-      scratchpad_key: 'latest_chembl'
-    - name: copy chembl
-      requires:
-        - find_latest chembl
-      source: ${latest_chembl}
-      destination: input/evidence/chembl/chembl.json.gz
-
-    - name: find_latest stop_reasons
-      source: gs://otar000-evidence_input/ChEMBL/data_files
-      scratchpad_key: 'latest_chembl_stop_reasons'
-    - name: copy chembl stop reasons
-      requires:
-        - find_latest stop_reasons
-      source: ${latest_chembl_stop_reasons}
-      destination: input/evidence/chembl/stop_reasons.json
-  ##################################################################################################
-
   #: EVIDENCE_CLINGEN STEP :########################################################################
   evidence_clingen:
     - name: copy clingen
@@ -276,13 +244,13 @@ steps:
   evidence_cosmic:
     - name: find_latest cosmic
       source: gs://otar007-cosmic
-      pattern: '!hallmarks'
       scratchpad_key: 'latest_cosmic'
     - name: copy cosmic
       requires:
         - find_latest cosmic
       source: ${latest_cosmic}
       destination: input/evidence/cosmic.json.gz
+  ##################################################################################################
 
   #: EVIDENCE_PROJECT_SCORE STEP :##################################################################
   evidence_project_score:
@@ -298,7 +266,7 @@ steps:
       source: gs://otar000-evidence_input/CRISPR/data_files/project_score_v2/mapped_diseases.tsv
       destination: input/evidence/project_score/mapped_diseases.tsv
 
-    - name: copy ot_curation  depmap_tissue_mapping
+    - name: copy ot_curation depmap_tissue_mapping
       source: https://raw.githubusercontent.com/opentargets/curation/${ot_curation}/mappings/biosystem/depmap_uberon_mapping.csv
       destination: input/ot_curation/mappings/biosystem/depmap_uberon_mapping.csv
   ##################################################################################################
@@ -320,7 +288,7 @@ steps:
   #: EVIDENCE_EVA STEP :############################################################################
   evidence_eva:
     - name: find_latest eva
-      source: gs://otar012-eva/disease-target-evidence
+      source: gs://otar012-eva/disease-target-evidence/*
       scratchpad_key: 'latest_eva'
     - name: copy eva
       requires:
@@ -350,19 +318,13 @@ steps:
       source: https://r12.finngen.fi/api/phenos
       destination: input/evidence/gene_burden/finngen/phenos
 
-    - name: explode_glob AZ parquet (binary)
-      glob: gs://otar000-evidence_input/GeneBurden/data_files/azphewas-com-470k-phewas-binary/*.parquet
-      do:
-        - name: copy binary ${match_stem}.parquet
-          source: ${uri}
-          destination: input/evidence/gene_burden/astrazeneca/azphewas-com-470k-phewas-binary/${match_stem}.parquet
+    - name: copy_many AZ parquet (quantitative)
+      sources: gs://otar000-evidence_input/GeneBurden/data_files/azphewas-com-470k-phewas-quantitative/*.parquet
+      destination: input/evidence/gene_burden/astrazeneca/azphewas-com-470k-phewas-quantitative
 
-    - name: explode_glob AZ parquet (quantitative)
-      glob: gs://otar000-evidence_input/GeneBurden/data_files/azphewas-com-470k-phewas-quantitative/*.parquet
-      do:
-        - name: copy quantitative ${match_stem}.parquet
-          source: ${uri}
-          destination: input/evidence/gene_burden/astrazeneca/azphewas-com-470k-phewas-quantitative/${match_stem}.parquet
+    - name: copy_many AZ parquet (binary)
+      sources: gs://otar000-evidence_input/GeneBurden/data_files/azphewas-com-470k-phewas-binary/*.parquet
+      destination: input/evidence/gene_burden/astrazeneca/azphewas-com-470k-phewas-binary
 
     - name: explode AZ CSVs
       foreach:
@@ -386,31 +348,31 @@ steps:
   #: EVIDENCE_GENE2PHENOTYPE STEP :#################################################################
   evidence_gene2phenotype:
     - name: copy gene2phenotype cancer
-      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Cancer/download/
+      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Cancer/download
       destination: input/evidence/gene2phenotype/cancer.csv
 
     - name: copy gene2phenotype cardiac
-      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Cardiac/download/
+      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Cardiac/download
       destination: input/evidence/gene2phenotype/cardiac.csv
 
     - name: copy gene2phenotype dd
-      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/DD/download/
+      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/DD/download
       destination: input/evidence/gene2phenotype/dd.csv
 
     - name: copy gene2phenotype ear
-      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Ear/download/
+      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Ear/download
       destination: input/evidence/gene2phenotype/ear.csv
 
     - name: copy gene2phenotype eye
-      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Eye/download/
+      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Eye/download
       destination: input/evidence/gene2phenotype/eye.csv
 
     - name: copy gene2phenotype skeletal
-      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Skeletal/download/
+      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Skeletal/download
       destination: input/evidence/gene2phenotype/skeletal.csv
 
     - name: copy gene2phenotype skin
-      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Skin/download/
+      source: https://www.ebi.ac.uk/gene2phenotype/api/panel/Skin/download
       destination: input/evidence/gene2phenotype/skin.csv
   ##################################################################################################
 
@@ -518,7 +480,7 @@ steps:
       do:
         - name: copy ot_crispr ${match_stem} ${uuid}
           source: ${uri}
-          destination: input/evidence/ot_crispr/data/${match_path}${match_stem}.${match_ext}
+          destination: input/evidence/ot_crispr/data/${match_path}/${match_stem}.${match_ext}
   ##################################################################################################
 
   #: EXPRESSION STEP :##############################################################################
@@ -610,30 +572,27 @@ steps:
 
     - name: copy encode rE2G manifest
       # NOTE: excluded samples from query have divergent schemas that do not conform to expected rE2G format
-      source: https://www.encodeproject.org/report.tsv?type=File&searchTerm=encode-re2g+thresholded&output_type=thresholded+element+gene+links&status=released&limit=all&accession!=ENCFF094BVF&accession!=ENCFF269DKY # yamllint disable-line rule:line-length
+      source: https://www.encodeproject.org/report.tsv?type=File&searchTerm=encode-re2g+thresholded&output_type=thresholded+element+gene+links&status=released&limit=all&accession!=ENCFF094BVF&accession!=ENCFF269DKY
       destination: input/encode/rE2G/download_manifest.tsv
 
     - name: crawl_encode rE2G manifest
       requires:
         - copy encode rE2G manifest
-      manifest: input/encode/rE2G/download_manifest.tsv
-      columns:
-        accession: 'Accession'
-        url_stem: 'Download URL'
-      expand: # COPY task template
-        name: copy encode rE2G ${accession}
-        source: https://www.encodeproject.org${url_stem}
-        destination: input/encode/rE2G/datasets/${accession}.bed.gz
+      source: input/encode/rE2G/download_manifest.tsv
+      destination: input/encode/rE2G/source_list_file.txt
+
+    - name: copy_many encode rE2G datasets
+      requires:
+        - crawl_encode rE2G manifest
+      source_list_file: input/encode/rE2G/source_list_file.txt
+      destination: input/encode/rE2G/datasets
   ##################################################################################################
 
   #: L2G STEP :#####################################################################################
   l2g:
-    - name: explode_glob l2g gold_standard
-      glob: gs://genetics-portal-dev-analysis/yt4/2506_release/training_set/20250625_gentropy_paper_v1.json/*.json
-      do:
-        - name: copy l2g gold_standard ${match_stem}
-          source: ${match_prefix}/${match_path}${match_stem}.${match_ext}
-          destination: input/l2g/gold_standard.json/${uuid}.json
+    - name: copy_many l2g gold standard
+      sources: gs://genetics-portal-dev-analysis/yt4/2506_release/training_set/20250625_gentropy_paper_v1.json/*.json
+      destination: input/l2g/gold_standard.json
   ##################################################################################################
 
   #: LITERATURE STEP :##############################################################################
@@ -643,10 +602,10 @@ steps:
       destination: input/literature/PMID_PMCID_DOI.csv.gz
 
     - name: explode_glob literature dating lut
-      glob: gs://otar000-evidence_input/literature_export/*.json.gz
+      glob: gs://otar000-evidence_input/literature_export/2026.03/*.json.gz
       do:
         - name: copy literature dating lut ${match_stem}
-          source: ${match_prefix}/${match_path}${match_stem}.${match_ext}
+          source: ${match_prefix}/${match_path}/${match_stem}.${match_ext}
           destination: input/literature/literature_export/${uuid}.json.gz
 
   ##################################################################################################
@@ -680,7 +639,7 @@ steps:
     - name: explode_openfda openfda archive
       requires:
         - copy openfda archive manifest
-      json_path: input/openfda/fda_events.json
+      source: input/openfda/fda_events.json
       jq_filter: '.results.drug.event.partitions[].file'
       prefix: 'https://download.open.fda.gov/drug/event/'
       do:
@@ -803,8 +762,7 @@ steps:
       destination: input/target/go/ensembl.tsv
 
     - name: find_latest cosmic hallmark
-      source: gs://otar007-cosmic
-      pattern: 'hallmarks'
+      source: gs://otar007-cosmic/hallmarks
       scratchpad_key: 'latest_cosmic_hallmark'
     - name: copy cosmic
       requires:
@@ -926,17 +884,17 @@ steps:
       destination: input/target/uniprot/uniprot-ssl.tsv.gz
   ##################################################################################################
 
-  #: TARGET_ENGINE STEP :###########################################################################
-  target_engine:
+  #: TARGET_PRIORITISATION STEP :###################################################################
+  target_prioritisation:
     - name: copy protein atlas
       source: https://www.proteinatlas.org/download/proteinatlas.json.gz
-      destination: input/target_engine/proteinatlas.json.gz
+      destination: input/target_prioritisation/proteinatlas.json.gz
 
     - name: copy uniprot locations
       source: https://rest.uniprot.org/locations/stream?compressed=true&fields=id%2Cname%2Ccategory%2Cgene_ontologies%2Cpart_of%2Cis_a&format=tsv&query=%28%2A%29
-      destination: input/target_engine/uniprot_locations.tsv.gz
+      destination: input/target_prioritisation/uniprot_locations.tsv.gz
 
     - name: copy mouse phenotype scores
       source: https://raw.githubusercontent.com/opentargets/target_engine/main/src/data_flow/phenotypeScores/20230825_mousePheScores.csv
-      destination: input/target_engine/mouse_pheno_scores.csv
+      destination: input/target_prioritisation/mouse_pheno_scores.csv
   ##################################################################################################

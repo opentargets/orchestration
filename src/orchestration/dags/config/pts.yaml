@@ -1,3 +1,4 @@
+---
 work_path: /mnt/disks/work
 log_level: INFO
 pool_size: 32
@@ -22,11 +23,19 @@ steps:
       requires:
         - transform disease_efo
       source:
-        - output/disease/disease.parquet
-        - input/disease/phenotype.hpoa
-        - input/disease/mondo.json
+        disease_path: output/disease/disease.parquet
+        phenotype_path: input/disease/phenotype.hpoa
+        mondo_path: input/disease/mondo.json
       destination: output/disease_phenotype/disease_phenotype.parquet
       transformer: disease_phenotype
+  ##################################################################################################
+
+  #: GO STEP :######################################################################################
+  go:
+    - name: transform go
+      transformer: go
+      source: input/go/go.obo
+      destination: output/go/go.parquet
   ##################################################################################################
 
   #: EXPRESSION STEP :##############################################################################
@@ -74,6 +83,7 @@ steps:
       source:
         probes_excel: input/target/chemicalprobes/probes.xlsx
         drugs_csv: input/target/chemicalprobes/probes_links.csv
+        chembl_molecule: intermediate/chembl_molecule
       destination: intermediate/chemical_probes_evidence.parquet
   ##################################################################################################
 
@@ -99,8 +109,8 @@ steps:
     - name: explode_glob transform openfda drug events
       glob: input/openfda/**/*.zip
       do:
-        - name: transform ${match_path}${match_stem}
-          source: ${match_prefix}/${match_path}${match_stem}.${match_ext}
+        - name: transform ${match_path}/${match_stem}
+          source: ${uri}
           destination: intermediate/openfda/${uuid}.parquet
           transformer: openfda
   ##################################################################################################
@@ -137,6 +147,7 @@ steps:
       requires:
         - unzip essentiality matrix
       source: intermediate/target/project-scores/04_binaryDepScores.tsv
+      local_source: True
       destination: intermediate/target/project-scores/04_binaryDepScores.parquet
       separator: "\t"
 
@@ -144,17 +155,21 @@ steps:
       source: input/target/project-scores/gene_identifiers_latest.csv.gz
       destination: intermediate/target/project-scores/gene_identifiers_latest.parquet
 
+    - name: download ensembl
+      source: input/target/ensembl/homo_sapiens.json
     - name: transform ensembl
+      requires:
+        - download ensembl
+      transformer: ensembl
       source: input/target/ensembl/homo_sapiens.json
       destination: intermediate/target/ensembl/homo_sapiens.parquet
-      transformer: ensembl
 
     - name: explode_glob homology
       glob: input/target/homologue/gene_dictionary/*.json
       do:
         - name: transform ${match_stem} to parquet
-          source: ${match_prefix}/${match_path}${match_stem}.${match_ext}
-          destination: intermediate/target/homologue/gene_dictionary/${match_path}${match_stem}.parquet
+          source: ${uri}
+          destination: intermediate/target/homologue/gene_dictionary/${match_path}/${match_stem}.parquet
           transformer: homology
   ##################################################################################################
 
@@ -168,7 +183,7 @@ steps:
         brennan: input/target/safety/secondary_pharmacology.json
         toxcast: input/target/safety/toxcast.tsv
         aopwiki: input/target/safety/aopwiki.json
-        pharmacogenetics: intermediate/pharmacogenetics.parquet
+        pharmacogenetics: output/pharmacogenomics
       destination: intermediate/target/safety.parquet
 
   #: TARGET_GENE_ESSENTIALITY STEP :#### - part of target, pyspark tasks must run standalone for now
@@ -196,11 +211,15 @@ steps:
         clinpgx: input/pharmacogenetics/clinpgx_annotation.json.gz
         phenotypes: input/pharmacogenetics/phenotypes.json
         ontoma_disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
+        chembl_molecule: intermediate/chembl_molecule
+        drug_mechanism_of_action: output/drug_mechanism_of_action
       destination:
-        associations: intermediate/pharmacogenetics.parquet
+        associations: output/pharmacogenomics
         phenotypes: intermediate/pharmacogenetics/phenotypes.json
       settings:
         openai_token_filename: /var/run/secrets/openai_token
+      properties:
+        'spark.jars.packages': 'com.johnsnowlabs.nlp:spark-nlp_2.12:6.1.3'
   ##################################################################################################
 
   #: EVIDENCE_PROJECT_SCORE STEP :##################################################################
@@ -236,15 +255,21 @@ steps:
         finngen_release: R12
   ##################################################################################################
 
-  #: EVIDENCE_CHEMBl STEP :#########################################################################
-  evidence_chembl:
-    - name: pyspark chembl
-      pyspark: chembl
+  #: EVIDENCE_CLINICAL_PRECEDENCE STEP :############################################################
+  evidence_clinical_precedence:
+    - name: pyspark clinical_precedence
+      pyspark: clinical_precedence
       source:
-        chembl_evidence: input/evidence/chembl/chembl.json.gz
-        stop_reasons: input/evidence/chembl/stop_reasons.json
-        drug_indications: input/drug/chembl_drug_indication.jsonl
-      destination: intermediate/evidence/chembl.parquet
+        clinical_report: output/clinical_report
+        drug_mechanism_of_action: output/drug_mechanism_of_action
+      destination:
+        output: intermediate/evidence/clinical_precedence.parquet
+        excluded: excluded/clinical_precedence_failed_report
+      settings:
+        invalid_clinical_report_qc:
+          - PHASE_IV_NOT_APPROVED
+          - UNVALIDATED_INDICATION
+          - INDIRECT_PRIMARY_PURPOSE
   ##################################################################################################
 
   #: EVIDENCE_CANCER_BIOMARKERS STEP :################################################################
@@ -378,61 +403,250 @@ steps:
         disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
   ##################################################################################################
 
-  #: TIMESERIES STEP :##############################################################################
-  timeseries:
-    - name: pyspark timeseries
-      pyspark: timeseries
+  #: DRUG_WARNING STEP :############################################################################
+  drug_warning:
+    - name: pyspark drug_warning
+      pyspark: drug_warning
+      source: input/drug/chembl_drug_warning.jsonl
+      destination: output/drug_warning
+  ##################################################################################################
+
+  #: DRUG_MECHANISM_OF_ACTION STEP :###############################################################
+  drug_mechanism_of_action:
+    - name: pyspark drug_mechanism_of_action
+      pyspark: drug_mechanism_of_action
+      source:
+        chembl_mechanism: input/drug/chembl_mechanism.jsonl
+        chembl_target: input/drug/chembl_target.jsonl
+        target: intermediate/target/ensembl/homo_sapiens.parquet
+      destination: output/drug_mechanism_of_action
+  ##################################################################################################
+
+  #: CHEMBL_MOLECULE STEP :#########################################################################
+  chembl_molecule:
+    - name: pyspark chembl_molecule
+      pyspark: chembl_molecule
+      source:
+        chembl_molecule: input/drug/chembl_molecule.jsonl
+        drugbank: input/drug/drugbank.csv.gz
+      destination: intermediate/chembl_molecule
+  ##################################################################################################
+
+  #: DRUG_MOLECULE STEP :##########################################################################
+  drug_molecule:
+    - name: pyspark drug_molecule
+      pyspark: drug_molecule
+      source:
+        molecule: intermediate/chembl_molecule
+        chemical_probes: intermediate/chemical_probes_evidence.parquet
+        mechanism_of_action: output/drug_mechanism_of_action
+        clinical_report: output/clinical_report
+        disease: output/disease
+      destination:
+        output: output/drug_molecule
+        excluded: excluded/drug_molecule_failed_report
+      settings:
+        invalid_clinical_report_qc:
+          - PHASE_IV_NOT_APPROVED
+          - UNVALIDATED_INDICATION
+          - INDIRECT_PRIMARY_PURPOSE
+  ##################################################################################################
+
+  #: CLINICAL_REPORT STEP :#######################################################################
+  clinical_report:
+    - name: pyspark clinical_report
+      source:
+        chembl_molecule: intermediate/chembl_molecule/*.parquet
+        disease: output/disease/disease.parquet
+        pmda: input/clinical_report/pmda.pdf
+        ttd: input/clinical_report/ttd.txt
+        ema: input/clinical_report/ema_medicines.xlsx
+        aact_studies: input/clinical_report/aact/studies.parquet
+        aact_interventions: input/clinical_report/aact/interventions.parquet
+        aact_conditions: input/clinical_report/aact/conditions.parquet
+        aact_study_references: input/clinical_report/aact/study_references.parquet
+        aact_designs: input/clinical_report/aact/designs.parquet
+        aact_summaries: input/clinical_report/aact/summaries.parquet
+        chembl_indication: input/clinical_report/chembl/drug_indication.parquet
+        chembl_indication_references: input/clinical_report/chembl/drug_indication_refs.parquet
+        chembl_drug_warning: input/clinical_report/chembl/drug_warning.parquet
+        chembl_drug_warning_references: input/clinical_report/chembl/drug_warning_refs.parquet
+        chembl_molecule_dictionary: input/clinical_report/chembl/molecule_dictionary.parquet
+        chembl_curation: input/clinical_report/chembl_mapping.parquet
+        ner_cache_path: input/clinical_report/ner_cache.parquet
+      destination:
+        output: output/clinical_report/clinical_report.parquet
+      settings:
+        ner_batch_size: 256
+      pyspark: clinical_report
+  ##################################################################################################
+
+  #: CLINICAL_INDICATION STEP :####################################################################
+  clinical_indication:
+    - name: transform clinical_indication
+      source: output/clinical_report/clinical_report.parquet
+      destination:
+        output: output/clinical_indication/clinical_indication.parquet
+        excluded: excluded/clinical_indication_failed_report/clinical_indication_failed_report.parquet
+      transformer: clinical_indication
+      settings:
+        invalid_clinical_report_qc:
+          - PHASE_IV_NOT_APPROVED
+          - UNVALIDATED_INDICATION
+          - INDIRECT_PRIMARY_PURPOSE
+  ##################################################################################################
+
+  #: CLINICAL_TARGET STEP :#######################################################################
+  clinical_target:
+    - name: transform clinical_target
+      source:
+        clinical_report: output/clinical_report/clinical_report.parquet
+        drug_mechanism_of_action: output/drug_mechanism_of_action/*.parquet
+      destination:
+        output: output/clinical_target/clinical_target.parquet
+        excluded: excluded/clinical_target_failed_report/clinical_target_failed_report.parquet
+      transformer: clinical_target
+      settings:
+        invalid_clinical_report_qc:
+          - PHASE_IV_NOT_APPROVED
+          - UNVALIDATED_INDICATION
+          - INDIRECT_PRIMARY_PURPOSE
+  ##################################################################################################
+
+  #: TARGET_PRIORITISATION STEP :###################################################################
+  target_prioritisation:
+    - name: pyspark target_prioritisation
+      pyspark: target_prioritisation
+      source:
+        targets: output/target
+        mouse_phenotypes: output/mouse_phenotype
+        molecule: output/drug_molecule
+        mechanism_of_action: output/drug_mechanism_of_action
+        hpa_data: input/target_prioritisation/proteinatlas.json.gz
+        uniprot_slterms: input/target_prioritisation/uniprot_locations.tsv.gz
+        mouse_pheno_scores: input/target_prioritisation/mouse_pheno_scores.csv
+      destination: output/target_prioritisation
+      properties:
+        spark.driver.memory: 16g
+  ##################################################################################################
+
+  #: ASSOCIATION STEP :##############################################################################
+  association:
+    - name: pyspark association
+      pyspark: association
       source:
         evidence: output/evidence_*
         disease: output/disease
       destination:
-        overall_direct: output/timeseries_overall_direct
-        overall_indirect: output/timeseries_overall_indirect
-        by_datasource_direct: output/timeseries_by_datasource_direct
-        by_datasource_indirect: output/timeseries_by_datasource_indirect
+        overall_direct: output/association_overall_direct
+        overall_indirect: output/association_overall_indirect
+        by_datasource_direct: output/association_by_datasource_direct
+        by_datasource_indirect: output/association_by_datasource_indirect
+        by_datatype_direct: output/association_by_datatype_direct
+        by_datatype_indirect: output/association_by_datatype_indirect
+        temporary: intermediate/indirect_association_intermediate
       settings:
         novelty_scale: 2 # 2 for long tailed slow decays
         novelty_shift: 3 # 3 for long tailed slow decays
         novelty_window: 10
         datasource_weights:
-          - id: gwas_credible_sets
+      settings:
+        novelty_scale: 2 # 2 for long tailed slow decays
+        novelty_shift: 3 # 3 for long tailed slow decays
+        novelty_window: 10
+        datasource_weights:
+          - datasourceId: cancer_biomarkers
+            weight: 0.5
+            datatypeId: affected_pathway
+            toPropagate: true
+          - datasourceId: cancer_gene_census
             weight: 1.0
-          - id: eva
+            datatypeId: somatic_mutation
+            toPropagate: true
+          - datasourceId: clingen
             weight: 1.0
-          - id: gene_burden
+            datatypeId: genetic_literature
+            toPropagate: true
+          - datasourceId: clinical_precedence
             weight: 1.0
-          - id: genomics_england
+            datatypeId: known_drug
+            toPropagate: true
+          - datasourceId: crispr
             weight: 1.0
-          - id: gene2phenotype
+            datatypeId: affected_pathway
+            toPropagate: true
+          - datasourceId: crispr_screen
             weight: 1.0
-          - id: uniprot_literature
-            weight: 1.0
-          - id: uniprot_variants
-            weight: 1.0
-          - id: orphanet
-            weight: 1.0
-          - id: clingen
-            weight: 1.0
-          - id: cancer_gene_census
-            weight: 1.0
-          - id: eva_somatic
-            weight: 1.0
-          - id: cancer_biomarkers
-            weight: 1.0
-          - id: chembl
-            weight: 1.0
-          - id: crispr_screen
-            weight: 1.0
-          - id: crispr
-            weight: 1.0
-          - id: reactome
-            weight: 1.0
-          - id: europepmc
+            datatypeId: affected_pathway
+            toPropagate: true
+          - datasourceId: encore
+            weight: 0.5
+            datatypeId: ot_partner
+            toPropagate: true
+          - datasourceId: europepmc
             weight: 0.2
-          - id: expression_atlas
+            datatypeId: literature
+            toPropagate: true
+          - datasourceId: eva
+            weight: 1.0
+            datatypeId: genetic_association
+            toPropagate: true
+          - datasourceId: eva_somatic
+            weight: 1.0
+            datatypeId: somatic_mutation
+            toPropagate: true
+          - datasourceId: expression_atlas
             weight: 0.2
-          - id: impc
+            datatypeId: rna_expression
+            toPropagate: false
+          - datasourceId: gene2phenotype
+            weight: 1.0
+            datatypeId: genetic_literature
+            toPropagate: true
+          - datasourceId: gene_burden
+            weight: 1.0
+            datatypeId: genetic_association
+            toPropagate: true
+          - datasourceId: genomics_england
+            weight: 1.0
+            datatypeId: genetic_literature
+            toPropagate: true
+          - datasourceId: gwas_credible_sets
+            weight: 1.0
+            datatypeId: genetic_association
+            toPropagate: true
+          - datasourceId: impc
             weight: 0.2
+            datatypeId: animal_model
+            toPropagate: true
+          - datasourceId: intogen
+            weight: 1.0
+            datatypeId: somatic_mutation
+            toPropagate: true
+          - datasourceId: orphanet
+            weight: 1.0
+            datatypeId: genetic_association
+            toPropagate: true
+          - datasourceId: ot_crispr
+            weight: 0.5
+            datatypeId: ot_partner
+            toPropagate: true
+          - datasourceId: ot_crispr_validation
+            weight: 0.5
+            datatypeId: ot_validation_lab
+            toPropagate: true
+          - datasourceId: reactome
+            weight: 1.0
+            datatypeId: affected_pathway
+            toPropagate: true
+          - datasourceId: uniprot_literature
+            weight: 1.0
+            datatypeId: genetic_literature
+            toPropagate: true
+          - datasourceId: uniprot_variants
+            weight: 1.0
+            datatypeId: genetic_association
+            toPropagate: true
   ##################################################################################################
 
   #: EVIDENCE POST PROCESS STEP :###################################################################
@@ -481,24 +695,24 @@ steps:
           - contrast
           - studyId
         excluded_biotypes:
-          - "IG_C_pseudogene"
-          - "IG_J_pseudogene"
-          - "IG_pseudogene"
-          - "IG_V_pseudogene"
-          - "polymorphic_pseudogene"
-          - "processed_pseudogene"
-          - "pseudogene"
-          - "rRNA"
-          - "rRNA_pseudogene"
-          - "snoRNA"
-          - "snRNA"
-          - "transcribed_processed_pseudogene"
-          - "transcribed_unitary_pseudogene"
-          - "transcribed_unprocessed_pseudogene"
-          - "TR_J_pseudogene"
-          - "TR_V_pseudogene"
-          - "unitary_pseudogene"
-          - "unprocessed_pseudogene"
+          - 'IG_C_pseudogene'
+          - 'IG_J_pseudogene'
+          - 'IG_pseudogene'
+          - 'IG_V_pseudogene'
+          - 'polymorphic_pseudogene'
+          - 'processed_pseudogene'
+          - 'pseudogene'
+          - 'rRNA'
+          - 'rRNA_pseudogene'
+          - 'snoRNA'
+          - 'snRNA'
+          - 'transcribed_processed_pseudogene'
+          - 'transcribed_unitary_pseudogene'
+          - 'transcribed_unprocessed_pseudogene'
+          - 'TR_J_pseudogene'
+          - 'TR_V_pseudogene'
+          - 'unitary_pseudogene'
+          - 'unprocessed_pseudogene'
 
   evidence_postprocess_clinvar:
     - name: pyspark evidence_postprocess
@@ -525,6 +739,7 @@ steps:
                     'benign', 0.0,
                     'not provided', 0.0,
                     'likely benign', 0.0,
+                    'evidence only', 0.0,
                     'likely risk allele', 0.3,
                     'low penetrance', 0.3,
                     'conflicting interpretations of pathogenicity', 0.3,
@@ -616,6 +831,7 @@ steps:
                     'benign', 0.0,
                     'not provided', 0.0,
                     'likely benign', 0.0,
+                    'evidence only', 0.0,
                     'likely risk allele', 0.3,
                     'conflicting interpretations of pathogenicity', 0.3,
                     'conflicting data from submitters', 0.3,
@@ -681,6 +897,7 @@ steps:
             ) THEN 'LoF'
             ELSE null
           END
+
   evidence_postprocess_uniprot_variants:
     - name: pyspark evidence_postprocess
       pyspark: evidence_postprocess
@@ -792,7 +1009,7 @@ steps:
       settings:
         evidence_format: parquet
         datasource_id: cancer_biomarkers
-        score_expression: "1.0"
+        score_expression: '1.0'
         unique_fields:
           - targetId
           - targetFromSourceId
@@ -804,62 +1021,69 @@ steps:
           - drugFromSource
           - drugResponse
 
-  evidence_postprocess_chembl:
+  evidence_postprocess_clinical_precedence:
     - name: pyspark evidence_postprocess
       pyspark: evidence_postprocess
       source:
-        evidence_path: intermediate/evidence/chembl.parquet
+        evidence_path: intermediate/evidence/clinical_precedence.parquet
         target_path: output/target
         disease_path: output/disease
         publication_date_lut: input/literature/literature_export
-        mechanism_of_action: output/drug_mechanism_of_action
       destination:
-        failed_evidence: excluded/evidence/chembl
-        evidence: output/evidence_chembl
+        failed_evidence: excluded/evidence/clinical_precedence
+        evidence: output/evidence_clinical_precedence
+      properties:
+        spark.driver.memory: 8g
+        spark.executor.memory: 8g
+        spark.sql.shuffle.partitions: '800'
       settings:
         evidence_format: parquet
-        datasource_id: chembl
+        datasource_id: clinical_precedence
         score_expression: |
           element_at(
             map(
-              cast(0.5 as double),
-              0.05,
-              cast(1.0 as double),
-              0.1,
-              cast(2.0 as double),
-              0.2,
-              cast(3.0 as double),
-              0.7,
-              cast(4.0 as double),
-              1.0
+              'APPROVAL', 1.0,
+              'PHASE_4', 1.0,
+              'WITHDRAWAL', 1.0,
+              'PREAPPROVAL', 0.8,
+              'PHASE_3', 0.7,
+              'PHASE_2_3', 0.5,
+              'PHASE_2', 0.2,
+              'PHASE_1_2', 0.15,
+              'PHASE_1', 0.1,
+              'EARLY_PHASE_1', 0.05,
+              'IND', 0.05,
+              'PRECLINICAL', 0.01,
+              'UNKNOWN', 0.01
             ),
-            clinicalPhase
-          ) *
+            clinicalStage
+          )
+          *
           case
-          when studyStopReasonCategories is null then
+          when trialStopReasonCategories is null then
             double(1.0)
           else
             array_min(
               transform(
-                studyStopReasonCategories,
+                trialStopReasonCategories,
                 x -> element_at(
                   map(
-                    'Another study', double(1.0),
-                    'Business or administrative', double(1.0),
-                    'COVID-19', double(1.0),
-                    'Ethical reason', double(1.0),
-                    'Insufficient data', double(1.0),
-                    'Insufficient enrollment', double(1.0),
-                    'Interim analysis', double(1.0),
-                    'Invalid reason', double(1.0),
-                    'Logistics or resources', double(1.0),
-                    'Met endpoint', double(1.0),
+                    'Another_Study', double(1.0),
+                    'Business_Administrative', double(1.0),
+                    'Covid19', double(1.0),
+                    'Ethical_Reason', double(1.0),
+                    'Insufficient_Data', double(1.0),
+                    'Insufficient_Enrollment', double(1.0),
+                    'Interim_Analysis', double(1.0),
+                    'Invalid_Reason', double(1.0),
+                    'Logistics_Resources', double(1.0),
+                    'Endpoint_Met', double(1.0),
                     'Negative', double(0.5),
-                    'No context', double(1.0),
+                    'No_Context', double(1.0),
                     'Regulatory', double(1.0),
-                    'Safety or side effects', double(0.5),
-                    'Study design', double(1.0),
-                    'Study staff moved', double(1.0),
+                    'Safety_Sideeffects', double(0.5),
+                    'Study_Design', double(1.0),
+                    'Study_Staff_Moved', double(1.0),
                     'Success', double(1.0),
                     'Uncategorised', double(1.0)
                   ),
@@ -874,9 +1098,34 @@ steps:
           - diseaseId
           - datasourceId
           - drugId
-          - urls
+          - clinicalReportId
         direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'protect' END
-        direction_on_target_expression: moaType
+        direction_on_target_expression: "CASE
+          WHEN actionType IN (
+          'RNAI INHIBITOR',
+          'NEGATIVE MODULATOR',
+          'NEGATIVE ALLOSTERIC MODULATOR',
+          'ANTAGONIST',
+          'ANTISENSE INHIBITOR',
+          'BLOCKER',
+          'INHIBITOR',
+          'DEGRADER',
+          'INVERSE AGONIST',
+          'ALLOSTERIC ANTAGONIST',
+          'DISRUPTING AGENT'
+          'GENE EDITING NEGATIVE MODULATOR'
+          ) THEN 'LoF'
+          WHEN actionType IN (
+          'PARTIAL AGONIST',
+          'ACTIVATOR',
+          'POSITIVE ALLOSTERIC MODULATOR',
+          'POSITIVE MODULATOR',
+          'AGONIST',
+          'SEQUESTERING AGENT',
+          'STABILISER'
+          ) THEN 'GoF'
+          ELSE NULL
+          END"
 
   evidence_postprocess_reactome:
     - name: pyspark evidence_postprocess
@@ -892,7 +1141,7 @@ steps:
       settings:
         evidence_format: json
         datasource_id: reactome
-        score_expression: "1.0"
+        score_expression: '1.0'
         unique_fields:
           - targetId
           - targetFromSourceId
@@ -916,7 +1165,7 @@ steps:
       settings:
         evidence_format: parquet
         datasource_id: impc
-        score_expression: "resourceScore / 100"
+        score_expression: 'resourceScore / 100'
         unique_fields:
           - targetId
           - targetFromSourceId
@@ -1210,7 +1459,7 @@ steps:
       settings:
         evidence_format: parquet
         datasource_id: ot_crispr
-        score_expression: "1.0"
+        score_expression: '1.0'
         unique_fields:
           - targetId
           - targetFromSourceId
@@ -1272,5 +1521,79 @@ steps:
           - resourceScore
           - diseaseCellLines
           - primaryProjectId
+  ##################################################################################################
 
-        #################################################################################################
+  #: Association on the fly STEP :##################################################################
+  association_otf:
+    - name: pyspark association_otf
+      pyspark: association_otf
+      properties:
+        spark.driver.memory: '20g'
+      source:
+        disease: output/disease
+        evidence: output/evidence_*
+        target: output/target
+        association_direct: output/association_overall_direct
+        association_indirect: output/association_overall_indirect
+      destination: view/association_otf
+  ##################################################################################################
+
+  #: VEP View generation STEP :#####################################################################
+  vep_view:
+    - name: pyspark generate vep view
+      pyspark: vep_view
+      source:
+        credible_set: output/credible_set
+        study_table: output/study
+        l2g_table: output/l2g_prediction
+        biosample: output/biosample
+      destination:
+        vep_data_header: intermediate/vep_view_header.tsv
+        vep_data_all: intermediate/vep_view
+        vep_data_gwas: intermediate/vep_view_gwas
+        vep_data_qtl: intermediate/vep_view_qtl
+      properties:
+        spark.driver.memory: 16g
+  ##################################################################################################
+
+  #: ASSOCIATION TIMESERIES VIEW STEP :#############################################################
+  association_timeseries_view:
+    - name: pyspark timeseries view
+      pyspark: association_timeseries_view
+      source:
+        association_overall_direct: output/association_overall_direct
+        association_overall_indirect: output/association_overall_indirect
+        association_by_datasource_direct: output/association_by_datasource_direct
+        association_by_datasource_indirect: output/association_by_datasource_indirect
+      destination: view/association_timeseries
+      properties:
+        spark.driver.memory: 12g
+  ##################################################################################################
+
+  #: RELEASE METRICS STEP :##########################################################################
+  release_metrics:
+    - name: transform release_metrics
+      transformer: release_metrics
+      source: {}
+      destination:
+        parquet: metrics.parquet
+      settings:
+        ot_release: '{{release_name}}'
+        metric_scopes:
+          - /output/*/
+          - /excluded/evidence/*/
+        rich_dataset_whitelist:
+          - /output/evidence_*
+          - /excluded/evidence/*
+          - /output/association_by_datasource_direct
+          - /output/association_by_datasource_indirect
+          - /output/disease
+          - /output/target
+          - /output/drug_molecule
+          - /output/study
+          - /output/clinical_report
+        upload_to_hf_hub: false
+        hf_token_filename: /var/run/secrets/hf_token
+        hf_repo_id: opentargets/ot-release-metrics
+        hf_data_dir: metrics
+  ##################################################################################################

@@ -41,7 +41,7 @@ class UnifiedPipelineConfig:
         """The place where the production release files are read from and/or written to."""
         self.is_dev = up.get("is_dev", True)
         """Whether this is a development or production run."""
-        self.dev_uri = f"gs://opentargets-pipeline-runs/{self.run_name}" if self.is_dev else None
+        self.dev_uri = f"gs://open-targets-pipeline-runs/{self.run_name}" if self.is_dev else None
         """The place where the development run files are read from and written to."""
         self.service_account_extra_scopes = ["https://www.googleapis.com/auth/drive"]
         """Extra scopes to be added to the service account in executor machines"""
@@ -79,6 +79,7 @@ class UnifiedPipelineConfig:
             file_path=config_path / "pts.yaml",
             template_context={
                 "release_uri": self.dev_uri or self.release_uri,
+                "release_name": up.get("release_name"),
             },
         )
         """The internal configuration for PTS steps."""

@@ -326,6 +326,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
         "container_args",
         "container_env",
         "container_files",
+        "container_secret_files",
     )
 
     def __init__(
@@ -341,6 +342,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
         container_env: dict[str, str] | None = None,
         container_scopes: list[str] | None = None,
         container_files: dict[str, str] | None = None,
+        container_secret_files: dict[str, str] | None = None,
         machine_type: str = "n1-standard-16",
         work_disk_size_gb: int = 0,
         gcp_conn_id: str = "google_cloud_default",
@@ -360,6 +362,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
         self.container_env = container_env
         self.container_scopes = container_scopes or []
         self.container_files = container_files or {}
+        self.container_secret_files = container_secret_files or {}
         self.machine_type = machine_type
         self.gcp_conn_id = gcp_conn_id
         self.impersonation_chain = impersonation_chain
@@ -375,9 +378,11 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
 
     def build_volume_params(self):
         """Build the volume parameters for the docker run command."""
-        if self.container_files == {}:
+        mount_paths = [*self.container_files.values(), *self.container_secret_files.values()]
+        if not mount_paths and not self.work_disk_size_gb:
             return "\\"
-        vs = [f"    -v /home/app/{p.lstrip('/')}:{p} \\" for p in self.container_files.values()]
+
+        vs = [f"    -v /home/app/{p.lstrip('/')}:{p} \\" for p in mount_paths]
         if self.work_disk_size_gb:
             vs.append("    -v /mnt/disks/work:/mnt/disks/work \\")
         return ("\n").join(vs)
@@ -396,6 +401,8 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
 
         gcs_files = (" ").join([f'"{w}"' for w in self.container_files])
         dest_paths = (" ").join([f'"{w}"' for w in self.container_files.values()])
+        secret_names = (" ").join([f'"{w}"' for w in self.container_secret_files])
+        secret_dest_paths = (" ").join([f'"{w}"' for w in self.container_secret_files.values()])
 
         init_work_disk = (
             dedent("""
@@ -410,6 +417,7 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
 
         return dedent(f"""
             #!/bin/bash
+            set -euo pipefail
             set -v
             {init_work_disk}
             useradd -m app
@@ -430,6 +438,33 @@ class ComputeEngineRunContainerizedWorkloadSensor(BaseSensorOperator):
                         --entrypoint gsutil \
                         voyz/gsutil_wrap:latest \
                         cp "$if" /downloads/"$of"
+                done
+            fi
+            secret_names=( {secret_names} )
+            secret_dest=( {secret_dest_paths} )
+            if [ -n "${{secret_dest[*]}}" ]; then
+                for s in "${{!secret_dest[@]}}"; do
+                    sn=${{secret_names[$s]}}
+                    sd=${{secret_dest[$s]}}
+                    sf="/home/app/${{sd#/}}"
+                    stmp="${{sf}}.tmp"
+                    sod=$(dirname "$sf")
+                    mkdir -p "$sod"
+                    if command -v gcloud >/dev/null 2>&1; then
+                        gcloud secrets versions access latest --secret="hfhub-key" > "$stmp"
+                    else
+                        sudo -u app docker run \
+                            --rm \
+                            --network host \
+                            gcr.io/google.com/cloudsdktool/google-cloud-cli:slim \
+                            gcloud secrets versions access latest --secret="hfhub-key" > "$stmp"
+                    fi
+                    if [ ! -s "$stmp" ]; then
+                        echo "Secret $sn could not be retrieved or is empty"
+                        exit 1
+                    fi
+                    mv "$stmp" "$sf"
+                    chmod 400 "$sf"
                 done
             fi
             sudo -u app docker-credential-gcr configure-docker --registries europe-west1-docker.pkg.dev
