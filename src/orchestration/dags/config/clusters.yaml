@@ -58,7 +58,7 @@ clusters:
     image_version: '2.2'
     num_masters: 1
     num_workers: 4
-    worker_machine_type: n1-highmem-64
+    worker_machine_type: n2d-highmem-64
     properties:
       'spark:spark.driver.memory': '478g'
       'spark:spark.sql.shuffle.partitions': '20'
