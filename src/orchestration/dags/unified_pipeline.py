@@ -314,13 +314,12 @@ with DAG(
                 cluster_definition = config.step_cluster_definition(step_name)
                 assert cluster_definition is not None
                 cluster_name = resource_name(cluster_definition.cluster_type)
-                cluster_config = ClusterConfig(**cluster_definition.config)
                 num_partitions = str(config.step_definition(step_name).get("num_partitions", config.num_partitions))
 
                 c = CreateClusterOperator(
                     task_id="cluster_create_etl",
                     cluster_name=cluster_name,
-                    cluster_config=cluster_config,
+                    cluster_config=cluster_definition.cluster_config,
                     labels=labels,
                 )
 
@@ -485,12 +484,11 @@ with DAG(
                 cluster_definition = config.step_cluster_definition(step_name)
                 if cluster_definition:
                     cluster_name = cluster_definition.cluster_type
-                    cluster_config = ClusterConfig(**cluster_definition.config)
 
                     c = CreateClusterOperator(
                         task_id=f"cluster_create_{cluster_name}",
                         cluster_name=resource_name(cluster_name),
-                        cluster_config=cluster_config,
+                        cluster_config=cluster_definition.cluster_config,
                         labels=labels,
                     )
                     # add the run task to the proper cluster list in the gentropy_clusters dict

@@ -193,7 +193,7 @@ class ClusterConfig(BaseModel):
             Cluster: The Dataproc cluster.
         """
         exclude_fields = {"secondary_worker_disk_type", "secondary_worker_disk_size", "secondary_worker_machine_type"}
-        config = ClusterGenerator(self.model_dump(exclude=exclude_fields)).make()
+        config = ClusterGenerator(**self.model_dump(exclude=exclude_fields)).make()
 
         # Ensure that the c4- machine types have the right disk config
         # TODO: Refactor once we are sure we need the c4- machine types
