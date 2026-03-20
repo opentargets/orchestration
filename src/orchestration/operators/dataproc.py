@@ -200,16 +200,16 @@ class ClusterConfig(BaseModel):
 
         if self.worker_machine_type.startswith("c4-"):
             dc = DiskConfig(**config["worker_config"]["disk_config"])
-            dc = self._update_c4_machine_disk_config(dc._pb)
-            config["worker_config"]["disk_config"] = MessageToDict(dc)
+            dc = self._update_c4_machine_disk_config(dc)
+            config["worker_config"]["disk_config"] = dc
         if self.master_machine_type.startswith("c4-"):
             dc = DiskConfig(**config["master_config"]["disk_config"])
-            dc = self._update_c4_machine_disk_config(dc._pb)
-            config["master_config"]["disk_config"] = MessageToDict(dc)
+            dc = self._update_c4_machine_disk_config(dc)
+            config["master_config"]["disk_config"] = dc
         # By default the secondary workers have the same disk config as the primary workers, but we want to be able to set it independently
         if self.secondary_worker_disk_size or self.secondary_worker_disk_type:
             dc = self._create_secondary_worker_disk_config()
-            config["secondary_worker_config"]["disk_config"] = MessageToDict(dc._pb)
+            config["secondary_worker_config"]["disk_config"] = dc
 
         return config
 
