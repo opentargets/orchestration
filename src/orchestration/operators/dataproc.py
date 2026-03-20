@@ -93,6 +93,11 @@ class ClusterConfig:
     """The GPU type to use for worker nodes."""
     worker_accelerator_count: int | None = None
     """The number of GPUs to use for worker nodes."""
+
+    secondary_worker_disk_type: str | None = None
+    """The disk type to use for secondary workers. Default is same as worker_disk_type."""
+    secondary_worker_disk_size: int | None = None
+    """The disk size to use for secondary workers. Default is same as worker_disk_size."""
     secondary_worker_instance_flexibility_policy: InstanceFlexibilityPolicy | None = None
     """Instance flexibility Policy allowing a mixture of VM shapes and
         provisioning models."""
@@ -176,12 +181,20 @@ class ClusterConfig:
         if self.worker_machine_type.startswith("c4-"):
             config["worker_config"]["disk_config"]["boot_disk_type"] = "hyperdisk-balanced"
             config["worker_config"]["disk_config"]["boot_disk_provisioned_iops"] = 6_000
+            config["secondary_worker_config"]["disk_config"]["boot_disk_type"] = "hyperdisk-balanced"
+            config["secondary_worker_config"]["disk_config"]["boot_disk_provisioned_iops"] = 6_000
             # Default is 140+ 1.5 x 500GiB
             config["worker_config"]["disk_config"]["boot_disk_provisioned_throughput"] = 500
         if self.master_machine_type.startswith("c4-"):
             config["master_config"]["disk_config"]["boot_disk_type"] = "hyperdisk-balanced"
             config["master_config"]["disk_config"]["boot_disk_provisioned_iops"] = 6_000
             config["master_config"]["disk_config"]["boot_disk_provisioned_throughput"] = 500
+
+        # By default the secondary workers have the same disk config as the primary workers, but we want to be able to set it independently
+        if self.secondary_worker_disk_size:
+            config["secondary_worker_config"]["disk_config"]["boot_disk_size_gb"] = self.secondary_worker_disk_size
+        if self.secondary_worker_disk_type:
+            config["secondary_worker_config"]["disk_config"]["boot_disk_type"] = self.secondary_worker_disk_type
         return config
 
 
