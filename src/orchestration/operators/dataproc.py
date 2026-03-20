@@ -165,7 +165,7 @@ class ClusterConfig(BaseModel):
     service_account_scopes: list[str] | None = None
     """The scopes to use for the cluster."""
 
-    def __post_init__(self) -> None:
+    def model_post_init(self, _: Any) -> None:
         if isinstance(self.autoscaling_policy, str) and "/" not in self.autoscaling_policy:
             zone = self.zone or GCP_ZONE
             region = zone.rsplit("-", 1)[0]
@@ -207,6 +207,8 @@ class ClusterConfig(BaseModel):
             dc = self._update_c4_machine_disk_config(dc)
             config["master_config"]["disk_config"] = dc
         # By default the secondary workers have the same disk config as the primary workers, but we want to be able to set it independently
+        if self.secondary_worker_machine_type:
+            config["secondary_worker_config"]["machine_type_uri"] = self.secondary_worker_machine_type
         if self.secondary_worker_disk_size or self.secondary_worker_disk_type:
             dc = self._create_secondary_worker_disk_config()
             config["secondary_worker_config"]["disk_config"] = dc
