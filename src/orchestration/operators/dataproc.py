@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, NamedTuple
 
@@ -19,7 +18,10 @@ from airflow.providers.google.cloud.operators.dataproc import (
 from airflow.utils.context import Context
 from google.api_core.exceptions import NotFound as GCPNotFound
 from google.cloud.dataproc_v1 import Cluster, JobReference
+from google.cloud.dataproc_v1.types import DiskConfig
 from google.cloud.dataproc_v1.types.jobs import Job, JobPlacement, PySparkJob, SparkJob
+from google.protobuf.json_format import MessageToDict
+from pydantic import BaseModel
 
 from orchestration.utils import convert_params_to_hydra_positional_arg, random_id, resource_name
 from orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_REGION, GCP_SERVICE_ACCOUNT, GCP_ZONE
@@ -30,8 +32,7 @@ if TYPE_CHECKING:
     from typing import Any
 
 
-@dataclass
-class ClusterConfig:
+class ClusterConfig(BaseModel):
     """Dataproc cluster configuration class.
 
     Includes defaults tailored to our cluster needs.
@@ -94,6 +95,8 @@ class ClusterConfig:
     worker_accelerator_count: int | None = None
     """The number of GPUs to use for worker nodes."""
 
+    secondary_worker_machine_type: str | None = None
+    """GCE machine type to use for secondary worker nodes. Default is same as worker_machine_type."""
     secondary_worker_disk_type: str | None = None
     """The disk type to use for secondary workers. Default is same as worker_disk_type."""
     secondary_worker_disk_size: int | None = None
@@ -169,32 +172,45 @@ class ClusterConfig:
             ap = f"projects/{self.project_id}/regions/{region}/autoscalingPolicies/{self.autoscaling_policy}"
             self.autoscaling_policy = ap
 
+    def _update_c4_machine_disk_config(self, disk_config: DiskConfig) -> DiskConfig:
+        """Update the disk config with the right values for c4 machine types."""
+        disk_config.boot_disk_type = "hyperdisk-balanced"
+        disk_config.boot_disk_provisioned_iops = 6_000
+        disk_config.boot_disk_provisioned_throughput = 500
+        return disk_config
+
+    def _create_secondary_worker_disk_config(self) -> DiskConfig:
+        """Override the disk config with the values for the secondary workers if they are set."""
+        disk_config = DiskConfig()
+        disk_config.boot_disk_size_gb = self.secondary_worker_disk_size or disk_config.boot_disk_size_gb
+        disk_config.boot_disk_type = self.secondary_worker_disk_type or disk_config.boot_disk_type
+        return disk_config
+
     def create_cluster(self) -> Cluster:
         """Create a Dataproc cluster from the configuration.
 
         Returns:
             Cluster: The Dataproc cluster.
         """
-        config = ClusterGenerator(**asdict(self)).make()
+        exclude_fields = {"secondary_worker_disk_type", "secondary_worker_disk_size", "secondary_worker_machine_type"}
+        config = ClusterGenerator(self.model_dump(exclude=exclude_fields)).make()
+
         # Ensure that the c4- machine types have the right disk config
         # TODO: Refactor once we are sure we need the c4- machine types
-        if self.worker_machine_type.startswith("c4-"):
-            config["worker_config"]["disk_config"]["boot_disk_type"] = "hyperdisk-balanced"
-            config["worker_config"]["disk_config"]["boot_disk_provisioned_iops"] = 6_000
-            config["secondary_worker_config"]["disk_config"]["boot_disk_type"] = "hyperdisk-balanced"
-            config["secondary_worker_config"]["disk_config"]["boot_disk_provisioned_iops"] = 6_000
-            # Default is 140+ 1.5 x 500GiB
-            config["worker_config"]["disk_config"]["boot_disk_provisioned_throughput"] = 500
-        if self.master_machine_type.startswith("c4-"):
-            config["master_config"]["disk_config"]["boot_disk_type"] = "hyperdisk-balanced"
-            config["master_config"]["disk_config"]["boot_disk_provisioned_iops"] = 6_000
-            config["master_config"]["disk_config"]["boot_disk_provisioned_throughput"] = 500
 
+        if self.worker_machine_type.startswith("c4-"):
+            dc = DiskConfig(**config["worker_config"]["disk_config"])
+            dc = self._update_c4_machine_disk_config(dc._pb)
+            config["worker_config"]["disk_config"] = MessageToDict(dc)
+        if self.master_machine_type.startswith("c4-"):
+            dc = DiskConfig(**config["master_config"]["disk_config"])
+            dc = self._update_c4_machine_disk_config(dc._pb)
+            config["master_config"]["disk_config"] = MessageToDict(dc)
         # By default the secondary workers have the same disk config as the primary workers, but we want to be able to set it independently
-        if self.secondary_worker_disk_size:
-            config["secondary_worker_config"]["disk_config"]["boot_disk_size_gb"] = self.secondary_worker_disk_size
-        if self.secondary_worker_disk_type:
-            config["secondary_worker_config"]["disk_config"]["boot_disk_type"] = self.secondary_worker_disk_type
+        if self.secondary_worker_disk_size or self.secondary_worker_disk_type:
+            dc = self._create_secondary_worker_disk_config()
+            config["secondary_worker_config"]["disk_config"] = MessageToDict(dc._pb)
+
         return config
 
 
