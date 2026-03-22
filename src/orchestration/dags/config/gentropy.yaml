@@ -90,7 +90,7 @@ steps:
       step.session.write_mode: overwrite
       step.session.output_partitions: 200
       step.colocalisation_method: coloc_pip_ecaviar
-      +step.session.extended_spark_conf: "{spark.executor.memory: '20g', spark.executor.memoryOverhead: '4g', spark.executor.cores: '4', spark.sql.adaptive.coalescePartitions.enabled: 'true'}"
+      +step.session.extended_spark_conf: "{spark.executor.memory: '20g', spark.executor.memoryOverhead: '4g', spark.executor.cores: '4'}"
       # INPUTS
       step.credible_set_path: '{{release_uri}}/output/credible_set'
       # OUTPUTS
