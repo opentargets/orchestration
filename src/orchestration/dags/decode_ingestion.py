@@ -7,11 +7,11 @@ from pathlib import Path
 from airflow.models.dag import DAG
 from airflow.utils.trigger_rule import TriggerRule
 
+from orchestration.chain.dataproc import DataprocChain
 from orchestration.dags.config.staging_config import InfrastructureType, StagingPipelineConfig
 from orchestration.operators.dataproc import (
     CommandJobBuilder,
     CreateClusterOperator,
-    DataprocChain,
     DeleteClusterOperator,
     SubmitJobOperator,
 )

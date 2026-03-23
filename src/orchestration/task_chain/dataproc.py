@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from airflow.models import DAGNode
 from airflow.models.baseoperator import chain
+from airflow.models.taskmixin import DAGNode
 
 from orchestration.chain import ProtoChain
 from orchestration.operators.dataproc import CreateClusterOperator, DeleteClusterOperator, SubmitJobOperator

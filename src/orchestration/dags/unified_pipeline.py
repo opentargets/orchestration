@@ -311,7 +311,7 @@ with DAG(
 
                 cluster_definition = config.step_cluster_definition(step_name)
                 assert cluster_definition is not None
-                cluster_name = resource_name(cluster_definition.cluster_type)
+                cluster_name = resource_name(cluster_definition.name)
                 cluster_config = ClusterConfig(**cluster_definition.config.model_dump())
                 num_partitions = str(config.step_definition(step_name).get("num_partitions", config.num_partitions))
 
@@ -482,7 +482,7 @@ with DAG(
                 # find what cluster type the step runs on, if any
                 cluster_definition = config.step_cluster_definition(step_name)
                 if cluster_definition:
-                    cluster_name = cluster_definition.cluster_type
+                    cluster_name = cluster_definition.name
                     cluster_config = ClusterConfig(**cluster_definition.config.model_dump())
 
                     c = CreateClusterOperator(

@@ -6,8 +6,6 @@ import logging
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 
-from airflow.models.baseoperator import chain
-from airflow.models.taskmixin import DAGNode
 from airflow.providers.google.cloud.operators.dataproc import (
     DataprocCreateClusterOperator,
     DataprocDeleteClusterOperator,

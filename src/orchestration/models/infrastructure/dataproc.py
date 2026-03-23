@@ -1,148 +1,149 @@
-"""Models for Dataproc infrastructure specifications."""
+"""Models for Dataproc cluster infrastructure specifications.
+
+This module defines Pydantic models used to configure and validate Google Cloud
+Dataproc clusters. The models cover the full configuration surface exposed by
+the Airflow :class:`~airflow.providers.google.cloud.operators.dataproc.ClusterGenerator`,
+including master and worker node sizing, autoscaling, networking, initialisation
+actions, and lifecycle management.
+
+Typical usage involves constructing a :class:`ClusterDefinition` (or registering
+one in a :class:`ClusterRegistry`) and referencing it from a pipeline step via
+an :class:`~orchestration.models.infrastructure.abc.InfrastructurePointer`.
+"""
+
+from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
-from airflow.providers.google.cloud.operators.dataproc import InstanceFlexibilityPolicy, PreemptibilityType
+from airflow.providers.google.cloud.operators.dataproc import (
+    ClusterGenerator,
+    InstanceFlexibilityPolicy,
+    PreemptibilityType,
+)
 from google.cloud.dataproc_v1 import Cluster
 from pydantic import BaseModel
 
-from orchestration.models.secret import Secret
-from orchestration.utils import resource_name
+from orchestration.models.infrastructure.abc import InfrastructureDefinition, InfrastructureRegistry
 from orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_SERVICE_ACCOUNT, GCP_ZONE
-from orchestration.utils.dataproc import ClusterGenerator
 
 INFRASTRUCTURE = "DATAPROC_CLUSTER"
 
 
 class ClusterConfig(BaseModel):
-    """Dataproc cluster configuration class.
+    """Configuration for a Google Cloud Dataproc cluster.
 
-    Includes defaults tailored to our cluster needs.
+    Provides sensible defaults for Open Targets platform workloads. All fields
+    map directly to parameters accepted by the Airflow
+    :class:`~airflow.providers.google.cloud.operators.dataproc.ClusterGenerator`,
+    unless otherwise noted.
     """
 
-    infrastructure: str = INFRASTRUCTURE
-    """Infrastructure type for the cluster, set to "DATAPROC_CLUSTER"."""
     project_id: str = GCP_PROJECT_PLATFORM
-    """Google cloud project ID in which to create the cluster. Default is GCP_PROJECT_PLATFORM."""
+    """Google Cloud project ID in which to create the cluster. Defaults to :data:`~orchestration.utils.common.GCP_PROJECT_PLATFORM`."""
     zone: str | None = GCP_ZONE
-    """Google cloud zone in which to create the cluster. Default is GCP_ZONE."""
+    """Google Cloud zone in which to create the cluster. Defaults to :data:`~orchestration.utils.common.GCP_ZONE`."""
 
     custom_image: str | None = None
-    """Custom Dataproc image to use for the cluster."""
+    """Custom Dataproc image URI to use instead of a versioned public image."""
     custom_image_project_id: str | None = None
-    """Google cloud project ID of the custom image."""
+    """Google Cloud project ID that owns the custom image."""
     custom_image_family: str | None = None
-    """Image family for the custom dataproc image."""
+    """Image family for the custom Dataproc image, used to resolve the latest image in the family."""
     image_version: str | None = "2.2"
-    """The version of software inside the cluster."""
+    """Dataproc software version for the cluster. Defaults to ``"2.2"``."""
 
     autoscaling_policy: str | None = None
-    """Autoscaling policy resource. Project ID and region will be automatically
-        added when the class is instantiated if not provided."""
+    """Autoscaling policy resource name. If only a short policy ID is supplied
+    (i.e. no ``/`` characters), the full resource path is constructed automatically
+    from :attr:`project_id` and the region derived from :attr:`zone`."""
 
     num_masters: int = 1
-    """The number of master nodes to spin up. Default is 1."""
+    """Number of master nodes. Defaults to ``1``."""
     master_machine_type: str = "n1-highmem-16"
-    """GCE machine type to use for master nodes. Default is n1-highmem-16."""
+    """Compute Engine machine type for master nodes. Defaults to ``"n1-highmem-16"``."""
     master_disk_type: str = "pd-ssd"
-    """The disk type to use for master nodes. Default is pd-ssd."""
+    """Boot disk type for master nodes. Defaults to ``"pd-ssd"``."""
     master_disk_size: int = 512
-    """The disk size in GB to use for master nodes. Default is 500."""
+    """Boot disk size in GB for master nodes. Defaults to ``512``."""
     master_accelerator_type: str | None = None
-    """The GPU type to use for master nodes."""
+    """GPU accelerator type to attach to master nodes, or ``None`` for no GPU."""
     master_accelerator_count: int | None = None
-    """The number of GPUs to use for master nodes."""
+    """Number of GPU accelerators to attach to each master node."""
 
     num_workers: int | None = 2
-    """The number of worker nodes in the cluster (0 for single-node mode).
-        Default is 2."""
+    """Number of primary worker nodes. Set to ``0`` for single-node mode. Defaults to ``2``."""
     min_num_workers: int | None = None
-    """The minimum number of primary worker nodes in the cluster.
-        If more than ``min_num_workers`` VMs are created out of ``num_workers``,
-        the failed VMs will be deleted, cluster is resized to available VMs and
-        set to RUNNING.
-        If created VMs are less than ``min_num_workers``, the cluster is placed
-        in ERROR state. The failed VMs are not deleted.
-    """
+    """Minimum number of primary worker nodes required for the cluster to reach RUNNING state.
+    If fewer VMs than this threshold are successfully created, the cluster is placed in ERROR
+    state and the failed VMs are not deleted. If more than this threshold but fewer than
+    :attr:`num_workers` VMs are created, the cluster is resized to the available count."""
     num_preemptible_workers: int = 0
-    """The number of instances in the instance group as secondary workers.
-        Default is 0.
-    """
+    """Number of secondary (preemptible) worker nodes. Defaults to ``0``."""
     worker_machine_type: str = "n1-standard-4"
-    """GCE machine type to use for worker nodes. Default is n1-standard-4."""
+    """Compute Engine machine type for primary worker nodes. Defaults to ``"n1-standard-4"``."""
     worker_disk_type: str = "pd-ssd"
-    """The disk type to use for worker nodes. Default is pd-ssd."""
+    """Boot disk type for primary worker nodes. Defaults to ``"pd-ssd"``."""
     worker_disk_size: int = 2048
-    """The disk size to use for worker nodes. Default is 2048."""
+    """Boot disk size in GB for primary worker nodes. Defaults to ``2048``."""
     worker_accelerator_type: str | None = None
-    """The GPU type to use for worker nodes."""
+    """GPU accelerator type to attach to primary worker nodes, or ``None`` for no GPU."""
     worker_accelerator_count: int | None = None
-    """The number of GPUs to use for worker nodes."""
+    """Number of GPU accelerators to attach to each primary worker node."""
     secondary_worker_instance_flexibility_policy: InstanceFlexibilityPolicy | None = None
-    """Instance flexibility Policy allowing a mixture of VM shapes and
-        provisioning models."""
+    """Instance flexibility policy for secondary workers, enabling a mix of VM shapes and provisioning models."""
     secondary_worker_accelerator_type: str | None = None
-    """The GPU type to use for secondary workers."""
+    """GPU accelerator type to attach to secondary worker nodes, or ``None`` for no GPU."""
     secondary_worker_accelerator_count: int | None = None
-    """The number of GPUs to use for secondary workers."""
+    """Number of GPU accelerators to attach to each secondary worker node."""
 
     driver_pool_size: int = 0
-    """The number of driver nodes in node group. Default is 0."""
+    """Number of nodes in the dedicated driver node group. Defaults to ``0`` (no driver pool)."""
     driver_pool_id: str | None = None
-    """The ID for the driver pool."""
+    """Identifier for the driver node pool."""
 
     idle_delete_ttl: int | None = 7200
-    """Delete the cluster after this many seconds of inactivity. Default is 7200
-        (2 hours)."""
+    """Seconds of inactivity after which the cluster is automatically deleted. Defaults to ``7200`` (2 hours)."""
     auto_delete_time: datetime | None = None
-    """Delete the cluster at this time."""
+    """Absolute timestamp at which the cluster will be automatically deleted."""
     auto_delete_ttl: int | None = None
-    """Delete the cluster after this many seconds."""
+    """Seconds from cluster creation after which the cluster will be automatically deleted."""
     customer_managed_key: str | None = None
-    """The customer managed key to use for disk encryption."""
+    """Cloud KMS key URI used for customer-managed disk encryption."""
     enable_component_gateway: bool | None = True
-    """Provides access to the web interfaces of default and selected optional
-        components on the cluster. Default is True."""
+    """Whether to enable the Component Gateway, which exposes web UIs for installed optional components. Defaults to ``True``."""
 
     network_uri: str | None = None
-    """The network uri to be used for machine communication, cannot be
-        specified with subnetwork_uri"""
+    """Network URI for inter-node communication. Mutually exclusive with :attr:`subnetwork_uri`."""
     subnetwork_uri: str | None = None
-    """The subnetwork uri to be used for machine communication, cannot be
-        specified with network_uri"""
+    """Subnetwork URI for inter-node communication. Mutually exclusive with :attr:`network_uri`."""
     internal_ip_only: bool | None = None
-    """If true, all instances in the cluster will only have internal IP addresses.
-        This can only be enabled for subnetwork enabled networks"""
+    """If ``True``, all cluster instances will be assigned only internal IP addresses. Only valid when :attr:`subnetwork_uri` is set."""
     optional_components: list[str] | None = None
-    """List of optional cluster components, for more info see
-        https://cloud.google.com/dataproc/docs/reference/rest/v1/ClusterConfig#Component"""
+    """List of optional Dataproc components to install. See the `Dataproc component reference <https://cloud.google.com/dataproc/docs/reference/rest/v1/ClusterConfig#Component>`_."""
     preemptibility: str = PreemptibilityType.PREEMPTIBLE.value
-    """Type of preemptibility to use for secondary workers. See:
-        https://cloud.google.com/dataproc/docs/reference/rpc/
-        Default is PreemptibilityType.PREEMPTIBLE.value.
-    """
+    """Preemptibility model for secondary worker nodes. Defaults to :attr:`~airflow.providers.google.cloud.operators.dataproc.PreemptibilityType.PREEMPTIBLE`. See the `Dataproc RPC reference <https://cloud.google.com/dataproc/docs/reference/rpc/>`_."""
 
     tags: list[str] | None = None
-    """The list of tags to add to all instances. Keep in mind labels are not
-        specified here but in the cluster creation operator"""
+    """Network tags applied to all cluster instances. Note: instance labels are set on the cluster creation operator, not here."""
     storage_bucket: str | None = None
-    """The Cloud Storage bucket to use, if None Dataproc will create one."""
+    """Cloud Storage bucket used as the cluster staging bucket. If ``None``, Dataproc creates and manages one automatically."""
     metadata: dict | None = None
-    """Dict of GCE metadata entries to add to all instances."""
+    """Compute Engine instance metadata key-value pairs applied to all cluster instances."""
     properties: dict | None = None
-    """Dict of properties to set on config files."""
+    """Dataproc and Hadoop configuration properties applied to cluster config files."""
 
     init_actions_uris: list[str] | None = None
-    """List of GCS URIs of initialization scripts."""
+    """List of Cloud Storage URIs pointing to initialisation scripts run on every node after cluster creation."""
     init_action_timeout: str = "10m"
-    """Timeout for initialization actions. Default is 10 minutes."""
+    """Timeout for each initialisation action. Defaults to ``"10m"`` (10 minutes)."""
 
     service_account: str | None = GCP_SERVICE_ACCOUNT
-    """The service account to use for the cluster. Default is GCP_SERVICE_ACCOUNT."""
+    """Service account email attached to all cluster VMs. Defaults to :data:`~orchestration.utils.common.GCP_SERVICE_ACCOUNT`."""
     service_account_scopes: list[str] | None = None
-    """The scopes to use for the cluster."""
+    """OAuth scopes granted to the cluster service account."""
 
-    def model_post_init(self) -> None:
+    def model_post_init(self, _: Any) -> None:
         if isinstance(self.autoscaling_policy, str) and "/" not in self.autoscaling_policy:
             zone = self.zone or GCP_ZONE
             region = zone.rsplit("-", 1)[0]
@@ -150,10 +151,15 @@ class ClusterConfig(BaseModel):
             self.autoscaling_policy = ap
 
     def create_cluster(self) -> Cluster:
-        """Create a Dataproc cluster from the configuration.
+        """Build a Dataproc :class:`~google.cloud.dataproc_v1.Cluster` object from this configuration.
+
+        Delegates to the Airflow
+        :class:`~airflow.providers.google.cloud.operators.dataproc.ClusterGenerator`
+        and applies additional disk configuration overrides for ``c4-`` machine
+        types, which require ``hyperdisk-balanced`` boot disks.
 
         Returns:
-            Cluster: The Dataproc cluster.
+            Cluster: A Dataproc cluster configuration object ready for submission.
         """
         config = ClusterGenerator(**self.model_dump()).make()
         # Ensure that the c4- machine types have the right disk config
@@ -170,33 +176,23 @@ class ClusterConfig(BaseModel):
         return config
 
 
-class ClusterDefinition(BaseModel):
-    """Cluster definition.
+class ClusterDefinition(InfrastructureDefinition[ClusterConfig]):
+    """Concrete infrastructure definition for a Google Cloud Dataproc cluster.
 
-    This class is used to define the cluster configuration for a step in the
-    pipeline. It contains the cluster type and configuration.
+    Pairs the ``DATAPROC_CLUSTER`` infrastructure identifier with a validated
+    :class:`ClusterConfig`, making it suitable for registration in a
+    :class:`ClusterRegistry` and reference from a pipeline step.
     """
 
-    cluster_type: str
-    """The type of the cluster."""
+    infrastructure: str = INFRASTRUCTURE
+    """Infrastructure type identifier. Always set to ``"DATAPROC_CLUSTER"``."""
     config: ClusterConfig
-    """The configuration dict for the cluster. See
-        `src.orchestration.utils.dataproc.ClusterConfig`."""
-    secrets: list[Secret] | None = None
-
-    @property
-    def cluster_name(self) -> str:
-        """Returns the resource name for this cluster definition."""
-        return resource_name(self.cluster_type)
-
-    @property
-    def cluster_config(self) -> ClusterConfig:
-        """Returns the ClusterConfig object for this cluster definition."""
-        return self.config
+    """Full configuration for the Dataproc cluster."""
 
 
-__all__ = [
-    "INFRASTRUCTURE",
-    "ClusterConfig",
-    "ClusterDefinition",
-]
+class ClusterRegistry(InfrastructureRegistry[ClusterConfig]):
+    """Registry of named :class:`ClusterConfig` configurations.
+
+    Pipeline steps can reference entries in this registry by name, enabling
+    reuse of common cluster configurations across multiple steps.
+    """

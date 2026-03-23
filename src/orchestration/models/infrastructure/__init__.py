@@ -1,34 +1,41 @@
 """Infrastructure models for orchestration.
 
-The infrastructure models comprise the specification for
-* Google Batch jobs with dynamic job generation based on a manifest of inputs,
-* Dataproc Cluster definitions
+This package provides Pydantic models for defining, registering, and referencing
+Google Cloud infrastructure used by pipeline steps. Two infrastructure backends
+are supported:
 
+- **Google Batch** - serverless batch job execution with dynamic, manifest-driven
+  task generation. See :mod:`~orchestration.models.infrastructure.batch`.
+- **Dataproc** - managed Spark/Hadoop cluster execution. See
+  :mod:`~orchestration.models.infrastructure.dataproc`.
+
+Common abstractions (registry, definition, pointer) are provided by
+:mod:`~orchestration.models.infrastructure.abc` and shared across both backends.
 """
 
-from typing import Literal
-
-from pydantic import BaseModel
-
-from orchestration.models.infrastructure.batch import INFRASTRUCTURE as BATCH_INFRASTRUCTURE
-from orchestration.models.infrastructure.dataproc import INFRASTRUCTURE as DATAPROC_INFRASTRUCTURE
-
-
-class InfrastructurePointer(BaseModel):
-    """Pointer to infrastructure specifications for a pipeline step.
-
-    This class is used in the step configuration to point to the infrastructure specifications
-    for the step, which can be either a Batch job or a Dataproc cluster.
-    """
-
-    type: Literal["GOOGLE_BATCH_JOB", "DATAPROC_CLUSTER"]
-    """Type of the infrastructure, e.g. "GOOGLE_BATCH_JOB" for Batch jobs, "DATAPROC_CLUSTER" for Dataproc clusters, etc."""
-    pointer: str
-    """Name pointing to specific infrastructure specifications. Used to look up the registry for the proper implementation."""
-
+from orchestration.models.infrastructure.abc import InfrastructurePointer
+from orchestration.models.infrastructure.batch import (
+    BatchConfig,
+    BatchDefinition,
+    BatchJobRegistry,
+    IndexSpecs,
+)
+from orchestration.models.infrastructure.dataproc import (
+    ClusterConfig,
+    ClusterDefinition,
+    ClusterRegistry,
+)
 
 __all__ = [
-    "BATCH_INFRASTRUCTURE",
-    "DATAPROC_INFRASTRUCTURE",
+    # batch
+    "BatchConfig",
+    "BatchDefinition",
+    "BatchJobRegistry",
+    # dataproc
+    "ClusterConfig",
+    "ClusterDefinition",
+    "ClusterRegistry",
+    "IndexSpecs",
+    # abc
     "InfrastructurePointer",
 ]

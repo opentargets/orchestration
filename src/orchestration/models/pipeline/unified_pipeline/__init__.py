@@ -4,28 +4,10 @@ from __future__ import annotations
 
 import logging
 from abc import abstractmethod
-from enum import StrEnum
 
 from orchestration.dags.config.unified_pipeline import UnifiedPipelineConfig
 from orchestration.models.infrastructure.dataproc import ClusterDefinition
-
-
-class UnifiedPipelineStage(StrEnum):
-    """Enum representing different stages in the unified pipeline."""
-
-    PIS = "pis"
-    PTS = "pts"
-    ETL = "etl"
-    GENTROPY = "gentropy"
-
-    @classmethod
-    def from_step_name(
-        cls,
-        step_name: str,
-    ) -> UnifiedPipelineStage:
-        """Returns the UnifiedPipelineStage corresponding to the given step name."""
-        step_prefix = step_name.split("_")[0].lower()
-        return UnifiedPipelineStage(step_prefix)
+from orchestration.models.stage import PipelineStage
 
 
 class UnifiedPipelineStep:
@@ -57,7 +39,7 @@ class UnifiedPipelineStep:
         """The short name of the step, without stage prefix."""
         self.config = config
         """The UnifiedPipelineConfig."""
-        self.stage = UnifiedPipelineStage.from_step_name(name)
+        self.stage = PipelineStage.from_step_name(name)
         """The stage of the unified pipeline this step belongs to."""
         self.runs_on_cluster = False
         """Whether the step runs on a cluster."""
@@ -95,5 +77,5 @@ class UnifiedPipelineStep:
         sorted_cluster_names = sorted(clusters.keys(), key=len, reverse=True)
         for cluster_name in sorted_cluster_names:
             if step_name.startswith(cluster_name):
-                return ClusterDefinition(cluster_type=cluster_name, config=clusters[cluster_name])
+                return ClusterDefinition(name=cluster_name, config=clusters[cluster_name])
         raise ValueError(f"no cluster definition found for step {step_name}.")
