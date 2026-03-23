@@ -17,7 +17,7 @@ from airflow.utils.edgemodifier import Label
 from airflow.utils.trigger_rule import TriggerRule
 
 from orchestration.dags.config.unified_pipeline import UnifiedPipelineConfig
-from orchestration.models.unified_pipeline.pts_step import PTSDataprocStep, pts_step_from_config
+from orchestration.models.pipeline.pts_step import PTSDataprocStep, pts_step_from_config
 from orchestration.operators.batch.generic import BatchIndexOperator, BatchJobOperator
 from orchestration.operators.batch.vep import VepAnnotateOperator
 from orchestration.operators.dataproc import (

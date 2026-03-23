@@ -7,7 +7,7 @@ from abc import abstractmethod
 
 from orchestration.dags.config.unified_pipeline import UnifiedPipelineConfig
 from orchestration.models.infrastructure.dataproc import ClusterDefinition
-from orchestration.models.stage import PipelineStage
+from orchestration.models.pipeline.stage import PipelineStage
 
 
 class UnifiedPipelineStep:
