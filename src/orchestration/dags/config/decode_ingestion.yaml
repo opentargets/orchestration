@@ -1,0 +1,176 @@
+---
+datasource: decode_proteomics
+env: Test
+run_name: 20260320
+
+#########################################################################################
+########################## ENVIRONMENT CONFIGURATION ####################################
+#########################################################################################
+
+environments:
+  - name: Prod
+    vars:
+      data_bucket: "gs://decode_data"
+      input_bucket: "gs://decode_input"
+      gnomad_bucket: "gs://gnomad_data_2"
+      gentropy_version: "2.4.0-rc.2"
+  - name: Test
+    vars:
+      data_bucket: "gs://ot_orchestration/test/decode"
+      input_bucket: "gs://ot_orchestration/test/decode"
+      gnomad_bucket: "gs://gnomad_data_2"
+      gentropy_version: "v2.4.0-rc.2"
+
+
+########################################################################################
+########################## CLUSTER CONFIGURATION #######################################
+########################################################################################
+
+clusters:
+  molecular_complex:
+    image_version: '2.2'
+    num_masters: 1
+    worker_machine_type: n1-highmem-16
+    worker_disk_size: 512
+    internal_ip_only: false
+    properties:
+      'spark:spark.driver.memory': '25g'
+      'spark:spark.executor.memory': '25g'
+      'spark:spark.executor.cores': '4'
+      'spark:spark.shuffle.mapOutput.minSizeForBroadcast': '10m'
+    cluster_metadata:
+      GENTROPY_REF: "{{gentropy_version}}"
+
+  decode:
+    image_version: '2.2'
+    num_masters: 1
+    num_workers: 4
+    worker_machine_type: n1-highmem-16
+    worker_disk_size: 512
+    internal_ip_only: false
+    properties:
+      'spark:spark.driver.memory': '25g'
+      'spark:spark.executor.memory': '25g'
+      'spark:spark.executor.cores': '4'
+      'spark:spark.shuffle.mapOutput.minSizeForBroadcast': '10m'
+    cluster_metadata:
+      GENTROPY_REF: "{{gentropy_version}}"
+
+#########################################################################################
+########################### PIPELINE STEPS CONFIGURATION ################################
+#########################################################################################
+
+steps:
+  - id: molecular_complex
+    prerequisites: []
+    specs:
+      command:
+        "step=molecular_complex_ingestion \
+        step.predicted_complex_tab_path={{data_bucket}}/complex_portal/complex_portal_predicted.tsv \
+        step.experimental_complex_tab_path={{data_bucket}}/complex_portal/complex_portal_experimental.tsv \
+        step.output_path={{data_bucket}}/molecular_complex/"
+    infrastructure:
+      cluster: 
+        name: decode
+
+  - id: smp_manifest_generation
+    prerequisites:
+      - molecular_complex
+    specs:
+      command:
+        "step=decode_manifest_generation \
+         step.s3_config_path={{input_bucket}}/s3_config.yaml \
+         step.bucket_listing_path={{input_bucket}}/somascan_smp_index.txt \
+         step.output_path={{data_bucket}}/manifest/"
+    infrastructure:
+      cluster: 
+        name: decode
+
+  - id: smp_ingestion
+    prerequisites:
+      - smp_manifest_generation
+    specs:
+      command:
+        "step=decode_summary_statistics_ingestion \
+         step.manifest_path={{data_bucket}}/manifest/ \
+         step.output_path={{data_bucket}}/raw_summary_statistics/"
+    infrastructure:
+      cluster: 
+        name: decode
+
+  - id: smp_harmonisation
+    prerequisites:
+      - smp_ingestion
+    specs:
+      command:
+        "step=decode_summary_statistics_harmonisation \
+        # input
+        step.raw_summary_statistics_path={{input_bucket}}/raw_summary_statistics/ \
+        step.aptamer_metadata_path={{data_bucket}}/decode_2023_aptamer_mapping.tsv \
+        step.variant_direction_path={{gnomad_bucket}}/v4.1/variant_index/ \
+        step.molecular_complex_path={{data_bucket}}/molecular_complex/ \
+        # outputs
+        step.harmonised_summary_statistics_path={{data_bucket}}/harmonised_summary_statistics/ \
+        step.harmonised_summary_statistics_qc_path={{data_bucket}}/harmonised_summary_statistics_qc/ \
+        step.protein_qtl_study_index_path={{data_bucket}}/study_index/ \
+        # config
+        step.min_mac_threshold=50 \
+        step.min_sample_size_threshold=30000 \
+        step.flipping_window_size=10000000 \
+        step.pval_threshold=5e-8"
+    infrastructure:
+      cluster: 
+        name: decode
+
+  - id: smp_wbc
+    prerequisites:
+      - smp_harmonisation
+    specs:
+      command:
+        "step=window_based_clumping \
+        # input
+        step.summary_statistics_input_path={{data_bucket}}/harmonised_summary_statistics/ \
+        # output
+        step.study_locus_output_path={{data_bucket}}/study_locus_window_based_clumped/ \
+        # session config
+        step.session.write_mode=overwrite \
+        +step.session.extended_spark_conf={spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
+    infrastructure:
+      cluster: 
+        name: decode
+
+  - id: smp_ldc
+    prerequisites:
+      - smp_wbc
+    specs:
+      command:
+        "step=ld_based_clumping \
+        # input
+        step.ld_index_path=gs://gnomad_data_2/v2.1.1/ld_index \
+        step.study_locus_input_path={{data_bucket}}/study_locus_window_based_clumped/ \
+        step.study_index_path={{data_bucket}}/study_index/ \
+        # output
+        step.clumped_study_locus_output_path={{data_bucket}}/study_locus_ld_clumped/ \
+        # session config
+        step.session.write_mode=overwrite \
+        +step.session.extended_spark_conf={spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
+    infrastructure:
+      cluster: 
+        name: decode
+
+  - id: smp_pics
+    prerequisites:
+      - smp_ldc
+    specs:
+      command:
+        "step=pics \
+        # input
+        step.study_locus_ld_annotated_in={{data_bucket}}/study_locus_ld_clumped/ \
+        # output
+        step.picsed_study_locus_out={{data_bucket}}/credible_sets/ \
+        # session config
+        step.session.write_mode=overwrite \
+        +step.session.extended_spark_conf={spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
+    infrastructure:
+      cluster: 
+        name: decode

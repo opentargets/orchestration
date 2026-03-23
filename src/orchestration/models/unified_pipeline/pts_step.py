@@ -5,10 +5,10 @@ from pathlib import Path
 from google.cloud.dataproc_v1.types.jobs import PySparkJob
 
 from orchestration.dags.config.unified_pipeline import UnifiedPipelineConfig
-from orchestration.models.step import UnifiedPipelineStep
+from orchestration.models.unified_pipeline import UnifiedPipelineStep
 from orchestration.operators.dataproc import PTSJobBuilder
 
-ASSET_PATH = Path(__file__).parent.parent / "assets"
+ASSET_PATH = Path(__file__).parent.parent.parent / "assets"
 PTS_CLUSTER_NAME = "pts"
 
 
@@ -57,7 +57,7 @@ class PTSStep(UnifiedPipelineStep):
 
         Args:
             name (str): The name of the step.
-            config (AppConfig): The config object for PTS.
+            config (UnifiedPipelineConfig): The config object for PTS.
             logger (logging.Logger, optional): Logger instance for logging. Defaults to None.
         """
         super().__init__(name, config)
@@ -93,7 +93,7 @@ class PTSDataprocStep(PTSStep):
 
         Args:
             name (str): The name of the step.
-            config (AppConfig): The config object for PTS.
+            config (UnifiedPipelineConfig): The config object for PTS.
         """
         super().__init__(name, config)
         self.runs_on_cluster = True

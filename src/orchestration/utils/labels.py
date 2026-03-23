@@ -1,11 +1,15 @@
 """Labels for resources in Google Cloud."""
 
+from __future__ import annotations
+
 import re
 from collections import UserDict
 from typing import Any
 
 from airflow.utils.context import Context
 
+from orchestration.dags.config.staging_config import StagingPipelineConfig
+from orchestration.models.staging_pipeline import StepConfig
 from orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_SERVICE_ACCOUNT
 
 
@@ -48,6 +52,26 @@ class Labels(UserDict[str, str]):
         self.label_dict = default_labels(project=project, is_ppp=self.is_ppp)
         self.label_dict.update({k: self.clean_label(v) for k, v in self.extra.items()})
         super().__init__(self.label_dict)
+
+    @classmethod
+    def from_staging_config(cls, config: StagingPipelineConfig, step: StepConfig) -> Labels:
+        """Create a Labels instance from a staging pipeline configuration and step.
+
+        This method extracts relevant information from the provided configuration and step
+        to create a set of labels that can be applied to Google Cloud resources.
+
+        Args:
+            config: The staging pipeline configuration containing global settings.
+            step: The specific step configuration from which to extract labels.
+
+        Returns:
+            An instance of Labels with the appropriate labels set.
+        """
+        extra_labels = {
+            "datasource": config.datasource,
+            "step": step.id,
+        }
+        return cls(extra=extra_labels, is_ppp=False, project=config.project_id)
 
     def clean_label(self, label: str) -> str:
         """Clean a label for use in google cloud.

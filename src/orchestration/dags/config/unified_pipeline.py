@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from orchestration.dags.config.app_config import AppConfig
-from orchestration.operators.dataproc import ClusterDefinition
+from orchestration.models.infrastructure.dataproc import ClusterDefinition
 from orchestration.utils.common import GCP_PROJECT_PLATFORM
 
 if TYPE_CHECKING:
@@ -260,7 +260,7 @@ class UnifiedPipelineConfig:
         sorted_cluster_names = sorted(clusters.keys(), key=len, reverse=True)
         for cluster_name in sorted_cluster_names:
             if step_name.startswith(cluster_name):
-                return ClusterDefinition(cluster_name, clusters[cluster_name])
+                return ClusterDefinition(cluster_type=cluster_name, config=clusters[cluster_name])
         raise ValueError(f"No cluster definition found for step {step_name}.")
 
     def step_job_properties(self, step_name: str) -> dict[str, str]:

@@ -17,7 +17,7 @@ from airflow.utils.edgemodifier import Label
 from airflow.utils.trigger_rule import TriggerRule
 
 from orchestration.dags.config.unified_pipeline import UnifiedPipelineConfig
-from orchestration.models.pts_step import PTSDataprocStep, pts_step_from_config
+from orchestration.models.unified_pipeline.pts_step import PTSDataprocStep, pts_step_from_config
 from orchestration.operators.batch.generic import BatchIndexOperator, BatchJobOperator
 from orchestration.operators.batch.vep import VepAnnotateOperator
 from orchestration.operators.dataproc import (
@@ -312,7 +312,7 @@ with DAG(
                 cluster_definition = config.step_cluster_definition(step_name)
                 assert cluster_definition is not None
                 cluster_name = resource_name(cluster_definition.cluster_type)
-                cluster_config = ClusterConfig(**cluster_definition.config)
+                cluster_config = ClusterConfig(**cluster_definition.config.model_dump())
                 num_partitions = str(config.step_definition(step_name).get("num_partitions", config.num_partitions))
 
                 c = CreateClusterOperator(
@@ -483,7 +483,7 @@ with DAG(
                 cluster_definition = config.step_cluster_definition(step_name)
                 if cluster_definition:
                     cluster_name = cluster_definition.cluster_type
-                    cluster_config = ClusterConfig(**cluster_definition.config)
+                    cluster_config = ClusterConfig(**cluster_definition.config.model_dump())
 
                     c = CreateClusterOperator(
                         task_id=f"cluster_create_{cluster_name}",

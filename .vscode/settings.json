@@ -4,11 +4,11 @@
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "charliermarsh.ruff",
     "editor.codeActionsOnSave": {
-      "source.organizeImports": "explicit",
-    },
+      "source.organizeImports": "explicit"
+    }
   },
   "files.associations": {
-    "*.conf": "hocon",
+    "*.conf": "hocon"
   },
   "yaml.schemas": {
     "https://raw.githubusercontent.com/opentargets/otter/refs/heads/main/.vscode/config-schema.json": [
@@ -17,7 +17,9 @@
     ]
   },
   "cSpell.words": [
+    "baseoperator",
     "cpus",
+    "Dataproc",
     "GCST",
     "harmonisation",
     "harmonise",

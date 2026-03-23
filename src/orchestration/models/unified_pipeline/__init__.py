@@ -6,7 +6,8 @@ import logging
 from abc import abstractmethod
 from enum import StrEnum
 
-from orchestration.dags.config.unified_pipeline import ClusterDefinition, UnifiedPipelineConfig
+from orchestration.dags.config.unified_pipeline import UnifiedPipelineConfig
+from orchestration.models.infrastructure.dataproc import ClusterDefinition
 
 
 class UnifiedPipelineStage(StrEnum):
@@ -94,5 +95,5 @@ class UnifiedPipelineStep:
         sorted_cluster_names = sorted(clusters.keys(), key=len, reverse=True)
         for cluster_name in sorted_cluster_names:
             if step_name.startswith(cluster_name):
-                return ClusterDefinition(cluster_name, clusters[cluster_name])
+                return ClusterDefinition(cluster_type=cluster_name, config=clusters[cluster_name])
         raise ValueError(f"no cluster definition found for step {step_name}.")

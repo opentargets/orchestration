@@ -312,7 +312,7 @@ steps:
       study_prefix_url: https://storage.googleapis.com/crisprbrain.appspot.com/api-data/
       validate_version: 1
 
-    - name: copy crispr_brain mappings
+    - name: copy crispr_brain mappingfinngen_ukb_mvp_meta_datas
       source: https://raw.githubusercontent.com/opentargets/curation/refs/tags/${ot_curation}/mappings/disease/brain_crispr_studies.tsv
       destination: input/ot_curation/mappings/disease/brain_crispr_studies.tsv
   ##################################################################################################
