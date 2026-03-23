@@ -164,7 +164,8 @@ clusters:
       'spark:spark.sql.adaptive.enabled': 'true'
       'spark:spark.sql.adaptive.coalescePartitions.enabled': 'true'
       'spark:spark.sql.adaptive.skewJoin.enabled': 'true'
-
+    init_actions_uris:
+      - 'gs://opentargets-pipelines/up/pts/install_dependencies_on_cluster.sh'
 
 
 step_job_properties:
