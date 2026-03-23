@@ -115,7 +115,7 @@ clusters:
     image_version: '2.2'
     num_masters: 1
     num_workers: 2
-    worker_machine_type: n1-standard-16
+    worker_machine_type: n2d-standard-16
     master_disk_size: 128
     worker_disk_size: 128
     idle_delete_ttl: 3600
