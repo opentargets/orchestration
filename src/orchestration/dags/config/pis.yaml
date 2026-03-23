@@ -646,7 +646,7 @@ steps:
   l2g:
     - name: copy_many l2g gold standard
       sources: gs://genetics-portal-dev-analysis/yt4/2506_release/training_set/20250625_gentropy_paper_v1.json/*.json
-      destination: input/l2g/gold_standard
+      destination: input/l2g/gold_standard.json
   ##################################################################################################
 
   #: LITERATURE STEP :##############################################################################

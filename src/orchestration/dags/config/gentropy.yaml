@@ -179,7 +179,7 @@ steps:
       # INPUTS
       step.credible_set_path: '{{release_uri}}/output/credible_set'
       step.feature_matrix_path: '{{release_uri}}/intermediate/l2g_feature_matrix'
-      step.gold_standard_curation_path: '{{release_uri}}/input/l2g/gold_standard'
+      step.gold_standard_curation_path: '{{release_uri}}/input/l2g/gold_standard.json'
       # OUTPUTS
       step.model_path: '{{release_uri}}/etc/model/locus_to_gene_model/classifier.skops'
 
