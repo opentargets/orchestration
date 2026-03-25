@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -10,11 +11,23 @@ from airflow.models.baseoperator import chain
 from orchestration.operators.batch.generic import BatchIndexOperator, BatchJobOperator
 from orchestration.utils import read_yaml_config, resource_name
 
+_PLACEHOLDER_RE = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
+
 
 def format_config(obj: Any, vars_dict: dict[str, str]) -> Any:
-    """Recursively format strings in a config structure."""
+    """Recursively format strings in a config structure.
+
+    Only placeholders that exactly match keys in ``vars_dict`` are replaced,
+    for example ``{study_index_path}``.
+
+    Strings that contain Hydra-style dict syntax, such as
+    ``{spark.jars:...}``, are left untouched.
+    """
     if isinstance(obj, str):
-        return obj.format(**vars_dict)
+        return _PLACEHOLDER_RE.sub(
+            lambda match: vars_dict.get(match.group(1), match.group(0)),
+            obj,
+        )
     if isinstance(obj, list):
         return [format_config(x, vars_dict) for x in obj]
     if isinstance(obj, dict):
