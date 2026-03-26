@@ -39,6 +39,7 @@ class BatchResourceSpecs(TypedDict):
 
 class BatchPolicySpecs(TypedDict):
     machine_type: str
+    provisioning_model: str
 
 
 class GoogleBatchSpecs(TypedDict):

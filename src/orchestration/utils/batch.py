@@ -120,6 +120,8 @@ def create_batch_job(
     """
     labels = labels or Labels()
 
+    provisioning_model = policy_specs.get("provisioning_model", "SPOT")
+
     if mounting_points:
         task.volumes = set_up_mounting_points(mounting_points)
 
@@ -133,7 +135,7 @@ def create_batch_job(
                 AllocationPolicy.InstancePolicyOrTemplate(
                     policy=AllocationPolicy.InstancePolicy(
                         machine_type=policy_specs["machine_type"],
-                        provisioning_model=AllocationPolicy.ProvisioningModel.SPOT,
+                        provisioning_model=AllocationPolicy.ProvisioningModel[provisioning_model],
                     )
                 )
             ],

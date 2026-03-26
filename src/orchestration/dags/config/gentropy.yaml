@@ -127,6 +127,7 @@ steps:
         max_run_duration: '2h'
       policy_specs:
         machine_type: n1-standard-4
+        provisioning_model: STANDARD
       image: 'europe-west1-docker.pkg.dev/open-targets-eu-dev/vep/custom_ensembl_vep:{{vep_version}}'
       entrypoint: /bin/sh
       parallelism: 500 # max number of VEP tasks run at a time in parallel
