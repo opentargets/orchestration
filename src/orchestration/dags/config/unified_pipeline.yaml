@@ -111,6 +111,7 @@ steps:
   pts_mouse_phenotype:
     depends_on:
       - etl_target
+      - pis_impc
   pts_chemical_probes:
     depends_on:
       - pis_target
