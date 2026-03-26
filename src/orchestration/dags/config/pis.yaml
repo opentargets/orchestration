@@ -705,11 +705,11 @@ steps:
         - coeqtl
       do:
         - name: copy_many molqtl eQTLGen ${each} study
-          sources: gs://eqtlgen_data/${each}/260301/study/*.parquet
+          sources: gs://eqtlgen_data/${each}/260326/study/*.parquet
           destination: input/molqtl/study/eQTLGen/${each}
 
         - name: copy_many molqtl eQTLGen ${each} credible sets
-          sources: gs://eqtlgen_data/${each}/260301/credible_set/*.parquet
+          sources: gs://eqtlgen_data/${each}/260326/credible_set/*.parquet
           destination: input/molqtl/credible_set/eQTLGen/${each}
 
     - name: copy_many molqtl eQTL Catalogue GTEx v10 study
