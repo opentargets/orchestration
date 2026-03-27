@@ -20,7 +20,6 @@ from google.api_core.exceptions import NotFound as GCPNotFound
 from google.cloud.dataproc_v1 import Cluster, JobReference
 from google.cloud.dataproc_v1.types import DiskConfig
 from google.cloud.dataproc_v1.types.jobs import Job, JobPlacement, PySparkJob, SparkJob
-from google.protobuf.json_format import MessageToDict
 from pydantic import BaseModel
 
 from orchestration.utils import convert_params_to_hydra_positional_arg, random_id, resource_name

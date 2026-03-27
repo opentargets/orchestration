@@ -18,6 +18,7 @@ dependencies = [
     "deepdiff>=8.4.2",
     "deepmerge>=2.0",
     "flask-limiter==3.12",
+    "pydantic>=2.12.5",
 ]
 
 

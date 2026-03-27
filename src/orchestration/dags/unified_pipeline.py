@@ -21,7 +21,6 @@ from orchestration.models.pts_step import PTSDataprocStep, pts_step_from_config
 from orchestration.operators.batch.generic import BatchIndexOperator, BatchJobOperator
 from orchestration.operators.batch.vep import VepAnnotateOperator
 from orchestration.operators.dataproc import (
-    ClusterConfig,
     CreateClusterOperator,
     DeleteClusterOperator,
     ETLJobBuilder,
