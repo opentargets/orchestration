@@ -81,6 +81,8 @@ nodes:
       step.flipping_window_size: 10000000
       step.pval_threshold: 5e-8
       step.session.write_mode: overwrite
+      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
+
 
   - id: smp_wbc
     prerequisites:
@@ -90,7 +92,7 @@ nodes:
       step.summary_statistics_input_path: '{data_bucket}/smp/harmonised_summary_statistics/'
       step.study_locus_output_path: '{data_bucket}/smp/study_locus_window_based_clumped/'
       step.session.write_mode: overwrite
-      step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
+      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
 
   - id: smp_ldc
     prerequisites:
@@ -102,7 +104,7 @@ nodes:
       step.study_index_path: '{data_bucket}/smp/study/'
       step.clumped_study_locus_output_path: '{data_bucket}/smp/study_locus_ld_clumped/'
       step.session.write_mode: overwrite
-      step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
+      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
 
   - id: smp_pics
     prerequisites:
@@ -112,7 +114,7 @@ nodes:
       step.study_locus_ld_annotated_in: '{data_bucket}/smp/study_locus_ld_clumped/'
       step.picsed_study_locus_out: '{data_bucket}/smp/credible_set/'
       step.session.write_mode: overwrite
-      step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
+      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
 
 ############################# Raw summary statistics #############################
 
@@ -154,6 +156,8 @@ nodes:
       step.flipping_window_size: 10000000
       step.pval_threshold: 5e-8
       step.session.write_mode: overwrite
+      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
+
 
   - id: raw_wbc
     prerequisites:
@@ -163,7 +167,7 @@ nodes:
       step.summary_statistics_input_path: '{data_bucket}/raw/harmonised_summary_statistics/'
       step.study_locus_output_path: '{data_bucket}/raw/study_locus_window_based_clumped/'
       step.session.write_mode: overwrite
-      step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
+      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
 
   - id: raw_ldc
     prerequisites:
@@ -175,7 +179,7 @@ nodes:
       step.study_index_path: '{data_bucket}/raw/study_index/'
       step.clumped_study_locus_output_path: '{data_bucket}/raw/study_locus_ld_clumped/'
       step.session.write_mode: overwrite
-      step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
+      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
 
 
   - id: raw_pics
@@ -186,4 +190,4 @@ nodes:
       step.study_locus_ld_annotated_in: '{data_bucket}/raw/study_locus_ld_clumped/'
       step.picsed_study_locus_out: '{data_bucket}/raw/credible_set/'
       step.session.write_mode: overwrite
-      step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
+      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
