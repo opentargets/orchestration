@@ -2,22 +2,188 @@
 environment_specs:
   - name: Prod
     vars:
-      input_bucket: "gs://decode_inputs"
-      data_bucket: "gs://decode_data"
+      data_bucket: gs://decode_data
+      input_bucket: gs://decode_input
+      gnomad_bucket: gs://gnomad_data_2
+      gentropy_ref: '3.3.0-dev.6'
+      molecular_complex_version: '2026-01-09'
+  - name: Test
+    vars:
+      data_bucket: gs://ot_orchestration/test/decode_data
+      input_bucket: gs://ot_orchestration/test/decode_inputs
+      gnomad_bucket: gs://gnomad_data_2
+      date: '20250129'
+      gentropy_ref: '3.3.0-dev.6'
 
-env: Prod
+env: Test
 
 dataproc:
   cluster_name: otg-decode
-  autoscaling_policy: otg-etl
-  allow_efm: false
+  autoscaling_policy: otg-efm-slim
+  allow_efm: true
   num_workers: 2
+  worker_machine_type: n2-standard-16
+  driver_machine_type: n2-standard-16
+  secondary_worker_machine_type: n2-standard-16
+  secondary_worker_disk_size: 100
+  worker_disk_size: 1024
+
   cluster_metadata:
-    GENTROPY_REF: v3.3.0-dev.1
+    GENTROPY_REF: 'v{gentropy_ref}'
 
 nodes:
-  - id: harmonisation
+  
+  - id: molecular_complex
+    kind: Task
+    prerequisites: []
     params:
-      step: decode_manifest_generation
-      # input
-      step.s3_config_path:
+      step: molecular_complex_ingestion
+      step.predicted_complex_tab_path: 'gs://decode_data/complex_portal/complex_portal_predicted.tsv'
+      step.experimental_complex_tab_path: 'gs://decode_data/complex_portal/complex_portal_experimental.tsv'
+      step.output_path: '{data_bucket}/molecular_complex/'
+
+  ############################ SMP #############################
+  # - id: smp_manifest_generation
+  #   kind: Task
+  #   prerequisites:
+  #     - molecular_complex
+  #   params:
+  #     step: decode_manifest_generation
+  #     step.s3_config_path: '{input_bucket}/s3_config.yaml'
+  #     step.bucket_listing_path: '{input_bucket}/somascan_smp_index.txt'
+  #     step.output_path: '{data_bucket}/smp/manifest/'
+
+  # - id: smp_ingestion
+  #   prerequisites:
+  #     - smp_manifest_generation
+  #   params:
+  #     step: decode_summary_statistics_ingestion
+  #     step.manifest_path: '{data_bucket}/smp/manifest/' 
+  #     step.output_path: '{input_bucket}/raw_summary_statistics/smp/'
+
+  - id: smp_harmonisation
+    prerequisites:
+      - molecular_complex
+      # - smp_manifest_generation
+      # - smp_ingestion
+    params:
+      step: decode_summary_statistics_harmonisation
+      step.raw_summary_statistics_path: '{input_bucket}/raw_summary_statistics/smp/'
+      step.manifest_path: '{data_bucket}/smp/manifest/'
+      step.aptamer_metadata_path: '{data_bucket}/decode_2023_aptamer_mapping.tsv'
+      step.variant_direction_path: '{gnomad_bucket}/v4.1/variant_direction/'
+      step.molecular_complex_path: '{data_bucket}/molecular_complex/'
+      step.harmonised_summary_statistics_path: '{data_bucket}/smp/harmonised_summary_statistics/'
+      step.qc_summary_statistics_path: '{data_bucket}/smp/harmonised_summary_statistics_qc/'
+      step.protein_qtl_study_index_path: '{data_bucket}/smp/study/'
+      step.min_mac_threshold: 50
+      step.min_sample_size_threshold: 30000
+      step.flipping_window_size: 10000000
+      step.pval_threshold: 5e-8
+      step.session.write_mode: overwrite
+
+  - id: smp_wbc
+    prerequisites:
+      - smp_harmonisation
+    params:
+      step: window_based_clumping
+      step.summary_statistics_input_path: '{data_bucket}/smp/harmonised_summary_statistics/'
+      step.study_locus_output_path: '{data_bucket}/smp/study_locus_window_based_clumped/'
+      step.session.write_mode: overwrite
+      step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
+
+  - id: smp_ldc
+    prerequisites:
+      - smp_wbc
+    params:
+      step: ld_based_clumping
+      step.ld_index_path: '{gnomad_bucket}/v2.1.1/ld_index'
+      step.study_locus_input_path: '{data_bucket}/smp/study_locus_window_based_clumped/'
+      step.study_index_path: '{data_bucket}/smp/study/'
+      step.clumped_study_locus_output_path: '{data_bucket}/smp/study_locus_ld_clumped/'
+      step.session.write_mode: overwrite
+      step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
+
+  - id: smp_pics
+    prerequisites:
+      - smp_ldc
+    params:
+      step: pics
+      step.study_locus_ld_annotated_in: '{data_bucket}/smp/study_locus_ld_clumped/'
+      step.picsed_study_locus_out: '{data_bucket}/smp/credible_set/'
+      step.session.write_mode: overwrite
+      step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
+
+############################# Raw summary statistics #############################
+
+  # - id: raw_manifest_generation
+  #   kind: Task
+  #   prerequisites:
+  #     - molecular_complex
+  #   params:
+  #     step: decode_manifest_generation
+  #     step.s3_config_path: '{input_bucket}/s3_config.yaml'
+  #     step.bucket_listing_path: '{input_bucket}/somascan_raw_index.txt'
+  #     step.output_path: '{data_bucket}/raw/manifest'
+
+  # - id: raw_ingestion
+  #   prerequisites:
+  #     - raw_manifest_generation
+  #   params:
+  #     step: decode_summary_statistics_ingestion
+  #     step.manifest_path: '{data_bucket}/raw/manifest/' 
+  #     step.output_path: '{data_bucket}/raw_summary_statistics/raw/'
+
+  - id: raw_harmonisation
+    prerequisites:
+      - molecular_complex
+      # - raw_manifest_generation
+      # - raw_ingestion
+    params:
+      step: decode_summary_statistics_harmonisation
+      step.raw_summary_statistics_path: '{input_bucket}/raw_summary_statistics/raw/'
+      step.manifest_path: '{data_bucket}/raw/manifest/'
+      step.aptamer_metadata_path: '{data_bucket}/decode_2023_aptamer_mapping.tsv'
+      step.variant_direction_path: '{gnomad_bucket}/v4.1/variant_direction/'
+      step.molecular_complex_path: '{data_bucket}/molecular_complex/'
+      step.harmonised_summary_statistics_path: '{data_bucket}/raw/harmonised_summary_statistics/'
+      step.qc_summary_statistics_path: '{data_bucket}/raw/harmonised_summary_statistics_qc/'
+      step.protein_qtl_study_index_path: '{data_bucket}/raw/study/'
+      step.min_mac_threshold: 50
+      step.min_sample_size_threshold: 30000
+      step.flipping_window_size: 10000000
+      step.pval_threshold: 5e-8
+      step.session.write_mode: overwrite
+
+  - id: raw_wbc
+    prerequisites:
+      - raw_harmonisation
+    params:
+      step: window_based_clumping
+      step.summary_statistics_input_path: '{data_bucket}/raw/harmonised_summary_statistics/'
+      step.study_locus_output_path: '{data_bucket}/raw/study_locus_window_based_clumped/'
+      step.session.write_mode: overwrite
+      step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
+
+  - id: raw_ldc
+    prerequisites:
+      - raw_wbc
+    params:
+      step: ld_based_clumping
+      step.ld_index_path: '{gnomad_bucket}/v2.1.1/ld_index'
+      step.study_locus_input_path: '{data_bucket}/raw/study_locus_window_based_clumped/'
+      step.study_index_path: '{data_bucket}/raw/study_index/'
+      step.clumped_study_locus_output_path: '{data_bucket}/raw/study_locus_ld_clumped/'
+      step.session.write_mode: overwrite
+      step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
+
+
+  - id: raw_pics
+    prerequisites:
+      - raw_ldc
+    params:
+      step: pics
+      step.study_locus_ld_annotated_in: '{data_bucket}/raw/study_locus_ld_clumped/'
+      step.picsed_study_locus_out: '{data_bucket}/raw/credible_set/'
+      step.session.write_mode: overwrite
+      step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"

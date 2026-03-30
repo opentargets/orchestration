@@ -7,6 +7,7 @@ from typing import Any
 
 from airflow.models.baseoperator import BaseOperator
 from airflow.utils.trigger_rule import TriggerRule
+from google.cloud.dataproc_v1.types import DiskConfig
 
 from orchestration.operators.dataproc import (
     CreateClusterOperator,
