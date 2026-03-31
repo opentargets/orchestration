@@ -21,7 +21,6 @@ from orchestration.models.pts_step import PTSDataprocStep, pts_step_from_config
 from orchestration.operators.batch.generic import BatchIndexOperator, BatchJobOperator
 from orchestration.operators.batch.vep import VepAnnotateOperator
 from orchestration.operators.dataproc import (
-    ClusterConfig,
     CreateClusterOperator,
     DeleteClusterOperator,
     ETLJobBuilder,
@@ -204,6 +203,8 @@ with DAG(
 
                 elif s.is_dataproc:
                     s = cast(PTSDataprocStep, s)
+                    cluster_name = s.cluster_definition.cluster_type
+
                     u2 = UploadFileOperator(
                         task_id=f"upload_entrypoint_{step_name}",
                         project_id=GCP_PROJECT_PLATFORM,
@@ -212,7 +213,7 @@ with DAG(
                     )
 
                     c = CreateClusterOperator(
-                        task_id="cluster_create_pts",
+                        task_id=f"create_cluster_{cluster_name}",
                         cluster_name=s.cluster_definition.cluster_name,
                         cluster_config=s.cluster_definition.cluster_config,
                         labels=labels,
@@ -226,7 +227,6 @@ with DAG(
                         labels=labels,
                     )
 
-                    cluster_name = s.cluster_definition.cluster_name
                     steps_in_cluster = pts_clusters.get(cluster_name, [])
                     pts_clusters[cluster_name] = [*steps_in_cluster, step_name]
                     chain(u, Label("dataproc pts step"), u2, c, r)
@@ -248,7 +248,7 @@ with DAG(
         # delete a cluster after its steps have run
         for cluster_name, steps_in_cluster in pts_clusters.items():
             x = DeleteClusterOperator(
-                task_id="cluster_delete_pts",
+                task_id=f"cluster_delete_{cluster_name}",
                 cluster_name=cluster_name,
                 trigger_rule=TriggerRule.ALL_SUCCESS,
             )
@@ -314,13 +314,12 @@ with DAG(
                 cluster_definition = config.step_cluster_definition(step_name)
                 assert cluster_definition is not None
                 cluster_name = resource_name(cluster_definition.cluster_type)
-                cluster_config = ClusterConfig(**cluster_definition.config)
                 num_partitions = str(config.step_definition(step_name).get("num_partitions", config.num_partitions))
 
                 c = CreateClusterOperator(
                     task_id="cluster_create_etl",
                     cluster_name=cluster_name,
-                    cluster_config=cluster_config,
+                    cluster_config=cluster_definition.cluster_config,
                     labels=labels,
                 )
 
@@ -485,12 +484,11 @@ with DAG(
                 cluster_definition = config.step_cluster_definition(step_name)
                 if cluster_definition:
                     cluster_name = cluster_definition.cluster_type
-                    cluster_config = ClusterConfig(**cluster_definition.config)
 
                     c = CreateClusterOperator(
                         task_id=f"cluster_create_{cluster_name}",
                         cluster_name=resource_name(cluster_name),
-                        cluster_config=cluster_config,
+                        cluster_config=cluster_definition.cluster_config,
                         labels=labels,
                     )
                     # add the run task to the proper cluster list in the gentropy_clusters dict

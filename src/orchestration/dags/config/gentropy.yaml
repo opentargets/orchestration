@@ -30,12 +30,14 @@ steps:
         - CASE_CASE_STUDY_DESIGN
       # INPUTS
       step.study_index_path:
-        - gs://gwas_catalog_top_hits/study_index
-        - gs://gwas_catalog_sumstats_susie/study_index
-        - gs://gwas_catalog_sumstats_pics/study_index
-        - gs://eqtl_catalogue_data/study_index
-        - gs://ukb_ppp_eur_data/study_index
-        - gs://finngen_data/r12/study_index
+        # GWAS
+        - '{{release_uri}}/input/gwas/study/gcca'
+        - '{{release_uri}}/input/gwas/study/gcss_pics'
+        - '{{release_uri}}/input/gwas/study/gcss_susie'
+        - '{{release_uri}}/input/gwas/study/finngen'
+        # molQTL
+        - '{{release_uri}}/input/molqtl/study/eqtl_catalogue'
+        - '{{release_uri}}/input/molqtl/study/ukb_ppp_eur'
       step.target_index_path: '{{release_uri}}/output/target'
       step.disease_index_path: '{{release_uri}}/output/disease'
       step.biosample_index_path: '{{release_uri}}/output/biosample'
@@ -68,12 +70,14 @@ steps:
       step.trans_qtl_threshold: 5_000_000
       # INPUTS
       step.study_locus_path:
-        - gs://gwas_catalog_top_hits/credible_sets/
-        - gs://gwas_catalog_sumstats_pics/credible_sets/
-        - gs://gwas_catalog_sumstats_susie/credible_set_clean/20260130/
-        - gs://eqtl_catalogue_data/credible_set_datasets/eqtl_catalogue_susie_patched_v2/
-        - gs://ukb_ppp_eur_data/credible_set_clean/20250129/
-        - gs://finngen_data/r12/credible_set_datasets/susie/
+        # GWAS
+        - '{{release_uri}}/input/gwas/credible_set/gcca'
+        - '{{release_uri}}/input/gwas/credible_set/gcss_pics'
+        - '{{release_uri}}/input/gwas/credible_set/gcss_susie'
+        - '{{release_uri}}/input/gwas/credible_set/finngen'
+        # molQTL
+        - '{{release_uri}}/input/molqtl/credible_set/eqtl_catalogue'
+        - '{{release_uri}}/input/molqtl/credible_set/ukb_ppp_eur'
       step.study_index_path: '{{release_uri}}/output/study'
       step.target_index_path: '{{release_uri}}/output/target'
       # OUTPUTS
@@ -86,7 +90,7 @@ steps:
       step.session.write_mode: overwrite
       step.session.output_partitions: 200
       step.colocalisation_method: coloc_pip_ecaviar
-      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.memoryOverhead: '1g', spark.executor.cores: '4'}"
+      +step.session.extended_spark_conf: "{spark.executor.memory: '22g', spark.executor.memoryOverhead: '4g', spark.executor.cores: '4', spark.memory.fraction: '0.8', spark.memory.storageFraction: '0.2'}"
       # INPUTS
       step.credible_set_path: '{{release_uri}}/output/credible_set'
       # OUTPUTS
@@ -123,6 +127,7 @@ steps:
         max_run_duration: '2h'
       policy_specs:
         machine_type: n1-standard-4
+        provisioning_model: STANDARD
       image: 'europe-west1-docker.pkg.dev/open-targets-eu-dev/vep/custom_ensembl_vep:{{vep_version}}'
       entrypoint: /bin/sh
       parallelism: 500 # max number of VEP tasks run at a time in parallel
@@ -219,6 +224,7 @@ steps:
         max_run_duration: "1h"
       policy_specs:
         machine_type: n1-standard-2
+        provisioning_model: STANDARD
 
   l2g_evidence:
     params:

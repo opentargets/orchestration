@@ -58,7 +58,7 @@ clusters:
     image_version: '2.2'
     num_masters: 1
     num_workers: 4
-    worker_machine_type: n1-highmem-64
+    worker_machine_type: n2d-highmem-64
     properties:
       'spark:spark.driver.memory': '478g'
       'spark:spark.sql.shuffle.partitions': '20'
@@ -69,7 +69,7 @@ clusters:
     num_masters: 1
     num_workers: 2
     worker_machine_type: 'n1-highmem-16'
-    idle_delete_ttl: 3600
+    idle_delete_ttl: 360
     internal_ip_only: false
     metadata:
       GENTROPY_REF: 'v{{gentropy_version}}'
@@ -87,22 +87,92 @@ clusters:
     autoscaling_policy: otg-efm
     num_masters: 3
     num_workers: 20
+    master_machine_type: n1-highmem-16
     worker_machine_type: n1-highmem-32
+    worker_disk_type: 'pd-ssd'
     worker_disk_size: 1024
+    secondary_worker_disk_size: 100
+    secondary_worker_disk_type: 'pd-standard'
     internal_ip_only: false
     metadata:
       GENTROPY_REF: 'v{{gentropy_version}}'
     properties:
       'dataproc:efm.spark.shuffle': 'primary-worker'
       'spark:spark.shuffle.io.numConnectionsPerPeer': '5'
+      'spark:spark.shuffle.io.maxRetries': '15'
+      'spark:spark.shuffle.io.retryWait': '30s'
+      'spark:spark.shuffle.io.serverThreads': '100'
       'spark:spark.stage.maxConsecutiveAttempts': '10'
       'spark:spark.sql.adaptive.enabled': 'true'
-      'spark:spark.sql.files.maxPartitionBytes': '1073741824'
+      'spark:spark.sql.shuffle.partitions': '2000'
+      'spark:spark.sql.files.maxPartitionBytes': '268435456'
+      'spark:spark.network.timeout': '800s'
       'spark:spark.task.maxFailures': '15'
-      'yarn:spark.shuffle.io.serverThreads': '50'
+      'yarn:spark.shuffle.io.serverThreads': '100'
+      # Speculative execution -> https://kb.databricks.com/scala/understanding-speculative-execution
+      'spark:spark.speculation': 'true'
+      'spark:spark.speculation.multiplier': '1.5'
+      'spark:spark.speculation.quantile': '0.9'
+
     init_actions_uris:
       - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'
+    idle_delete_ttl: 1800
+
+  pts_association:
+    image_version: '2.2'
+    num_masters: 1
+    num_workers: 2
+    worker_machine_type: n2d-standard-16
+    master_disk_size: 128
+    worker_disk_size: 128
     idle_delete_ttl: 3600
+    internal_ip_only: false
+    metadata:
+      PTS_REF: 'v{{pts_version}}'
+      # Each n1-standard-16 worker has ~60 GB RAM and 16 cores.
+      # Reserving 1 core and ~4 GB for YARN/OS overhead leaves ~56 GB and 15 cores per worker.
+      # With 5 cores per executor, that's 3 executors per worker node × 2 workers = 6 max,
+      # but keeping it at 4 initial executors (2 per node) with ~18 GB each leaves comfortable headroom and avoids excessive GC pressure.
+    properties:
+      # ── Driver Configuration ──
+      'spark:spark.driver.memory': '18g'
+      'spark:spark.driver.memoryOverhead': '2g'
+      'spark:spark.driver.cores': '5'
+
+      # ── Executor Configuration ──
+      'spark:spark.executor.instances': '4'
+      'spark:spark.executor.cores': '5'
+      'spark:spark.executor.memory': '18g'
+      'spark:spark.executor.memoryOverhead': '2g'
+
+      # ── Parallelism & Partitions ──
+      'spark:spark.default.parallelism': '40'
+      # The probable output sizes range between 600MiB to 2GiB so partition should be around max 100 MiB
+      # including the overhead of multiple compressed files.
+      # FIXME: This is a temporary setting to reduce the partition number for the association step.
+      'spark:spark.sql.shuffle.partitions': '25'
+
+      # ── Dynamic Allocation ──
+      'spark:spark.dynamicAllocation.enabled': 'true'
+
+      # ── Memory Management ──
+      'spark:spark.memory.fraction': '0.6'
+      'spark:spark.memory.storageFraction': '0.5'
+
+      # ── Shuffle & Compression ──
+      'spark:spark.shuffle.compress': 'true'
+      'spark:spark.shuffle.spill.compress': 'true'
+      'spark:spark.io.compression.codec': 'snappy'
+
+      # ── Serialization ──
+      'spark:spark.serializer': 'org.apache.spark.serializer.KryoSerializer'
+
+      # ── Adaptive Query Execution (Spark 3.x) ──
+      'spark:spark.sql.adaptive.enabled': 'true'
+      'spark:spark.sql.adaptive.coalescePartitions.enabled': 'true'
+      'spark:spark.sql.adaptive.skewJoin.enabled': 'true'
+    init_actions_uris:
+      - 'gs://opentargets-pipelines/up/pts/install_dependencies_on_cluster.sh'
 
 step_job_properties:
   etl:

@@ -1,21 +1,21 @@
 ---
-release_name: '26.03-test'
+release_name: '26.03-ppp'
 
 # If `is_dev` is true:
 #   * the bucket used for the run will be `open-targets-pipeline-runs`
 #   * the prefix inside the bucket will be `run_name`
 #         which defaults to a timestamp if not provided.
 is_dev: true
-run_name: 'ds/26.03-test5'
+run_name: 'sz/26.03-ppp.1'
 
 # Whether this will be a partner preview platform release (PPP)
-is_ppp: false
+is_ppp: true
 
 # Versions for software and data
-pis_version: '26.03.0-dev.7'
-pts_version: '26.03.0-dev.43'
+pis_version: '26.03.0-dev.11'
+pts_version: '26.03.0-dev.44'
 etl_version: '26.03.0-dev5'
-gentropy_version: '3.2.0-rc.4'
+gentropy_version: '3.2.0'
 vep_version: 'release_115.2'
 chembl_version: '36'
 efo_version: '3.87.0'
@@ -50,6 +50,7 @@ gnomad_version: '4.1'
 steps:
   # PIS STEPS
   pis_encode:
+  pis_baseline_expression:
   pis_clinical_report:
   pis_biosample:
   pis_disease:
@@ -74,11 +75,17 @@ steps:
   pis_evidence_ppp:
     ppp_only: true
   pis_expression:
+  pis_gwas:
+  pis_gwas_ppp:
+    ppp_only: true
   pis_go:
   pis_interaction:
   pis_enhancer_to_gene:
   pis_l2g:
   pis_literature:
+  pis_molqtl:
+  pis_molqtl_ppp:
+    ppp_only: true
   pis_openfda:
   pis_otar:
     ppp_only: true
@@ -104,6 +111,7 @@ steps:
   pts_mouse_phenotype:
     depends_on:
       - etl_target
+      - pis_impc
   pts_chemical_probes:
     depends_on:
       - pis_target
@@ -453,10 +461,15 @@ steps:
       - gentropy_biosample
   gentropy_study:
     depends_on:
+      - pis_gwas
+      - pis_molqtl
       - pts_target
       - pts_disease
       - etl_target
       - gentropy_biosample
+    depends_on_ppp:
+      - pis_gwas_ppp
+      - pis_molqtl_ppp
   gentropy_credible_set:
     depends_on:
       - gentropy_study

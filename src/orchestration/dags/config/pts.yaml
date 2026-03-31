@@ -545,11 +545,8 @@ steps:
         by_datatype_direct: output/association_by_datatype_direct
         by_datatype_indirect: output/association_by_datatype_indirect
         temporary: intermediate/indirect_association_intermediate
-      settings:
-        novelty_scale: 2 # 2 for long tailed slow decays
-        novelty_shift: 3 # 3 for long tailed slow decays
-        novelty_window: 10
-        datasource_weights:
+      properties:
+        spark.driver.memory: '12g'
       settings:
         novelty_scale: 2 # 2 for long tailed slow decays
         novelty_shift: 3 # 3 for long tailed slow decays
