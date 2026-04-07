@@ -22,7 +22,13 @@ dependencies = [
 
 
 [dependency-groups]
-dev = ["deptry==0.23.0", "graphviz>=0.21", "pre-commit==4.2.0", "ruff==0.11.7"]
+dev = [
+    "deptry==0.23.0",
+    "graphviz>=0.21",
+    "pre-commit==4.2.0",
+    "ruff==0.11.7",
+    "ty>=0.0.26",
+]
 test = ["pytest==8.3.5"]
 
 

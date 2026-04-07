@@ -5,17 +5,15 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from orchestration.dags.config.app_config import AppConfig
-from orchestration.models.infrastructure.dataproc import ClusterDefinition
+from orchestration.models.environment import Environments
+from orchestration.models.infrastructure import BatchJobRegistry, ClusterRegistry
+from orchestration.models.pipeline.abc import PipelineConfig
 from orchestration.utils.common import GCP_PROJECT_PLATFORM
 
-if TYPE_CHECKING:
-    from typing import Any
 
-
-class UnifiedPipelineConfig:
+class UnifiedPipelineConfig(PipelineConfig):
     """Configuration class for the Unified Pipeline.
 
     This class is used to provide the config for the Unified Pipeline and all the
@@ -30,11 +28,15 @@ class UnifiedPipelineConfig:
 
     def __init__(self) -> None:
         self.logger = logging.getLogger(__name__)
+        """Logger for the unified pipeline configuration."""
         config_path = Path(__file__).parent
 
         up = AppConfig.from_file(file_path=config_path / "unified_pipeline.yaml")
         self._steps = up.get("steps")
 
+        self.env = up.get("env", "Test")
+        """Environment to run the pipeline in, e.g. "Prod", "Test", etc. The environment is used to derive the templating context to pre-fill the configuration."""
+        self.environments = Environments(environments=up.get("environments", []))
         self.run_name = up.get("run_name") or datetime.now().strftime("%Y%m%d-%H%M")
         """Used for labelling resources."""
         self.release_uri: str = f"gs://open-targets-pre-data-releases/{up.get('release_name')}"
@@ -52,6 +54,36 @@ class UnifiedPipelineConfig:
         """The default number of partitions for steps using spark that do not specify it."""
 
         data_sources_exclude = "[]" if self.is_ppp else '["ot_crispr", "encore", "ot_crispr_validation"]'
+
+        # INFRASTRUCTURE CONFIG
+        self._clusters = AppConfig.from_file(
+            file_path=config_path / "clusters.yaml",
+            template_context={
+                "pts_version": up.get("pts_version"),
+                "gentropy_version": up.get("gentropy_version"),
+                "requester_pays_project_id": GCP_PROJECT_PLATFORM,
+            },
+        )
+
+        self._batch_jobs = AppConfig.from_file(
+            file_path=config_path / "batch_jobs.yaml",
+            template_context={},
+        )
+        if self.is_ppp:
+            self.gentropy = self.gentropy.overwrite(config_path / "ppp" / "gentropy.overrides.yaml")
+        """The internal configuration for GENTROPY steps, with PPP-specific overrides."""
+
+        self.batch_jobs = BatchJobRegistry(items=self._batch_jobs.get("batch_jobs", {}))
+        """The batch job definitions."""
+        self.clusters = ClusterRegistry(
+            items=self._clusters.get("clusters", {}),
+            step_job_properties=self._clusters.get(
+                "step_job_properties",
+                {},
+            ),
+        )
+        """The cluster definitions."""
+        ## STAGE CONFIG
 
         self.pis = AppConfig.from_file(
             file_path=config_path / "pis.yaml",
@@ -111,20 +143,6 @@ class UnifiedPipelineConfig:
         )
         """The internal configuration for GENTROPY steps."""
 
-        if self.is_ppp:
-            self.gentropy = self.gentropy.overwrite(config_path / "ppp" / "gentropy.overrides.yaml")
-        """The internal configuration for GENTROPY steps, with PPP-specific overrides."""
-
-        self.clusters = AppConfig.from_file(
-            file_path=config_path / "clusters.yaml",
-            template_context={
-                "pts_version": up.get("pts_version"),
-                "gentropy_version": up.get("gentropy_version"),
-                "requester_pays_project_id": GCP_PROJECT_PLATFORM,
-            },
-        )
-        """The cluster definitions."""
-
         # PIS-specific settings.
         pis_image = "europe-west1-docker.pkg.dev/open-targets-eu-dev/pis/pis"
         pis_version = up.get("pis_version")
@@ -171,139 +189,6 @@ class UnifiedPipelineConfig:
             "PTS_STEP": step_name.removeprefix("pts_"),
             "PTS_CONFIG_PATH": "/config.yaml",
         }
-
-    def steps(self, prefix: str = "") -> list[str]:
-        """Return a list of steps in the pipeline.
-
-        Args:
-            prefix (str): Filter steps by prefix, to get the list of steps for a
-                specific stage. For example, `pis_` for PIS steps.
-            ppp (bool): Whether to include PPP-exclusive steps. Defaults to `False`.
-
-        Returns:
-            list[str]: The list of step names.
-        """
-        relevant_steps: list[str] = []
-
-        stage_steps = {k: v for k, v in self._steps.items() if k.startswith(prefix)}
-        for step_name, step_deps in stage_steps.items():
-            if step_deps and step_deps.get("ppp_only") and not self.is_ppp:
-                continue
-            relevant_steps.append(step_name)
-        return relevant_steps
-
-    def step_config(self, step_name: str) -> dict[str, Any]:
-        """Return the configuration for a step.
-
-        This method gathers both the common configuration for the application and
-        the specific configuration for the step. That specific configuration will
-        therefore be nested under `steps.{step_name}` in the returned dict. See
-        `step_specific_config` to get the specific configuration.
-
-        Args:
-            step_name (str): The name of the step, in the form `{stage}_{step_name}`.
-
-        Returns:
-            dict: The configuration for the step.
-        """
-        stage, step = step_name.split("_", 1)
-        stage_config: AppConfig = getattr(self, stage)
-
-        return {
-            **stage_config.config,
-            "steps": {step: stage_config.config.get("steps", {}).get(step, {})},
-        }
-
-    def step_specific_config(self, step_name: str) -> dict[str, Any]:
-        """Return the specific configuration for a step.
-
-        This method returns the specific step configuration, that is, only the
-        keys under `steps.{step_name}` in the configuration file.
-
-        Args:
-            step_name (str): The name of the step, in the form `{stage}_{step_name}`.
-
-        Returns:
-            dict[str, Any]: The specific configuration for the step.
-        """
-        _, step = step_name.split("_", 1)
-        return self.step_config(step_name).get("steps", {}).get(step, {})
-
-    def step_cluster_definition(self, step_name: str) -> ClusterDefinition | None:
-        """Return the cluster type and configuration for a step.
-
-        This method finds the proper cluster definition by matching on the most
-        specific cluster name that is a prefix of the step name. So if the step
-        name is `pis_foo_bar`, and the cluster names are `pis_foo_` and `pis_`,
-        the cluster definition for `pis_foo_` will be returned.
-
-        A step can also be configured to not use a cluster by setting the
-        `cluster` key to `False` in the step configuration. In this case, the
-        method will return None. This is useful for Gentropy steps that are run
-        using Google Batch.
-
-        Args:
-            step_name (str): The name of the step, in the form `{stage}_{step_name}`.
-
-        Returns:
-            ClusterDefinition | None: A ClusterDefinition object containing the
-                cluster type and configuration for the step. If the step requires
-                no cluster, returns None.
-
-        Raises:
-            ValueError: If no cluster definition is found for the step name.
-        """
-        if self.step_specific_config(step_name).get("cluster", True) is False:
-            return None
-
-        clusters = self.clusters.config.get("clusters", {})
-        sorted_cluster_names = sorted(clusters.keys(), key=len, reverse=True)
-        for cluster_name in sorted_cluster_names:
-            if step_name.startswith(cluster_name):
-                return ClusterDefinition(cluster_type=cluster_name, config=clusters[cluster_name])
-        raise ValueError(f"No cluster definition found for step {step_name}.")
-
-    def step_job_properties(self, step_name: str) -> dict[str, str]:
-        """Return the spark job properties for a step.
-
-        This method finds the proper job properties by matching on the most
-        specific key in the `step_job_properties` dictionary that is a prefix of
-        the step name. So if the step name is `pis_foo_bar`, and the keys are
-        `pis_foo_` and `pis_`, the job properties for `pis_foo_` will be
-        returned.
-
-        Args:
-            step_name (str): The name of the step, in the form `{stage}_{step_name}`.
-
-        Returns:
-            dict[str, str]: The spark job properties for the step. If none are
-                found, an empty dictionary is returned.
-        """
-        property_dicts = self.clusters.config.get("step_job_properties", {})
-        sorted_property_dicts = sorted(property_dicts.keys(), key=len, reverse=True)
-        for property_dict in sorted_property_dicts:
-            if step_name.startswith(property_dict):
-                return property_dicts[property_dict]
-        return {}
-
-    def step_definition(self, step_name: str) -> dict[str, Any]:
-        """Return the definition of a step.
-
-        This method returns the step definition, which includes the step name,
-        dependencies, and the number of partitions if it is a spark step.
-
-        This is a good candidate for a refactor once a Step class is modeled in.
-
-        Args:
-            step_name (str): The name of the step, in the form `{stage}_{step_name}`.
-
-        Returns:
-            dict[str, Any]: The definition of the step.
-        """
-        definition = self._steps.get(step_name)
-        # can't put the default in the get, as the content can actually be None
-        # and that will not be replaced by the default
-        return definition or {}
 
     def config_uri(self, step_name: str) -> str:
         """Return the URI of the configuration file for a step.

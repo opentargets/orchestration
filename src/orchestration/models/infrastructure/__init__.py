@@ -13,7 +13,11 @@ Common abstractions (registry, definition, pointer) are provided by
 :mod:`~orchestration.models.infrastructure.abc` and shared across both backends.
 """
 
-from orchestration.models.infrastructure.abc import InfrastructurePointer
+from enum import StrEnum
+
+from pydantic import BaseModel
+
+from orchestration.models.infrastructure import batch, dataproc
 from orchestration.models.infrastructure.batch import (
     BatchConfig,
     BatchDefinition,
@@ -25,6 +29,34 @@ from orchestration.models.infrastructure.dataproc import (
     ClusterDefinition,
     ClusterRegistry,
 )
+
+
+class UnknownInfrastructureTypeError(Exception):
+    """Custom exception for unknown infrastructure types in the staging pipeline configuration."""
+
+    def __init__(self, infrastructure_type: str):
+        super().__init__(f"Unknown infrastructure type: {infrastructure_type}")
+        self.infrastructure_type = infrastructure_type
+
+
+class InfrastructureType(StrEnum):
+    DATAPROC = dataproc.INFRASTRUCTURE
+    BATCH = batch.INFRASTRUCTURE
+
+
+class InfrastructurePointer(BaseModel):
+    """Lightweight reference from a pipeline step to an infrastructure definition.
+
+    At runtime, the :attr:`type` field is used to select the appropriate
+    registry, and :attr:`pointer` is used to look up the specific definition
+    within that registry.
+    """
+
+    type: InfrastructureType
+    """Infrastructure type identifier that determines which registry to search (e.g. ``"GOOGLE_BATCH_JOB"``, ``"DATAPROC_CLUSTER"``)."""
+    pointer: str
+    """Name of the infrastructure definition to retrieve from the registry."""
+
 
 __all__ = [
     # batch
@@ -38,4 +70,5 @@ __all__ = [
     "IndexSpecs",
     # abc
     "InfrastructurePointer",
+    "InfrastructureType",
 ]

@@ -22,7 +22,8 @@ from airflow.providers.google.cloud.operators.dataproc import (
     PreemptibilityType,
 )
 from google.cloud.dataproc_v1 import Cluster
-from pydantic import BaseModel
+from google.cloud.dataproc_v1.types import DiskConfig
+from pydantic import BaseModel, field_validator
 
 from orchestration.models.infrastructure.abc import InfrastructureDefinition, InfrastructureRegistry
 from orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_SERVICE_ACCOUNT, GCP_ZONE
@@ -37,6 +38,9 @@ class ClusterConfig(BaseModel):
     map directly to parameters accepted by the Airflow
     :class:`~airflow.providers.google.cloud.operators.dataproc.ClusterGenerator`,
     unless otherwise noted.
+
+    The default implementation creates a cluster with 1 master node and 2 primary workers using
+    n1-standard machine types and SSD boot disks, with a 2 hour idle deletion TTL. Adjust these defaults as needed for your workloads.
     """
 
     project_id: str = GCP_PROJECT_PLATFORM
@@ -58,6 +62,7 @@ class ClusterConfig(BaseModel):
     (i.e. no ``/`` characters), the full resource path is constructed automatically
     from :attr:`project_id` and the region derived from :attr:`zone`."""
 
+    # Master node configuration
     num_masters: int = 1
     """Number of master nodes. Defaults to ``1``."""
     master_machine_type: str = "n1-highmem-16"
@@ -71,6 +76,7 @@ class ClusterConfig(BaseModel):
     master_accelerator_count: int | None = None
     """Number of GPU accelerators to attach to each master node."""
 
+    # Primary worker node configuration (not autoscaled)
     num_workers: int | None = 2
     """Number of primary worker nodes. Set to ``0`` for single-node mode. Defaults to ``2``."""
     min_num_workers: int | None = None
@@ -90,12 +96,21 @@ class ClusterConfig(BaseModel):
     """GPU accelerator type to attach to primary worker nodes, or ``None`` for no GPU."""
     worker_accelerator_count: int | None = None
     """Number of GPU accelerators to attach to each primary worker node."""
+
+    # Secondary worker node configuration (for autoscaling and preemptible workers)
+    secondary_worker_machine_type: str | None = None
+    """GCE machine type to use for secondary worker nodes. Default is same as worker_machine_type."""
+    secondary_worker_disk_type: str | None = None
+    """The disk type to use for secondary workers. Default is same as worker_disk_type."""
+    secondary_worker_disk_size: int | None = None
+    """The disk size to use for secondary workers. Default is same as worker_disk_size."""
     secondary_worker_instance_flexibility_policy: InstanceFlexibilityPolicy | None = None
-    """Instance flexibility policy for secondary workers, enabling a mix of VM shapes and provisioning models."""
+    """Instance flexibility Policy allowing a mixture of VM shapes and
+        provisioning models."""
     secondary_worker_accelerator_type: str | None = None
-    """GPU accelerator type to attach to secondary worker nodes, or ``None`` for no GPU."""
+    """The GPU type to use for secondary workers."""
     secondary_worker_accelerator_count: int | None = None
-    """Number of GPU accelerators to attach to each secondary worker node."""
+    """The number of GPUs to use for secondary workers."""
 
     driver_pool_size: int = 0
     """Number of nodes in the dedicated driver node group. Defaults to ``0`` (no driver pool)."""
@@ -150,6 +165,21 @@ class ClusterConfig(BaseModel):
             ap = f"projects/{self.project_id}/regions/{region}/autoscalingPolicies/{self.autoscaling_policy}"
             self.autoscaling_policy = ap
 
+    @staticmethod
+    def _update_c4_machine_disk_config(disk_config: DiskConfig) -> DiskConfig:
+        """Update the disk config with the right values for c4 machine types."""
+        disk_config.boot_disk_type = "hyperdisk-balanced"
+        disk_config.boot_disk_provisioned_iops = 6_000
+        disk_config.boot_disk_provisioned_throughput = 500
+        return disk_config
+
+    def _create_secondary_worker_disk_config(self) -> DiskConfig:
+        """Override the disk config with the values for the secondary workers if they are set."""
+        disk_config = DiskConfig()
+        disk_config.boot_disk_size_gb = self.secondary_worker_disk_size or disk_config.boot_disk_size_gb
+        disk_config.boot_disk_type = self.secondary_worker_disk_type or disk_config.boot_disk_type
+        return disk_config
+
     def create_cluster(self) -> Cluster:
         """Build a Dataproc :class:`~google.cloud.dataproc_v1.Cluster` object from this configuration.
 
@@ -158,21 +188,32 @@ class ClusterConfig(BaseModel):
         and applies additional disk configuration overrides for ``c4-`` machine
         types, which require ``hyperdisk-balanced`` boot disks.
 
+        Checks for secondary worker machine type, disk and size and overrides the relevant ClusterConfig
+        fields if they are set. This is required as otherwise the secondary workers will
+        inherit the same machine type and disk config as the primary workers, which may not be desirable when using autoscaling or preemptible workers.
+        Especially when using efm mode.
+
         Returns:
             Cluster: A Dataproc cluster configuration object ready for submission.
         """
-        config = ClusterGenerator(**self.model_dump()).make()
-        # Ensure that the c4- machine types have the right disk config
-        # TODO: Refactor once we are sure we need the c4- machine types
+        exclude_fields = {"secondary_worker_disk_type", "secondary_worker_disk_size", "secondary_worker_machine_type"}
+        config = ClusterGenerator(**self.model_dump(exclude=exclude_fields)).make()
+
         if self.worker_machine_type.startswith("c4-"):
-            config["worker_config"]["disk_config"]["boot_disk_type"] = "hyperdisk-balanced"
-            config["worker_config"]["disk_config"]["boot_disk_provisioned_iops"] = 6_000
-            # Default is 140+ 1.5 x 500GiB
-            config["worker_config"]["disk_config"]["boot_disk_provisioned_throughput"] = 500
+            dc = DiskConfig(**config["worker_config"]["disk_config"])
+            dc = self._update_c4_machine_disk_config(dc)
+            config["worker_config"]["disk_config"] = dc
         if self.master_machine_type.startswith("c4-"):
-            config["master_config"]["disk_config"]["boot_disk_type"] = "hyperdisk-balanced"
-            config["master_config"]["disk_config"]["boot_disk_provisioned_iops"] = 6_000
-            config["master_config"]["disk_config"]["boot_disk_provisioned_throughput"] = 500
+            dc = DiskConfig(**config["master_config"]["disk_config"])
+            dc = self._update_c4_machine_disk_config(dc)
+            config["master_config"]["disk_config"] = dc
+        # By default the secondary workers have the same disk config as the primary workers, but we want to be able to set it independently
+        if self.secondary_worker_machine_type:
+            config["secondary_worker_config"]["machine_type_uri"] = self.secondary_worker_machine_type
+        if self.secondary_worker_disk_size or self.secondary_worker_disk_type:
+            dc = self._create_secondary_worker_disk_config()
+            config["secondary_worker_config"]["disk_config"] = dc
+
         return config
 
 
@@ -190,9 +231,29 @@ class ClusterDefinition(InfrastructureDefinition[ClusterConfig]):
     """Full configuration for the Dataproc cluster."""
 
 
+class SparkJobPropertyMapping(BaseModel):
+    """Configuration for a single Spark property to be applied to the cluster."""
+
+    properties: dict[str, str]
+    """Mapping of Spark property keys to values. Keys must start with "spark."."""
+
+    @field_validator("properties", mode="after")
+    @classmethod
+    def validate_keys(cls, name: str) -> str:
+        """Validate that the property name starts with "spark."."""
+        if not name.startswith("spark."):
+            raise ValueError(f"Invalid Spark Job property name '{name}'.Spark property names must start with 'spark.'.")
+        return name
+
+
 class ClusterRegistry(InfrastructureRegistry[ClusterConfig]):
     """Registry of named :class:`ClusterConfig` configurations.
 
     Pipeline steps can reference entries in this registry by name, enabling
     reuse of common cluster configurations across multiple steps.
     """
+
+    step_job_properties: dict[str, SparkJobPropertyMapping] | None = None
+    """Optional mapping of step short names to Spark job property mappings.
+        If provided, these properties will be applied to the cluster configuration when a step with the corresponding short name is executed.
+        This allows users to specify step-specific Spark properties that are not directly exposed by the ClusterConfig model."""

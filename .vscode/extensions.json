@@ -4,5 +4,6 @@
     "ms-python.python",
     "ms-python.vscode-pylance",
     "redhat.vscode-yaml",
+    "astral-sh.ty",
   ],
 }

@@ -4,38 +4,15 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from enum import StrEnum
-from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from orchestration.dags.config.app_config import AppConfig
-from orchestration.models.infrastructure import BATCH_INFRASTRUCTURE, DATAPROC_INFRASTRUCTURE
-from orchestration.models.staging_pipeline import (
-    BatchJobRegistry,
-    ClusterRegistry,
-    Env,
-    Environments,
-    StepConfig,
-    StepRegistry,
-)
+from orchestration.models.environment import Environments
 from orchestration.utils.common import GCP_PROJECT_GENETICS
 
 if TYPE_CHECKING:
     from typing import Any
-
-
-class InfrastructureType(StrEnum):
-    DATAPROC = DATAPROC_INFRASTRUCTURE
-    BATCH = BATCH_INFRASTRUCTURE
-
-
-class UnknownInfrastructureTypeError(Exception):
-    """Custom exception for unknown infrastructure types in the staging pipeline configuration."""
-
-    def __init__(self, infrastructure_type: str):
-        super().__init__(f"Unknown infrastructure type: {infrastructure_type}")
-        self.infrastructure_type = infrastructure_type
 
 
 class NoStepsFoundError(Exception):
@@ -57,21 +34,18 @@ class StagingPipelineConfig:
     """Configuration for the staging pipeline."""
 
     def __init__(self, config_path: Path):
+        self.logger = logging.getLogger(__name__)
+        """Logger for the staging pipeline configuration."""
+
         # Pre-load the configuration and find the environment variables to apply using the templating context.
         pre_st = AppConfig.from_file(file_path=config_path)
 
-        self.config_path = config_path
-        """Configuration template used throughout the staging pipeline."""
-        self.logger = logging.getLogger(__name__)
-        """Logger for the staging pipeline configuration."""
         self.env = pre_st.get("env", "Test")
         """Environment to run the pipeline in, e.g. "Prod", "Test", etc. The environment is used to derive the templating context to pre-fill the configuration."""
         self.environments = Environments(environments=pre_st.get("environments", []))
         """List of environment specifications for the staging pipeline, including environment variable values that can be used in the pipeline's tasks."""
-
         # Actual configuration with templating applied, used for the rest of the DAG
-        st = AppConfig.from_file(file_path=self.config_path, template_context=self.environments.get_vars(self.env))
-
+        st = AppConfig.from_file(file_path=config_path, template_context=self.environments.get_vars(self.env))
         self.project_id: str = st.get("project_id", GCP_PROJECT_GENETICS)
         """GCP project to run the pipeline in."""
         self.is_staging = True
@@ -92,37 +66,3 @@ class StagingPipelineConfig:
         """Required cluster names. This is populated during step parsing."""
         self._required_batch_job_names: set[str] = set()
         """Required batch job names. This is populated during step parsing."""
-
-    @cached_property
-    def steps(self) -> StepRegistry:
-        """Get the list of steps to execute in the pipeline."""
-        step_map = {}
-        if len(self._steps) == 0:
-            raise NoStepsFoundError("no steps found in staging pipeline configuration")
-        for _step in self._steps:
-            try:
-                step = StepConfig(**_step)
-            except Exception as e:
-                raise StepConfigParseError(f"Error parsing step configuration: {_step}", _step) from e
-
-            match step.infrastructure.type:
-                case InfrastructureType.DATAPROC:
-                    self._required_cluster_names.add(step.infrastructure.pointer)
-                case InfrastructureType.BATCH:
-                    self._required_batch_job_names.add(step.infrastructure.pointer)
-                case _:
-                    raise UnknownInfrastructureTypeError(step.infrastructure.type)
-            if step.id in step_map:
-                raise StepConfigParseError(f"Duplicate step ID found: {step.id}", _step)
-            step_map.setdefault(step.id, step)
-        return StepRegistry(steps=step_map)
-
-    @cached_property
-    def clusters(self) -> ClusterRegistry:
-        """Get the cluster registry for the pipeline."""
-        return ClusterRegistry(clusters=self._clusters).ensure(self._required_cluster_names)
-
-    @cached_property
-    def batch_jobs(self) -> BatchJobRegistry:
-        """Get the BatchJob registry for the pipeline."""
-        return BatchJobRegistry(jobs=self._batch_jobs).ensure(self._required_batch_job_names)

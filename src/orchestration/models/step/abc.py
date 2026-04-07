@@ -1,13 +1,13 @@
-"""Pipeline Step and Step Registry."""
-
 from __future__ import annotations
 
 import re
+from collections.abc import Iterator
 from enum import StrEnum
 
 from pydantic import BaseModel, ValidationError, field_validator
 
-from orchestration.models.infrastructure.abc import InfrastructurePointer
+from orchestration.models.infrastructure import InfrastructurePointer
+from orchestration.models.infrastructure.abc import InfrastructureDefinition
 
 
 class PipelineStage(StrEnum):
@@ -28,7 +28,7 @@ class PipelineStage(StrEnum):
         return PipelineStage(step_prefix)
 
 
-class PipelineStep(BaseModel):
+class StepConfig(BaseModel):
     """Configuration for a single step in the staging pipeline."""
 
     name: str
@@ -62,18 +62,15 @@ class PipelineStep(BaseModel):
         """The stage of the pipeline this step belongs to."""
         return PipelineStage.from_step_name(self.name)
 
-    def from_config(self, config: PipelineConfig) -> PipelineStep:
-        """Create a PipelineStep instance from a PipelineConfig."""
-        infrastructure = config.infrastructure_registry.get(self.infrastructure.pointer)
-        return PipelineStep(
-            name=self.name,
-            infrastructure=infrastructure,
-            command=self.command,
-            prerequisites=self.prerequisites,
-        )
+
+class StepDefinition(StepConfig):
+    """Definition of a step in the staging pipeline, including its configuration and any additional metadata required for execution."""
+
+    definition: InfrastructureDefinition
+    """Resolved infrastructure definition for this step, obtained by looking up the step's :attr:`infrastructure` pointer in the appropriate registry."""
 
 
-class StepRegistry(BaseModel):
+class StepConfigRegistry(BaseModel):
     """Registry for step configurations, which can be referenced by the DAG to construct the pipeline."""
 
     steps: dict[str, StepConfig]
@@ -86,7 +83,7 @@ class StepRegistry(BaseModel):
             step_id: The ID of the step configuration to retrieve.
 
         Returns:
-            StepConfig: The step configuration with the specified step ID.
+            Step: The step configuration with the specified step ID.
 
         Raises:
             ValueError: If no step configuration with the specified step ID is found.
@@ -95,6 +92,6 @@ class StepRegistry(BaseModel):
             raise ValueError(f"Step configuration '{step_id}' not found in registry.")
         return self.steps[step_id]
 
-    def __iter__(self):
+    def values(self) -> Iterator[StepConfig]:
         """Iterate over the step configurations in the registry."""
         return iter(self.steps.values())

@@ -107,17 +107,3 @@ class InfrastructureDefinition[ConfigT](BaseModel):
             str: A normalised resource name suitable for use in Google Cloud API calls.
         """
         return resource_name(self.name)
-
-
-class InfrastructurePointer(BaseModel):
-    """Lightweight reference from a pipeline step to an infrastructure definition.
-
-    At runtime, the :attr:`type` field is used to select the appropriate
-    registry, and :attr:`pointer` is used to look up the specific definition
-    within that registry.
-    """
-
-    type: str
-    """Infrastructure type identifier that determines which registry to search (e.g. ``"GOOGLE_BATCH_JOB"``, ``"DATAPROC_CLUSTER"``)."""
-    pointer: str
-    """Name of the infrastructure definition to retrieve from the registry."""

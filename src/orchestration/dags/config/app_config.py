@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 import pyhocon
 import yaml
 from deepdiff.diff import DeepDiff
+from pydantic import BaseModel
 
 from orchestration.utils.path import GCSPath, IOManager
 
@@ -27,11 +28,13 @@ class AppConfig:
         raw_config: str,
         parser: Callable | None,
         template_context: dict[str, str] | None = None,
+        validator: type[BaseModel] | None = None,
     ):
         self.template_context = template_context or {}
         self.parser = parser or (lambda _: {})
         self.raw_config = raw_config
         self.rendered_config: str
+        self.validator = validator
         self.config: dict[str, Any]
         self.logger = logging.getLogger(__name__)
         self.is_rendered = False
@@ -50,12 +53,21 @@ class AppConfig:
             self.config = self.parser(self.rendered_config)
             self.is_parsed = True
 
+    def _validate(self) -> None:
+        if self.validator is None:
+            self.logger.debug("no validator provided, skipping validation")
+            return
+        if issubclass(type(self.validator), BaseModel):
+            self.logger.debug(f"validating config with {self.validator}")
+            self.validator.model_validate(self.config)
+
     @classmethod
     def from_file(
         cls,
         file_path: str | Path,
         client: Any = None,
         template_context: dict[str, str] | None = None,
+        model: type[BaseModel] | None = None,
     ) -> AppConfig:
         """Create an AppConfig instance from a file.
 
@@ -64,6 +76,7 @@ class AppConfig:
             client (Any): Optional client to use for file access. Defaults to None.
             template_context (dict[str, str], optional): Template context to use
                 in rendering. Optional.
+            model (type[BaseModel], optional): Pydantic model to validate the configuration against. Optional.
 
         Returns:
             AppConfig: An instance of AppConfig.
@@ -76,9 +89,10 @@ class AppConfig:
         conf = m.load_str()
         parser = _parsers.get(file_path.split(".")[-1])
 
-        c = cls(raw_config=conf, parser=parser, template_context=template_context)
+        c = cls(raw_config=conf, parser=parser, template_context=template_context, validator=model)
         c._render()
         c._parse()
+        c._validate()
         return c
 
     def overwrite(self, file_path: str | Path) -> AppConfig:
@@ -102,7 +116,7 @@ class AppConfig:
         # Ensure both configs are rendered and parsed before attempting to merge.
         if not Path(file_path).exists():
             return self
-        other = AppConfig.from_file(file_path, template_context=self.template_context)
+        other = AppConfig.from_file(file_path, model=self.validator, template_context=self.template_context)
 
         if not self.is_rendered:
             self._render()
@@ -173,6 +187,8 @@ class AppConfigMerger:
         self.logger = logging.getLogger(__name__)
         self.parser = base_config.parser
         self.original_config = copy.deepcopy(base_config.config)
+        self._check_validators(base_config, override_config)
+        self.validator = base_config.validator
         self.base_config = base_config.config.get("steps", {})
         self.config_override = override_config.config.get("steps", {})
         if not self.config_override:
@@ -275,7 +291,18 @@ class AppConfigMerger:
 
         self.logger.info("Reconstructing top level fields of the original AppConfig.")
         raw_config = yaml.dump(self.original_config)
-        ac = AppConfig(raw_config=raw_config, parser=self.parser)
+        ac = AppConfig(raw_config=raw_config, parser=self.parser, validator=self.validator)
         ac._render()
         ac._parse()
+        ac._validate()
         return ac
+
+    @staticmethod
+    def _check_validators(base_config: AppConfig, override_config: AppConfig) -> None:
+        """Check that both base and override configurations have the same validator, if any."""
+        # Compare both classes, if they are not the same, raise an error. If one of them is None, it's also an error.
+        if base_config.validator != override_config.validator:
+            raise ValueError(
+                f"Both base and override configurations must have the same validator. "
+                f"Got {base_config.validator} and {override_config.validator}."
+            )
