@@ -422,8 +422,8 @@ steps:
       - pts_disease
       - pts_go
       - pts_target
-  # ETL STEPS
-  etl_interaction:
+
+  pts_interaction:
     depends_on:
       - pis_interaction
       - pts_target
@@ -491,7 +491,7 @@ steps:
   gentropy_l2g_training:
     depends_on:
       - pis_l2g
-      - etl_interaction
+      - pts_interaction
       - gentropy_l2g_feature_matrix
   gentropy_l2g_prediction:
     depends_on:
