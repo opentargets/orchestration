@@ -64,6 +64,20 @@ steps:
       source: input/expression/map_with_efos.json
       destination: intermediate/expression/tissue-translation-map.parquet
       transformer: expression_tissue
+
+    - name: pyspark expression
+      requires:
+        - transform expression tissue
+        - gzip normal tissue
+      pyspark: expression
+      source:
+        rna: input/expression/baseline_expression_counts.tsv
+        binned: input/expression/baseline_expression_binned.tsv
+        zscore: input/expression/baseline_expression_zscore_binned.tsv
+        exprhierarchy: input/expression/expression_hierarchy_curation.tsv
+        efomap: intermediate/expression/tissue-translation-map.parquet
+        tissues: intermediate/expression/normal_tissue.tsv.gz
+      destination: output/expression
   ##################################################################################################
 
   #: MOUSE_PHENOTYPES STEP :########################################################################

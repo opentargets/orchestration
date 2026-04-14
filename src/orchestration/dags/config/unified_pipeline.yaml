@@ -405,10 +405,6 @@ steps:
   #   depends_on:
   #     - pts_association
   # ETL STEPS
-  etl_expression:
-    num_partitions: 4
-    depends_on:
-      - pts_expression
   etl_otar:
     ppp_only: true
     depends_on:
