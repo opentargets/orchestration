@@ -158,8 +158,8 @@ steps:
       transformer: so
   ##################################################################################################
 
-  #: TARGET STEP :##################################################################################
-  target:
+  #: PRE_TARGET STEP :##############################################################################
+  pre_target:
     - name: unzip subcellular location
       source: input/target/hpa/subcellular_location.tsv.zip
       destination: intermediate/target/hpa/subcellular_location.tsv
@@ -206,6 +206,48 @@ steps:
           source: ${uri}
           destination: intermediate/target/homologue/gene_dictionary/${match_path}/${match_stem}.parquet
           transformer: homology
+
+    - name: transform uniprot
+      transformer: uniprot
+      source: input/target/uniprot/uniprot.txt.gz
+      destination: intermediate/target/uniprot/uniprot.parquet
+  ##################################################################################################
+
+  #: TARGET STEP (pyspark) :#######################################################################
+  target:
+    - name: pyspark target
+      pyspark: target
+      source:
+        diseases: output/disease
+        ensembl: intermediate/target/ensembl/homo_sapiens.parquet
+        gene_code: input/target/gencode/gencode.gff3.gz
+        genetic_constraints: input/target/gnomad/gnomad_constraint_metrics.tsv
+        gene_ontology_human: input/target/go/goa_human.gaf.gz
+        gene_ontology_rna: input/target/go/goa_human_rna.gaf.gz
+        gene_ontology_rna_lookup: input/target/go/ensembl.tsv
+        gene_ontology_eco_lookup: input/target/go/goa_human_eco.gpa.gz
+        hallmarks: input/target/hallmarks/cosmic-hallmarks.tsv.gz
+        hgnc: input/target/genenames/hgnc_complete_set.json
+        homology_dictionary: input/target/homologue/species_EnsemblVertebrates.txt
+        homology_coding_proteins: input/target/homologue/homologies/*.tsv.gz
+        homology_gene_dictionary: intermediate/target/homologue/gene_dictionary/*.parquet
+        hpa: intermediate/target/hpa/subcellular_location.tsv.gz
+        hpa_sl: intermediate/target/hpa/subcellular_locations_ssl.parquet
+        ncbi: input/target/ncbi/Homo_sapiens.gene_info.gz
+        project_scores_ids: intermediate/target/project-scores/gene_identifiers_latest.parquet
+        project_scores_essentiality_matrix: intermediate/target/project-scores/04_binaryDepScores.parquet
+        reactome_etl: output/reactome
+        reactome_pathways: input/target/reactome/Ensembl2Reactome.txt
+        safety_evidence: intermediate/target/safety.parquet
+        tep: input/target/tep/tep.json.gz
+        tractability: input/target/tractability/tractability.tsv
+        uniprot: intermediate/target/uniprot/uniprot.parquet
+        chembl: input/target/chembl/chembl_target.jsonl
+        chemical_probes: intermediate/chemical_probes_evidence.parquet
+        gene_essentiality: intermediate/target/gene-essentiality/essentiality.parquet
+      destination:
+        target: output/target
+        gene_essentiality: output/target_essentiality
   ##################################################################################################
 
   #: TARGET_SAFETY STEP :############### - part of target, pyspark tasks must run standalone for now
