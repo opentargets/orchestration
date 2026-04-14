@@ -442,7 +442,8 @@ steps:
       - pts_drug_molecule
       - pts_target
       - pts_disease
-  etl_search_ebi:
+
+  pts_search_ebi:
     depends_on:
       - pts_association
 
