@@ -38,6 +38,16 @@ steps:
       destination: output/go/go.parquet
   ##################################################################################################
 
+  #: REACTOME STEP :################################################################################
+  reactome:
+    - name: pyspark reactome
+      pyspark: reactome
+      source:
+        pathways: input/reactome/ReactomePathways.txt
+        relations: input/reactome/ReactomePathwaysRelation.txt
+      destination: output/reactome
+  ##################################################################################################
+
   #: EXPRESSION STEP :##############################################################################
   expression:
     - name: unzip normal tissue

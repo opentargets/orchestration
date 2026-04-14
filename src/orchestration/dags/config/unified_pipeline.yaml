@@ -95,6 +95,9 @@ steps:
   pis_target:
   pis_target_prioritisation:
   # PTS STEPS
+  pts_reactome:
+    depends_on:
+      - pis_reactome
   pts_go:
     depends_on:
       - pis_go
@@ -406,10 +409,6 @@ steps:
     num_partitions: 4
     depends_on:
       - pts_expression
-  etl_reactome:
-    num_partitions: 1
-    depends_on:
-      - pis_reactome
   etl_otar:
     ppp_only: true
     depends_on:
@@ -420,7 +419,7 @@ steps:
     depends_on:
       - pts_disease
       - pts_target
-      - etl_reactome
+      - pts_reactome
       - pts_target_safety
       - pts_target_gene_essentiality
   etl_search_facet:
