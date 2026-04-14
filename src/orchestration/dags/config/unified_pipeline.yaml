@@ -404,7 +404,6 @@ steps:
   # pts_release_metrics:
   #   depends_on:
   #     - pts_association
-  # ETL STEPS
   pts_otar:
     ppp_only: true
     depends_on:
@@ -418,11 +417,12 @@ steps:
       - pts_target_safety
       - pts_target_gene_essentiality
       - pts_disease
-  etl_search_facet:
+  pts_search_facet:
     depends_on:
       - pts_disease
       - pts_go
       - pts_target
+  # ETL STEPS
   etl_interaction:
     depends_on:
       - pis_interaction
