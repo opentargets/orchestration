@@ -1657,6 +1657,25 @@ steps:
         diseases: view/search_facet_disease
   ##################################################################################################
 
+  #: INTERACTION STEP :############################################################################
+  interaction:
+    - name: pyspark interaction
+      pyspark: interaction
+      source:
+        targets: output/target
+        rnacentral: input/interaction/rna_central_ensembl.tsv
+        humanmapping: input/interaction/HUMAN_9606_idmapping.dat.gz
+        ensproteins: input/interaction/Homo_sapiens.GRCh38.chr.gtf.gz
+        intact: input/interaction/intact-interactors.json
+        strings: input/interaction/string-interactions.txt.gz
+      destination:
+        interactions: output/interaction
+        interactions_evidence: output/interaction_evidence
+        interactions_unmatched: excluded/interaction
+      settings:
+        scorethreshold: 0
+  ##################################################################################################
+
   #: RELEASE METRICS STEP :##########################################################################
   release_metrics:
     - name: transform release_metrics
