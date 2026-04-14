@@ -111,6 +111,9 @@ steps:
   pts_expression:
     depends_on:
       - pis_expression
+  pts_go:
+    depends_on:
+      - pis_go
   pts_mouse_phenotype:
     depends_on:
       - pts_target
@@ -394,22 +397,27 @@ steps:
       - pts_evidence_postprocess_ot_crispr
       - pts_evidence_postprocess_encore
       - pts_evidence_postprocess_validation_lab
+
   pts_association_timeseries_view:
     ppp_only: true
     depends_on:
       - pts_association
+
   pts_association_otf:
     ppp_only: false
     depends_on:
       - pts_association
+
   # pts_release_metrics:
   #   depends_on:
   #     - pts_association
+
   pts_otar:
     ppp_only: true
     depends_on:
       - pis_otar
       - pts_disease
+
   pts_target:
     num_partitions: 10
     depends_on:
@@ -418,6 +426,7 @@ steps:
       - pts_target_safety
       - pts_target_gene_essentiality
       - pts_disease
+
   pts_search_facet:
     depends_on:
       - pts_disease
