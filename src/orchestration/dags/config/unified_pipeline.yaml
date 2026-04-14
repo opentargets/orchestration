@@ -408,6 +408,7 @@ steps:
   pts_otar:
     ppp_only: true
     depends_on:
+      - pis_otar
       - pts_disease
   etl_target:
     num_partitions: 10
