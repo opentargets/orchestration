@@ -91,6 +91,14 @@ steps:
       destination: output/expression
   ##################################################################################################
 
+  #: GO STEP :######################################################################################
+  go:
+    - name: transform go
+      source: input/go/go.obo
+      destination: output/go/go.parquet
+      transformer: go
+  ##################################################################################################
+
   #: MOUSE_PHENOTYPES STEP :########################################################################
   mouse_phenotype:
     - name: pyspark generate from IMPC and validate with target
