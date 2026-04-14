@@ -507,7 +507,7 @@ steps:
         chembl_molecule: input/drug/chembl_molecule.jsonl
         drugbank: input/drug/drugbank.csv.gz
       destination: intermediate/chembl_molecule
-  ##################################################################################################
+  #################################################################################################
 
   #: DRUG_MOLECULE STEP :##########################################################################
   drug_molecule:
@@ -527,7 +527,7 @@ steps:
           - PHASE_IV_NOT_APPROVED
           - UNVALIDATED_INDICATION
           - INDIRECT_PRIMARY_PURPOSE
-  ##################################################################################################
+  ################################################################################################
 
   #: CLINICAL_REPORT STEP :#######################################################################
   clinical_report:
@@ -556,7 +556,7 @@ steps:
       settings:
         ner_batch_size: 256
       pyspark: clinical_report
-  ##################################################################################################
+  #################################################################################################
 
   #: CLINICAL_INDICATION STEP :####################################################################
   clinical_indication:
@@ -571,7 +571,7 @@ steps:
           - PHASE_IV_NOT_APPROVED
           - UNVALIDATED_INDICATION
           - INDIRECT_PRIMARY_PURPOSE
-  ##################################################################################################
+  ################################################################################################
 
   #: CLINICAL_TARGET STEP :#######################################################################
   clinical_target:
@@ -607,7 +607,7 @@ steps:
         spark.driver.memory: 16g
   ##################################################################################################
 
-  #: ASSOCIATION STEP :##############################################################################
+  #: ASSOCIATION STEP :#############################################################################
   association:
     - name: pyspark association
       pyspark: association
@@ -1642,7 +1642,7 @@ steps:
       destination: view/association_timeseries
       properties:
         spark.driver.memory: 12g
-  ##################################################################################################
+  #################################################################################################
 
   #: SEARCH FACET STEP :###########################################################################
   search_facet:
@@ -1655,7 +1655,7 @@ steps:
       destination:
         targets: view/search_facet_target
         diseases: view/search_facet_disease
-  ##################################################################################################
+  #################################################################################################
 
   #: INTERACTION STEP :############################################################################
   interaction:
@@ -1676,7 +1676,7 @@ steps:
         scorethreshold: 0
   ##################################################################################################
 
-  #: RELEASE METRICS STEP :##########################################################################
+  #: RELEASE METRICS STEP :#########################################################################
   release_metrics:
     - name: transform release_metrics
       transformer: release_metrics
@@ -1703,3 +1703,27 @@ steps:
         hf_repo_id: opentargets/ot-release-metrics
         hf_data_dir: metrics
   ##################################################################################################
+
+  #: SEARCH STEP :##################################################################################
+  search:
+    - name: pyspark search
+      pyspark: search
+      source:
+        association: output/association_overall_indirect
+        drug: output/drug_molecule
+        evidence: output/evidence_*
+        indication: output/clinical_indication
+        mechanism: output/drug_mechanism_of_action
+        target: output/target
+        credible_sets: output/credible_set
+        disease: output/disease
+        disease_hpo: output/disease_phenotype
+        hpo: output/disease_hpo
+        studies: output/study
+        variants: output/variant
+      destination:
+        diseases: view/search_disease
+        targets: view/search_target
+        drugs: view/search_drug
+        variants: view/search_variant
+        studies: view/search_study

@@ -435,10 +435,13 @@ steps:
       - pis_literature
       - pts_drug_molecule
 
-  etl_search:
+  pts_search:
     depends_on:
       - pts_association
       - gentropy_variant
+      - pts_drug_molecule
+      - pts_target
+      - pts_disease
   etl_search_ebi:
     depends_on:
       - pts_association
