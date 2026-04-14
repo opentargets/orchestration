@@ -98,6 +98,9 @@ steps:
   pts_expression:
     depends_on:
       - pis_expression
+  pts_go:
+    depends_on:
+      - pis_go
   pts_mouse_phenotype:
     depends_on:
       - etl_target
@@ -314,10 +317,6 @@ steps:
     num_partitions: 4
     depends_on:
       - pts_expression
-  etl_go:
-    num_partitions: 1
-    depends_on:
-      - pis_go
   etl_reactome:
     num_partitions: 1
     depends_on:
@@ -344,7 +343,7 @@ steps:
   etl_search_facet:
     depends_on:
       - pts_disease
-      - etl_go
+      - pts_go
       - etl_target
   etl_interaction:
     depends_on:
