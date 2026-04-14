@@ -46,6 +46,17 @@ steps:
         pathways: input/reactome/ReactomePathways.txt
         relations: input/reactome/ReactomePathwaysRelation.txt
       destination: output/reactome
+  #: OTAR STEP :####################################################################################
+
+  ##################################################################################################
+  otar:
+    - name: pyspark otar
+      pyspark: otar
+      source:
+        diseases: output/disease
+        otar_meta: input/otar/otar_meta.csv
+        otar_project_to_efo: input/otar/otar_project_to_efo.csv
+      destination: output/otar
   ##################################################################################################
 
   #: EXPRESSION STEP :##############################################################################
