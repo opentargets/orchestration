@@ -127,6 +127,7 @@ steps:
   pts_openfda:
     depends_on:
       - pis_openfda
+      - pts_drug_molecule
   pts_so:
     depends_on:
       - pis_so
@@ -427,10 +428,7 @@ steps:
     depends_on:
       - pis_interaction
       - pts_target
-  etl_openfda:
-    depends_on:
-      - pts_openfda
-      - pts_drug_molecule
+
   etl_literature:
     num_partitions: 1000
     depends_on:
