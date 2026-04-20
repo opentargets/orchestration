@@ -118,6 +118,21 @@ clusters:
       - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'
     idle_delete_ttl: 1800
 
+  pts_openfda:
+    image_version: '2.2'
+    num_masters: 1
+    num_workers: 2
+    autoscaling_policy: otg-etl-25-secondary
+    worker_machine_type: n1-standard-8
+    master_disk_size: 512
+    worker_disk_size: 128
+    idle_delete_ttl: 3600
+    internal_ip_only: false
+    metadata:
+      PTS_REF: 'v{{pts_version}}'
+    init_actions_uris:
+      - 'gs://opentargets-pipelines/up/pts/install_dependencies_on_cluster.sh'
+
   pts_association:
     image_version: '2.2'
     num_masters: 1
