@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import TYPE_CHECKING, NamedTuple
 
+from airflow.exceptions import AirflowException
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.providers.google.cloud.operators.dataproc import (
     ClusterGenerator,
@@ -19,11 +20,11 @@ from airflow.providers.google.cloud.operators.dataproc import (
 )
 from airflow.utils.context import Context
 from google.api_core.exceptions import NotFound as GCPNotFound
-from google.cloud.dataproc_v1 import ClusterConfig, JobReference
+from google.cloud.dataproc_v1 import JobReference
 from google.cloud.dataproc_v1.types import DiskConfig, NodeInitializationAction
 from google.cloud.dataproc_v1.types.jobs import Job, JobPlacement, PySparkJob, SparkJob
 from pydantic import BaseModel, model_validator
-from airflow.exceptions import AirflowException
+
 from orchestration.utils import convert_params_to_hydra_positional_arg, random_id, resource_name
 from orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_REGION, GCP_SERVICE_ACCOUNT, GCP_ZONE
 from orchestration.utils.labels import Labels
