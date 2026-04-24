@@ -10,7 +10,7 @@ clusters:
     internal_ip_only: false
     metadata:
       PTS_REF: 'v{{pts_version}}'
-      
+
     properties:
       # Configuration optimized for single node workloads.
       # These yarn settings are set to increase the max allocations per executor for yarn
