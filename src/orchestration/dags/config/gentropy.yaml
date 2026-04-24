@@ -210,6 +210,8 @@ steps:
       step.gold_standard_curation_path: '{{release_uri}}/input/l2g/gold_standard.json'
       # OUTPUTS
       step.model_path: '{{release_uri}}/etc/model/locus_to_gene_model/classifier.skops'
+      step.hf_credentials_path: "/var/run/secrets/hfhub-key"
+      step.wandb_credentials_path: "/var/run/secrets/wandb-key"
 
   l2g_prediction:
     cluster: false
@@ -246,6 +248,8 @@ steps:
           instance:
             machine_type: n1-standard-2
             provisioning_model: STANDARD
+        secret_map:
+          HF_TOKEN: hfhub-key
         logs: {}
 
   l2g_evidence:

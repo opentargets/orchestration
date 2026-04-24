@@ -140,6 +140,7 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
             options=HarmonisationManifestGeneratorOptions(**specs.generator_options),
         )
 
+
     def generate_batch_index(self) -> BatchIndex:
         """Generate harmonisation manifest."""
         env_registry = self._get_manifest_data()._generate_manifest()._dump_manifest()._build_environment_registry()
