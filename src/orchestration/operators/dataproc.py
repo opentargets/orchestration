@@ -22,8 +22,8 @@ from google.api_core.exceptions import NotFound as GCPNotFound
 from google.cloud.dataproc_v1 import ClusterConfig, JobReference
 from google.cloud.dataproc_v1.types import DiskConfig, NodeInitializationAction
 from google.cloud.dataproc_v1.types.jobs import Job, JobPlacement, PySparkJob, SparkJob
-from pydantic import BaseModel, ValidationError, model_validator
-
+from pydantic import BaseModel, model_validator
+from airflow.exceptions import AirflowException
 from orchestration.utils import convert_params_to_hydra_positional_arg, random_id, resource_name
 from orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_REGION, GCP_SERVICE_ACCOUNT, GCP_ZONE
 from orchestration.utils.labels import Labels
@@ -167,7 +167,7 @@ class CustomClusterConfig(BaseModel):
     """The scopes to use for the cluster."""
 
     secret_map: dict[str, str] | None = None
-    """The dict of secrets where the `value` is the `secret name` from GoogleSecretManager
+    """The dict of secrets where the `value` is the `secret id` from GoogleSecretManager
          and the `key` is the environment variable name that the value of the secret
          will be stored in on the cluster. By default the latest version of the secret will be used."""
     secret_init_action_uri: str | None = None
@@ -177,7 +177,7 @@ class CustomClusterConfig(BaseModel):
     def validate_secret_config(self) -> Self:
         """If secret_map is set and not empty, secret_init_action_uri must be set."""
         if self.secret_map and not self.secret_init_action_uri:
-            raise ValidationError("secret_init_action_uri must be set if secret_map is set")
+            raise ValueError("secret_init_action_uri must be set if secret_map is set")
         return self
 
     def model_post_init(self, _: Any) -> None:
@@ -201,7 +201,7 @@ class CustomClusterConfig(BaseModel):
         disk_config.boot_disk_type = self.secondary_worker_disk_type or disk_config.boot_disk_type
         return disk_config
 
-    def create_cluster(self) -> ClusterConfig:
+    def create_cluster(self) -> dict[str, Any]:
         """Create a Dataproc cluster from the configuration.
 
         Returns:
@@ -335,8 +335,7 @@ class CreateClusterOperator(DataprocCreateClusterOperator):
         if not self._cluster_config.secret_map:
             return None
         if not self._cluster_config.secret_init_action_uri:
-            self.log.error("secret_init_action_uri must be set if secret_map is set")
-            return None
+            raise AirflowException("secret_init_action_uri must be set if secret_map is set")
         secrets = Secrets(mapping={
             env_var: Secret(secret_id=secret_name, project_id=self.project_id) for env_var, secret_name in self._cluster_config.secret_map.items()
         })
