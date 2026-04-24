@@ -167,7 +167,7 @@ class CustomClusterConfig(BaseModel):
     """The scopes to use for the cluster."""
 
     secret_map: dict[str, str] | None = None
-    """The dict of secrets where the `value` is the `secret name` from GoogleSecretManager 
+    """The dict of secrets where the `value` is the `secret name` from GoogleSecretManager
          and the `key` is the environment variable name that the value of the secret
          will be stored in on the cluster. By default the latest version of the secret will be used."""
     secret_init_action_uri: str | None = None

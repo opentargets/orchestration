@@ -230,7 +230,7 @@ class TestSecretInitActionScript:
 class TestSecretInitActionPushToGcs:
     def test_push_calls_upload_with_script(self, init_action: SecretInitAction) -> None:
         mock_hook = MagicMock()
-        result = init_action.push_to_gcs(gcs_hook=mock_hook)
+        init_action.push_to_gcs(gcs_hook=mock_hook)
 
         mock_hook.upload.assert_called_once()
         call_kwargs = mock_hook.upload.call_args.kwargs

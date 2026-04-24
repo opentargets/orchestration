@@ -92,7 +92,7 @@ class Secret(BaseModel):
     @classmethod
     def _validate_project_id(cls, v: str) -> str:
         """Sanitize the project_id to ensure it conforms to GCP Secret Manager requirements.
-        
+
         See: [GCP Project ID requirements](https://docs.cloud.google.com/resource-manager/docs/creating-managing-projects#before_you_begin)
         """
         if not re.fullmatch(r"[a-z0-9-]{6,30}", v):
@@ -132,10 +132,10 @@ class Secret(BaseModel):
 
 class Secrets(BaseModel):
     """Secrets management for GCP Secret Manager.
-    
-    This class represents a collection of secrets that can be injected as environment variables to the batch tasks. 
-    The mapping between environment variable names and secrets is defined in the `mapping` attribute. 
-    
+
+    This class represents a collection of secrets that can be injected as environment variables to the batch tasks.
+    The mapping between environment variable names and secrets is defined in the `mapping` attribute.
+
     The `to_env` method can be used to fetch the secret values and convert them to a format suitable for environment variables.
 
     Examples:
@@ -193,6 +193,7 @@ class SecretInitAction(BaseModel):
 
     def _to_script_str(self) -> str:
         """Transform the secrets into a init action script.
+
         The script will inject secrets using secret manager into the `var/run/secrets/` directory.
         """
         fetch_secret_cmds = [
@@ -222,9 +223,9 @@ class SecretInitAction(BaseModel):
 
         Args:
             gcs_hook (GCSHook): The GCS hook to use for uploading the script.
-        
+
         Note:
-            This method is expected to be called from the  
+            This method is expected to be called from the
             :class:`~airflow.models.baseoperator.BaseOperator` `execute` method
 
         Returns:
