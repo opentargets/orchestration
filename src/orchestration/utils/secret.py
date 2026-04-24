@@ -57,12 +57,12 @@ from __future__ import annotations
 
 import re
 
+from airflow.providers.google.cloud.hooks.gcs import GCSHook
+from google.cloud.dataproc_v1.types import NodeInitializationAction
 from pydantic import BaseModel, field_validator
 
 from orchestration.utils.common import GCP_PROJECT_PLATFORM
-from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from orchestration.utils.path import GCSPath
-from google.cloud.dataproc_v1.types import NodeInitializationAction
 
 
 class Secret(BaseModel):
@@ -128,7 +128,7 @@ class Secret(BaseModel):
     def name(self) -> str:
         """Construct the full secret name in the format required by GCP Secret Manager API."""
         return f"projects/{self.project_id}/secrets/{self.secret_id}/versions/{self.version_id}"
-    
+
 
 class Secrets(BaseModel):
     """Secrets management for GCP Secret Manager.
@@ -172,7 +172,7 @@ class Secrets(BaseModel):
 
 class SecretInitAction(BaseModel):
     """Represents a secret that needs to be injected as a file to the batch task using init actions."""
-    
+
     secrets: Secrets
     """Secrets to be injected as environment variables to the batch tasks."""
     init_action_uri: str
@@ -188,9 +188,8 @@ class SecretInitAction(BaseModel):
         Returns:
             str: Format string with placeholders for env_var, version_id, secret_id, project_id and secret_file_path.
         """
-        #NOTE: DO NOT TOUCH! THIS STRING IS CRAFTED AS A PART OF THE INIT ACTION SCRIPT THAT FETCHES THE SECRETS FROM GCP.
+        # NOTE: DO NOT TOUCH! THIS STRING IS CRAFTED AS A PART OF THE INIT ACTION SCRIPT THAT FETCHES THE SECRETS FROM GCP.
         return 'echo "{{\\"{env_var}\\": \\"$(gcloud secrets versions access {version_id} --secret={secret_id} --project={project_id})\\"}}"  > /var/run/secrets/{secret_id}'
-
 
     def _to_script_str(self) -> str:
         """Transform the secrets into a init action script.
@@ -217,7 +216,7 @@ class SecretInitAction(BaseModel):
             "chmod 440 /var/run/secrets/*",
         ]
         return "\n".join(lines)
-    
+
     def push_to_gcs(self, gcs_hook: GCSHook) -> NodeInitializationAction:
         """Push the init action script to GCS.
 
@@ -240,9 +239,3 @@ class SecretInitAction(BaseModel):
         return NodeInitializationAction(
             executable_file=self.init_action_uri,
         )
-        
-
-
-    
-
-

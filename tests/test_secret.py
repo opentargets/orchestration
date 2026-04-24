@@ -9,6 +9,7 @@ from pydantic import ValidationError
 
 from orchestration.utils.secret import Secret, SecretInitAction, Secrets
 
+
 class TestSecretConstruction:
     def test_defaults(self) -> None:
         s = Secret(secret_id="my-secret")
@@ -53,10 +54,10 @@ class TestSecretFromSecretName:
 class TestSecretIdValidation:
     @pytest.mark.parametrize(
         "secret_id",
-        [pytest.param("my-secret", id="hyphen"), 
-         pytest.param("MY_SECRET", id="uppercase-underscore"), 
-         pytest.param("abc123", id="alphanumeric"), 
-         pytest.param("a" * 255, id="max-length"), 
+        [pytest.param("my-secret", id="hyphen"),
+         pytest.param("MY_SECRET", id="uppercase-underscore"),
+         pytest.param("abc123", id="alphanumeric"),
+         pytest.param("a" * 255, id="max-length"),
          pytest.param("a-B_1", id="mixed")],
     )
     def test_valid_secret_ids(self, secret_id: str) -> None:
@@ -101,6 +102,7 @@ class TestProjectIdValidation:
         with pytest.raises(ValidationError):
             Secret(secret_id="my-secret", project_id=project_id)
 
+
 class TestVersionIdValidation:
     @pytest.mark.parametrize(
         "version_id",
@@ -126,6 +128,7 @@ class TestVersionIdValidation:
     def test_invalid_version_ids_raise(self, version_id: str) -> None:
         with pytest.raises(ValidationError):
             Secret(secret_id="my-secret", project_id="my-proj", version_id=version_id)
+
 
 class TestSecretsEnvVarValidation:
     def _secret(self) -> Secret:
@@ -168,6 +171,7 @@ class TestSecretsEnvVarValidation:
             }
         )
         assert len(secrets.mapping) == 2
+
 
 @pytest.fixture
 def init_action() -> SecretInitAction:

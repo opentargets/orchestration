@@ -7,28 +7,28 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from datetime import datetime
 from typing import TYPE_CHECKING, NamedTuple
+
+from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.providers.google.cloud.operators.dataproc import (
+    ClusterGenerator,
     DataprocCreateClusterOperator,
     DataprocDeleteClusterOperator,
     DataprocSubmitJobOperator,
     InstanceFlexibilityPolicy,
     PreemptibilityType,
-    ClusterGenerator,
 )
-from google.cloud.dataproc_v1.types import NodeInitializationAction
-
 from airflow.utils.context import Context
 from google.api_core.exceptions import NotFound as GCPNotFound
 from google.cloud.dataproc_v1 import ClusterConfig, JobReference
-from google.cloud.dataproc_v1.types import DiskConfig
+from google.cloud.dataproc_v1.types import DiskConfig, NodeInitializationAction
 from google.cloud.dataproc_v1.types.jobs import Job, JobPlacement, PySparkJob, SparkJob
-from pydantic import BaseModel, model_validator, ValidationError
+from pydantic import BaseModel, ValidationError, model_validator
 
 from orchestration.utils import convert_params_to_hydra_positional_arg, random_id, resource_name
 from orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_REGION, GCP_SERVICE_ACCOUNT, GCP_ZONE
 from orchestration.utils.labels import Labels
-from orchestration.utils.secret import Secrets, Secret, SecretInitAction
-from airflow.providers.google.cloud.hooks.gcs import GCSHook
+from orchestration.utils.secret import Secret, SecretInitAction, Secrets
+
 if TYPE_CHECKING:
     from typing import Any, Self
 
@@ -173,7 +173,6 @@ class CustomClusterConfig(BaseModel):
     secret_init_action_uri: str | None = None
     """The URI of the init action script that will handle the secret injection. Default to None."""
 
-
     @model_validator(mode="after")
     def validate_secret_config(self) -> Self:
         """If secret_map is set and not empty, secret_init_action_uri must be set."""
@@ -310,10 +309,10 @@ class CreateClusterOperator(DataprocCreateClusterOperator):
             cluster_name=cluster_name,
             region=self.region,
             project_id=self.project_id,
-            # Apparently the actual `self.cluster_config` is 
-            # `dataproc_v1.types.cluster.ClusterConfig` and not `dataproc_v1.types.cluster.Cluster`, 
+            # Apparently the actual `self.cluster_config` is
+            # `dataproc_v1.types.cluster.ClusterConfig` and not `dataproc_v1.types.cluster.Cluster`,
             # but passing both types seem to work fine anyway???
-            cluster_config=self.cluster_config, # type: ignore
+            cluster_config=self.cluster_config,  # type: ignore
             labels=dict(self.labels),
             use_if_exists=True,
             gcp_conn_id=self.gcp_conn_id,
@@ -354,7 +353,8 @@ class CreateClusterOperator(DataprocCreateClusterOperator):
             return
         self.log.info(f"Patching cluster init actions with {init_actions}")
         self.log.debug(f"Current cluster config: {self.cluster_config}")
-        self.cluster_config["initialization_actions"].extend(init_actions) # type: ignore
+        self.cluster_config["initialization_actions"].extend(init_actions)  # type: ignore
+
 
 class SubmitJobOperator(DataprocSubmitJobOperator):
     """Submit a job to a cluster.
@@ -421,7 +421,6 @@ class SubmitJobOperator(DataprocSubmitJobOperator):
             impersonation_chain=self.impersonation_chain,
             **kwargs,
         )
-        
 
     def execute(self, context: Context) -> str:
         """Execute the operator."""
@@ -435,6 +434,7 @@ class SubmitJobOperator(DataprocSubmitJobOperator):
             labels=self.labels,
         )
         return super().execute(context)
+
 
 class DeleteClusterOperator(DataprocDeleteClusterOperator):
     def __init__(
