@@ -11,6 +11,7 @@ from orchestration.operators.batch.batch_index import BatchCommands, BatchEnviro
 from orchestration.operators.batch.manifest_generators import ProtoManifestGenerator
 from orchestration.operators.batch.manifest_generators.harmonisation import HarmonisationManifestGenerator
 from orchestration.operators.batch.manifest_generators.l2g_prediction import GentropyStepGoogleBatchManifestGenerator
+from orchestration.operators.batch.manifest_generators.vep import VepManifestGenerator
 from orchestration.types import GoogleBatchIndexSpecs, GoogleBatchSpecs
 from orchestration.utils.batch import create_batch_job, create_task_spec
 from orchestration.utils.common import GCP_PROJECT_GENETICS, GCP_REGION
@@ -28,6 +29,7 @@ class BatchIndexOperator(BaseOperator):
     manifest_generator_registry: dict[str, type[ProtoManifestGenerator]] = {
         "gwas_catalog_harmonisation": HarmonisationManifestGenerator,
         "gentropy-step": GentropyStepGoogleBatchManifestGenerator,
+        "vep": VepManifestGenerator,
     }
 
     def __init__(
