@@ -145,6 +145,9 @@ clusters:
     internal_ip_only: false
     metadata:
       PTS_REF: 'v{{pts_version}}'
+    properties:
+      'spark:spark.sql.shuffle.partitions': '2000'
+      'spark:spark.sql.adaptive.advisoryPartitionSizeInBytes': '64MB'
     init_actions_uris:
       - 'gs://opentargets-pipelines/up/pts/install_dependencies_on_cluster.sh'
 
