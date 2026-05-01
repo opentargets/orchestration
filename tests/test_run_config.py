@@ -75,31 +75,31 @@ def test_run_name_past_date_rejected() -> None:
 
 def test_release_uri_dev() -> None:
     """release_uri returns the dev bucket path when is_dev=True."""
-    cfg = PipelineRunConfig(run_name="sz/platform-2605-1", is_dev=True)
-    assert cfg.release_uri == "gs://open-targets-pipeline-runs/sz/platform-2605-1"
+    cfg = PipelineRunConfig(run_name=f"sz/platform-{_CURRENT_YYMM}-1", is_dev=True)
+    assert cfg.release_uri == f"gs://open-targets-pipeline-runs/sz/platform-{_CURRENT_YYMM}-1"
 
 
 def test_release_uri_prod() -> None:
     """release_uri returns the release bucket path when is_dev=False."""
-    cfg = PipelineRunConfig(run_name="sz/platform-2605-1", is_dev=False)
-    assert cfg.release_uri == "gs://open-targets-pre-data-releases/platform-2605"
+    cfg = PipelineRunConfig(run_name=f"sz/platform-{_CURRENT_YYMM}-1", is_dev=False)
+    assert cfg.release_uri == f"gs://open-targets-pre-data-releases/platform-{_CURRENT_YYMM}"
 
 
 def test_release_uri_default_is_dev() -> None:
     """release_uri defaults to the dev bucket path."""
-    cfg = PipelineRunConfig(run_name="sz/platform-2605-1")
-    assert cfg.release_uri == "gs://open-targets-pipeline-runs/sz/platform-2605-1"
+    cfg = PipelineRunConfig(run_name=f"sz/platform-{_CURRENT_YYMM}-1")
+    assert cfg.release_uri == f"gs://open-targets-pipeline-runs/sz/platform-{_CURRENT_YYMM}-1"
 
 
 # --- release_name ---
 
 def test_release_name_strips_prefix_and_revision() -> None:
     """release_name strips the personal prefix and revision number."""
-    cfg = PipelineRunConfig(run_name="sz/platform-2605-1")
-    assert cfg.release_name == "platform-2605"
+    cfg = PipelineRunConfig(run_name=f"sz/platform-{_CURRENT_YYMM}-1")
+    assert cfg.release_name == f"platform-{_CURRENT_YYMM}"
 
 
 def test_release_name_ppp() -> None:
     """release_name works correctly for ppp flavor."""
-    cfg = PipelineRunConfig(run_name="abc/ppp-2605-3")
-    assert cfg.release_name == "ppp-2605"
+    cfg = PipelineRunConfig(run_name=f"abc/ppp-{_CURRENT_YYMM}-3")
+    assert cfg.release_name == f"ppp-{_CURRENT_YYMM}"
