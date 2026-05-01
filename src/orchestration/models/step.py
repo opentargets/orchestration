@@ -69,12 +69,12 @@ class UnifiedPipelineStep:
     @property
     def config_destination_prefix(self) -> str:
         """Returns the URI prefix where the step config should be uploaded."""
-        return f"{self.config.dev_uri or self.config.release_uri}/etc/config"
+        return f"{self.config.release_uri}/etc/config"
 
     @property
     def bin_destination_prefix(self) -> str:
         """Returns the URI prefix where the step binaries should be uploaded."""
-        return f"{self.config.dev_uri or self.config.release_uri}/etc/bin"
+        return f"{self.config.release_uri}/etc/bin"
 
     @property
     @abstractmethod
