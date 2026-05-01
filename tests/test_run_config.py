@@ -7,15 +7,16 @@ from pydantic import ValidationError
 
 from orchestration.models.run_config import PipelineRunConfig
 
+_CURRENT_YYMM = datetime.now().strftime("%y%m")
 
 # --- valid cases ---
 
 @pytest.mark.parametrize("run_name", [
-    pytest.param("sz/platform-2605-1", id="platform current month"),
-    pytest.param("sz/ppp-2605-1", id="ppp current month"),
-    pytest.param("sz/platform-2606-1", id="future month"),
+    pytest.param(f"sz/platform-{_CURRENT_YYMM}-1", id="platform current month"),
+    pytest.param(f"sz/ppp-{_CURRENT_YYMM}-1", id="ppp current month"),
+    pytest.param("sz/platform-2701-1", id="future month"),
     pytest.param("sz/platform-2612-99", id="high revision"),
-    pytest.param("abc/platform-2605-1", id="three-letter prefix"),
+    pytest.param(f"abc/platform-{_CURRENT_YYMM}-1", id="three-letter prefix"),
 ])
 def test_valid_run_name(run_name: str) -> None:
     cfg = PipelineRunConfig(run_name=run_name)
