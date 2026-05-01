@@ -2,6 +2,45 @@
 
 This document describes the **Unified Pipeline configuration**
 
+## Run version and output location
+
+Every pipeline run is identified by a `run_name` set in `src/orchestration/dags/config/unified_pipeline.yaml`. This value controls where all pipeline outputs are written in Google Cloud Storage.
+
+### `run_name` format
+
+```
+<prefix>/<flavor>-YYMM-N
+```
+
+| Part | Description | Example |
+|------|-------------|---------|
+| `prefix` | Your personal identifier — lowercase letters only | `sz` |
+| `flavor` | `platform` for a public Platform release, `ppp` for a Partner Preview release | `platform` |
+| `YYMM` | Two-digit year + two-digit month of the release. Must be the current month or later — past dates are rejected to prevent overwriting existing releases. | `2605` |
+| `N` | Revision number, starting from 1. Increment if re-running the same release. | `1` |
+
+Valid examples: `sz/platform-2605-1`, `abc/ppp-2606-2`
+
+### `is_dev` flag and `release_uri`
+
+The `is_dev` flag (default: `true`) determines the output bucket:
+
+| `is_dev` | `release_uri` | Use case |
+|----------|---------------|----------|
+| `true` | `gs://open-targets-pipeline-runs/<run_name>` | Development and testing runs — outputs are scoped under your personal prefix |
+| `false` | `gs://open-targets-pre-data-releases/<flavor>-<YYMM>` | Official production releases — personal prefix and revision number are stripped |
+
+For example, with `run_name: sz/platform-2605-1`:
+
+- `is_dev: true` → `gs://open-targets-pipeline-runs/sz/platform-2605-1`
+- `is_dev: false` → `gs://open-targets-pre-data-releases/platform-2605`
+
+The `release_uri` is also passed as a template variable to all stage configs (PIS, PTS, ETL, Gentropy), so all intermediate and final outputs are written under the same root path.
+
+> **Note:** A secondary label `release_name` is derived from `run_name` as `<flavor>-<YYMM>` (e.g. `platform-2605`). It is passed to PTS as `ot_release` and to Gentropy as `l2g_training_version`. This label is the same regardless of `is_dev`.
+
+---
+
 ## Unified Pipeline configuration
 
 The UP (unified pipeline) configuration is defined in the `src/orchestration/dags/config` directory. The configuration is split into 4 main components, that when rendered together, form the complete configuration for the unified pipeline:
