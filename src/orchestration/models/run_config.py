@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from datetime import datetime
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 _RUN_NAME_RE = re.compile(r"^([a-z]+)/(platform|ppp)-(\d{4})-(\d+)$")
 
@@ -24,6 +24,8 @@ class PipelineRunConfig(BaseModel):
 
     Examples: 'sz/platform-2605-1', 'abc/ppp-2606-2'
     """
+
+    model_config = ConfigDict(frozen=True)
 
     run_name: str
     is_dev: bool = True
@@ -46,6 +48,11 @@ class PipelineRunConfig(BaseModel):
                 "Update run_name to the current or a future YYMM to avoid "
                 "overwriting an existing release."
             )
+        mm = int(match.group(3)[2:])
+        if not (1 <= mm <= 12):
+            raise ValueError(
+                f"run_name month '{match.group(3)[2:]}' is not a valid calendar month (01-12)"
+            )
         return v
 
     @property
@@ -67,7 +74,8 @@ class PipelineRunConfig(BaseModel):
         Personal prefix and revision are stripped.
         """
         match = _RUN_NAME_RE.fullmatch(self.run_name)
-        assert match  # already validated
+        if match is None:
+            raise RuntimeError(f"run_name '{self.run_name}' failed internal validation")
         flavor = match.group(2)
         yymm = match.group(3)
         return f"{flavor}-{yymm}"

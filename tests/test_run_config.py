@@ -9,16 +9,28 @@ from orchestration.models.run_config import PipelineRunConfig
 
 _CURRENT_YYMM = datetime.now().strftime("%y%m")
 
+
+def _future_yymm() -> str:
+    now = datetime.now()
+    if now.month == 12:
+        return f"{(now.year + 1) % 100:02d}01"
+    return f"{now.year % 100:02d}{now.month + 1:02d}"
+
+
+_FUTURE_YYMM = _future_yymm()
+
 # --- valid cases ---
+
 
 @pytest.mark.parametrize("run_name", [
     pytest.param(f"sz/platform-{_CURRENT_YYMM}-1", id="platform current month"),
     pytest.param(f"sz/ppp-{_CURRENT_YYMM}-1", id="ppp current month"),
-    pytest.param("sz/platform-2701-1", id="future month"),
-    pytest.param("sz/platform-2612-99", id="high revision"),
-    pytest.param(f"abc/platform-{_CURRENT_YYMM}-1", id="three-letter prefix"),
+    pytest.param(f"sz/platform-{_FUTURE_YYMM}-1", id="future month"),
+    pytest.param(f"sz/platform-{_FUTURE_YYMM}-99", id="high revision"),
+    pytest.param(f"abc/platform-{_FUTURE_YYMM}-1", id="three-letter prefix"),
 ])
 def test_valid_run_name(run_name: str) -> None:
+    """Valid run_name values are accepted by PipelineRunConfig."""
     cfg = PipelineRunConfig(run_name=run_name)
     assert cfg.run_name == run_name
 
@@ -35,8 +47,10 @@ def test_valid_run_name(run_name: str) -> None:
     pytest.param("SZ/platform-2605-1", id="uppercase prefix"),
     pytest.param("s1/platform-2605-1", id="digit in prefix"),
     pytest.param("", id="empty string"),
+    pytest.param("sz/platform-2699-1", id="invalid month 99"),
 ])
 def test_invalid_run_name_format(run_name: str) -> None:
+    """Malformed run_name values raise ValidationError."""
     with pytest.raises(ValidationError, match="run_name"):
         PipelineRunConfig(run_name=run_name)
 
@@ -44,6 +58,7 @@ def test_invalid_run_name_format(run_name: str) -> None:
 # --- date guard ---
 
 def test_run_name_past_date_rejected() -> None:
+    """run_name with a past YYMM date raises ValidationError."""
     current_yymm = int(datetime.now().strftime("%y%m"))
     yy = current_yymm // 100
     mm = current_yymm % 100
@@ -56,25 +71,22 @@ def test_run_name_past_date_rejected() -> None:
         PipelineRunConfig(run_name=run_name)
 
 
-def test_run_name_current_month_accepted() -> None:
-    current_yymm = datetime.now().strftime("%y%m")
-    cfg = PipelineRunConfig(run_name=f"sz/platform-{current_yymm}-1")
-    assert cfg.run_name == f"sz/platform-{current_yymm}-1"
-
-
 # --- release_uri ---
 
 def test_release_uri_dev() -> None:
+    """release_uri returns the dev bucket path when is_dev=True."""
     cfg = PipelineRunConfig(run_name="sz/platform-2605-1", is_dev=True)
     assert cfg.release_uri == "gs://open-targets-pipeline-runs/sz/platform-2605-1"
 
 
 def test_release_uri_prod() -> None:
+    """release_uri returns the release bucket path when is_dev=False."""
     cfg = PipelineRunConfig(run_name="sz/platform-2605-1", is_dev=False)
     assert cfg.release_uri == "gs://open-targets-pre-data-releases/platform-2605"
 
 
 def test_release_uri_default_is_dev() -> None:
+    """release_uri defaults to the dev bucket path."""
     cfg = PipelineRunConfig(run_name="sz/platform-2605-1")
     assert cfg.release_uri == "gs://open-targets-pipeline-runs/sz/platform-2605-1"
 
@@ -82,10 +94,12 @@ def test_release_uri_default_is_dev() -> None:
 # --- release_name ---
 
 def test_release_name_strips_prefix_and_revision() -> None:
+    """release_name strips the personal prefix and revision number."""
     cfg = PipelineRunConfig(run_name="sz/platform-2605-1")
     assert cfg.release_name == "platform-2605"
 
 
 def test_release_name_ppp() -> None:
+    """release_name works correctly for ppp flavor."""
     cfg = PipelineRunConfig(run_name="abc/ppp-2605-3")
     assert cfg.release_name == "ppp-2605"
