@@ -1,12 +1,18 @@
 ---
-release_name: '26.03-ppp'
+# The run name identifies this pipeline run. Format: <prefix>/<flavor>-YYMM-N
+#   prefix  — your initials or personal identifier (lowercase letters only, e.g. 'sz')
+#   flavor  — 'platform' for a public Platform release, 'ppp' for a Partner Preview release
+#   YYMM    — two-digit year + two-digit month of the release (e.g. '2605' for May 2026)
+#             must be the current month or later, to prevent overwriting existing releases
+#   N       — revision number, starting from 1 (increment if re-running the same release)
+#
+# Examples: 'sz/platform-2605-1', 'abc/ppp-2606-2'
+run_name: 'sz/platform-2605-1'
 
-# If `is_dev` is true:
-#   * the bucket used for the run will be `open-targets-pipeline-runs`
-#   * the prefix inside the bucket will be `run_name`
-#         which defaults to a timestamp if not provided.
+# When true (default), outputs are written to gs://open-targets-pipeline-runs/<run_name>.
+# Set to false only for official production releases — outputs go to
+# gs://open-targets-pre-data-releases/<flavor>-YYMM (personal prefix and revision stripped).
 is_dev: true
-run_name: 'sz/26.03-ppp.1'
 
 # Whether this will be a partner preview platform release (PPP)
 is_ppp: true
