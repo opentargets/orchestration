@@ -10,7 +10,7 @@ from orchestration.utils.path import GCSPath, IOManager
 class ManifestArtifactDiffer:
     """Check whether the artifacts in the manifest exist in the release_uri.
 
-    This class fetches the manifest from GCS, using either `dev_uri` or `release_uri`
+    This class fetches the manifest from GCS using `release_uri`
     and then checks the steps' artifacts' destinations to ensure they are present.
 
     Args:
