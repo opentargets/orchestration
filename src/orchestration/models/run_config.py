@@ -7,10 +7,9 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
-_RUN_NAME_RE = re.compile(r"^([a-z]+)/(platform|ppp)-(\d{4})-(\d+)$")
+from orchestration.utils.common import GCS_PIPELINE_RUNS_BUCKET, GCS_PRE_DATA_RELEASES_BUCKET
 
-_DEV_BUCKET = "gs://open-targets-pipeline-runs"
-_RELEASE_BUCKET = "gs://open-targets-pre-data-releases"
+_RUN_NAME_RE = re.compile(r"^([a-z]+)/(platform|ppp)-(\d{4})-(\d+)$")
 
 
 class PipelineRunConfig(BaseModel):
@@ -63,8 +62,8 @@ class PipelineRunConfig(BaseModel):
         release bucket path using only flavor-YYMM (no prefix or revision).
         """
         if self.is_dev:
-            return f"{_DEV_BUCKET}/{self.run_name}"
-        return f"{_RELEASE_BUCKET}/{self.release_name}"
+            return f"{GCS_PIPELINE_RUNS_BUCKET}/{self.run_name}"
+        return f"{GCS_PRE_DATA_RELEASES_BUCKET}/{self.release_name}"
 
     @property
     def release_name(self) -> str:
