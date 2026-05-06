@@ -22,8 +22,8 @@ dataproc:
   # autoscaling_policy: otg-decode-efm
   allow_efm: false
   num_workers: 2 #15
-  worker_machine_type: n2d-standard-8 #n2d-standard-16
-  driver_machine_type: n2d-standard-8 #n2d-standard-16
+  worker_machine_type: n2d-standard-16
+  driver_machine_type: n2d-standard-16
   # secondary_worker_machine_type: n2d-standard-16
   # secondary_worker_disk_size: 150
   # worker_disk_size: 2048
@@ -105,6 +105,10 @@ nodes:
       step.study_locus_output_path: '{data_bucket}/smp/study_locus_window_based_clumped/'
       step.session.write_mode: overwrite
       step.recursive_file_lookup: false
+      step.gwas_significance: 1.8e-9 # See 2023 publication
+      step.distance: 500000
+      step.collect_locus:  false
+      step.collect_locus_distance: 500000
       +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
 
   - id: smp_ldc
@@ -203,6 +207,10 @@ nodes:
       step.study_locus_output_path: '{data_bucket}/raw/study_locus_window_based_clumped/'
       step.session.write_mode: overwrite
       step.recursive_file_lookup: false
+      step.gwas_significance: 1.8e-9 # See 2023 publication
+      step.distance: 500000
+      step.collect_locus:  false
+      step.collect_locus_distance: 500000
       +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
 
   - id: raw_ldc
