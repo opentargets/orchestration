@@ -2,118 +2,156 @@
 
 from __future__ import annotations
 
-from functools import cached_property
+from logging import getLogger
 from pathlib import Path
+from typing import Annotated
 
-from orchestration.operators.batch.manifest_generators import ProtoManifestGenerator
-from orchestration.types import GCSMountObject, GoogleBatchSpecs, ManifestGeneratorSpecs
+from airflow.providers.google.cloud.hooks.gcs import GCSHook
+from pydantic import BaseModel, Field
+
+from orchestration.models.batch import ManifestGeneratorSpec
+from orchestration.models.batch.environment import EnvironmentRegistrySpec, EnvironmentSpec
+from orchestration.models.batch.volume import VolumeRegistrySpec, VolumeSpec
+from orchestration.operators.batch import BatchIndex
+from orchestration.operators.batch.manifest_generators.proto import ProtoManifestGenerator
+from orchestration.utils.common import GCP_PROJECT_PLATFORM
 from orchestration.utils.path import GCSPath
 
+logger = getLogger(__name__)
 
-class VepAnnotationPathManager:
-    """Manager class for setting correct mounting points for VEP google batch tasks."""
 
-    def __init__(
-        self,
-        vcf_input_path: str,
-        vep_output_path: str,
-        vep_cache_path: str,
-        mount_dir_root: str,
-    ):
-        self._mount_dir_root = mount_dir_root
-        self.paths = {
-            "input": GCSPath(vcf_input_path),
-            "output": GCSPath(vep_output_path),
-            "cache": GCSPath(vep_cache_path),
-        }
+class VepVolumeRegistryOptions(BaseModel):
+    """Variant Effect Predictor (VEP) path mount configuration.
 
-    @cached_property
-    def mount_dir_root(self) -> str:
-        """Get the mount directory root."""
-        if not self._mount_dir_root.startswith("/"):
-            raise ValueError("Mount dir has to be an absolute path.")
-        if self._mount_dir_root.endswith("/"):
-            return str(Path(self._mount_dir_root))
-        return self._mount_dir_root
+    This class represents the configuration for mounting the necessary paths
+    for the VEP annotation step running on google batch VMs.
 
-    @cached_property
-    def path_registry(self) -> dict[str, GCSMountObject]:
-        """Get the path registry."""
-        return {
-            key: {
-                # NOTE: remote_path has to start from the bucket_name but without the gs://
-                # see https://cloud.google.com/batch/docs/create-run-job-storage#gcloud_2:~:text=BUCKET_PATH%3A%20the%20path,the%20subdirectory%20subdirectory.
-                "remote_path": f"{value.bucket}/{value.path}",
-                "mount_point": f"{self.mount_dir_root}/{key}",
-            }
-            for key, value in self.paths.items()
-        }
+    Attributes:
+        vcf_input_path (str): GCS path that contains all input VCF files.
+        vep_output_path (str): GCS path where the output of the VEP annotation should be stored.
+        vep_cache_path (str): GCS path to the VEP cache
+        mount_dir_root (str): Mount directory root for Vep google batch tasks. This should be an absolute path. The default value is /mnt/vep
 
-    @cached_property
-    def cache_dir(self) -> str:
-        """Get cache dir."""
-        return self.path_registry["cache"]["mount_point"]
 
-    @cached_property
-    def input_dir(self) -> str:
-        """Get input dir."""
-        return self.path_registry["input"]["mount_point"]
+    The configuration contains a single method `to_path_registry` that converts the **path configuration into a path registry**.
 
-    @cached_property
-    def output_dir(self) -> str:
-        """Get output dir."""
-        return self.path_registry["output"]["mount_point"]
+    The path registry contains 3 keys `input`, `output` and `cache` that correspond to the input, output and cache paths respectively.
+    The value of each key is a dictionary that contains the `remote_path` (GCS path) and the `mount_point` (local path on the google batch VM).
 
-    @cached_property
-    def mount_config(self) -> list[GCSMountObject]:
-        """Return the mount configuration.
+    The mount points are derived from the `mount_dir_root` attribute and the path keys.
+    """
 
-        Returns:
-            list[dict[str, str]]: The mount configuration.
-        """
-        return list(self.path_registry.values())
+    vcf_input_path: Annotated[str, Field(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)*$")]
+    """GCS path that contains all input VCF files."""
+    vep_output_path: Annotated[str, Field(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)*$")]
+    """GCS path where the output of the VEP annotation should be stored."""
+    vep_cache_path: Annotated[str, Field(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)*$")]
+    """GCS path to the VEP cache."""
+    mount_dir_root: Annotated[str, Field(pattern=r"^/mnt(/[a-zA-Z0-9_-]+)*/$")] = "/mnt/vep"
+    """Mount directory root for Vep google batch tasks. This should be an absolute path. The default value is /mnt/vep."""
+
+    @property
+    def vcf_input(self) -> VolumeSpec:
+        """Get vcf input path."""
+        return VolumeSpec(remote_uri=self.vcf_input_path, mount_point=f"{self.mount_dir_root}/input")
+
+    @property
+    def vep_output(self) -> VolumeSpec:
+        """Get vep output path."""
+        return VolumeSpec(remote_uri=self.vep_output_path, mount_point=f"{self.mount_dir_root}/output")
+
+    @property
+    def vep_cache(self) -> VolumeSpec:
+        """Get vep cache path."""
+        return VolumeSpec(remote_uri=self.vep_cache_path, mount_point=f"{self.mount_dir_root}/cache")
+
+    @property
+    def to_volume_registry(self) -> VolumeRegistrySpec:
+        """Get all paths."""
+        return VolumeRegistrySpec(
+            mounting_points=[
+                self.vcf_input,
+                self.vep_output,
+                self.vep_cache,
+            ],
+        )
 
 
 class VepManifestGenerator(ProtoManifestGenerator):
     """Manifest generator for VEP annotation step running on google batch."""
 
+    @classmethod
+    def from_generator_config(cls, specs: ManifestGeneratorSpec) -> VepManifestGenerator:
+        """Build Generator from generator specs."""
+        return cls(
+            options=VepVolumeRegistryOptions(**specs.generator_options),
+        )
+
     def __init__(
         self,
         *,
-        commands: list[str],
-        options: dict[str, str],
-        manifest_kwargs: dict[str, str],
+        options: VepVolumeRegistryOptions,
         gcp_conn_id: str = "google_cloud_default",
+        project_id: str = GCP_PROJECT_PLATFORM,
     ) -> None:
         """Initialize the manifest generator.
 
         Args:
-            commands (list[str]): List of commands to run the VEP annotation step.
-            options (dict[str, str]): dictionary of options to run the step. Typically these are {"step": "vep_annotation"}.
-            manifest_kwargs (dict[str, str]): Arguments used to derive the batch job partitioning.
+            options (VepVolumeRegistryOptions): Options for the VEP volume registry.
             gcp_conn_id (str, optional): Google cloud connection. Defaults to "google_cloud_default".
+            project_id (str, optional): Google cloud project id. Defaults to GCP_PROJECT_PLATFORM.
+        The `options` represent the way to partition the input dataset.
 
-        The `manifest_kwargs` represent the way to partition the input dataset. The default value provided should be
-        {"vcf_input_path": "gs://bucket_name/some/prefix/**.vcf", "vep_output_path": "gs://bucket_name/some/output/prefix", "vep_cache_path": "gs://bucket_name/some/vep/cache/path", "mount_dir_root": "/mnt/vep"}.
-        Depending on the number of files that match the `vcf_input_path` glob pattern the computed google batch job definition will have corresponding number of tasks.
+        The default value provided should follow the VepVolumeConfiguration schema.
+        Depending on the number of files that match the `vcf_input_path`, the generator will create a `BatchIndex`
+        of these files with the corresponding mount configuration for each of them.
+
+
         """
-        self.commands = commands
+        self.project_id = project_id
+        self.gcp_conn_id = gcp_conn_id
         self.options = options
-
-    @classmethod
-    def from_generator_config(cls, specs: ManifestGeneratorSpecs) -> VepManifestGenerator:
-        """Build Generator from generator specs."""
-        return cls(
-            commands=specs["commands"],
-            options=specs["options"],
-            manifest_kwargs=specs["manifest_kwargs"],
-        )
+        self.gcs_hook = GCSHook(gcp_conn_id=gcp_conn_id)
 
     def generate_batch_index(self) -> BatchIndex:
         """Generate index for google batch tasks."""
-        vars_list = self.build_vars_list()
-        return BatchIndex(
-            vars_list=vars_list,
-            options=self.options,
-            commands=self.commands,
+        return BatchIndex(env_registry=self._build_environment_registry())
+
+    def _get_vcf_partition_basenames(self, input_path: GCSPath) -> set[str]:
+        """Based on listed vcf file partition extract their base names.
+
+        NOTE: Do not reconstruct full path to the mount, as it will
+        reduce the payload send to the google batch job. The mount
+        name is the same at every task command, the basename is
+        different.
+
+        Returns:
+            set[str]: set of base names to pass to the task environments.
+        """
+        blobs = self.gcs_hook.list(input_path.bucket, prefix=input_path.path, match_glob="**.csv")
+        vcf_paths = {Path(blob.name).name for blob in blobs}
+        logger.info("Found %s vcf files", len(vcf_paths))
+        return vcf_paths
+
+    def _build_environment_registry(self) -> EnvironmentRegistrySpec:
+        """Build the list of variables to be used in the manifest.
+
+        The list is built by listing the number of VCF files in the `vcf_input_path` and creating a dictionary for each file with the corresponding mount configuration.
+
+        Returns:
+            EnvironmentRegistrySpec: List of variables to be used in the manifest.
+        """
+        vcf_files = self._get_vcf_partition_basenames(self.options.vcf_input.gcs_path)
+        # The content looks like:
+        # [{"INPUT_FILE": "file1.vcf", "OUTPUT_FILE": "file1.json"}, {"INPUT_FILE": "file2.vcf", "OUTPUT_FILE": "file2.json"}, ...]
+        return EnvironmentRegistrySpec(
+            environments=[
+                EnvironmentSpec(
+                    variables={
+                        "INPUT_FILE": file,
+                        "OUTPUT_FILE": file.replace(".csv", ".json"),
+                    }
+                )
+                for file in vcf_files
+            ]
         )

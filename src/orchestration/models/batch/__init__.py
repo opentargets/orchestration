@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from orchestration.models.batch.runnable import RunnableSpec
+from orchestration.models.batch.job import JobSpec
 
 
 class ManifestGeneratorSpec(BaseModel):
@@ -12,14 +12,11 @@ class ManifestGeneratorSpec(BaseModel):
 
     """
 
-    runnable: RunnableSpec
-    """Runnable specification for the BatchManifest generator."""
-
     generator_options: dict[str, str]
     """Keyword arguments for the manifest generator."""
 
 
-class BatchIndexSpec(BaseModel):
+class BatchIndexOperatorSpec(BaseModel):
     """Batch index specification.
 
     Attributes:
@@ -42,3 +39,14 @@ class BatchIndexSpec(BaseModel):
 
     generator_specs: ManifestGeneratorSpec
     """Generator specification for the BatchManifest generator."""
+
+
+class BatchJobOperatorSpec(BaseModel):
+    """Batch job specification.
+
+    Attributes:
+        batch_index_spec (BatchIndexSpec): Specification for the batch index.
+    """
+
+    job: JobSpec
+    """Specification for the batch job."""

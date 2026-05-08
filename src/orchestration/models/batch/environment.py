@@ -1,5 +1,7 @@
 """Environment variable specifications for Google Batch tasks."""
 
+from __future__ import annotations
+
 from google.cloud import batch_v1
 from pydantic import BaseModel
 
@@ -70,3 +72,55 @@ class EnvironmentRegistrySpec(BaseModel):
         {'TASK_INDEX': '1'}
         """
         return [env.build() for env in self.environments]
+
+    def __len__(self) -> int:
+        """Return the number of environments in the registry."""
+        return len(self.environments)
+
+    def __getitem__(self, idx: int) -> EnvironmentSpec:
+        """Get the environment specification at the specified index."""
+        return self.environments[idx]
+
+    def partition(self, max_task_count: int) -> list[EnvironmentRegistrySpec]:
+        """Partition the environment registry into batches of a specified maximum size.
+
+        Args:
+            max_task_count (int): The maximum number of tasks (environments) in each partition.
+
+        Returns:
+            list[EnvironmentRegistrySpec]: A list of EnvironmentRegistrySpec objects, each containing a partition of the environments.
+
+        Example:
+        ---
+        >>> registry = EnvironmentRegistrySpec(environments=[
+        ...     EnvironmentSpec(variables={"TASK_INDEX": "0"}),
+        ...     EnvironmentSpec(variables={"TASK_INDEX": "1"}),
+        ...     EnvironmentSpec(variables={"TASK_INDEX": "2"}),
+        ... ])
+        >>> partitions = registry.partition(max_task_count=2)
+        >>> len(partitions)
+        2
+        >>> len(partitions[0].environments)
+        2
+        >>> len(partitions[1].environments)
+        1
+        >>> partitions = registry.partition(max_task_count=10)
+        >>> len(partitions)
+        1
+        >>> len(partitions[0].environments)
+        3
+        """
+        effective_max_task_count = min(max_task_count, len(self))
+        return [
+            EnvironmentRegistrySpec(environments=self.environments[i : i + effective_max_task_count])
+            for i in range(0, len(self.environments), effective_max_task_count)
+        ]
+
+    @property
+    def empty(self) -> bool:
+        """Check if the environment registry is empty."""
+        return len(self.environments) == 0
+
+    def __repr__(self) -> str:
+        """Get environment registry string representation."""
+        return f"EnvironmentRegistrySpec(n={len(self.environments)} environments)"

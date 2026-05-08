@@ -2,22 +2,33 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from airflow.exceptions import AirflowSkipException
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
+from pydantic import BaseModel, StringConstraints
 
-from orchestration.operators.batch.batch_index import BatchIndex
-from orchestration.operators.batch.manifest_generators import ProtoManifestGenerator
-from orchestration.types import ManifestGeneratorSpecs
+from orchestration.models.batch import ManifestGeneratorSpec
+from orchestration.models.batch.environment import EnvironmentRegistrySpec, EnvironmentSpec
+from orchestration.operators.batch import BatchIndex
+from orchestration.operators.batch.manifest_generators.proto import ProtoManifestGenerator
 from orchestration.utils.path import GCSPath
 
 
-class GentropyStepGoogleBatchManifestGenerator(ProtoManifestGenerator):
+class GentropyStepManifestGeneratorOptions(BaseModel):
+    """Specification for GentropyStepGoogleBatchManifestGenerator."""
+
+    input_glob: Annotated[str, StringConstraints(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)*\*\*\.ext$")]
+    """GCS glob pattern for input files. Example: gs://bucket_name/some/prefix/**.ext"""
+    output_prefix: Annotated[str, StringConstraints(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)*/$")] = ""
+    """GCS prefix for output files. Example: gs://bucket_name/some/output/prefix"""
+
+
+class GentropyStepManifestGenerator(ProtoManifestGenerator):
     def __init__(
         self,
         *,
-        commands: list[str],
-        options: dict[str, str],
-        manifest_kwargs: dict[str, str],
+        options: GentropyStepManifestGeneratorOptions,
         gcp_conn_id: str = "google_cloud_default",
     ):
         """Manifest generator for gentropy step running on google batch.
@@ -26,40 +37,30 @@ class GentropyStepGoogleBatchManifestGenerator(ProtoManifestGenerator):
         partitioned by arbitrary number of google batch tasks.
 
         Args:
-            commands (list[str]): List of commands to run the gentropy step.
-            options (dict[str, str]): dictionary of options to run the step. Typically these are {"step": "l2g_prediction"}.
-            manifest_kwargs (dict[str, str]): Arguments used to derive the batch job partitioning.
+            options (GentropyStepManifestGeneratorOptions): Options for the gentropy step.
             gcp_conn_id (str, optional): Google cloud connection. Defaults to "google_cloud_default".
 
         The `manifest_kwargs` represent the way to partition the input dataset. The default value provided should be
         {"input_glob": "gs://bucket_name/some/prefix/**.ext", "output_prefix": "gs://bucket_name/some/output/prefix"}.
         Depending on the number of files that match the `input_glob` the computed google batch job definition will have corresponding number of tasks.
         """
-        self.commands = commands
         self.options = options
         self.gcs_hook = GCSHook(gcp_conn_id=gcp_conn_id)
-        self.input_glob = GCSPath(manifest_kwargs.get("input_glob", ""))
-        self.output_prefix = GCSPath(manifest_kwargs.get("output_prefix", ""))
+        self.input_glob = GCSPath(options.input_glob)
+        self.output_prefix = GCSPath(options.output_prefix)
 
     @classmethod
-    def from_generator_config(cls, specs: ManifestGeneratorSpecs) -> GentropyStepGoogleBatchManifestGenerator:
+    def from_generator_config(cls, specs: ManifestGeneratorSpec) -> GentropyStepManifestGenerator:
         """Build Generator from generator specs."""
         return cls(
-            commands=specs["commands"],
-            options=specs["options"],
-            manifest_kwargs=specs["manifest_kwargs"],
+            options=GentropyStepManifestGeneratorOptions(**specs.generator_options),
         )
 
     def generate_batch_index(self) -> BatchIndex:
         """Generate index for google batch tasks."""
-        vars_list = self.build_vars_list()
-        return BatchIndex(
-            vars_list=vars_list,
-            options=self.options,
-            commands=self.commands,
-        )
+        return BatchIndex(env_registry=self._build_environment_registry())
 
-    def build_vars_list(self) -> list[dict[str, str]]:
+    def _build_environment_registry(self) -> EnvironmentRegistrySpec:
         """Build variable lists that will be later used to build google batch environments."""
         protocol = self.input_glob.segments.get("protocol")
         bucket_name = self.input_glob.segments.get("root")
@@ -73,10 +74,14 @@ class GentropyStepGoogleBatchManifestGenerator(ProtoManifestGenerator):
 
         if len(files) == 0:
             raise AirflowSkipException(f"No files found under {self.input_glob} glob")
-        return [
-            {
-                "INPUT_PARTITION": f"{protocol}://{bucket_name}/{file}",
-                "OUTPUT_PARTITION": f"{self.output_prefix.gcs_path}/{file.split('/')[-1]}",
-            }
-            for file in files
-        ]
+        return EnvironmentRegistrySpec(
+            environments=[
+                EnvironmentSpec(
+                    variables={
+                        "INPUT_PARTITION": f"{protocol}://{bucket_name}/{file}",
+                        "OUTPUT_PARTITION": f"{self.output_prefix.gcs_path}/{file.split('/')[-1]}",
+                    }
+                )
+                for file in files
+            ]
+        )

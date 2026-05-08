@@ -29,8 +29,13 @@ class TaskGroupSpec(BaseModel):
         Each task will get one element from the list and pass it to environment.
     """
 
-    def build(self) -> batch_v1.TaskGroup:
+    def build(self, task_environments: EnvironmentRegistrySpec | None = None) -> batch_v1.TaskGroup:
         """Build a TaskGroup object from the TaskGroupSpec.
+
+        Args:
+            task_environments: Optional environment registry to use instead of ``self.task_environments``.
+                Callers such as ``BatchJobOperator`` supply the partitioned environments produced by
+                ``BatchIndexOperator`` here so that each submitted job gets its own task slice.
 
         Returns:
             batch_v1.TaskGroup: The built TaskGroup object.
@@ -61,10 +66,11 @@ class TaskGroupSpec(BaseModel):
         >>> dict(tg.task_environments[0].variables)
         {'TASK_INDEX': '0'}
         """
+        effective_environments = task_environments if task_environments is not None else self.task_environments
         return batch_v1.TaskGroup(
             parallelism=self.parallelism,
             task_spec=self.task_config.build(),
             task_count_per_node=self.task_count_per_node,
-            task_environments=self.task_environments.build(),
-            task_count=len(self.task_environments.environments),
+            task_environments=effective_environments.build(),
+            task_count=len(effective_environments.environments),
         )

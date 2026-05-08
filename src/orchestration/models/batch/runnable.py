@@ -30,6 +30,10 @@ class RunnableSpec(BaseModel):
         Mutually exclusive with `commands` field. If both are provided, a validation error will be raised.
         If neither is provided, a validation error will be raised."""
 
+    script_variables: dict[str, str] | None = None
+    """Optional mapping of variable names to values to substitute into the script file.
+        Sentinels in the script must follow the bash variable syntax: ``${variable_name}``."""
+
     @model_validator(mode="after")
     def _validate_oneof_script_or_commands(self) -> RunnableSpec:
         if not ((self.inline_commands is not None) ^ (self.script_file is not None)):
@@ -55,6 +59,8 @@ class RunnableSpec(BaseModel):
         elif self.script_file:
             # Assuming that the script file is located in the `src.orchestration.assets` package
             script_content = self._find_script_file(self.script_file)
+            if self.script_variables:
+                script_content = self._apply_template(script_content, self.script_variables)
             script_commands = self._parse_script_file(script_content)
             return ["-c", script_commands]
         else:
@@ -92,6 +98,19 @@ class RunnableSpec(BaseModel):
         )
 
         return batch_v1.Runnable(container=container)
+
+    @classmethod
+    def _apply_template(cls, script_content: str, variables: dict[str, str]) -> str:
+        """Replace ``${key}`` sentinels in the script content with the provided values.
+
+        Example:
+        ---
+        >>> RunnableSpec._apply_template("echo ${greeting}", {"greeting": "hello"})
+        'echo hello'
+        """
+        for key, value in variables.items():
+            script_content = script_content.replace(f"${{{key}}}", value)
+        return script_content
 
     @classmethod
     def _find_script_file(cls, script_name: str) -> str:

@@ -5,6 +5,7 @@ from __future__ import annotations
 from google.cloud import batch_v1
 from pydantic import BaseModel
 
+from orchestration.models.batch.environment import EnvironmentRegistrySpec
 from orchestration.models.batch.instance import AllocationSpec
 from orchestration.models.batch.logs import LogsSpec
 from orchestration.models.batch.task_group import TaskGroupSpec
@@ -24,8 +25,13 @@ class JobSpec(BaseModel):
     labels: dict[str, str] | None = None
     """Labels to be applied to the batch job."""
 
-    def build(self) -> batch_v1.Job:
+    def build(self, task_environments: EnvironmentRegistrySpec | None = None) -> batch_v1.Job:
         """Build a `google.cloud.batch_v1.Job` object from the job specification.
+
+        Args:
+            task_environments: Optional environment registry to forward to the task group.
+                Pass the partitioned ``EnvironmentRegistrySpec`` from a ``BatchIndexRow`` so
+                that each submitted job receives its own slice of tasks.
 
         Returns:
             batch_v1.Job: The built Job object.
@@ -58,7 +64,7 @@ class JobSpec(BaseModel):
         {'team': 'test'}
         """
         j = {
-            "task_groups": [self.task_group.build()],
+            "task_groups": [self.task_group.build(task_environments=task_environments)],
             "allocation_policy": self.allocation.build(),
             "logs_policy": self.logs.build(),
             "labels": self.labels or dict(Labels()),

@@ -219,3 +219,11 @@ def find_environment_vars(env_spec: list[EnvironmentSpec], env: Environment) -> 
         if spec["name"] == env:
             return spec["vars"]
     raise ValueError(f"Environment {env} not found in the environment specs")
+
+
+def safe_join_paths(right: str, left: str) -> str:
+    """Safely join paths."""
+    right = right.removesuffix("/")
+    left = left.removeprefix("/")
+
+    return right + "/" + left

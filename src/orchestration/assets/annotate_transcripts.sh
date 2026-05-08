@@ -21,10 +21,6 @@
 
 set -euo pipefail
 
-[[ -f "${INPUT_FILE}" ]]  || { echo "INPUT_FILE not found: ${INPUT_FILE}"; exit 1; }
-[[ -d "${CACHE_DIR}" ]]   || { echo "CACHE_DIR not found: ${CACHE_DIR}"; exit 1; }
-[[ -d "${OUTPUT_FILE%/*}" ]] || { echo "OUTPUT_FILE parent directory not found: ${OUTPUT_FILE%/*}"; exit 1; }
-
 sed '1s/^CHROM/#CHROM/' "${INPUT_FILE}" | \
     vep \
     --cache \
