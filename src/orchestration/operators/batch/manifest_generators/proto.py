@@ -17,7 +17,7 @@ from __future__ import annotations
 from typing import Protocol
 
 from orchestration.models.batch import ManifestGeneratorSpec
-from orchestration.operators.batch import BatchIndex
+from orchestration.operators.batch.batch_index import BatchIndex
 
 
 class ProtoManifestGenerator(Protocol):

@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from orchestration.models.batch import ManifestGeneratorSpec
 from orchestration.models.batch.environment import EnvironmentRegistrySpec, EnvironmentSpec
-from orchestration.operators.batch import BatchIndex
+from orchestration.operators.batch.batch_index import BatchIndex
 from orchestration.operators.batch.manifest_generators.proto import ProtoManifestGenerator
 from orchestration.utils.path import GCSPath, extract_partition_from_blob
 

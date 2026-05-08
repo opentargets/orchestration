@@ -5,11 +5,9 @@ from orchestration.operators.batch.manifest_generators.gentropy_step import Gent
 from orchestration.operators.batch.manifest_generators.harmonisation import HarmonisationManifestGenerator
 from orchestration.operators.batch.manifest_generators.vep import VepManifestGenerator
 
-MANIFEST_GENERATOR_MAP = {
-    "vep": VepManifestGenerator,
-    "gentropy_step": GentropyStepManifestGenerator,
-    "finemapping": FinemappingManifestGenerator,
-    "harmonisation": HarmonisationManifestGenerator,
-}
-
-__all__ = ["MANIFEST_GENERATOR_MAP"]
+__all__ = [
+    "FinemappingManifestGenerator",
+    "GentropyStepManifestGenerator",
+    "HarmonisationManifestGenerator",
+    "VepManifestGenerator",
+]

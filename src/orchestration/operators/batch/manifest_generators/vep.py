@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from orchestration.models.batch import ManifestGeneratorSpec
 from orchestration.models.batch.environment import EnvironmentRegistrySpec, EnvironmentSpec
 from orchestration.models.batch.volume import VolumeRegistrySpec, VolumeSpec
-from orchestration.operators.batch import BatchIndex
+from orchestration.operators.batch.batch_index import BatchIndex
 from orchestration.operators.batch.manifest_generators.proto import ProtoManifestGenerator
 from orchestration.utils.common import GCP_PROJECT_PLATFORM
 from orchestration.utils.path import GCSPath

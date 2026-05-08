@@ -3,27 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from pathlib import Path
-from typing import Annotated, Any, Literal, TypedDict
-
-import bashlex
-from google.cloud.batch_v1 import Runnable
-from pydantic import BaseModel, StringConstraints, model_validator
-
-
-class ManifestObject(TypedDict):
-    studyId: str
-    rawPath: str
-    harmonisedPath: str
-    passHarmonisation: bool | None
-    passQC: bool | None
-    qcPath: str
-    manifestPath: str
-    studyType: str | None
-    analysisFlag: str | None
-    isCurated: bool | None
-    pubmedId: str | None
-    status: Literal["success", "failure", "pending"]
+from typing import Any, Literal, TypedDict
 
 
 class DataprocSpecs(TypedDict):
@@ -48,6 +28,6 @@ class ConfigNode(TypedDict):
     kind: Literal["Task", "TaskGroup"]
     prerequisites: list[str]
     params: dict[str, Any]
-    google_batch: GoogleBatchSpecs
+    google_batch: Any
     nodes: list[ConfigNode]
-    google_batch_index_specs: GoogleBatchIndexSpecs
+    google_batch_index_specs: Any

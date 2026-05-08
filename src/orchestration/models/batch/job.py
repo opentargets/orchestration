@@ -25,13 +25,18 @@ class JobSpec(BaseModel):
     labels: dict[str, str] | None = None
     """Labels to be applied to the batch job."""
 
-    def build(self, task_environments: EnvironmentRegistrySpec | None = None) -> batch_v1.Job:
+    def build(
+        self, task_environments: EnvironmentRegistrySpec | None = None, labels: dict[str, str] | None = None
+    ) -> batch_v1.Job:
         """Build a `google.cloud.batch_v1.Job` object from the job specification.
 
         Args:
             task_environments: Optional environment registry to forward to the task group.
                 Pass the partitioned ``EnvironmentRegistrySpec`` from a ``BatchIndexRow`` so
                 that each submitted job receives its own slice of tasks.
+
+            labels: Optional labels to override the labels defined in the JobSpec.
+                This can be used to inject dynamic labels at runtime, for example by an Airflow operator.
 
         Returns:
             batch_v1.Job: The built Job object.
@@ -67,7 +72,7 @@ class JobSpec(BaseModel):
             "task_groups": [self.task_group.build(task_environments=task_environments)],
             "allocation_policy": self.allocation.build(),
             "logs_policy": self.logs.build(),
-            "labels": self.labels or dict(Labels()),
+            "labels": labels or self.labels or dict(Labels()),
         }
 
         return batch_v1.Job(**j)
