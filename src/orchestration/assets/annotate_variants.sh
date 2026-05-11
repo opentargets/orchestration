@@ -18,9 +18,7 @@
 #   to preserve the minimal command.
 #
 #########################################################################################
-
 set -euo pipefail
-
 sed '1s/^CHROM/#CHROM/' "${INPUT_FILE}" | \
     vep \
     --cache \

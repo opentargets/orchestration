@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from airflow.models.baseoperator import BaseOperator
 
-from orchestration.models.batch import BatchIndexOperatorSpec
-from orchestration.operators.batch.batch_index import BatchIndexRow
+from orchestration.models.batch import BatchIndexOperatorSpec, BatchIndexRow
 from orchestration.operators.batch.manifest_generators import (
     FinemappingManifestGenerator,
     GentropyStepManifestGenerator,

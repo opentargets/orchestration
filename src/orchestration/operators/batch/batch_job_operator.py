@@ -6,8 +6,7 @@ import time
 
 from airflow.providers.google.cloud.operators.cloud_batch import CloudBatchSubmitJobOperator
 
-from orchestration.models.batch import BatchJobOperatorSpec
-from orchestration.operators.batch.batch_index_operator import BatchIndexRow
+from orchestration.models.batch import BatchIndexRow, BatchJobOperatorSpec
 from orchestration.utils.common import GCP_PROJECT_GENETICS, GCP_REGION
 from orchestration.utils.labels import Labels
 

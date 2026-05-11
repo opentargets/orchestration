@@ -47,23 +47,23 @@ class VepVolumeRegistryOptions(BaseModel):
     """GCS path where the output of the VEP annotation should be stored."""
     vep_cache_path: Annotated[str, Field(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)*$")]
     """GCS path to the VEP cache."""
-    mount_dir_root: Annotated[str, Field(pattern=r"^/mnt(/[a-zA-Z0-9_-]+)*/$")] = "/mnt/vep"
-    """Mount directory root for Vep google batch tasks. This should be an absolute path. The default value is /mnt/vep."""
+    mount_dir_root: Annotated[str, Field(pattern=r"^/mnt(/[a-zA-Z0-9_-]+)*/$")] = "/mnt/vep/"
+    """Mount directory root for Vep google batch tasks. This should be an absolute path. The default value is /mnt/vep/."""
 
     @property
     def vcf_input(self) -> VolumeSpec:
         """Get vcf input path."""
-        return VolumeSpec(remote_uri=self.vcf_input_path, mount_point=f"{self.mount_dir_root}/input")
+        return VolumeSpec(remote_uri=self.vcf_input_path, mount_point=f"{self.mount_dir_root}input/")
 
     @property
     def vep_output(self) -> VolumeSpec:
         """Get vep output path."""
-        return VolumeSpec(remote_uri=self.vep_output_path, mount_point=f"{self.mount_dir_root}/output")
+        return VolumeSpec(remote_uri=self.vep_output_path, mount_point=f"{self.mount_dir_root}output/")
 
     @property
     def vep_cache(self) -> VolumeSpec:
         """Get vep cache path."""
-        return VolumeSpec(remote_uri=self.vep_cache_path, mount_point=f"{self.mount_dir_root}/cache")
+        return VolumeSpec(remote_uri=self.vep_cache_path, mount_point=f"{self.mount_dir_root}cache/")
 
     @property
     def to_volume_registry(self) -> VolumeRegistrySpec:

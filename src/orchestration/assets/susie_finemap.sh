@@ -7,17 +7,21 @@
 #
 # Usage:
 #   LOCUS_INDEX=0 \
+#   STUDY_INDEX_PATH=/path/to/study_index \
+#   STUDY_LOCUS_MANIFEST_PATH=/path/to/study_locus_manifest \
 #   susie_finemap.sh
 #
 #########################################################################################
-
 set -euo pipefail
-
+# Templated variables (defined in runnable_spec.script_variables)
+readonly STUDY_INDEX_PATH="${study_index_path}"
+readonly STUDY_LOCUS_MANIFEST_PATH="${study_locus_manifest_path}"
+#########################################################################################
 gentropy \
     step=susie_finemapping \
-    step.study_index_path={{study_index_path}} \
-    step.study_locus_manifest_path={{study_locus_manifest_path}} \
-    step.study_locus_index={{locus_index}} \
+    step.study_index_path="${STUDY_INDEX_PATH}" \
+    step.study_locus_manifest_path="${STUDY_LOCUS_MANIFEST_PATH}" \
+    step.study_locus_index="${LOCUS_INDEX}" \
     step.max_causal_snps=10 \
     step.lead_pval_threshold=1e-5 \
     step.purity_mean_r2_threshold=0.25 \

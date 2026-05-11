@@ -4,25 +4,11 @@ import logging
 from functools import cached_property
 
 from airflow.exceptions import AirflowSkipException
-from pydantic import BaseModel
 
+from orchestration.models.batch import BatchIndexRow
 from orchestration.models.batch.environment import EnvironmentRegistrySpec
 
 logger = logging.getLogger(__name__)
-
-
-class BatchIndexRow(BaseModel):
-    """Representation of a single row in the batch index. Each row corresponds to a single batch job.
-
-    a Pydantic model representing a single batch job, carrying a
-    zero-based index and the `EnvironmentRegistrySpec` (one environment per task)
-    for that job.
-    """
-
-    idx: int
-    """Index of the batch job. This can be used to create unique identifiers for batch jobs and their tasks."""
-    environments: EnvironmentRegistrySpec
-    """Environment specification for the batch job. This will be used to create the Environment object for each task."""
 
 
 class BatchIndex:

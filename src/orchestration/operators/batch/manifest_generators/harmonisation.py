@@ -21,25 +21,90 @@ logger = logging.getLogger(__name__)
 
 
 class HarmonisationManifestGeneratorOptions(BaseModel):
-    """Specification for HarmonisationManifestGenerator."""
+    """Specification for HarmonisationManifestGenerator.
+
+    Example:
+    ---
+    >>> opts = HarmonisationManifestGeneratorOptions(
+    ...     qc_output_pattern="gs://bucket/summary_statistics_qc/**_SUCCESS",
+    ...     harm_output_pattern="gs://bucket/harmonised_summary_statistics/**_SUCCESS",
+    ...     raw_input_pattern="gs://bucket/raw_summary_statistics/**.h.tsv.gz",
+    ...     manifest_output_uri="gs://bucket/harmonisation_manifest.csv",
+    ... )
+    >>> opts.qc_output_pattern
+    'gs://bucket/summary_statistics_qc/**_SUCCESS'
+    >>> opts.raw_input_pattern
+    'gs://bucket/raw_summary_statistics/**.h.tsv.gz'
+
+    Raw input accepts any dot-separated extension after /**:
+
+    >>> opts2 = HarmonisationManifestGeneratorOptions(
+    ...     qc_output_pattern="gs://bucket/summary_statistics_qc/**_SUCCESS",
+    ...     harm_output_pattern="gs://bucket/harmonised_summary_statistics/**_SUCCESS",
+    ...     raw_input_pattern="gs://bucket/raw_summary_statistics/**.parquet",
+    ...     manifest_output_uri="gs://bucket/harmonisation_manifest.csv",
+    ... )
+    >>> opts2.raw_input_pattern
+    'gs://bucket/raw_summary_statistics/**.parquet'
+
+    Output patterns must end with /**_SUCCESS — the old {{study}} placeholder form is rejected:
+
+    >>> from pydantic import ValidationError
+    >>> try:
+    ...     HarmonisationManifestGeneratorOptions(
+    ...         qc_output_pattern="gs://bucket/summary_statistics_qc/{{study}}/",
+    ...         harm_output_pattern="gs://bucket/harmonised_summary_statistics/**_SUCCESS",
+    ...         raw_input_pattern="gs://bucket/raw_summary_statistics/**.h.tsv.gz",
+    ...         manifest_output_uri="gs://bucket/harmonisation_manifest.csv",
+    ...     )
+    ... except ValidationError:
+    ...     print("invalid")
+    invalid
+
+    Raw input pattern must include a file extension after /**:
+
+    >>> try:
+    ...     HarmonisationManifestGeneratorOptions(
+    ...         qc_output_pattern="gs://bucket/summary_statistics_qc/**_SUCCESS",
+    ...         harm_output_pattern="gs://bucket/harmonised_summary_statistics/**_SUCCESS",
+    ...         raw_input_pattern="gs://bucket/raw_summary_statistics/**",
+    ...         manifest_output_uri="gs://bucket/harmonisation_manifest.csv",
+    ...     )
+    ... except ValidationError:
+    ...     print("invalid")
+    invalid
+
+    Manifest URI must end with .csv:
+
+    >>> try:
+    ...     HarmonisationManifestGeneratorOptions(
+    ...         qc_output_pattern="gs://bucket/summary_statistics_qc/**_SUCCESS",
+    ...         harm_output_pattern="gs://bucket/harmonised_summary_statistics/**_SUCCESS",
+    ...         raw_input_pattern="gs://bucket/raw_summary_statistics/**.h.tsv.gz",
+    ...         manifest_output_uri="gs://bucket/harmonisation_manifest.parquet",
+    ...     )
+    ... except ValidationError:
+    ...     print("invalid")
+    invalid
+    """
 
     qc_output_pattern: Annotated[
-        str, StringConstraints(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)*\{\{study\}\}/$")
+        str, StringConstraints(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)+/\*\*_SUCCESS$")
     ]
-    """GCS path pattern for qc output. The pattern should contain {{study}} as a placeholder for the study id."""
+    """GCS glob pattern for QC output. Must end with /**_SUCCESS (e.g. gs://bucket/path/**_SUCCESS)."""
 
     harm_output_pattern: Annotated[
-        str, StringConstraints(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)*\{\{study\}\}/$")
+        str, StringConstraints(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)+/\*\*_SUCCESS$")
     ]
-    """GCS path pattern for harmonised output. The pattern should contain {{study}} as a placeholder for the study id."""
+    """GCS glob pattern for harmonised output. Must end with /**_SUCCESS (e.g. gs://bucket/path/**_SUCCESS)."""
 
     raw_input_pattern: Annotated[
-        str, StringConstraints(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)*\*\*\.parquet$")
+        str, StringConstraints(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)+/\*\*(\.[a-zA-Z0-9]+)+$")
     ]
-    """GCS path pattern for raw input. The pattern should contain ** as a wildcard for the input files."""
+    """GCS glob pattern for raw input files. Must end with /**.<ext> (e.g. gs://bucket/path/**.h.tsv.gz)."""
 
     manifest_output_uri: Annotated[str, StringConstraints(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)*\.csv$")]
-    """GCS path for manifest output. The pattern should end with .csv extension."""
+    """GCS path for manifest output. Must end with .csv (e.g. gs://bucket/path/manifest.csv)."""
 
 
 class HarmonisationManifestGenerator(ProtoManifestGenerator):

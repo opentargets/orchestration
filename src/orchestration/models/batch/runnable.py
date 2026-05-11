@@ -94,6 +94,7 @@ class RunnableSpec(BaseModel):
         """
         container = batch_v1.Runnable.Container(
             image_uri=self.image_uri,
+            entrypoint=self.entrypoint,
             commands=self.commands,
         )
 
