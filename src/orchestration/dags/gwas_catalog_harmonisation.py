@@ -42,7 +42,7 @@ with DAG(
         harmonisation_batch_job = BatchJobOperator.partial(
             task_id=harmonisation_config["id"],
             job_name="harmonisation",
-            batch_job_specs=BatchJobOperatorSpec(**harmonisation_config["google_batch"]),
+            batch_job_spec=BatchJobOperatorSpec(**harmonisation_config["google_batch"]),
         ).expand(batch_index_row=batch_index.output)
 
         chain(batch_index, harmonisation_batch_job)

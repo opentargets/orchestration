@@ -37,7 +37,7 @@ with DAG(
         finemapping_job = BatchJobOperator.partial(
             task_id=job_config["id"],
             job_name="susie-finemapping",
-            batch_job_specs=BatchJobOperatorSpec(**job_config["google_batch"]),
+            batch_job_spec=BatchJobOperatorSpec(**job_config["google_batch"]),
         ).expand(batch_index_row=batch_index.output)
 
         chain(batch_index, finemapping_job)
