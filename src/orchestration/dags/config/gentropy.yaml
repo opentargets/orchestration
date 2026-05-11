@@ -118,23 +118,25 @@ steps:
   variant_annotation:
     cluster: false
     google_batch_index_specs:
-      pointer: "vep"
-      max_task_count: 500
+      pointer: "vep" # pointer to the vep manifest generator implementation.
+      max_task_count: 500 # Max number of tasks running in a single google batch job.
       generator_specs:
         generator_options:
           # INPUTS
-          vcf_input_path: '{{release_uri}}/intermediate/variant_partition'
-          vep_cache_path: 'gs://vep_cache_data/vep/cache'
+          # Based on vcf_input_path, the job environment variables $INPUT_FILE and $OUTPUT_FILE are discovered.
+          vcf_input_path: &vep_input_uri '{{release_uri}}/intermediate/variant_partition/'
+          vep_cache_path: &vep_cache_uri 'gs://vep_cache_data/vep/cache'
           # OUTPUTS
-          vep_output_path: '{{release_uri}}/intermediate/variant_annotation'
+          vep_output_path: &vep_output_uri '{{release_uri}}/intermediate/variant_annotation/'
     google_batch:
       job:
         task_group:
-          parallelism: 500 # max number of VEP tasks run at a time in parallel
+          parallelism: 500 # Max number of VEP tasks run at a time in parallel on all machines.
+          task_count_per_node: 2 # Number of tasks running at the same time on a single machine.
           task_environments:
-            environments: [] # populated at runtime by BatchIndexOperator
+            environments: [] # Populated at runtime by BatchIndexOperator with dictionaries containing $INPUT_FILE and $OUTPUT_FILE
           task_config:
-            max_retry_count: 10 # retry up to 10 times due to SPOT 50001 preemption errors
+            max_retry_count: 2
             max_run_duration: '2h'
             instance_resource_spec:
               cpu_milli: 2000
@@ -142,20 +144,24 @@ steps:
               boot_disk_mib: 10000
             runnable_spec:
               image_uri: 'europe-west1-docker.pkg.dev/open-targets-eu-dev/vep/custom_ensembl_vep:{{vep_version}}'
-              entrypoint: /bin/sh
-              script_file: annotate_transcripts.sh
+              entrypoint: /bin/bash
+              script_file: annotate_variants.sh # In src.orchestration.assets
+              script_variables: # variables templated into the script before execution.
+                cache_dir: &vep_cache_mount '/mnt/disks/share/cache/'
+                input_dir: &vep_input_mount '/mnt/disks/share/input/'
+                output_dir: &vep_output_mount '/mnt/disks/share/output/'
             shared_volumes:
               mounting_points:
-                - remote_uri: '{{release_uri}}/intermediate/variant_partition'
-                  mount_point: '/mnt/vep/input/'
-                - remote_uri: '{{release_uri}}/intermediate/variant_annotation'
-                  mount_point: '/mnt/vep/output/'
-                - remote_uri: 'gs://vep_cache_data/vep/cache'
-                  mount_point: '/mnt/vep/cache/'
+                - remote_uri: *vep_input_uri
+                  mount_point: *vep_input_mount
+                - remote_uri: *vep_output_uri
+                  mount_point: *vep_output_mount
+                - remote_uri: *vep_cache_uri
+                  mount_point: *vep_cache_mount
         allocation:
           instance:
             machine_type: n1-standard-4
-            provisioning_model: STANDARD
+            provisioning_model: STANDARD # Other options: SPOT (but careful with max_retry_count)
         logs: {}
 
   variant:
@@ -208,7 +214,7 @@ steps:
     cluster: false
     google_batch_index_specs:
       pointer: "gentropy_step"
-      max_task_count: 1000
+      max_task_count: 1000 # Number of tasks running in a single google batch job.
       generator_specs:
         generator_options:
           # Job partitioning depends on the number of credible_set parquet files found in the input glob.
@@ -220,7 +226,7 @@ steps:
         task_group:
           parallelism: 200
           task_environments:
-            environments: [] # populated at runtime by BatchIndexOperator
+            environments: [] # Populated at runtime by BatchIndexOperator with dictionaries containing $INPUT_PARTITION and $OUTPUT_PARTITION
           task_config:
             max_retry_count: 2
             max_run_duration: "1h"
@@ -234,7 +240,7 @@ steps:
               script_file: l2g_predict.sh
               script_variables:
                 l2g_training_version: '{{l2g_training_version}}'
-                release_uri: '{{release_uri}}'
+                feature_matrix_path: '{{release_uri}}/intermediate/l2g_feature_matrix'
         allocation:
           instance:
             machine_type: n1-standard-2

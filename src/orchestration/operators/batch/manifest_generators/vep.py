@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from logging import getLogger
-from pathlib import Path
 from typing import Annotated
 
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
@@ -41,29 +40,29 @@ class VepVolumeRegistryOptions(BaseModel):
     The mount points are derived from the `mount_dir_root` attribute and the path keys.
     """
 
-    vcf_input_path: Annotated[str, Field(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)*$")]
+    vcf_input_path: Annotated[str, Field(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)*/?$")]
     """GCS path that contains all input VCF files."""
-    vep_output_path: Annotated[str, Field(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)*$")]
+    vep_output_path: Annotated[str, Field(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)*/?$")]
     """GCS path where the output of the VEP annotation should be stored."""
-    vep_cache_path: Annotated[str, Field(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)*$")]
+    vep_cache_path: Annotated[str, Field(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)*/?$")]
     """GCS path to the VEP cache."""
-    mount_dir_root: Annotated[str, Field(pattern=r"^/mnt(/[a-zA-Z0-9_-]+)*/$")] = "/mnt/vep/"
-    """Mount directory root for Vep google batch tasks. This should be an absolute path. The default value is /mnt/vep/."""
+    mount_dir_root: Annotated[str, Field(pattern=r"^/mnt(/[a-zA-Z0-9_-]+)*/$")] = "/mnt/disks/share/"
+    """Mount directory root for Vep google batch tasks. This should be an absolute path. The default value is /mnt/disks/share/."""
 
     @property
     def vcf_input(self) -> VolumeSpec:
         """Get vcf input path."""
-        return VolumeSpec(remote_uri=self.vcf_input_path, mount_point=f"{self.mount_dir_root}input/")
+        return VolumeSpec(remote_uri=self.vcf_input_path.rstrip("/"), mount_point=f"{self.mount_dir_root}input/")
 
     @property
     def vep_output(self) -> VolumeSpec:
         """Get vep output path."""
-        return VolumeSpec(remote_uri=self.vep_output_path, mount_point=f"{self.mount_dir_root}output/")
+        return VolumeSpec(remote_uri=self.vep_output_path.rstrip("/"), mount_point=f"{self.mount_dir_root}output/")
 
     @property
     def vep_cache(self) -> VolumeSpec:
         """Get vep cache path."""
-        return VolumeSpec(remote_uri=self.vep_cache_path, mount_point=f"{self.mount_dir_root}cache/")
+        return VolumeSpec(remote_uri=self.vep_cache_path.rstrip("/"), mount_point=f"{self.mount_dir_root}cache/")
 
     @property
     def to_volume_registry(self) -> VolumeRegistrySpec:
@@ -129,7 +128,7 @@ class VepManifestGenerator(ProtoManifestGenerator):
             set[str]: set of base names to pass to the task environments.
         """
         blobs = self.gcs_hook.list(input_path.bucket, prefix=input_path.path, match_glob="**.csv")
-        vcf_paths = {Path(blob.name).name for blob in blobs}
+        vcf_paths = {GCSPath(f"gs://{input_path.bucket}/{blob}").segments["filename"] for blob in blobs}
         logger.info("Found %s vcf files", len(vcf_paths))
         return vcf_paths
 

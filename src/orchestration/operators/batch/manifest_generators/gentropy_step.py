@@ -18,9 +18,9 @@ from orchestration.utils.path import GCSPath
 class GentropyStepManifestGeneratorOptions(BaseModel):
     """Specification for GentropyStepGoogleBatchManifestGenerator."""
 
-    input_glob: Annotated[str, StringConstraints(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)*\*\*\.ext$")]
-    """GCS glob pattern for input files. Example: gs://bucket_name/some/prefix/**.ext"""
-    output_prefix: Annotated[str, StringConstraints(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)*/$")] = ""
+    input_glob: Annotated[str, StringConstraints(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)*/\*\*(\.[a-zA-Z0-9]+)+$")]
+    """GCS glob pattern for input files. Example: gs://bucket_name/some/prefix/**.parquet"""
+    output_prefix: Annotated[str, StringConstraints(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)*/?$")] = ""
     """GCS prefix for output files. Example: gs://bucket_name/some/output/prefix"""
 
 

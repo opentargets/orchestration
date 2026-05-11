@@ -519,7 +519,7 @@ with DAG(
                             ),
                         )
                         b = BatchJobOperator.partial(
-                            job_name=resource_name("l2g_prediction"),
+                            job_name=resource_name(step_name),
                             task_id=f"run_{step_name}",
                             batch_job_spec=BatchJobOperatorSpec(
                                 **config.step_specific_config(step_name).get("google_batch", {})

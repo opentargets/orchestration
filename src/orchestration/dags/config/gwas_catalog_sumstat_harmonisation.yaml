@@ -3,11 +3,9 @@ environment_specs:
   - name: Test
     vars:
       root_path: gs://ot_orchestration/test/gwas_catalog_harmonisation/gwas_catalog_inputs
-      GENTROPY_REF: '2.0.2-rc.2'
   - name: Prod
     vars:
       root_path: gs://gwas_catalog_inputs
-      GENTROPY_REF: '2.0.2-rc.2'
 
 env: Test
 
@@ -43,7 +41,7 @@ nodes:
               memory_mib: 8000
               boot_disk_mib: 8000
             runnable_spec:
-              image_uri: ghcr.io/opentargets/orchestration-harmonisation:{GENTROPY_REF}
+              image_uri: ghcr.io/opentargets/orchestration-harmonisation:26.1-staging.1
               entrypoint: /usr/bin/bash
               inline_commands:
                 - '-c'

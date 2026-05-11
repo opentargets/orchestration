@@ -4,9 +4,11 @@
 # To run the script, use the google batch operator and `annotate_transcripts.sh` script.
 #
 # Usage:
-#   INPUT_FILE=path/to/input.vcf \
+#   INPUT_FILE=input.vcf \
 #   CACHE_DIR=path/to/vep/cache/dir \
-#   OUTPUT_FILE=path/to/output.json \
+#   OUTPUT_FILE=output.json \
+#   INPUT_DIR=path/to/input/dir \
+#   OUTPUT_DIR=path/to/output/dir \
 #   annotate_transcripts.sh
 #
 #
@@ -19,7 +21,12 @@
 #
 #########################################################################################
 set -euo pipefail
-sed '1s/^CHROM/#CHROM/' "${INPUT_FILE}" | \
+# Templated variables (defined in runnable_spec.script_variables)
+readonly INPUT_DIR="${input_dir}"
+readonly CACHE_DIR="${cache_dir}"
+readonly OUTPUT_DIR="${output_dir}"
+#########################################################################################
+sed '1s/^CHROM/#CHROM/' "${INPUT_DIR}/${INPUT_FILE}" | \
     vep \
     --cache \
     --offline \
@@ -28,8 +35,8 @@ sed '1s/^CHROM/#CHROM/' "${INPUT_FILE}" | \
     --force_overwrite \
     --no_stats \
     --dir_cache ${CACHE_DIR} \
-    --input_file - \
-    --output_file ${OUTPUT_FILE} \
+    --input_file /dev/stdin \
+    --output_file ${OUTPUT_DIR}/${OUTPUT_FILE} \
     --json \
     --mane \
     --appris \
