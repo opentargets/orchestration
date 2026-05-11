@@ -1,108 +1,77 @@
-"""Test vep manager."""
+"""Test VEP volume registry options."""
 
 from __future__ import annotations
 
 import pytest
+from pydantic import ValidationError
 
-from orchestration.operators.batch.vep import VepAnnotationPathManager
+from orchestration.models.batch.volume import VolumeRegistrySpec, VolumeSpec
+from orchestration.operators.batch.manifest_generators.vep import VepVolumeRegistryOptions
 
 
-class TestVepAnnotationPathManger:
+class TestVepVolumeRegistryOptions:
     @pytest.fixture(autouse=True)
-    def _setup(self) -> TestVepAnnotationPathManger:
-        """Setup vep annotation paths."""
-        vep_cache_path = "gs://bucket/cache"
-        mount_dir_root = "/root"
-        vcf_input_path = "gs://bucket/vcf"
-        vep_output_path = "gs://bucket/output"
-
-        self.vp = VepAnnotationPathManager(
-            vcf_input_path=vcf_input_path,
-            vep_output_path=vep_output_path,
-            vep_cache_path=vep_cache_path,
-            mount_dir_root=mount_dir_root,
-        )
-        return self
-
-    def test_invalid_mount_dir(self) -> None:
-        """Mount dir must be an absolute path."""
-        vp = VepAnnotationPathManager(
-            "vcf_input_path",
-            "vep_output_path",
-            "vep_cache_path",
-            "root",
-        )
-        with pytest.raises(ValueError) as e:
-            _ = vp.mount_dir_root
-        assert e.value.args[0] == "Mount dir has to be an absolute path."
-
-    def test_mount_dir_ends_with_slash(self) -> None:
-        """Assert that mount dir trailing slash will be dropped."""
-        vp = VepAnnotationPathManager(
-            "vcf_input_path",
-            "vep_output_path",
-            "vep_cache_path",
-            "/root//",
+    def _setup(self) -> None:
+        self.options = VepVolumeRegistryOptions(
+            vcf_input_path="gs://bucket/vcf",
+            vep_output_path="gs://bucket/output",
+            vep_cache_path="gs://bucket/cache",
+            mount_dir_root="/mnt/vep/",
         )
 
-        assert vp.mount_dir_root == "/root"
+    def test_invalid_mount_dir_not_under_mnt(self) -> None:
+        """mount_dir_root must start with /mnt."""
+        with pytest.raises(ValidationError):
+            VepVolumeRegistryOptions(
+                vcf_input_path="gs://bucket/vcf",
+                vep_output_path="gs://bucket/output",
+                vep_cache_path="gs://bucket/cache",
+                mount_dir_root="/root/",
+            )
+
+    def test_invalid_mount_dir_no_trailing_slash(self) -> None:
+        """mount_dir_root must end with a trailing slash."""
+        with pytest.raises(ValidationError):
+            VepVolumeRegistryOptions(
+                vcf_input_path="gs://bucket/vcf",
+                vep_output_path="gs://bucket/output",
+                vep_cache_path="gs://bucket/cache",
+                mount_dir_root="/mnt/vep",
+            )
 
     def test_not_gcs_paths(self) -> None:
-        """Mount dir must be an absolute path."""
-        vp = VepAnnotationPathManager(
-            "vcf_input_path",
-            "vep_output_path",
-            "vep_cache_path",
-            "/root",
+        """All path fields must be valid GCS URIs."""
+        with pytest.raises(ValidationError):
+            VepVolumeRegistryOptions(
+                vcf_input_path="vcf_input_path",
+                vep_output_path="vep_output_path",
+                vep_cache_path="vep_cache_path",
+                mount_dir_root="/mnt/vep/",
+            )
+
+    def test_vcf_input_property(self) -> None:
+        assert self.options.vcf_input == VolumeSpec(
+            remote_uri="gs://bucket/vcf",
+            mount_point="/mnt/vep/input/",
         )
-        with pytest.raises(ValueError) as e:
-            _ = vp.path_registry
-        assert "Invalid GCS path" in e.value.args[0]
 
-    def test_mount_dir_property(self) -> None:
-        """Test correct paths provided."""
-        assert self.vp.mount_dir_root == "/root"
+    def test_vep_output_property(self) -> None:
+        assert self.options.vep_output == VolumeSpec(
+            remote_uri="gs://bucket/output",
+            mount_point="/mnt/vep/output/",
+        )
 
-    def test_cache_dir_property(self) -> None:
-        """Test if the `cache_dir property exists and returns correct value."""
-        assert self.vp.cache_dir == "/root/cache"
+    def test_vep_cache_property(self) -> None:
+        assert self.options.vep_cache == VolumeSpec(
+            remote_uri="gs://bucket/cache",
+            mount_point="/mnt/vep/cache/",
+        )
 
-    def test_output_dir_property(self) -> None:
-        """Test if the `output_dir` property exists and returns correct value."""
-        assert self.vp.output_dir == "/root/output"
-
-    def test_input_dir_property(self) -> None:
-        """Test if the `input_dir` property exists and returns correct value."""
-        assert self.vp.input_dir == "/root/input"
-
-    def test_path_registry_property(self) -> None:
-        """Test if the `path_registry` property returns correct value."""
-        assert self.vp.path_registry["input"] == {
-            "remote_path": "bucket/vcf",
-            "mount_point": "/root/input",
-        }
-        assert self.vp.path_registry["output"] == {
-            "remote_path": "bucket/output",
-            "mount_point": "/root/output",
-        }
-        assert self.vp.path_registry["cache"] == {
-            "remote_path": "bucket/cache",
-            "mount_point": "/root/cache",
-        }
-
-    def test_mount_config(self) -> None:
-        """Test if the `mount_config` property returns correct value."""
-        assert self.vp.mount_config == [
-            {
-                "remote_path": "bucket/vcf",
-                "mount_point": "/root/input",
-            },
-            {
-                "remote_path": "bucket/output",
-                "mount_point": "/root/output",
-            },
-            {
-                "remote_path": "bucket/cache",
-                "mount_point": "/root/cache",
-            },
-        ]
+    def test_to_volume_registry(self) -> None:
+        assert self.options.to_volume_registry == VolumeRegistrySpec(
+            mounting_points=[
+                VolumeSpec(remote_uri="gs://bucket/vcf", mount_point="/mnt/vep/input/"),
+                VolumeSpec(remote_uri="gs://bucket/output", mount_point="/mnt/vep/output/"),
+                VolumeSpec(remote_uri="gs://bucket/cache", mount_point="/mnt/vep/cache/"),
+            ]
+        )

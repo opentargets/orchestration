@@ -1,17 +1,23 @@
-"""Batch Index."""
-
 from __future__ import annotations
 
 import logging
+from functools import cached_property
 from typing import TypedDict
 
 from airflow.exceptions import AirflowSkipException
 from google.cloud.batch import Environment
 
+from orchestration.models.batch import BatchIndexRow
+from orchestration.models.batch.environment import EnvironmentRegistrySpec
 from orchestration.utils.batch import create_task_commands, create_task_env
 
 logger = logging.getLogger(__name__)
 
+
+# ---------------------------------------------------------------------------
+# Legacy symbols — kept for backward compatibility with generic.py.
+# Removed in PR3 (feat/batch-dag-migration) when generic.py is deleted.
+# ---------------------------------------------------------------------------
 
 class BatchCommandsSerialized(TypedDict):
     options: dict[str, str]
@@ -29,11 +35,6 @@ class BatchCommands:
 
     def construct(self) -> list[str]:
         """Construct Batch commands from mapping."""
-        logger.info(
-            "Constructing batch task commands from commands: %s and options: %s",
-            self.commands,
-            self.options,
-        )
         return create_task_commands(self.commands, self.options)
 
     def serialize(self) -> BatchCommandsSerialized:
@@ -52,9 +53,7 @@ class BatchEnvironments:
 
     def construct(self) -> list[Environment]:
         """Construct Batch Environment from list of mappings."""
-        logger.info("Constructing batch environments from vars_list: %s", self.vars_list)
         if not self.vars_list:
-            logger.warning("Can not create Batch environments from empty variable list, skipping")
             raise AirflowSkipException("Can not create Batch environments from empty variable list")
         return create_task_env(self.vars_list)
 
@@ -68,65 +67,82 @@ class BatchEnvironments:
         return BatchEnvironments(vars_list=data["vars_list"])
 
 
-class BatchIndexRow(TypedDict):
+class _LegacyBatchIndexRow(TypedDict):
     idx: int
     command: BatchCommandsSerialized
     environment: BatchEnvironmentsSerialized
 
 
 class BatchIndex:
-    """Index of all batch jobs.
+    """In-memory index of batch jobs produced by partitioning an EnvironmentRegistrySpec.
 
-    This object contains paths to individual manifest objects.
-    Each of the manifests will be a single batch job.
-    Each line of the individual manifest is a representation of the batch job task.
+    Intended usage is a two-step sequence:
+        1. Call `partition(max_task_count)` to split the registry into chunks, one per batch job.
+        2. Access `rows` to get the resulting list of `BatchIndexRow` objects.
+
+    `BatchIndex`: wraps an `EnvironmentRegistrySpec` and partitions it into chunks
+    that each become a separate batch job. The intended call sequence is::
+
+        index = generator.generate_batch_index()
+        rows = index.partition(max_task_count).rows
+
+    ``partition`` splits the registry into `EnvironmentRegistrySpec` chunks capped
+    at ``max_task_count`` tasks each. ``rows`` converts those chunks into
+    `BatchIndexRow` objects consumed by `BatchJobOperator`.
     """
 
     def __init__(
         self,
-        vars_list: list[dict[str, str]],
-        options: dict[str, str],
-        commands: list[str],
+        env_registry: EnvironmentRegistrySpec,
     ) -> None:
-        self.vars_list = vars_list
-        self.options = options
-        self.commands = commands
-        self.vars_batches: list[BatchEnvironmentsSerialized] = []
+        """Initialise a BatchIndex from an environment registry.
+
+        Args:
+            env_registry (EnvironmentRegistrySpec): Registry of environment specifications,
+                one per task to be distributed across batch jobs.
+        """
+        self.environment_registry = env_registry
+        self.env_batches: list[EnvironmentRegistrySpec] = []
 
     def partition(self, max_task_count: int) -> BatchIndex:
-        """Partition batch index by N chunks taking into account max_task_count as an upper limit of tasks in chunk."""
-        if not self.vars_list:
+        """Partition the environment registry into chunks, each capped at `max_task_count` tasks.
+
+        Args:
+            max_task_count (int): Maximum number of tasks (environments) allowed per batch job.
+
+        Returns:
+            BatchIndex: self, enabling method chaining (e.g. ``index.partition(n).rows``).
+
+        Raises:
+            AirflowSkipException: If the environment registry is empty.
+        """
+        if self.environment_registry.empty:
             msg = "BatchIndex can not partition variable list, as list is empty."
             logger.warning(msg)
-            return self
+            raise AirflowSkipException(msg)
 
-        if max_task_count > len(self.vars_list):
-            logger.warning(
-                "BatchIndex will use only one partition due to size of the dataset being smaller then max_task_count %s < %s",
-                len(self.vars_list),
-                max_task_count,
-            )
-            max_task_count = len(self.vars_list)
-
-        for i in range(0, len(self.vars_list), max_task_count):
-            batch = self.vars_list[i : i + max_task_count]
-            self.vars_batches.append(BatchEnvironmentsSerialized(vars_list=batch))
-
-        logger.info("Created %s task list batches.", len(self.vars_batches))
+        self.env_batches = self.environment_registry.partition(max_task_count=max_task_count)
+        logger.info("Created %s task list batches.", len(self.env_batches))
 
         return self
 
-    @property
+    @cached_property
     def rows(self) -> list[BatchIndexRow]:
-        """Create the master manifest that will gather the information needed to create batch Environments."""
+        """Return one BatchIndexRow per partitioned batch job.
+
+        Each row carries a zero-based index and the EnvironmentRegistrySpec for that job's tasks.
+        Requires ``partition()`` to have been called first.
+
+        Returns:
+            list[BatchIndexRow]: Ordered list of batch job descriptors.
+
+        Raises:
+            AirflowSkipException: If no rows are available (e.g. ``partition()`` was never called).
+        """
         rows: list[BatchIndexRow] = []
         logger.info("Preparing BatchIndexRows. Each row represents a batch job.")
-        for idx, batch in enumerate(self.vars_batches):
-            rows.append({
-                "idx": idx + 1,
-                "command": BatchCommandsSerialized(options=self.options, commands=self.commands),
-                "environment": batch,
-            })
+        for idx, batch in enumerate(self.env_batches):
+            rows.append(BatchIndexRow(idx=idx, environments=batch))
 
         logger.info("Prepared %s BatchIndexRows", len(rows))
         if not rows:
@@ -135,4 +151,4 @@ class BatchIndex:
 
     def __repr__(self) -> str:
         """Get batch index string representation."""
-        return f"BatchIndex(vars_list={self.vars_list}, options={self.options}, commands={self.commands})"
+        return f"BatchIndex(env_registry={self.environment_registry})"
