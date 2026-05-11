@@ -13,7 +13,7 @@
 #
 #
 # Notes:
-# * The input is referenced as stdin in the VEP --input-file `-` option, 
+# * The input is referenced as stdin in the VEP --input-file `-` option,
 #   which allows us to use a pipe to feed the input file to VEP after modifying the header with sed.
 #   https://superuser.com/questions/1391610/how-to-reference-stdin-as-an-option-in-a-program-in-a-pipeline
 # * The comments are striped when the script is parsed to run on batch

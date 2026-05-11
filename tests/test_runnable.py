@@ -13,8 +13,8 @@ ANNOTATE_VARIANTS = files("orchestration.assets").joinpath("annotate_variants.sh
 @pytest.mark.parametrize(
     ("script", "expected_line_count"),
     [
-        pytest.param(ANNOTATE_TRANSCRIPTS, 23, id="annotate_transcripts"),
-        pytest.param(ANNOTATE_VARIANTS, 32, id="annotate_variants"),
+        pytest.param(ANNOTATE_TRANSCRIPTS, 26, id="annotate_transcripts"),
+        pytest.param(ANNOTATE_VARIANTS, 35, id="annotate_variants"),
     ],
 )
 def test_remove_comments_line_count(script: str, expected_line_count: int) -> None:
@@ -24,8 +24,8 @@ def test_remove_comments_line_count(script: str, expected_line_count: int) -> No
 @pytest.mark.parametrize(
     ("script", "expected_count"),
     [
-        pytest.param(ANNOTATE_TRANSCRIPTS, 2, id="annotate_transcripts"),
-        pytest.param(ANNOTATE_VARIANTS, 2, id="annotate_variants"),
+        pytest.param(ANNOTATE_TRANSCRIPTS, 5, id="annotate_transcripts"),
+        pytest.param(ANNOTATE_VARIANTS, 5, id="annotate_variants"),
     ],
 )
 def test_join_continuation_lines_count(script: str, expected_count: int) -> None:
@@ -36,8 +36,8 @@ def test_join_continuation_lines_count(script: str, expected_count: int) -> None
 @pytest.mark.parametrize(
     ("script", "expected_count"),
     [
-        pytest.param(ANNOTATE_TRANSCRIPTS, 2, id="annotate_transcripts"),
-        pytest.param(ANNOTATE_VARIANTS, 2, id="annotate_variants"),
+        pytest.param(ANNOTATE_TRANSCRIPTS, 5, id="annotate_transcripts"),
+        pytest.param(ANNOTATE_VARIANTS, 5, id="annotate_variants"),
     ],
 )
 def test_split_commands_count(script: str, expected_count: int) -> None:
@@ -49,8 +49,8 @@ def test_split_commands_count(script: str, expected_count: int) -> None:
 @pytest.mark.parametrize(
     ("script", "expected_count"),
     [
-        pytest.param(ANNOTATE_TRANSCRIPTS, 2, id="annotate_transcripts"),
-        pytest.param(ANNOTATE_VARIANTS, 2, id="annotate_variants"),
+        pytest.param(ANNOTATE_TRANSCRIPTS, 5, id="annotate_transcripts"),
+        pytest.param(ANNOTATE_VARIANTS, 5, id="annotate_variants"),
     ],
 )
 def test_parse_script_file_command_count(script: str, expected_count: int) -> None:

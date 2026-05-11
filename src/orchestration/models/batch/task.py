@@ -60,14 +60,14 @@ class TaskConfiguration(BaseModel):
     """Runnable specification (script, commands and container image) for the task."""
 
     max_retry_count: int = 0
-    """Maximum number of retries for the task in case of failures. 
+    """Maximum number of retries for the task in case of failures.
         By default, it is set to 0, meaning no retries will be attempted in case of task failure."""
 
     max_run_duration: str = "3600s"
     """Maximum run duration for the task in ISO 8601 format (e.g., '3600s' for 1 hour)."""
 
     exit_codes: Sequence[int] | None = None
-    """Sequence of exit codes that should be considered as successful task completion. 
+    """Sequence of exit codes that should be considered as successful task completion.
         If not provided, the default exit codes are 50001, 50002, 50003, 50004, and 50005."""
 
     shared_environment: EnvironmentSpec | None = None

@@ -16,7 +16,7 @@ class TaskGroupSpec(BaseModel):
     """Number of tasks to run in parallel."""
 
     task_count_per_node: int = 1
-    """Number of tasks to run per node at the same time. 
+    """Number of tasks to run per node at the same time.
         By default, it is set to 1, meaning only one task will run on a node at a time."""
 
     task_config: TaskConfiguration

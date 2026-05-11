@@ -29,4 +29,3 @@ gentropy \
     step.feature_matrix_path="${FEATURE_MATRIX_PATH}" \
     "+step.session.extended_spark_conf={spark.jars:https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop3-latest.jar}" \
     step.predictions_path="${OUTPUT_PARTITION}" \
-
