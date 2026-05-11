@@ -14,31 +14,45 @@ environment_specs:
 env: Prod
 
 nodes:
-  - id: generate_manifests
+  - id: generate_finemapping_index
     kind: Task
     prerequisites: []
-    params:
-      collected_loci_path: '{root_path}/study_locus_lb_clumped'
-      manifest_prefix: '{root_path}/finemapping_manifests/{date}'
-      output_path: '{root_path}/credible_set_datasets/susie/{date}'
-      log_path: '{root_path}/finemapping_logs/{date}'
-      max_records_per_chunk: 40_000
+    google_batch_index_specs:
+      pointer: finemapping
+      max_task_count: 40000
+      generator_specs:
+        generator_options:
+          collected_loci_path: '{root_path}/study_locus_lb_clumped'
+          manifest_output_path: '{root_path}/finemapping_manifests/{date}/manifest.csv'
+          output_path: '{root_path}/credible_set_datasets/susie/{date}'
+          log_path: '{root_path}/finemapping_logs/{date}'
 
   - id: finemapping_batch_job
     kind: Task
     prerequisites:
-      - generate_manifests
-    params:
-      study_index_path: '{root_path}/study_index'
+      - generate_finemapping_index
     google_batch:
-      entrypoint: /bin/sh
-      image: 'europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:{gentropy_ref}'
-      resource_specs:
-        cpu_milli: 4000
-        memory_mib: 25000
-        boot_disk_mib: 20_000
-      task_specs:
-        max_retry_count: 5
-        max_run_duration: '7200s'
-      policy_specs:
-        machine_type: n2-highmem-4
+      job:
+        task_group:
+          parallelism: 40000
+          task_environments:
+            environments: [] # populated at runtime by BatchIndexOperator
+          task_config:
+            max_retry_count: 5
+            max_run_duration: '7200s'
+            instance_resource_spec:
+              cpu_milli: 4000
+              memory_mib: 25000
+              boot_disk_mib: 20000
+            runnable_spec:
+              image_uri: 'europe-west1-docker.pkg.dev/open-targets-genetics-dev/gentropy-app/gentropy:{gentropy_ref}'
+              entrypoint: /bin/sh
+              script_file: susie_finemap.sh
+              script_variables:
+                study_index_path: '{root_path}/study_index'
+                study_locus_manifest_path: '{root_path}/finemapping_manifests/{date}/manifest.csv'
+        allocation:
+          instance:
+            machine_type: n2-highmem-4
+            provisioning_model: SPOT
+        logs: {}
