@@ -158,12 +158,13 @@ steps:
       step.session.write_mode: overwrite
       +step.session.extended_spark_conf: "{spark.sql.autoBroadcastJoinThreshold:'-1'}"
       # INPUTS
-      step.credible_set_path: '{{release_uri}}/output/credible_set'
-      step.variant_index_path: '{{release_uri}}/output/variant'
-      step.colocalisation_path: '{{release_uri}}/output/colocalisation'
-      step.study_index_path: '{{release_uri}}/output/study'
-      step.target_index_path: '{{release_uri}}/output/target'
-      step.intervals_path: '{{release_uri}}/output/enhancer_to_gene'
+      step.credible_set_path: 'gs://open-targets-data-releases/26.03/output/credible_set'
+      step.variant_index_path: 'gs://open-targets-data-releases/26.03/output/variant'
+      step.colocalisation_path: 'gs://open-targets-data-releases/26.03/output/colocalisation'
+      step.study_index_path: 'gs://open-targets-data-releases/26.03/output/study'
+      step.target_index_path: 'gs://open-targets-data-releases/26.03/output/target'
+      step.intervals_path: 'gs://open-targets-data-releases/26.03/output/enhancer_to_gene'
+      step.gene_interactions_path: 'gs://open-targets-data-releases/26.03/output/interaction'
       # OUTPUTS
       step.feature_matrix_path: '{{release_uri}}/intermediate/l2g_feature_matrix'
 
@@ -174,13 +175,14 @@ steps:
       step.run_mode: train
       step.wandb_run_name: '{{l2g_training_version}}'
       step.cross_validate: false
+      step.train_on_full_dataset: true
       step.hf_hub_repo_id: opentargets/locus_to_gene_{{l2g_training_version}}
       step.hf_model_commit_message: 'chore: update model base model for {{l2g_training_version}} run'
       +step.session.extended_spark_conf: "{spark.kryoserializer.buffer.max:500m, spark.sql.autoBroadcastJoinThreshold:'-1'}"
       # INPUTS
-      step.credible_set_path: '{{release_uri}}/output/credible_set'
-      step.feature_matrix_path: '{{release_uri}}/intermediate/l2g_feature_matrix'
-      step.gold_standard_curation_path: '{{release_uri}}/input/l2g/gold_standard.json'
+      step.credible_set_path: 'gs://open-targets-data-releases/26.03/output/credible_set'
+      step.feature_matrix_path: 'gs://open-targets-pipeline-runs/yt/26.03-test-full-l2g-trainset-1/intermediate/l2g_feature_matrix'
+      step.gold_standard_curation_path: 'gs://open-targets-data-releases/26.03/input/l2g/gold_standard.json'
       # OUTPUTS
       step.model_path: '{{release_uri}}/etc/model/locus_to_gene_model/classifier.skops'
 
