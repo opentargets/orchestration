@@ -1,7 +1,10 @@
 #!/bin/bash
 #########################################################################################
-# Annotate transcripts using VEP. This script is intended to be run on a google batch VM.
-# To run the script, use the google batch operator.
+# Using VEP to annotate consequences on canonical transcripts only, within 0.5Mbp of the variant
+# to generate the variant index of the Open Targets Platform.
+#
+# This script is intended to be run on a google batch VM. To run the script, 
+# use the google batch operator and `annotate_transcripts.sh` script.
 #
 # Usage:
 #   INPUT_FILE=input.vcf \

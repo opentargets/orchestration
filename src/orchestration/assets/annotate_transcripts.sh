@@ -1,7 +1,10 @@
 #!/bin/bash
 #########################################################################################
-# Annotate transcripts using VEP. This script is intended to be run on a google batch VM.
-# To run the script, use the google batch operator and `annotate_transcripts.sh` script.
+# Using VEP to annotate protein altering consequences on all overlapping transcripts for variants 
+# in the OpenTargets Platform. 
+#
+# This script is intended to be run on a google batch VM. To run the script, 
+# use the google batch operator and `annotate_transcripts.sh` script.
 #
 # Usage:
 #   INPUT_FILE=input.vcf \
@@ -40,11 +43,8 @@ sed '1s/^CHROM/#CHROM/' "${INPUT_DIR}/${INPUT_FILE}" | \
     --json \
     --mane \
     --appris \
-    --hgvsg \
     --fasta ${CACHE_DIR}/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz \
     --uniprot \
-    --symbol \
-    --biotype \
     --protein \
-    --canonical \
-    --plugin TSSDistance,both_direction=1
+    --distance 0 \
+    --canonical 
