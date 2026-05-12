@@ -17,15 +17,15 @@ readonly L2G_TRAINING_VERSION="${l2g_training_version}"
 readonly FEATURE_MATRIX_PATH="${feature_matrix_path}"
 #########################################################################################
 gentropy \
-    step=locus_to_gene \
-    step.session.write_mode=overwrite \
-    step.session.output_partitions=1 \
-    step.run_mode="predict" \
-    step.l2g_threshold=0.05 \
-    step.download_from_hub=true \
-    step.explain_predictions=true \
-    step.hf_hub_repo_id="opentargets/locus_to_gene_${L2G_TRAINING_VERSION}" \
-    step.credible_set_path="${INPUT_PARTITION}" \
-    step.feature_matrix_path="${FEATURE_MATRIX_PATH}" \
-    "+step.session.extended_spark_conf={spark.jars:https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop3-latest.jar}" \
-    step.predictions_path="${OUTPUT_PARTITION}" \
+  step=locus_to_gene \
+  step.session.write_mode=overwrite \
+  step.session.output_partitions=1 \
+  step.run_mode="predict" \
+  step.l2g_threshold=0.05 \
+  step.download_from_hub=true \
+  step.explain_predictions=true \
+  step.hf_hub_repo_id="opentargets/locus_to_gene_${L2G_TRAINING_VERSION}" \
+  step.credible_set_path="${INPUT_PARTITION}" \
+  step.feature_matrix_path="${FEATURE_MATRIX_PATH}" \
+  "+step.session.extended_spark_conf={spark.jars:https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop3-latest.jar}" \
+  step.predictions_path="${OUTPUT_PARTITION}"
