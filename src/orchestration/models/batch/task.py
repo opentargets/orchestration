@@ -67,7 +67,7 @@ class TaskConfiguration(BaseModel):
     """Maximum run duration for the task in ISO 8601 format (e.g., '3600s' for 1 hour)."""
 
     exit_codes: Sequence[int] | None = None
-    """Sequence of exit codes that should be considered as successful task completion.
+    """Sequence of exit codes that should trigger a task retry according to the lifecycle policy.
         If not provided, the default exit codes are 50001, 50002, 50003, 50004, and 50005."""
 
     shared_environment: EnvironmentSpec | None = None

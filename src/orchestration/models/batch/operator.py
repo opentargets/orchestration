@@ -24,7 +24,6 @@ class ManifestGeneratorSpec(BaseModel):
     """Parameter specification for specific BatchManifest generator.
 
     Attributes:
-        runnable (RunnableSpec): Runnable specification for the BatchManifest generator.
         generator_options (dict[str, str] | None): Keyword arguments for the manifest generator.
 
     """
@@ -38,7 +37,7 @@ class BatchIndexOperatorSpec(BaseModel):
 
     Attributes:
         pointer (str): Pointer to correct BatchManifest generator.
-        max_task_count (int): Maximum number of tasks per batch job. If the total number
+        max_task_count (int): Maximum number of tasks per batch job.
 
     """
 

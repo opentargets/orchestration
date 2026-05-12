@@ -110,6 +110,8 @@ class EnvironmentRegistrySpec(BaseModel):
         >>> len(partitions[0].environments)
         3
         """
+        if self.empty:
+            return []
         effective_max_task_count = min(max_task_count, len(self))
         return [
             EnvironmentRegistrySpec(environments=self.environments[i : i + effective_max_task_count])

@@ -43,8 +43,6 @@ class RunnableSpec(BaseModel):
     @model_validator(mode="after")
     def _validate_script_file_exists(self) -> RunnableSpec:
         if self.script_file:
-            from importlib.resources import files
-
             script_path = files("orchestration.assets").joinpath(self.script_file)
             if not script_path.is_file():
                 raise FileNotFoundError(
