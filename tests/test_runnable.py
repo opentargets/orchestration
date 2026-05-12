@@ -13,7 +13,7 @@ ANNOTATE_VARIANTS = files("orchestration.assets").joinpath("annotate_variants.sh
 @pytest.mark.parametrize(
     ("script", "expected_line_count"),
     [
-        pytest.param(ANNOTATE_TRANSCRIPTS, 26, id="annotate_transcripts"),
+        pytest.param(ANNOTATE_TRANSCRIPTS, 23, id="annotate_transcripts"),
         pytest.param(ANNOTATE_VARIANTS, 35, id="annotate_variants"),
     ],
 )

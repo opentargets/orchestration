@@ -1,9 +1,9 @@
 #!/bin/bash
 #########################################################################################
-# Using VEP to annotate protein altering consequences on all overlapping transcripts for variants 
-# in the OpenTargets Platform. 
+# Using VEP to annotate protein altering consequences on all overlapping transcripts for variants
+# in the OpenTargets Platform.
 #
-# This script is intended to be run on a google batch VM. To run the script, 
+# This script is intended to be run on a google batch VM. To run the script,
 # use the google batch operator and `annotate_transcripts.sh` script.
 #
 # Usage:
@@ -47,4 +47,4 @@ sed '1s/^CHROM/#CHROM/' "${INPUT_DIR}/${INPUT_FILE}" | \
     --uniprot \
     --protein \
     --distance 0 \
-    --canonical 
+    --canonical
