@@ -270,7 +270,7 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
         if var_list:
             logger.info("Variable list is not empty!")
         else:
-            AirflowSkipException("No environments to create")
+            raise AirflowSkipException("No environments to create")
         return EnvironmentRegistrySpec(
             environments=[EnvironmentSpec(variables={str(k): str(v) for k, v in row.items()}) for row in var_list]
         )
