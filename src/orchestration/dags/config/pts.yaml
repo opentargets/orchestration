@@ -38,6 +38,27 @@ steps:
       destination: output/go/go.parquet
   ##################################################################################################
 
+  #: REACTOME STEP :################################################################################
+  reactome:
+    - name: pyspark reactome
+      pyspark: reactome
+      source:
+        pathways: input/reactome/ReactomePathways.txt
+        relations: input/reactome/ReactomePathwaysRelation.txt
+      destination: output/reactome
+  #: OTAR STEP :####################################################################################
+
+  ##################################################################################################
+  otar:
+    - name: pyspark otar
+      pyspark: otar
+      source:
+        diseases: output/disease
+        otar_meta: input/otar/otar_meta.csv
+        otar_project_to_efo: input/otar/otar_project_to_efo.csv
+      destination: output/otar
+  ##################################################################################################
+
   #: EXPRESSION STEP :##############################################################################
   expression:
     - name: unzip normal tissue
@@ -54,6 +75,28 @@ steps:
       source: input/expression/map_with_efos.json
       destination: intermediate/expression/tissue-translation-map.parquet
       transformer: expression_tissue
+
+    - name: pyspark expression
+      requires:
+        - transform expression tissue
+        - gzip normal tissue
+      pyspark: expression
+      source:
+        rna: input/expression/baseline_expression_counts.tsv
+        binned: input/expression/baseline_expression_binned.tsv
+        zscore: input/expression/baseline_expression_zscore_binned.tsv
+        exprhierarchy: input/expression/expression_hierarchy_curation.tsv
+        efomap: intermediate/expression/tissue-translation-map.parquet
+        tissues: intermediate/expression/normal_tissue.tsv.gz
+      destination: output/expression
+  ##################################################################################################
+
+  #: GO STEP :######################################################################################
+  go:
+    - name: transform go
+      source: input/go/go.obo
+      destination: output/go/go.parquet
+      transformer: go
   ##################################################################################################
 
   #: MOUSE_PHENOTYPES STEP :########################################################################
@@ -123,8 +166,8 @@ steps:
       transformer: so
   ##################################################################################################
 
-  #: TARGET STEP :##################################################################################
-  target:
+  #: PRE_TARGET STEP :##############################################################################
+  pre_target:
     - name: unzip subcellular location
       source: input/target/hpa/subcellular_location.tsv.zip
       destination: intermediate/target/hpa/subcellular_location.tsv
@@ -171,6 +214,48 @@ steps:
           source: ${uri}
           destination: intermediate/target/homologue/gene_dictionary/${match_path}/${match_stem}.parquet
           transformer: homology
+
+    - name: transform uniprot
+      transformer: uniprot
+      source: input/target/uniprot/uniprot.txt.gz
+      destination: intermediate/target/uniprot/uniprot.parquet
+  ##################################################################################################
+
+  #: TARGET STEP (pyspark) :#######################################################################
+  target:
+    - name: pyspark target
+      pyspark: target
+      source:
+        diseases: output/disease
+        ensembl: intermediate/target/ensembl/homo_sapiens.parquet
+        gene_code: input/target/gencode/gencode.gff3.gz
+        genetic_constraints: input/target/gnomad/gnomad_constraint_metrics.tsv
+        gene_ontology_human: input/target/go/goa_human.gaf.gz
+        gene_ontology_rna: input/target/go/goa_human_rna.gaf.gz
+        gene_ontology_rna_lookup: input/target/go/ensembl.tsv
+        gene_ontology_eco_lookup: input/target/go/goa_human_eco.gpa.gz
+        hallmarks: input/target/hallmarks/cosmic-hallmarks.tsv.gz
+        hgnc: input/target/genenames/hgnc_complete_set.json
+        homology_dictionary: input/target/homologue/species_EnsemblVertebrates.txt
+        homology_coding_proteins: input/target/homologue/homologies/*.tsv.gz
+        homology_gene_dictionary: intermediate/target/homologue/gene_dictionary/*.parquet
+        hpa: intermediate/target/hpa/subcellular_location.tsv.gz
+        hpa_sl: intermediate/target/hpa/subcellular_locations_ssl.parquet
+        ncbi: input/target/ncbi/Homo_sapiens.gene_info.gz
+        project_scores_ids: intermediate/target/project-scores/gene_identifiers_latest.parquet
+        project_scores_essentiality_matrix: intermediate/target/project-scores/04_binaryDepScores.parquet
+        reactome_etl: output/reactome
+        reactome_pathways: input/target/reactome/Ensembl2Reactome.txt
+        safety_evidence: intermediate/target/safety.parquet
+        tep: input/target/tep/tep.json.gz
+        tractability: input/target/tractability/tractability.tsv
+        uniprot: intermediate/target/uniprot/uniprot.parquet
+        chembl: input/target/chembl/chembl_target.jsonl
+        chemical_probes: intermediate/chemical_probes_evidence.parquet
+        gene_essentiality: intermediate/target/gene-essentiality/essentiality.parquet
+      destination:
+        target: output/target
+        gene_essentiality: output/target_essentiality
   ##################################################################################################
 
   #: TARGET_SAFETY STEP :############### - part of target, pyspark tasks must run standalone for now
@@ -430,7 +515,7 @@ steps:
         chembl_molecule: input/drug/chembl_molecule.jsonl
         drugbank: input/drug/drugbank.csv.gz
       destination: intermediate/chembl_molecule
-  ##################################################################################################
+  #################################################################################################
 
   #: DRUG_MOLECULE STEP :##########################################################################
   drug_molecule:
@@ -450,7 +535,7 @@ steps:
           - PHASE_IV_NOT_APPROVED
           - UNVALIDATED_INDICATION
           - INDIRECT_PRIMARY_PURPOSE
-  ##################################################################################################
+  ################################################################################################
 
   #: CLINICAL_REPORT STEP :#######################################################################
   clinical_report:
@@ -479,7 +564,7 @@ steps:
       settings:
         ner_batch_size: 256
       pyspark: clinical_report
-  ##################################################################################################
+  #################################################################################################
 
   #: CLINICAL_INDICATION STEP :####################################################################
   clinical_indication:
@@ -494,7 +579,7 @@ steps:
           - PHASE_IV_NOT_APPROVED
           - UNVALIDATED_INDICATION
           - INDIRECT_PRIMARY_PURPOSE
-  ##################################################################################################
+  ################################################################################################
 
   #: CLINICAL_TARGET STEP :#######################################################################
   clinical_target:
@@ -530,7 +615,7 @@ steps:
         spark.driver.memory: 16g
   ##################################################################################################
 
-  #: ASSOCIATION STEP :##############################################################################
+  #: ASSOCIATION STEP :#############################################################################
   association:
     - name: pyspark association
       pyspark: association
@@ -1565,9 +1650,41 @@ steps:
       destination: view/association_timeseries
       properties:
         spark.driver.memory: 12g
+  #################################################################################################
+
+  #: SEARCH FACET STEP :###########################################################################
+  search_facet:
+    - name: pyspark search_facet
+      pyspark: search_facet
+      source:
+        diseases: output/disease
+        targets: output/target
+        go: output/go
+      destination:
+        targets: view/search_facet_target
+        diseases: view/search_facet_disease
+  #################################################################################################
+
+  #: INTERACTION STEP :############################################################################
+  interaction:
+    - name: pyspark interaction
+      pyspark: interaction
+      source:
+        targets: output/target
+        rnacentral: input/interaction/rna_central_ensembl.tsv
+        humanmapping: input/interaction/HUMAN_9606_idmapping.dat.gz
+        ensproteins: input/interaction/Homo_sapiens.GRCh38.chr.gtf.gz
+        intact: input/interaction/intact-interactors.json
+        strings: input/interaction/string-interactions.txt.gz
+      destination:
+        interactions: output/interaction
+        interactions_evidence: output/interaction_evidence
+        interactions_unmatched: excluded/interaction
+      settings:
+        scorethreshold: 0
   ##################################################################################################
 
-  #: RELEASE METRICS STEP :##########################################################################
+  #: RELEASE METRICS STEP :#########################################################################
   release_metrics:
     - name: transform release_metrics
       transformer: release_metrics
@@ -1594,3 +1711,44 @@ steps:
         hf_repo_id: opentargets/ot-release-metrics
         hf_data_dir: metrics
   ##################################################################################################
+
+  #: SEARCH STEP :##################################################################################
+  search:
+    - name: pyspark search
+      pyspark: search
+      source:
+        association: output/association_overall_indirect
+        drug: output/drug_molecule
+        evidence: output/evidence_*
+        indication: output/clinical_indication
+        mechanism: output/drug_mechanism_of_action
+        target: output/target
+        credible_sets: output/credible_set
+        disease: output/disease
+        disease_hpo: output/disease_phenotype
+        hpo: output/disease_hpo
+        studies: output/study
+        variants: output/variant
+      destination:
+        diseases: view/search_disease
+        targets: view/search_target
+        drugs: view/search_drug
+        variants: view/search_variant
+        studies: view/search_study
+
+  ##################################################################################################
+
+  #: SEARCH EBI STEP :##############################################################################
+  search_ebi:
+    - name: pyspark search_ebi
+      pyspark: search_ebi
+      source:
+        disease: output/disease
+        target: output/target
+        association: output/association_overall_direct
+        evidence: output/evidence_gwas_credible_sets
+      destination:
+        associations: view/search_ebi_associations
+        evidence: view/search_ebi_evidence
+      properties:
+        spark.driver.memory: 8g
