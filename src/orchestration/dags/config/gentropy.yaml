@@ -117,26 +117,52 @@ steps:
 
   variant_annotation:
     cluster: false
+    google_batch_index_specs:
+      pointer: "vep" # pointer to the vep manifest generator implementation.
+      max_task_count: 500 # Max number of tasks running in a single google batch job.
+      generator_specs:
+        generator_options:
+          # INPUTS
+          # Based on vcf_input_path, the job environment variables $INPUT_FILE and $OUTPUT_FILE are discovered.
+          vcf_input_path: &vep_input_uri '{{release_uri}}/intermediate/variant_partition/'
+          vep_cache_path: &vep_cache_uri 'gs://vep_cache_data/vep/cache'
+          # OUTPUTS
+          vep_output_path: &vep_output_uri '{{release_uri}}/intermediate/variant_annotation/'
     google_batch:
-      resource_specs:
-        cpu_milli: 2000
-        memory_mib: 2000
-        boot_disk_mib: 10000
-      task_specs:
-        max_retry_count: 10 # retry up to 10 times due to SPOT 50001 preemption errors
-        max_run_duration: '2h'
-      policy_specs:
-        machine_type: n1-standard-4
-        provisioning_model: STANDARD
-      image: 'europe-west1-docker.pkg.dev/open-targets-eu-dev/vep/custom_ensembl_vep:{{vep_version}}'
-      entrypoint: /bin/sh
-      parallelism: 500 # max number of VEP tasks run at a time in parallel
-    params:
-      # INPUTS
-      vep_cache_path: gs://vep_cache_data/vep/cache
-      vcf_input_path: '{{release_uri}}/intermediate/variant_partition'
-      # OUTPUTS
-      vep_output_path: '{{release_uri}}/intermediate/variant_annotation'
+      job:
+        task_group:
+          parallelism: 500 # Max number of VEP tasks run at a time in parallel on all machines.
+          task_count_per_node: 2 # Number of tasks running at the same time on a single machine.
+          task_environments:
+            environments: [] # Populated at runtime by BatchIndexOperator with dictionaries containing $INPUT_FILE and $OUTPUT_FILE
+          task_config:
+            max_retry_count: 2
+            max_run_duration: '2h'
+            instance_resource_spec:
+              cpu_milli: 2000
+              memory_mib: 2000
+              boot_disk_mib: 10000
+            runnable_spec:
+              image_uri: 'europe-west1-docker.pkg.dev/open-targets-eu-dev/vep/custom_ensembl_vep:{{vep_version}}'
+              entrypoint: /bin/bash
+              script_file: annotate_variants.sh # In src.orchestration.assets
+              script_variables: # variables templated into the script before execution.
+                cache_dir: &vep_cache_mount '/mnt/disks/share/cache/'
+                input_dir: &vep_input_mount '/mnt/disks/share/input/'
+                output_dir: &vep_output_mount '/mnt/disks/share/output/'
+            shared_volumes:
+              mounting_points:
+                - remote_uri: *vep_input_uri
+                  mount_point: *vep_input_mount
+                - remote_uri: *vep_output_uri
+                  mount_point: *vep_output_mount
+                - remote_uri: *vep_cache_uri
+                  mount_point: *vep_cache_mount
+        allocation:
+          instance:
+            machine_type: n1-standard-4
+            provisioning_model: STANDARD # Other options: SPOT (but careful with max_retry_count)
+        logs: {}
 
   variant:
     params:
@@ -188,44 +214,39 @@ steps:
   l2g_prediction:
     cluster: false
     google_batch_index_specs:
-      manifest_generator_label: "gentropy-step"
-      manifest_generator_specs:
-        commands:
-          - -c
-          - "gentropy"
-        options:
-          step: locus_to_gene
-          step.session.write_mode: overwrite
-          step.run_mode: predict
-          step.session.output_partitions: 1
-          step.l2g_threshold: 0.05
-          step.download_from_hub: true
-          step.explain_predictions: true
-          +step.session.extended_spark_conf: "{spark.jars:https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop3-latest.jar}"
-          # INPUTS
-          step.hf_hub_repo_id: 'opentargets/locus_to_gene_{{l2g_training_version}}'
-          step.feature_matrix_path: '{{release_uri}}/intermediate/l2g_feature_matrix'
-          step.credible_set_path: '$INPUT_PARTITION' # The env value $INPUT_PARTITION differs within each machine.
-          # OUTPUTS
-          step.predictions_path: '$OUTPUT_PARTITION'
-        manifest_kwargs:
-          # Job partitionninig depends on the number of credible_set parquet files found in the input glob.
+      pointer: "gentropy_step"
+      max_task_count: 1000 # Number of tasks running in a single google batch job.
+      generator_specs:
+        generator_options:
+          # Job partitioning depends on the number of credible_set parquet files found in the input glob.
           input_glob: '{{release_uri}}/output/credible_set/**.parquet'
           # With output_partitions = 1, each input is mapped to 1 output.
           output_prefix: '{{release_uri}}/output/l2g_prediction'
     google_batch:
-      entrypoint: /usr/bin/bash
-      image: 'ghcr.io/opentargets/gentropy:{{gentropy_version}}'
-      resource_specs:
-        cpu_milli: 2000
-        memory_mib: 7000
-        boot_disk_mib: 4000
-      task_specs:
-        max_retry_count: 2
-        max_run_duration: "1h"
-      policy_specs:
-        machine_type: n1-standard-2
-        provisioning_model: STANDARD
+      job:
+        task_group:
+          parallelism: 200
+          task_environments:
+            environments: [] # Populated at runtime by BatchIndexOperator with dictionaries containing $INPUT_PARTITION and $OUTPUT_PARTITION
+          task_config:
+            max_retry_count: 2
+            max_run_duration: "1h"
+            instance_resource_spec:
+              cpu_milli: 2000
+              memory_mib: 7000
+              boot_disk_mib: 4000
+            runnable_spec:
+              image_uri: 'ghcr.io/opentargets/gentropy:{{gentropy_version}}'
+              entrypoint: /usr/bin/bash
+              script_file: l2g_predict.sh
+              script_variables:
+                l2g_training_version: '{{l2g_training_version}}'
+                feature_matrix_path: '{{release_uri}}/intermediate/l2g_feature_matrix'
+        allocation:
+          instance:
+            machine_type: n1-standard-2
+            provisioning_model: STANDARD
+        logs: {}
 
   l2g_evidence:
     params:

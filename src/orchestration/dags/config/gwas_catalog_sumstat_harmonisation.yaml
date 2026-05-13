@@ -2,7 +2,7 @@
 environment_specs:
   - name: Test
     vars:
-      root_path: gs://ot_orchestration/test/gwas_catalog_inputs
+      root_path: gs://ot_orchestration/test/gwas_catalog_harmonisation/gwas_catalog_inputs
   - name: Prod
     vars:
       root_path: gs://gwas_catalog_inputs
@@ -14,18 +14,10 @@ nodes:
     kind: Task
     prerequisites: []
     google_batch_index_specs:
-      manifest_generator_label: gwas_catalog_harmonisation
+      pointer: harmonisation
       max_task_count: 1000
-      manifest_generator_specs:
-        commands:
-          - -c
-          - ./harmonise-sumstats.sh
-          - $RAW
-          - $HARMONISED
-          - $QC
-          - 1.0e-8
-        options:
-        manifest_kwargs:
+      generator_specs:
+        generator_options:
           qc_output_pattern: '{root_path}/summary_statistics_qc/**_SUCCESS'
           harm_output_pattern: '{root_path}/harmonised_summary_statistics/**_SUCCESS'
           raw_input_pattern: '{root_path}/raw_summary_statistics/**.h.tsv.gz'
@@ -36,15 +28,26 @@ nodes:
     prerequisites:
       - generate_sumstat_index
     google_batch:
-      entrypoint: /usr/bin/bash
-      parallelism: 200
-      image: ghcr.io/opentargets/orchestration-harmonisation:26.1-staging.1
-      resource_specs:
-        cpu_milli: 4000
-        memory_mib: 8000
-        boot_disk_mib: 8000
-      task_specs:
-        max_retry_count: 2
-        max_run_duration: "1h"
-      policy_specs:
-        machine_type: n1-standard-4
+      job:
+        task_group:
+          parallelism: 200
+          task_environments:
+            environments: [] # populated at runtime by BatchIndexOperator
+          task_config:
+            max_retry_count: 2
+            max_run_duration: "1h"
+            instance_resource_spec:
+              cpu_milli: 4000
+              memory_mib: 8000
+              boot_disk_mib: 8000
+            runnable_spec:
+              image_uri: ghcr.io/opentargets/orchestration-harmonisation:26.1-staging.1
+              entrypoint: /usr/bin/bash
+              inline_commands:
+                - '-c'
+                - './harmonise-sumstats.sh $RAW $HARMONISED $QC 1.0e-8'
+        allocation:
+          instance:
+            machine_type: n1-standard-4
+            provisioning_model: SPOT
+        logs: {}
