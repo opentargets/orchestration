@@ -44,11 +44,11 @@ build-backend = "hatchling.build"
 
 [tool.deptry]
 known_first_party = ["orchestration"]
-pep621_dev_dependency_groups = ["test"]
+package_module_name_map = { apache-airflow = "airflow" }
 extend_exclude = ["src/orchestration/assets/**"]
 
 [tool.deptry.per_rule_ignores]
-DEP002 = ["psycopg2-binary", "flask-limiter"]
+DEP002 = ["asyncpg", "psycopg2-binary", "flask-limiter"]
 
 [tool.pytest.ini_options]
 filterwarnings = "ignore::DeprecationWarning"
