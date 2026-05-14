@@ -28,7 +28,7 @@ following software requirements:
 
 ### Local
 
-Local development sets up an Airflow 3 Docker Compose stack with LocalExecutor. The local API/UI service is exposed on `localhost:8080` by default.
+Local development sets up an Airflow 3.2 Docker Compose stack with LocalExecutor. `make dev` starts `postgres`, `airflow-init`, `airflow-scheduler`, `airflow-dag-processor`, `airflow-triggerer`, and `airflow-apiserver`. The local Airflow API/UI is exposed on `localhost:8080` by default.
 
 > [!NOTE]
 > The directory containing the orchestration code is mounted into the Airflow service containers, so you can edit the code locally in your IDE and see the changes reflected in the Airflow UI.
@@ -44,9 +44,9 @@ make dev
 This will build and start the local Airflow services and install the required dependencies using uv.
 
 > [!WARNING]
-> If you run `docker compose up` by itself, to get a working dev environment you
-> must add the override file `compose.local.yaml` as well as set the
-> `GOOGLE_APPLICATION_CREDENTIALS` environment variable.
+> If you run Docker Compose manually, use
+> `docker compose -f compose.yaml -f compose.local.yaml up -d --build` and set
+> the `GOOGLE_APPLICATION_CREDENTIALS` environment variable first.
 
 In order to use the local Airflow instance you need to have the Google Cloud credentials set up on your local machine.
 By default the `make dev` command will link the `~/.config/gcloud/adc.json` file to the Airflow container. If you store the credentials in a different file, you can set them with
@@ -67,12 +67,22 @@ gcloud auth application-default login
 
 #### Setup
 
-Run `make`. This will set up and/or connect you to an airflow dev instance in
-Google Cloud; and open vscode into that instance code as well as a the Airflow UI
-in a browser automatically. The default credentials are `airflow`/`airflow`.
+Run `make cloud-dev` (or just `make`, which uses `cloud-dev` as the default
+target). This provisions or reconnects to the Airflow development VM in Google
+Cloud, boots the same Airflow 3.2 Compose stack used locally (`postgres`,
+`airflow-init`, `airflow-scheduler`, `airflow-dag-processor`,
+`airflow-triggerer`, and `airflow-apiserver`), installs the local IDE
+dependencies on the VM, opens VS Code Remote into that checkout, and opens the
+Airflow UI in a browser automatically. The default UI credentials are
+`airflow`/`airflow`.
 
-The port `8081` is used for the remote Airflow UI. This port is forwarded from the machine to your local host.
-In case you lose the connection to the remote instance, you can re-run the `make` command or setup the tunnel directly with
+The remote stack uses the VM service account for Google Cloud access, so you do
+not need to mount local ADC credentials into the containers.
+
+Port `8081` is used for the remote Airflow API/UI. It is forwarded from the VM
+to your local host.
+In case you lose the connection to the remote instance, you can re-run
+`make cloud-dev` (or `make`) or set up the tunnel directly with
 
 ```bash
 make tunnel
@@ -115,13 +125,13 @@ docker ps
 To stop Airflow, run:
 
 ```bash
-docker compose down
+docker compose -f compose.yaml -f compose.local.yaml down
 ```
 
 To cleanup the Airflow database, run:
 
 ```bash
-docker compose down --volumes --remove-orphans
+docker compose -f compose.yaml -f compose.local.yaml down --volumes --remove-orphans
 ```
 
 ### Advanced configuration
@@ -129,7 +139,7 @@ docker compose down --volumes --remove-orphans
 More information on running Airflow with Docker Compose can be found in the
 [official docs](https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html).
 
-1. **Increase Airflow concurrency**. Modify the `docker-compose.yaml` and add
+1. **Increase Airflow concurrency**. Modify `compose.yaml` and add
    the following to the x-airflow-common → environment section:
 
    ```yaml
@@ -145,7 +155,7 @@ More information on running Airflow with Docker Compose can be found in the
 
 ### Troubleshooting
 
-Note that when you a a new workflow under `dags/`, Airflow will not pick that up
+Note that when you add a new workflow under `dags/`, Airflow will not pick that up
 immediately. By default the filesystem is only scanned for new DAGs every 300s.
 However, once the DAG is added, updates are applied nearly instantaneously.
 

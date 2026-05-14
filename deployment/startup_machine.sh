@@ -30,7 +30,7 @@ echo \
 apt-get update -y
 
 # install docker
-apt-get install -y docker-ce docker-ce-cli containerd.io
+apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
 # clone repository
 mkdir -p /opt/orchestration
@@ -48,8 +48,63 @@ chmod -R g+rw /opt/orchestration
 # create orchestration user
 sudo useradd -m -G google-sudoers,docker orchestration
 
-# run airflow
-su orchestration -c "docker compose up -d"
+REMOTE_AIRFLOW_SERVICES="postgres airflow-init airflow-scheduler airflow-dag-processor airflow-triggerer airflow-apiserver"
+
+fail_service_startup() {
+  SERVICE_NAME="$1"
+  cd /opt/orchestration
+  docker compose ps "$SERVICE_NAME"
+  docker compose logs --no-color --tail=50 "$SERVICE_NAME"
+  exit 1
+}
+
+wait_for_airflow_init() {
+  while true; do
+    CONTAINER_ID=$(cd /opt/orchestration && docker compose ps -q airflow-init)
+    if [ -n "$CONTAINER_ID" ]; then
+      STATUS=$(docker inspect --format '{{.State.Status}}' "$CONTAINER_ID")
+      EXIT_CODE=$(docker inspect --format '{{.State.ExitCode}}' "$CONTAINER_ID")
+      if [ "$STATUS" = "exited" ] && [ "$EXIT_CODE" = "0" ]; then
+        break
+      elif [ "$STATUS" = "exited" ]; then
+        fail_service_startup airflow-init
+      fi
+    fi
+    sleep 5
+  done
+}
+
+wait_for_healthy_service() {
+  SERVICE_NAME="$1"
+  while true; do
+    CONTAINER_ID=$(cd /opt/orchestration && docker compose ps -q "$SERVICE_NAME")
+    if [ -n "$CONTAINER_ID" ]; then
+      STATUS=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$CONTAINER_ID")
+      if [ "$STATUS" = "healthy" ]; then
+        break
+      elif [ "$STATUS" = "unhealthy" ] || [ "$STATUS" = "exited" ] || [ "$STATUS" = "dead" ]; then
+        fail_service_startup "$SERVICE_NAME"
+      fi
+    fi
+    sleep 5
+  done
+}
+
+wait_for_apiserver() {
+  until curl --fail --silent http://localhost:8080/api/v2/monitor/health > /dev/null; do
+    sleep 5
+  done
+}
+
+# run the Airflow 3.2 stack used for remote development
+su orchestration -c "cd /opt/orchestration && docker compose up -d --build ${REMOTE_AIRFLOW_SERVICES}"
+wait_for_airflow_init
+wait_for_healthy_service postgres
+wait_for_healthy_service airflow-scheduler
+wait_for_healthy_service airflow-dag-processor
+wait_for_healthy_service airflow-triggerer
+wait_for_healthy_service airflow-apiserver
+wait_for_apiserver
 
 # signal that the script is done
 touch /ready
