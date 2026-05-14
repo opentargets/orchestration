@@ -53,14 +53,14 @@ REMOTE_AIRFLOW_SERVICES="postgres airflow-init airflow-scheduler airflow-dag-pro
 fail_service_startup() {
   SERVICE_NAME="$1"
   cd /opt/orchestration
-  docker compose ps "$SERVICE_NAME"
+  docker compose ps --all "$SERVICE_NAME"
   docker compose logs --no-color --tail=50 "$SERVICE_NAME"
   exit 1
 }
 
 wait_for_airflow_init() {
   while true; do
-    CONTAINER_ID=$(cd /opt/orchestration && docker compose ps -q airflow-init)
+    CONTAINER_ID=$(cd /opt/orchestration && docker compose ps --all -q airflow-init)
     if [ -n "$CONTAINER_ID" ]; then
       STATUS=$(docker inspect --format '{{.State.Status}}' "$CONTAINER_ID")
       EXIT_CODE=$(docker inspect --format '{{.State.ExitCode}}' "$CONTAINER_ID")
@@ -77,7 +77,7 @@ wait_for_airflow_init() {
 wait_for_healthy_service() {
   SERVICE_NAME="$1"
   while true; do
-    CONTAINER_ID=$(cd /opt/orchestration && docker compose ps -q "$SERVICE_NAME")
+    CONTAINER_ID=$(cd /opt/orchestration && docker compose ps --all -q "$SERVICE_NAME")
     if [ -n "$CONTAINER_ID" ]; then
       STATUS=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$CONTAINER_ID")
       if [ "$STATUS" = "healthy" ]; then

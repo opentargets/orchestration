@@ -1,6 +1,6 @@
 VERSION := $$(grep '^version' pyproject.toml | sed 's%version = "\(.*\)"%\1%')
 .DEFAULT_GOAL := cloud-dev
-LOCAL_DEV_CREDENTIALS ?= ~/.config/gcloud/adc.json
+LOCAL_DEV_CREDENTIALS ?= ~/.config/gcloud/application_default_credentials.json
 
 ### HOUSEKEEPING TARGETS ###
 .PHONY: help sync version clean clean-vm test check cloud-dev tunnel upload-ukb-ppp-bucket-readme upload-eqtl-catalogue-bucket-readme upload-finngen-bucket-readme upload-gwas-catalog-buckets-readme update-bucket-docs build-gentropy-gcs-image setup-harmonisation-test
@@ -12,7 +12,7 @@ version: ## Show the package version
 	@echo $(VERSION)
 
 clean: ## Clean the project
-	@docker compose down
+	@docker compose down --remove-orphans
 	@rm -rf logs dist .venv .pytest_cache .ruff_cache deployment/.terraform deployment/plan.out
 
 clean-vm: ## Destroy the Airflow development VM
@@ -43,7 +43,7 @@ sync:
 	@uv run pre-commit install --hook-type commit-msg
 
 dev: sync .git/hooks/commit-msg  ## Prepare the local development environment
-	@GOOGLE_APPLICATION_CREDENTIALS=$(LOCAL_DEV_CREDENTIALS) docker compose -f compose.yaml -f compose.local.yaml up -d --build
+	@GOOGLE_APPLICATION_CREDENTIALS=$(LOCAL_DEV_CREDENTIALS) docker compose -f compose.yaml -f compose.local.yaml up -d --build --remove-orphans
 
 cloud-dev: ## Start the remote development environment and connect to it (default goal)
 	@./deployment/start.sh

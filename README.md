@@ -44,12 +44,12 @@ make dev
 This will build and start the local Airflow services and install the required dependencies using uv.
 
 > [!WARNING]
-> If you run Docker Compose manually, use
-> `docker compose -f compose.yaml -f compose.local.yaml up -d --build` and set
-> the `GOOGLE_APPLICATION_CREDENTIALS` environment variable first.
+> If you run Docker Compose manually, export `GOOGLE_APPLICATION_CREDENTIALS` first
+> (for example, `"$HOME/.config/gcloud/application_default_credentials.json"`),
+> then use `docker compose -f compose.yaml -f compose.local.yaml up -d --build`.
 
 In order to use the local Airflow instance you need to have the Google Cloud credentials set up on your local machine.
-By default the `make dev` command will link the `~/.config/gcloud/adc.json` file to the Airflow container. If you store the credentials in a different file, you can set them with
+By default the `make dev` command will link the `~/.config/gcloud/application_default_credentials.json` file created by `gcloud auth application-default login` to the Airflow container. If you store the credentials in a different file, you can set them with
 
 ```bash
 LOCAL_DEV_CREDENTIALS=path/to/your/credentials.json make dev
@@ -125,13 +125,13 @@ docker ps
 To stop Airflow, run:
 
 ```bash
-docker compose -f compose.yaml -f compose.local.yaml down
+docker compose down
 ```
 
 To cleanup the Airflow database, run:
 
 ```bash
-docker compose -f compose.yaml -f compose.local.yaml down --volumes --remove-orphans
+docker compose down --volumes --remove-orphans
 ```
 
 ### Advanced configuration
