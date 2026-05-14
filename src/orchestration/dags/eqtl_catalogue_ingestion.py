@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from airflow.sdk import DAG, chain
 from airflow.providers.google.cloud.operators.dataflow import DataflowTemplatedJobStartOperator
 from airflow.providers.google.cloud.operators.gcs import GCSDeleteObjectsOperator
+from airflow.sdk import DAG, chain
 
 from orchestration.operators.dataproc import CustomClusterConfig
 from orchestration.utils import find_node_in_config, read_yaml_config
