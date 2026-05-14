@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, cast
 
-from airflow.decorators.task_group import task_group
+from airflow.sdk import task_group
 from airflow.models.baseoperator import chain
 from airflow.models.dag import DAG
 from airflow.models.param import Param
@@ -44,7 +44,6 @@ with DAG(
     dag_id="unified_pipeline",
     description="Open Targets unified data pipeline",
     default_args=shared_dag_args,
-    default_view="grid",
     catchup=False,
     schedule=None,
     user_defined_filters={"strhash": strhash},
