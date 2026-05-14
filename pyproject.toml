@@ -8,7 +8,9 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     "apache-airflow-providers-google==21.1.0",
     "apache-airflow-providers-apache-beam==6.2.3",
+    "apache-airflow-providers-fab==3.6.1",
     "apache-airflow[async,celery,google]==3.2.1",
+    "asyncpg==0.31.0",
     "google==3.0.0",
     "pandas==2.1.4",
     "pyhocon==0.3.61",

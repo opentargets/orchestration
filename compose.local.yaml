@@ -19,13 +19,19 @@ services:
     volumes:
       - ${GOOGLE_APPLICATION_CREDENTIALS:-}:/opt/airflow/credentials/adc.json:ro
 
+  airflow-dag-processor:
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: "/opt/airflow/credentials/adc.json"
+    volumes:
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-}:/opt/airflow/credentials/adc.json:ro
+
   airflow-triggerer:
     environment:
       GOOGLE_APPLICATION_CREDENTIALS: "/opt/airflow/credentials/adc.json"
     volumes:
       - ${GOOGLE_APPLICATION_CREDENTIALS:-}:/opt/airflow/credentials/adc.json:ro
 
-  airflow-webserver:
+  airflow-apiserver:
     environment:
       GOOGLE_APPLICATION_CREDENTIALS: "/opt/airflow/credentials/adc.json"
     volumes:

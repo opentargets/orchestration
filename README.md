@@ -28,7 +28,7 @@ following software requirements:
 
 ### Local
 
-Local development sets up the Airflow service using Docker Compose with LocalExecutor. Local service is exposed to the `localhost:8080` by default.
+Local development sets up an Airflow 3 Docker Compose stack with LocalExecutor. The local API/UI service is exposed on `localhost:8080` by default.
 
 > [!NOTE]
 > The directory containing the orchestration code is mounted into the Airflow service containers, so you can edit the code locally in your IDE and see the changes reflected in the Airflow UI.
@@ -41,15 +41,15 @@ To spin the local Airflow instance, run:
 make dev
 ```
 
-This will start airflow service and install the required dependencies using uv.
+This will build and start the local Airflow services and install the required dependencies using uv.
 
 > [!WARNING]
 > If you run `docker compose up` by itself, to get a working dev environment you
-> must add the override file `compose-local.yaml` as well as set the
+> must add the override file `compose.local.yaml` as well as set the
 > `GOOGLE_APPLICATION_CREDENTIALS` environment variable.
 
-In order to use the local Airflow instance yoy need to have the google cloud credentials set up on local machine.
-By default the `make dev` comamnd will link the `~/.config/gcloud/up-airflow-dev.json` file to the Airflow container. If you store the credentials in different file, you can set them with
+In order to use the local Airflow instance you need to have the Google Cloud credentials set up on your local machine.
+By default the `make dev` command will link the `~/.config/gcloud/adc.json` file to the Airflow container. If you store the credentials in a different file, you can set them with
 
 ```bash
 LOCAL_DEV_CREDENTIALS=path/to/your/credentials.json make dev
