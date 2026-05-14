@@ -18,7 +18,7 @@ from airflow.providers.google.cloud.operators.dataproc import (
     InstanceFlexibilityPolicy,
     PreemptibilityType,
 )
-from airflow.utils.context import Context
+from airflow.sdk import Context
 from google.api_core.exceptions import NotFound as GCPNotFound
 from google.cloud.dataproc_v1 import JobReference
 from google.cloud.dataproc_v1.types import DiskConfig, NodeInitializationAction

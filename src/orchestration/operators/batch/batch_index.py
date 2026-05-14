@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from functools import cached_property
 
-from airflow.exceptions import AirflowSkipException
+from airflow.sdk.exceptions import AirflowSkipException
 
 from orchestration.models.batch import BatchIndexRow
 from orchestration.models.batch.environment import EnvironmentRegistrySpec

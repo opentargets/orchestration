@@ -6,15 +6,11 @@ import logging
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, cast
 
-from airflow.sdk import task_group
-from airflow.models.baseoperator import chain
-from airflow.models.dag import DAG
-from airflow.models.param import Param
-from airflow.models.taskmixin import DAGNode
-from airflow.operators.empty import EmptyOperator
 from airflow.providers.google.cloud.operators.compute import ComputeEngineDeleteInstanceOperator
+from airflow.providers.standard.operators.empty import EmptyOperator
+from airflow.sdk import DAG, Param, chain, task_group
+from airflow.task.trigger_rule import TriggerRule
 from airflow.utils.edgemodifier import Label
-from airflow.utils.trigger_rule import TriggerRule
 
 from orchestration.dags.config.unified_pipeline import UnifiedPipelineConfig
 from orchestration.models.batch import BatchIndexOperatorSpec, BatchJobOperatorSpec
@@ -59,7 +55,7 @@ with DAG(
 ) as dag:
     logger = logging.getLogger(__name__)
     config = UnifiedPipelineConfig()
-    steps: dict[str, dict[str, DAGNode]] = {}  # this is a registry of tasks, it is used to build dependencies
+    steps: dict[str, dict[str, Any]] = {}  # this is a registry of tasks, it is used to build dependencies
 
     # ==============================================================================================
     # PIS stage of the DAG —  two paths

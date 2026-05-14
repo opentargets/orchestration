@@ -7,8 +7,8 @@ import re
 from typing import Annotated, Literal
 
 import pandas as pd
-from airflow.exceptions import AirflowSkipException
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
+from airflow.sdk.exceptions import AirflowSkipException
 from pydantic import BaseModel, StringConstraints
 
 from orchestration.models.batch import ManifestGeneratorSpec

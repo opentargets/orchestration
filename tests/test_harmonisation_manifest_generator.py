@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
-from airflow.exceptions import AirflowSkipException
+from airflow.sdk.exceptions import AirflowSkipException
 
 from orchestration.models.batch import ManifestGeneratorSpec
 from orchestration.models.batch.environment import EnvironmentRegistrySpec, EnvironmentSpec

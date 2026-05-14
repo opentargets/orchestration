@@ -3,9 +3,8 @@
 from collections.abc import Iterable, Sequence
 
 from airflow.models.taskinstance import TaskInstance
-from airflow.operators.branch import BaseBranchOperator
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
-from airflow.utils.context import Context
+from airflow.sdk import BaseBranchOperator, Context
 from google.cloud.storage import Client
 
 from orchestration.dags.config.unified_pipeline import UnifiedPipelineConfig

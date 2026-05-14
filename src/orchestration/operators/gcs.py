@@ -5,8 +5,8 @@ from collections.abc import Sequence
 from pathlib import Path
 
 import requests
-from airflow.models.baseoperator import BaseOperator
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
+from airflow.sdk import BaseOperator
 from google.cloud.exceptions import NotFound
 from google.cloud.storage import Client
 from google.cloud.storage.bucket import Bucket

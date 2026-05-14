@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from airflow.exceptions import AirflowSkipException
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
+from airflow.sdk.exceptions import AirflowSkipException
 from pydantic import BaseModel, StringConstraints
 
 from orchestration.models.batch import ManifestGeneratorSpec

@@ -5,8 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from airflow.models.baseoperator import BaseOperator
-from airflow.utils.trigger_rule import TriggerRule
+from airflow.sdk import BaseOperator, TriggerRule
 
 from orchestration.operators.dataproc import (
     CreateClusterOperator,

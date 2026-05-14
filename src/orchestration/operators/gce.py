@@ -18,9 +18,8 @@ from airflow.providers.google.cloud.hooks.compute import ComputeEngineHook
 from airflow.providers.google.cloud.operators.compute import ComputeEngineDeleteInstanceOperator
 from airflow.providers.google.common.consts import CLIENT_INFO
 from airflow.providers.google.common.hooks.base_google import GoogleBaseHook
-from airflow.sensors.base import BaseSensorOperator
+from airflow.sdk import BaseSensorOperator, Context
 from airflow.triggers.base import BaseTrigger, TriggerEvent
-from airflow.utils.context import Context
 from google.api_core.exceptions import ResourceExhausted, RetryError
 from google.api_core.extended_operation import ExtendedOperation
 from google.cloud import compute_v1, logging_v2
