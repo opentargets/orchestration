@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from airflow.models.dag import DAG
+from airflow.sdk import DAG
 
 from orchestration.utils import chain_dependencies, read_yaml_config
 from orchestration.utils.common import shared_dag_args, shared_dag_kwargs

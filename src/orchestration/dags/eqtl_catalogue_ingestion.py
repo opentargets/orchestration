@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from airflow.models.baseoperator import chain
-from airflow.models.dag import DAG
+from airflow.sdk import DAG, chain
 from airflow.providers.google.cloud.operators.dataflow import DataflowTemplatedJobStartOperator
 from airflow.providers.google.cloud.operators.gcs import GCSDeleteObjectsOperator
 

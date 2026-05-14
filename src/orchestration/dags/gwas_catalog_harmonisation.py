@@ -5,8 +5,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from airflow.models.baseoperator import chain
-from airflow.models.dag import DAG
+from airflow.sdk import DAG, chain
 
 from orchestration.models.batch import BatchIndexOperatorSpec, BatchJobOperatorSpec
 from orchestration.operators.batch import BatchIndexOperator, BatchJobOperator
