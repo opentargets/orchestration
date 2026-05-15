@@ -25,10 +25,10 @@ from google.cloud.dataproc_v1.types import DiskConfig, NodeInitializationAction
 from google.cloud.dataproc_v1.types.jobs import Job, JobPlacement, PySparkJob, SparkJob
 from pydantic import BaseModel, model_validator
 
+from orchestration.models.secret import Secret, SecretInitAction, Secrets
 from orchestration.utils import convert_params_to_hydra_positional_arg, random_id, resource_name
 from orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_REGION, GCP_SERVICE_ACCOUNT, GCP_ZONE
 from orchestration.utils.labels import Labels
-from orchestration.utils.secret import Secret, SecretInitAction, Secrets
 
 if TYPE_CHECKING:
     from typing import Any, Self
@@ -208,7 +208,13 @@ class CustomClusterConfig(BaseModel):
         Returns:
             ClusterConfig: The Dataproc cluster.
         """
-        exclude_fields = {"secondary_worker_disk_type", "secondary_worker_disk_size", "secondary_worker_machine_type", "secret_map", "secret_init_action_uri"}
+        exclude_fields = {
+            "secondary_worker_disk_type",
+            "secondary_worker_disk_size",
+            "secondary_worker_machine_type",
+            "secret_map",
+            "secret_init_action_uri",
+        }
         config = ClusterGenerator(**self.model_dump(exclude=exclude_fields)).make()
 
         # Ensure that the c4- machine types have the right disk config
@@ -337,9 +343,12 @@ class CreateClusterOperator(DataprocCreateClusterOperator):
             return None
         if not self._cluster_config.secret_init_action_uri:
             raise AirflowException("secret_init_action_uri must be set if secret_map is set")
-        secrets = Secrets(mapping={
-            env_var: Secret(secret_id=secret_name, project_id=self.project_id) for env_var, secret_name in self._cluster_config.secret_map.items()
-        })
+        secrets = Secrets(
+            mapping={
+                env_var: Secret(secret_id=secret_name, project_id=self.project_id)
+                for env_var, secret_name in self._cluster_config.secret_map.items()
+            }
+        )
         init_action = SecretInitAction(
             secrets=secrets,
             init_action_uri=self._cluster_config.secret_init_action_uri,

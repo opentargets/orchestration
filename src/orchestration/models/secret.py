@@ -66,7 +66,6 @@ from orchestration.utils.path import GCSPath
 
 
 class Secret(BaseModel):
-
     secret_id: str
     """Secret ID in GCP Secret Manager. This is the name of the secret without the "projects/{project_id}/secrets/" prefix."""
     project_id: str = GCP_PROJECT_PLATFORM
@@ -107,9 +106,7 @@ class Secret(BaseModel):
     def _validate_version_id(cls, v: str) -> str:
         """Sanitize the version_id to ensure it is either 'latest' or a numeric version string."""
         if not re.fullmatch(r"latest|[0-9]+", v):
-            raise ValueError(
-                f"Invalid version_id {v!r}. Must be 'latest' or a numeric version string."
-            )
+            raise ValueError(f"Invalid version_id {v!r}. Must be 'latest' or a numeric version string.")
         return v
 
     @classmethod
@@ -117,7 +114,9 @@ class Secret(BaseModel):
         """Create a Secret instance from the full secret name in the format "projects/{project_id}/secrets/{secret_id}/versions/{version_id}"."""
         parts = secret_name.split("/")
         if len(parts) != 6 or parts[0] != "projects" or parts[2] != "secrets" or parts[4] != "versions":
-            raise ValueError(f"Invalid secret name format: {secret_name}. Expected format: 'projects/{{project_id}}/secrets/{{secret_id}}/versions/{{version_id}}'")
+            raise ValueError(
+                f"Invalid secret name format: {secret_name}. Expected format: 'projects/{{project_id}}/secrets/{{secret_id}}/versions/{{version_id}}'"
+            )
         return cls(
             project_id=parts[1],
             secret_id=parts[3],
@@ -168,6 +167,10 @@ class Secrets(BaseModel):
                     "uppercase letter or underscore, followed by uppercase letters, digits, or underscores."
                 )
         return v
+
+    def build(self) -> dict[str, str]:
+        """Build a dictionary of environment variable names to secret references in the format expected by Dataproc init actions."""
+        return {env_var: secret.name for env_var, secret in self.mapping.items()}
 
 
 class SecretInitAction(BaseModel):

@@ -74,9 +74,6 @@ clusters:
     internal_ip_only: false
     metadata:
       GENTROPY_REF: 'v{{gentropy_version}}'
-    secret_map:
-      HF_TOKEN: hfhub-key
-      WANDB_API_KEY: wandb-key
     properties:
       'spark:spark.shuffle.service.enabled': 'true'
       'spark:spark.sql.adaptive.enabled': 'true'
@@ -84,7 +81,16 @@ clusters:
       'core:fs.gs.requester.pays.project.id': '{{requester_pays_project_id}}'
     init_actions_uris:
       - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'
+    # The `fetch_secrets.sh` is build at runtime and pushed to GCS. It will
+    # store the secret variables into `/var/run/secrets/secret_name.json` files.
+    # The files are accessible via the master node.
     secret_init_action_uri: 'gs://opentargets-pipelines/up/gentropy/fetch_secrets.sh'
+    # Secrets to be fetched by secret_init_action_uri and made available as files in the cluster.
+    secret_map:
+      # this results in /var/run/secrets/hfhub-key.json with {"HF_TOKEN": "hfhub-key_value"} as content
+      HF_TOKEN: hfhub-key
+      # this results in /var/run/secrets/wandb-key.json with {"WANDB_API_KEY": "wandb-key_value"} as content
+      WANDB_API_KEY: wandb-key
 
   gentropy_colocalisation:
     image_version: '2.2'

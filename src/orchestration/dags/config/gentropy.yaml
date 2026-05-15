@@ -231,6 +231,11 @@ steps:
           task_environments:
             environments: [] # Populated at runtime by BatchIndexOperator with dictionaries containing $INPUT_PARTITION and $OUTPUT_PARTITION
           task_config:
+            shared_environment:
+              secrets:
+                mapping:
+                  HF_TOKEN:
+                    secret_id: hfhub-key
             max_retry_count: 2
             max_run_duration: "1h"
             instance_resource_spec:
@@ -248,8 +253,6 @@ steps:
           instance:
             machine_type: n1-standard-2
             provisioning_model: STANDARD
-        secret_map:
-          HF_TOKEN: hfhub-key
         logs: {}
 
   l2g_evidence:

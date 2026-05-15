@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 import pytest
 from pydantic import ValidationError
 
-from orchestration.utils.secret import Secret, SecretInitAction, Secrets
+from orchestration.models.secret import Secret, SecretInitAction, Secrets
 
 
 class TestSecretConstruction:
@@ -54,11 +54,13 @@ class TestSecretFromSecretName:
 class TestSecretIdValidation:
     @pytest.mark.parametrize(
         "secret_id",
-        [pytest.param("my-secret", id="hyphen"),
-         pytest.param("MY_SECRET", id="uppercase-underscore"),
-         pytest.param("abc123", id="alphanumeric"),
-         pytest.param("a" * 255, id="max-length"),
-         pytest.param("a-B_1", id="mixed")],
+        [
+            pytest.param("my-secret", id="hyphen"),
+            pytest.param("MY_SECRET", id="uppercase-underscore"),
+            pytest.param("abc123", id="alphanumeric"),
+            pytest.param("a" * 255, id="max-length"),
+            pytest.param("a-B_1", id="mixed"),
+        ],
     )
     def test_valid_secret_ids(self, secret_id: str) -> None:
         assert Secret(secret_id=secret_id, project_id="my-proj").secret_id == secret_id
@@ -91,12 +93,14 @@ class TestProjectIdValidation:
 
     @pytest.mark.parametrize(
         "project_id",
-        [pytest.param("ab", id="too-short"),
-         pytest.param("a" * 31, id="too-long"),
-         pytest.param("UPPERCASE", id="uppercase"),
-         pytest.param("has space", id="space"),
-         pytest.param("has$dollar", id="dollar"),
-         pytest.param("has$(injection)", id="subshell")],
+        [
+            pytest.param("ab", id="too-short"),
+            pytest.param("a" * 31, id="too-long"),
+            pytest.param("UPPERCASE", id="uppercase"),
+            pytest.param("has space", id="space"),
+            pytest.param("has$dollar", id="dollar"),
+            pytest.param("has$(injection)", id="subshell"),
+        ],
     )
     def test_invalid_project_ids_raise(self, project_id: str) -> None:
         with pytest.raises(ValidationError):
@@ -106,10 +110,12 @@ class TestProjectIdValidation:
 class TestVersionIdValidation:
     @pytest.mark.parametrize(
         "version_id",
-        [pytest.param("latest", id="latest"),
-         pytest.param("1", id="one"),
-         pytest.param("42", id="two-digit"),
-         pytest.param("999", id="three-digit")],
+        [
+            pytest.param("latest", id="latest"),
+            pytest.param("1", id="one"),
+            pytest.param("42", id="two-digit"),
+            pytest.param("999", id="three-digit"),
+        ],
     )
     def test_valid_version_ids(self, version_id: str) -> None:
         assert Secret(secret_id="my-secret", project_id="my-proj", version_id=version_id).version_id == version_id
@@ -123,7 +129,7 @@ class TestVersionIdValidation:
             pytest.param("", id="empty"),
             pytest.param("latest1", id="latest-suffix"),
             pytest.param("$(cmd)", id="subshell"),
-        ]
+        ],
     )
     def test_invalid_version_ids_raise(self, version_id: str) -> None:
         with pytest.raises(ValidationError):
@@ -142,7 +148,7 @@ class TestSecretsEnvVarValidation:
             pytest.param("A", id="single-char"),
             pytest.param("VAR123", id="alphanumeric"),
             pytest.param("UPPER_CASE_123", id="mixed"),
-        ]
+        ],
     )
     def test_valid_env_var_names(self, env_var: str) -> None:
         secrets = Secrets(mapping={env_var: self._secret()})
@@ -157,7 +163,7 @@ class TestSecretsEnvVarValidation:
             pytest.param("HAS$DOLLAR", id="dollar"),
             pytest.param("HAS$(injection)", id="subshell"),
             pytest.param("", id="empty"),
-        ]
+        ],
     )
     def test_invalid_env_var_names_raise(self, env_var: str) -> None:
         with pytest.raises(ValidationError):
