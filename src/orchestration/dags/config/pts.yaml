@@ -639,6 +639,17 @@ steps:
       destination:
         disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
         disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
+    - name: pyspark literature ontoma lut generation
+      pyspark: literature_ontoma_lut_generation
+      source:
+        disease_index: output/disease/disease.parquet
+        ot_disease_curation: input/ontoma/ot_disease_curation.tsv
+        eva_clinvar: input/ontoma/eva_clinvar.txt
+        clinvar_xrefs: input/ontoma/clinvar_xrefs.txt
+        target_index: output/target
+        drug_index: output/drug_molecule
+      destination:
+        disease_target_drug_label_lut: intermediate/ontoma/disease_target_drug_label_lookup_table.parquet
   ##################################################################################################
 
   #: DRUG_WARNING STEP :############################################################################
@@ -1907,3 +1918,84 @@ steps:
         evidence: view/search_ebi_evidence
       properties:
         spark.driver.memory: 8g
+
+  #: LITERATURE STEPS (runs on pts_literature cluster) :##############################
+
+  literature_publication_match:
+    - name: pyspark literature publication match
+      pyspark: literature_publication_match
+      source:
+        pub_id_lut: input/literature/PMID_PMCID_DOI.csv.gz
+        epmc_publication: gs://otar025-epmc/ml02
+        ontoma_disease_target_drug_label_lut: intermediate/ontoma/disease_target_drug_label_lookup_table.parquet
+      destination:
+        match_valid: intermediate/literature/match
+        match_failed: excluded/literature/match
+      settings:
+        date_prefix: ''
+        repartition: 25000
+        match_valid_coalesce: 600
+        match_failed_coalesce: 530
+      properties:
+        # Per-step overrides for the heavy publication_match step. Held-executor
+        # pin (dynamicAllocation.*) survives the autoscaler downscale issue
+        # observed in PTS run-015. AQE coalesce + skew handling and the EPMC
+        # file partition cap (32MB) were validated on runs 013-016.
+        'spark.sql.shuffle.partitions': '15000'
+        'spark.sql.adaptive.skewJoin.skewedPartitionFactor': '2'
+        'spark.sql.adaptive.skewJoin.skewedPartitionThresholdInBytes': '64MB'
+        'spark.sql.adaptive.advisoryPartitionSizeInBytes': '268435456'
+        'spark.sql.adaptive.coalescePartitions.parallelismFirst': 'false'
+        'spark.sql.files.maxPartitionBytes': '33554432'
+        'spark.dynamicAllocation.executorIdleTimeout': '7200s'
+        'spark.dynamicAllocation.shuffleTracking.enabled': 'true'
+        'spark.dynamicAllocation.shuffleTracking.timeout': '7200s'
+  ##################################################################################################
+
+  literature_entity_lut:
+    - name: pyspark literature entity lut
+      pyspark: literature_entity_lut
+      source:
+        matches: intermediate/literature/match
+      destination:
+        literature_entity_lut: output/literature_entity_lut
+      properties:
+        'spark.sql.shuffle.partitions': '10000'
+  ##################################################################################################
+
+  literature_embedding:
+    - name: pyspark literature embedding
+      pyspark: literature_embedding
+      source:
+        matches: intermediate/literature/match
+      destination:
+        model: etc/model/w2v_model
+      properties:
+        'spark.sql.shuffle.partitions': '15000'
+  ##################################################################################################
+
+  literature_vector:
+    - name: pyspark literature vector
+      pyspark: literature_vector
+      source:
+        model: etc/model/w2v_model
+      destination:
+        vectors: output/literature_vector
+  ##################################################################################################
+
+  literature_cooccurrence_evidence:
+    - name: pyspark literature cooccurrence evidence
+      pyspark: literature_cooccurrence_evidence
+      source:
+        match: intermediate/literature/match
+      destination:
+        cooccurrence: intermediate/literature/cooccurrence
+        evidence: intermediate/evidence/literature_epmc
+      settings:
+        cooccurrence_coalesce: 40
+        evidence_coalesce: 32
+      properties:
+        'spark.sql.shuffle.partitions': '15000'
+        'spark.sql.adaptive.skewJoin.skewedPartitionFactor': '2'
+        'spark.sql.adaptive.skewJoin.skewedPartitionThresholdInBytes': '64MB'
+  ##################################################################################################
