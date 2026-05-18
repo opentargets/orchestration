@@ -210,6 +210,8 @@ steps:
       step.gold_standard_curation_path: '{{release_uri}}/input/l2g/gold_standard.json'
       # OUTPUTS
       step.model_path: '{{release_uri}}/etc/model/locus_to_gene_model/classifier.skops'
+      step.hf_credentials_path: "/var/run/secrets/hfhub-key"
+      step.wandb_credentials_path: "/var/run/secrets/wandb-key"
 
   l2g_prediction:
     cluster: false
@@ -229,6 +231,11 @@ steps:
           task_environments:
             environments: [] # Populated at runtime by BatchIndexOperator with dictionaries containing $INPUT_PARTITION and $OUTPUT_PARTITION
           task_config:
+            shared_environment:
+              secrets:
+                mapping:
+                  HF_TOKEN:
+                    secret_id: hfhub-key
             max_retry_count: 2
             max_run_duration: "1h"
             instance_resource_spec:
