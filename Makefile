@@ -43,7 +43,10 @@ sync:
 	@uv run pre-commit install --hook-type commit-msg
 
 dev: sync .git/hooks/commit-msg  ## Prepare the local development environment
-	@GOOGLE_APPLICATION_CREDENTIALS=$(LOCAL_DEV_CREDENTIALS) docker compose -f compose.yaml -f compose.local.yaml up -d --build --remove-orphans
+	@AIRFLOW__API__SECRET_KEY=$$(uv run python -c 'import secrets; print(secrets.token_hex(32))') \
+	AIRFLOW__API_AUTH__JWT_SECRET=$$(uv run python -c 'import secrets; print(secrets.token_hex(32))') \
+	AIRFLOW__API_AUTH__JWT_ISSUER=$${AIRFLOW__API_AUTH__JWT_ISSUER:-airflow} \
+	GOOGLE_APPLICATION_CREDENTIALS=$(LOCAL_DEV_CREDENTIALS) docker compose -f compose.yaml -f compose.local.yaml up -d --build --remove-orphans
 
 cloud-dev: ## Start the remote development environment and connect to it (default goal)
 	@./deployment/start.sh

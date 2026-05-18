@@ -97,7 +97,9 @@ wait_for_apiserver() {
 }
 
 # run the Airflow 3.2 stack used for remote development
-su orchestration -c "cd /opt/orchestration && docker compose up -d --build ${REMOTE_AIRFLOW_SERVICES}"
+AIRFLOW_API_SECRET_KEY=$(openssl rand -hex 32)
+AIRFLOW_JWT_SECRET=$(openssl rand -hex 32)
+su orchestration -c "cd /opt/orchestration && AIRFLOW__API__SECRET_KEY=${AIRFLOW_API_SECRET_KEY} AIRFLOW__API_AUTH__JWT_SECRET=${AIRFLOW_JWT_SECRET} AIRFLOW__API_AUTH__JWT_ISSUER=airflow docker compose up -d --build ${REMOTE_AIRFLOW_SERVICES}"
 wait_for_airflow_init
 wait_for_healthy_service postgres
 wait_for_healthy_service airflow-scheduler

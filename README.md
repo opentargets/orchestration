@@ -41,12 +41,14 @@ To spin the local Airflow instance, run:
 make dev
 ```
 
-This will build and start the local Airflow services and install the required dependencies using uv.
+This will build and start the local Airflow services, install the required dependencies using uv, and generate per-run Airflow API/JWT secrets for the stack.
 
 > [!WARNING]
-> If you run Docker Compose manually, export `GOOGLE_APPLICATION_CREDENTIALS` first
-> (for example, `"$HOME/.config/gcloud/application_default_credentials.json"`),
-> then use `docker compose -f compose.yaml -f compose.local.yaml up -d --build`.
+> If you run Docker Compose manually, export `GOOGLE_APPLICATION_CREDENTIALS`,
+> `AIRFLOW__API__SECRET_KEY`, and `AIRFLOW__API_AUTH__JWT_SECRET` first (for
+> example, `export AIRFLOW__API__SECRET_KEY="$(openssl rand -hex 32)"` and
+> `export AIRFLOW__API_AUTH__JWT_SECRET="$(openssl rand -hex 32)"`), then use
+> `docker compose -f compose.yaml -f compose.local.yaml up -d --build`.
 
 In order to use the local Airflow instance you need to have the Google Cloud credentials set up on your local machine.
 By default the `make dev` command will link the `~/.config/gcloud/application_default_credentials.json` file created by `gcloud auth application-default login` to the Airflow container. If you store the credentials in a different file, you can set them with

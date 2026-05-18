@@ -2,9 +2,9 @@
 x-airflow-common: &airflow-common
   build: .
   environment: &airflow-common-env
-    AIRFLOW__API__SECRET_KEY: "secretkey"
-    AIRFLOW__API_AUTH__JWT_ISSUER: "airflow"
-    AIRFLOW__API_AUTH__JWT_SECRET: "airflow-jwt-secret"
+    AIRFLOW__API__SECRET_KEY: ${AIRFLOW__API__SECRET_KEY:?set AIRFLOW__API__SECRET_KEY}
+    AIRFLOW__API_AUTH__JWT_ISSUER: ${AIRFLOW__API_AUTH__JWT_ISSUER:-airflow}
+    AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW__API_AUTH__JWT_SECRET:?set AIRFLOW__API_AUTH__JWT_SECRET}
     AIRFLOW__CORE__AUTH_MANAGER: "airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager"
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__CORE__EXECUTION_API_SERVER_URL: "http://airflow-apiserver:8080/execution/"
