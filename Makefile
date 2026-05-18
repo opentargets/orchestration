@@ -43,8 +43,8 @@ sync:
 	@uv run pre-commit install --hook-type commit-msg
 
 dev: sync .git/hooks/commit-msg  ## Prepare the local development environment
-	@AIRFLOW__API__SECRET_KEY=$$(uv run python -c 'import secrets; print(secrets.token_hex(32))') \
-	AIRFLOW__API_AUTH__JWT_SECRET=$$(uv run python -c 'import secrets; print(secrets.token_hex(32))') \
+	@AIRFLOW__API__SECRET_KEY=$$(openssl rand -hex 32) \
+	AIRFLOW__API_AUTH__JWT_SECRET=$$(openssl rand -hex 32) \
 	AIRFLOW__API_AUTH__JWT_ISSUER=$${AIRFLOW__API_AUTH__JWT_ISSUER:-airflow} \
 	GOOGLE_APPLICATION_CREDENTIALS=$(LOCAL_DEV_CREDENTIALS) docker compose -f compose.yaml -f compose.local.yaml up -d --build --remove-orphans
 
