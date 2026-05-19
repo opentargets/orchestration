@@ -33,7 +33,7 @@ dataproc:
     GENTROPY_REF: 'v{gentropy_ref}'
 
 nodes:
-  
+
   - id: molecular_complex
     kind: Task
     prerequisites: []
@@ -59,7 +59,7 @@ nodes:
   #     - smp_manifest_generation
   #   params:
   #     step: decode_summary_statistics_ingestion
-  #     step.manifest_path: '{data_bucket}/smp/manifest/' 
+  #     step.manifest_path: '{data_bucket}/smp/manifest/'
   #     step.output_path: '{input_bucket}/raw_summary_statistics/smp/'
 
   - id: smp_harmonisation
@@ -107,7 +107,7 @@ nodes:
       step.recursive_file_lookup: false
       step.gwas_significance: 1.8e-9 # See 2023 publication
       step.distance: 500000
-      step.collect_locus:  false
+      step.collect_locus: false
       step.collect_locus_distance: 500000
       +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
 
@@ -143,8 +143,6 @@ nodes:
       step.target_index_path: gs://open-targets-data-releases/26.03/output/target
       step.session.write_mode: overwrite
 
-############################# Raw summary statistics #############################
-
   # - id: raw_manifest_generation
   #   kind: Task
   #   prerequisites:
@@ -160,10 +158,12 @@ nodes:
   #     - raw_manifest_generation
   #   params:
   #     step: decode_summary_statistics_ingestion
-  #     step.manifest_path: '{data_bucket}/raw/manifest/' 
+  #     step.manifest_path: '{data_bucket}/raw/manifest/'
   #     step.output_path: '{data_bucket}/raw_summary_statistics/raw/'
 
   - id: raw_harmonisation
+    ############################# Raw summary statistics #############################
+
     prerequisites:
       - molecular_complex
       # - raw_manifest_generation
@@ -196,7 +196,6 @@ nodes:
       step.session.write_mode: overwrite
       +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
 
-
   - id: raw_wbc
     prerequisites:
       - raw_harmonisation
@@ -209,7 +208,7 @@ nodes:
       step.recursive_file_lookup: false
       step.gwas_significance: 1.8e-9 # See 2023 publication
       step.distance: 500000
-      step.collect_locus:  false
+      step.collect_locus: false
       step.collect_locus_distance: 500000
       +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
 
@@ -245,7 +244,6 @@ nodes:
       step.target_index_path: gs://open-targets-data-releases/26.03/output/target
       step.session.write_mode: overwrite
 
-
   - id: validate_study
     prerequisites:
       - smp_pqtl_to_study
@@ -269,14 +267,13 @@ nodes:
       step.study_index_path:
         - '{data_bucket}/smp/study/'
         - '{data_bucket}/raw/study/'
-   
+
       step.target_index_path: gs://open-targets-data-releases/26.03/output/target
       step.disease_index_path: gs://open-targets-data-releases/26.03/output/disease
       step.biosample_index_path: gs://open-targets-data-releases/26.03/output/biosample
       # OUTPUTS
       step.valid_study_index_path: '{data_bucket}/output/study'
       step.invalid_study_index_path: '{data_bucket}/invalid/study'
-
 
   - id: validate_credible_set
     prerequisites:
