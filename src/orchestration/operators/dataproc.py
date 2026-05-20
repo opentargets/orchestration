@@ -428,6 +428,7 @@ class SubmitJobOperator(DataprocSubmitJobOperator):
             job={},
             gcp_conn_id=self.gcp_conn_id,
             impersonation_chain=self.impersonation_chain,
+            deferrable=True,
             **kwargs,
         )
 
