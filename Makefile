@@ -31,6 +31,9 @@ clean-vm: ## Destroy the Airflow development VM
 test: sync ## Run unit tests
 	@uv run pytest
 
+format: ## Format codebase
+	@uv run ruff check src/ tests/
+
 check: format test ## run all checks
 
 sync:

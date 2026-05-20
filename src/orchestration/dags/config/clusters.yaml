@@ -10,6 +10,7 @@ clusters:
     internal_ip_only: false
     metadata:
       PTS_REF: 'v{{pts_version}}'
+
     properties:
       # Configuration optimized for single node workloads.
       # These yarn settings are set to increase the max allocations per executor for yarn
@@ -58,7 +59,7 @@ clusters:
     image_version: '2.2'
     num_masters: 1
     num_workers: 4
-    worker_machine_type: n1-highmem-64
+    worker_machine_type: n2d-highmem-64
     properties:
       'spark:spark.driver.memory': '478g'
       'spark:spark.sql.shuffle.partitions': '20'
@@ -69,7 +70,7 @@ clusters:
     num_masters: 1
     num_workers: 2
     worker_machine_type: 'n1-highmem-16'
-    idle_delete_ttl: 3600
+    idle_delete_ttl: 360
     internal_ip_only: false
     metadata:
       GENTROPY_REF: 'v{{gentropy_version}}'
@@ -80,6 +81,16 @@ clusters:
       'core:fs.gs.requester.pays.project.id': '{{requester_pays_project_id}}'
     init_actions_uris:
       - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'
+    # The `fetch_secrets.sh` is build at runtime and pushed to GCS. It will
+    # store the secret variables into `/var/run/secrets/secret_name.json` files.
+    # The files are accessible via the master node.
+    secret_init_action_uri: 'gs://opentargets-pipelines/up/gentropy/fetch_secrets.sh'
+    # Secrets to be fetched by secret_init_action_uri and made available as files in the cluster.
+    secret_map:
+      # this results in /var/run/secrets/hfhub-key.json with {"HF_TOKEN": "hfhub-key_value"} as content
+      HF_TOKEN: hfhub-key
+      # this results in /var/run/secrets/wandb-key.json with {"WANDB_API_KEY": "wandb-key_value"} as content
+      WANDB_API_KEY: wandb-key
 
   gentropy_colocalisation:
     image_version: '2.2'
@@ -87,22 +98,69 @@ clusters:
     autoscaling_policy: otg-efm
     num_masters: 3
     num_workers: 20
+    master_machine_type: n1-highmem-16
     worker_machine_type: n1-highmem-32
+    worker_disk_type: 'pd-ssd'
     worker_disk_size: 1024
+    secondary_worker_disk_size: 100
+    secondary_worker_disk_type: 'pd-standard'
     internal_ip_only: false
     metadata:
       GENTROPY_REF: 'v{{gentropy_version}}'
     properties:
       'dataproc:efm.spark.shuffle': 'primary-worker'
       'spark:spark.shuffle.io.numConnectionsPerPeer': '5'
+      'spark:spark.shuffle.io.maxRetries': '15'
+      'spark:spark.shuffle.io.retryWait': '30s'
+      'spark:spark.shuffle.io.serverThreads': '100'
       'spark:spark.stage.maxConsecutiveAttempts': '10'
       'spark:spark.sql.adaptive.enabled': 'true'
-      'spark:spark.sql.files.maxPartitionBytes': '1073741824'
+      'spark:spark.sql.shuffle.partitions': '2000'
+      'spark:spark.sql.files.maxPartitionBytes': '268435456'
+      'spark:spark.network.timeout': '800s'
       'spark:spark.task.maxFailures': '15'
-      'yarn:spark.shuffle.io.serverThreads': '50'
+      'yarn:spark.shuffle.io.serverThreads': '100'
+      # Speculative execution -> https://kb.databricks.com/scala/understanding-speculative-execution
+      'spark:spark.speculation': 'true'
+      'spark:spark.speculation.multiplier': '1.5'
+      'spark:spark.speculation.quantile': '0.9'
+
     init_actions_uris:
       - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'
+    idle_delete_ttl: 1800
+
+  pts_openfda:
+    image_version: '2.2'
+    num_masters: 1
+    num_workers: 2
+    autoscaling_policy: otg-etl-25-secondary
+    worker_machine_type: n1-standard-8
+    master_disk_size: 512
+    worker_disk_size: 128
     idle_delete_ttl: 3600
+    internal_ip_only: false
+    metadata:
+      PTS_REF: 'v{{pts_version}}'
+    init_actions_uris:
+      - 'gs://opentargets-pipelines/up/pts/install_dependencies_on_cluster.sh'
+
+  pts_association:
+    image_version: '2.2'
+    num_masters: 1
+    num_workers: 2
+    autoscaling_policy: otg-etl-25-secondary
+    worker_machine_type: n2d-highmem-32
+    master_disk_size: 512
+    worker_disk_size: 256
+    idle_delete_ttl: 3600
+    internal_ip_only: false
+    metadata:
+      PTS_REF: 'v{{pts_version}}'
+    properties:
+      'spark:spark.sql.shuffle.partitions': '2000'
+      'spark:spark.sql.adaptive.advisoryPartitionSizeInBytes': '64MB'
+    init_actions_uris:
+      - 'gs://opentargets-pipelines/up/pts/install_dependencies_on_cluster.sh'
 
 step_job_properties:
   etl:

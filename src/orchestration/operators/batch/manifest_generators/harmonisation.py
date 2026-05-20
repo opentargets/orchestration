@@ -4,52 +4,128 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Literal
+from typing import Annotated, Literal
 
 import pandas as pd
 from airflow.exceptions import AirflowSkipException
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
+from pydantic import BaseModel, StringConstraints
 
+from orchestration.models.batch import ManifestGeneratorSpec
+from orchestration.models.batch.environment import EnvironmentRegistrySpec, EnvironmentSpec
 from orchestration.operators.batch.batch_index import BatchIndex
-from orchestration.operators.batch.manifest_generators import ProtoManifestGenerator
-from orchestration.types import ManifestGeneratorSpecs
+from orchestration.operators.batch.manifest_generators.proto import ProtoManifestGenerator
 from orchestration.utils.path import GCSPath
 
 logger = logging.getLogger(__name__)
 
 
+class HarmonisationManifestGeneratorOptions(BaseModel):
+    """Specification for HarmonisationManifestGenerator.
+
+    Example:
+    ---
+    >>> opts = HarmonisationManifestGeneratorOptions(
+    ...     qc_output_pattern="gs://bucket/summary_statistics_qc/**_SUCCESS",
+    ...     harm_output_pattern="gs://bucket/harmonised_summary_statistics/**_SUCCESS",
+    ...     raw_input_pattern="gs://bucket/raw_summary_statistics/**.h.tsv.gz",
+    ...     manifest_output_uri="gs://bucket/harmonisation_manifest.csv",
+    ... )
+    >>> opts.qc_output_pattern
+    'gs://bucket/summary_statistics_qc/**_SUCCESS'
+    >>> opts.raw_input_pattern
+    'gs://bucket/raw_summary_statistics/**.h.tsv.gz'
+
+    Raw input accepts any dot-separated extension after /**:
+
+    >>> opts2 = HarmonisationManifestGeneratorOptions(
+    ...     qc_output_pattern="gs://bucket/summary_statistics_qc/**_SUCCESS",
+    ...     harm_output_pattern="gs://bucket/harmonised_summary_statistics/**_SUCCESS",
+    ...     raw_input_pattern="gs://bucket/raw_summary_statistics/**.parquet",
+    ...     manifest_output_uri="gs://bucket/harmonisation_manifest.csv",
+    ... )
+    >>> opts2.raw_input_pattern
+    'gs://bucket/raw_summary_statistics/**.parquet'
+
+    Output patterns must end with /**_SUCCESS — the old {{study}} placeholder form is rejected:
+
+    >>> from pydantic import ValidationError
+    >>> try:
+    ...     HarmonisationManifestGeneratorOptions(
+    ...         qc_output_pattern="gs://bucket/summary_statistics_qc/{{study}}/",
+    ...         harm_output_pattern="gs://bucket/harmonised_summary_statistics/**_SUCCESS",
+    ...         raw_input_pattern="gs://bucket/raw_summary_statistics/**.h.tsv.gz",
+    ...         manifest_output_uri="gs://bucket/harmonisation_manifest.csv",
+    ...     )
+    ... except ValidationError:
+    ...     print("invalid")
+    invalid
+
+    Raw input pattern must include a file extension after /**:
+
+    >>> try:
+    ...     HarmonisationManifestGeneratorOptions(
+    ...         qc_output_pattern="gs://bucket/summary_statistics_qc/**_SUCCESS",
+    ...         harm_output_pattern="gs://bucket/harmonised_summary_statistics/**_SUCCESS",
+    ...         raw_input_pattern="gs://bucket/raw_summary_statistics/**",
+    ...         manifest_output_uri="gs://bucket/harmonisation_manifest.csv",
+    ...     )
+    ... except ValidationError:
+    ...     print("invalid")
+    invalid
+
+    Manifest URI must end with .csv:
+
+    >>> try:
+    ...     HarmonisationManifestGeneratorOptions(
+    ...         qc_output_pattern="gs://bucket/summary_statistics_qc/**_SUCCESS",
+    ...         harm_output_pattern="gs://bucket/harmonised_summary_statistics/**_SUCCESS",
+    ...         raw_input_pattern="gs://bucket/raw_summary_statistics/**.h.tsv.gz",
+    ...         manifest_output_uri="gs://bucket/harmonisation_manifest.parquet",
+    ...     )
+    ... except ValidationError:
+    ...     print("invalid")
+    invalid
+    """
+
+    qc_output_pattern: Annotated[
+        str, StringConstraints(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)+/\*\*_SUCCESS$")
+    ]
+    """GCS glob pattern for QC output. Must end with /**_SUCCESS (e.g. gs://bucket/path/**_SUCCESS)."""
+
+    harm_output_pattern: Annotated[
+        str, StringConstraints(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)+/\*\*_SUCCESS$")
+    ]
+    """GCS glob pattern for harmonised output. Must end with /**_SUCCESS (e.g. gs://bucket/path/**_SUCCESS)."""
+
+    raw_input_pattern: Annotated[
+        str, StringConstraints(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)+/\*\*(\.[a-zA-Z0-9]+)+$")
+    ]
+    """GCS glob pattern for raw input files. Must end with /**.<ext> (e.g. gs://bucket/path/**.h.tsv.gz)."""
+
+    manifest_output_uri: Annotated[str, StringConstraints(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)*\.csv$")]
+    """GCS path for manifest output. Must end with .csv (e.g. gs://bucket/path/manifest.csv)."""
+
+
 class HarmonisationManifestGenerator(ProtoManifestGenerator):
-    # Values of the fields that should be referred to when creating command.
     fields = {
+        "rawSumstatPath": "RAW",
         "harmonisedSumstatPath": "HARMONISED",
         "qcPath": "QC",
-        "rawSumstatPath": "RAW",
     }
-
-    @staticmethod
-    def safe_join_paths(right: str, left: str) -> str:
-        """Safely join paths."""
-        right = right.removesuffix("/")
-        left = left.removeprefix("/")
-
-        return right + "/" + left
 
     def __init__(
         self,
         *,
-        commands: list[str],
-        options: dict[str, str],
-        manifest_kwargs: dict[str, str],
+        options: HarmonisationManifestGeneratorOptions,
         gcp_conn_id: str = "google_cloud_default",
     ):
-        self.commands = commands
-        self.options = options
         self.gcs_hook = GCSHook(gcp_conn_id=gcp_conn_id)
-        self.qc_output_pattern = GCSPath(manifest_kwargs["qc_output_pattern"])
-        self.harm_output_pattern = GCSPath(manifest_kwargs["harm_output_pattern"])
-        self.raw_input_pattern = GCSPath(manifest_kwargs["raw_input_pattern"])
+        self.qc_output_pattern = GCSPath(options.qc_output_pattern)
+        self.harm_output_pattern = GCSPath(options.harm_output_pattern)
+        self.raw_input_pattern = GCSPath(options.raw_input_pattern)
 
-        self.manifest_path = manifest_kwargs["manifest_output_uri"]
+        self.manifest_path = options.manifest_output_uri
 
         self.data: dict[
             Literal["raw_sumstat", "harmonised", "qc"],
@@ -58,25 +134,18 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
         self.manifest: pd.DataFrame | None = None
 
     @classmethod
-    def from_generator_config(cls, specs: ManifestGeneratorSpecs) -> ProtoManifestGenerator:
+    def from_generator_config(cls, specs: ManifestGeneratorSpec) -> ProtoManifestGenerator:
         """Construct generator from config."""
         return cls(
-            commands=specs["commands"],
-            options=specs["options"],
-            manifest_kwargs=specs["manifest_kwargs"],
+            options=HarmonisationManifestGeneratorOptions(**specs.generator_options),
         )
 
     def generate_batch_index(self) -> BatchIndex:
         """Generate harmonisation manifest."""
-        vars_list = self.get_manifest_data().generate_manifest().dump_manifest().convert_manifest_to_vars_list()
+        env_registry = self._get_manifest_data()._generate_manifest()._dump_manifest()._build_environment_registry()
+        return BatchIndex(env_registry=env_registry)
 
-        return BatchIndex(
-            vars_list=vars_list,
-            options=self.options,
-            commands=self.commands,
-        )
-
-    def get_manifest_data(self) -> HarmonisationManifestGenerator:
+    def _get_manifest_data(self) -> HarmonisationManifestGenerator:
         """List raw sumstat and harmonised sumstat paths."""
         globs: dict[Literal["raw_sumstat", "harmonised", "qc"], GCSPath] = {
             "raw_sumstat": self.raw_input_pattern,
@@ -109,12 +178,12 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
             logger.info("Found %s %s files", len(files), key)
             results[key] = {
                 "sumstat": [f"{protocol}://{root}/{s}" for s in files],
-                "study": [self.extract_study_id_from_path(s) for s in files],
+                "study": [self._extract_study_id_from_path(s) for s in files],
             }
         self.data = results
         return self
 
-    def generate_manifest(self) -> HarmonisationManifestGenerator:
+    def _generate_manifest(self) -> HarmonisationManifestGenerator:
         """Construct manifest for sumstat processing.
 
         This method performs following operations to get the manifest:
@@ -128,7 +197,7 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
 
         """
         if not self.data:
-            self.get_manifest_data()
+            self._get_manifest_data()
         raw_df = pd.DataFrame.from_dict(self.data["raw_sumstat"])
         raw_df.rename(columns={"sumstat": "rawSumstatPath"}, inplace=True)
         harm_df = pd.DataFrame.from_dict(self.data["harmonised"])
@@ -141,6 +210,9 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
         logger.info("Shape of raw sumstats %s", raw_df.shape)
         logger.info("Shape of harm sumstats %s", harm_df.shape)
         logger.info("Shape of qc %s", qc_df.shape)
+        # TODO: If single study contains more then 1 summary statistics,
+        # Fetch the individual blob datetime and just return the path
+        # to latest summary statistics.
         merged_df = raw_df.merge(harm_df, how="left", on="study")
         merged_df2 = merged_df.merge(qc_df, how="left", on="study")
         logger.info("Shape of merged sumstat %s", merged_df2.shape)
@@ -149,17 +221,17 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
         merged_df2["isHarmonised"] = merged_df2["isHarmonised"].fillna(False)
         merged_df2["qcPerformed"] = merged_df["isHarmonised"].fillna(False)
 
-        expr = lambda x: self.output_path(x, self.qc_output_pattern)
+        expr = lambda x: self._output_path(x, self.qc_output_pattern)
         merged_df2["qcPath"] = merged_df2["study"].apply(expr)
 
-        expr = lambda x: self.output_path(x, self.harm_output_pattern)
+        expr = lambda x: self._output_path(x, self.harm_output_pattern)
         merged_df2["harmonisedSumstatPath"] = merged_df2["study"].apply(expr)
 
         self.manifest = merged_df2
 
         return self
 
-    def dump_manifest(self) -> HarmonisationManifestGenerator:
+    def _dump_manifest(self) -> HarmonisationManifestGenerator:
         """Perform dump of the manifest for downstream processing."""
         if self.manifest is None:
             raise ValueError("Create manifest first.")
@@ -177,7 +249,7 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
             # Expect the flag to be boolean False only
             assert not values[0] and len(values) == 1, "All non harmonised studies should have qcPerformed set to False"
 
-    def convert_manifest_to_vars_list(self) -> list[dict[str, str]]:
+    def _build_environment_registry(self) -> EnvironmentRegistrySpec:
         """Deconstruct manifest to collect studies to harmonize as a variable list."""
         if self.manifest is None:
             raise ValueError("Create manifest first.")
@@ -198,12 +270,13 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
         if var_list:
             logger.info("Variable list is not empty!")
         else:
-            AirflowSkipException("No environments to create")
-        # NOTE: Ensure the types are correct, as Environment requires dict[str,str] types.
-        return [{str(k): str(v) for k, v in row.items()} for row in var_list]
+            raise AirflowSkipException("No environments to create")
+        return EnvironmentRegistrySpec(
+            environments=[EnvironmentSpec(variables={str(k): str(v) for k, v in row.items()}) for row in var_list]
+        )
 
     @staticmethod
-    def output_path(study: str, path_pattern: GCSPath) -> str:
+    def _output_path(study: str, path_pattern: GCSPath) -> str:
         """Construct qc output path."""
         bucket = path_pattern.bucket
         protocol = path_pattern.segments["protocol"]
@@ -211,7 +284,7 @@ class HarmonisationManifestGenerator(ProtoManifestGenerator):
         return f"{protocol}://{bucket}/{prefix}/{study}/"
 
     @staticmethod
-    def extract_study_id_from_path(path: str) -> str:
+    def _extract_study_id_from_path(path: str) -> str:
         """Extract study id from path.
 
         Args:

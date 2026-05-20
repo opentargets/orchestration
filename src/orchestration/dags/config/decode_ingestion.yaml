@@ -1,0 +1,23 @@
+---
+environment_specs:
+  - name: Prod
+    vars:
+      input_bucket: "gs://decode_inputs"
+      data_bucket: "gs://decode_data"
+
+env: Prod
+
+dataproc:
+  cluster_name: otg-decode
+  autoscaling_policy: otg-etl
+  allow_efm: false
+  num_workers: 2
+  cluster_metadata:
+    GENTROPY_REF: v3.3.0-dev.1
+
+nodes:
+  - id: harmonisation
+    params:
+      step: decode_manifest_generation
+      # input
+      step.s3_config_path:

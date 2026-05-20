@@ -4,36 +4,54 @@ environment_specs:
     vars:
       output_path: gs://gwas_catalog_sumstats_susie
       GENTROPY_REF: 3.2.0-rc.2
+  - name: Test
+    vars:
+      output_path: gs://ot_orchestration/test/gwas_catalog_sumstats_susie
+      GENTROPY_REF: 3.2.0-rc.2
 
 env: Prod
 
 nodes:
-  - id: generate_manifests
+  - id: generate_finemapping_index
     kind: Task
     prerequisites: []
-    params:
-      collected_loci_path: '{output_path}/study_locus_lb_clumped'
-      manifest_prefix: '{output_path}/finemapping_manifests/20260130'
-      output_path: '{output_path}/credible_set_datasets'
-      #!WARNING: DO NOT CHANGE THE DATE for the log_path, as it is used to back reference the already fine-mapped loci.
-      log_path: '{output_path}/finemapping_logs/20250204'
-      max_records_per_chunk: 40_000
+    google_batch_index_specs:
+      pointer: finemapping
+      max_task_count: 40000
+      generator_specs:
+        generator_options:
+          collected_loci_path: '{output_path}/study_locus_lb_clumped'
+          manifest_output_path: '{output_path}/finemapping_manifest.csv'
+          output_path: '{output_path}/credible_set_datasets'
+          #!WARNING: DO NOT CHANGE THE DATE for the log_path, as it is used to back reference the already fine-mapped loci.
+          log_path: '{output_path}/finemapping_logs/20250204'
 
   - id: finemapping_batch_job
     kind: Task
     prerequisites:
-      - generate_manifests
-    params:
-      study_index_path: '{output_path}/study_index'
+      - generate_finemapping_index
     google_batch:
-      image: 'ghcr.io/opentargets/gentropy:{GENTROPY_REF}'
-      entrypoint: /usr/bin/bash
-      resource_specs:
-        cpu_milli: 4000
-        memory_mib: 25_000
-        boot_disk_mib: 20_000
-      task_specs:
-        max_retry_count: 1
-        max_run_duration: "7200s"
-      policy_specs:
-        machine_type: n2-highmem-4
+      job:
+        task_group:
+          parallelism: 40000
+          task_environments:
+            environments: [] # populated at runtime by BatchIndexOperator
+          task_config:
+            max_retry_count: 1
+            max_run_duration: "7200s"
+            instance_resource_spec:
+              cpu_milli: 4000
+              memory_mib: 25000
+              boot_disk_mib: 20000
+            runnable_spec:
+              image_uri: 'ghcr.io/opentargets/gentropy:{GENTROPY_REF}'
+              entrypoint: /usr/bin/bash
+              script_file: susie_finemap.sh
+              script_variables:
+                study_index_path: '{output_path}/study_index'
+                study_locus_manifest_path: '{output_path}/finemapping_manifest.csv'
+        allocation:
+          instance:
+            machine_type: n2-highmem-4
+            provisioning_model: SPOT
+        logs: {}

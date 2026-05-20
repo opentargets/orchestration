@@ -11,6 +11,7 @@ x-airflow-common: &airflow-common
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
     AIRFLOW__WEBSERVER__SECRET_KEY: "secretkey"
     AIRFLOW_CONN_GOOGLE_CLOUD_DEFAULT: ${AIRFLOW_CONN_GOOGLE_CLOUD_DEFAULT:-}
+    AIRFLOW__CORE__ALLOWED_DESERIALIZATION_CLASSES: "orchestration.models.*"
     GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-}
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/src:/opt/airflow/dags
