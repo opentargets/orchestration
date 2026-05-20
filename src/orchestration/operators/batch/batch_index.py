@@ -112,6 +112,7 @@ class BatchIndex:
             batch = self.vars_list[i : i + max_task_count]
             self.vars_batches.append(BatchEnvironmentsSerialized(vars_list=batch))
 
+        self.vars_list = []  # free memory — data is now held in vars_batches
         logger.info("Created %s task list batches.", len(self.vars_batches))
 
         return self
@@ -135,4 +136,4 @@ class BatchIndex:
 
     def __repr__(self) -> str:
         """Get batch index string representation."""
-        return f"BatchIndex(vars_list={self.vars_list}, options={self.options}, commands={self.commands})"
+        return f"BatchIndex(n_vars={len(self.vars_list)}, n_batches={len(self.vars_batches)}, options={self.options}, commands={self.commands})"

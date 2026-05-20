@@ -41,7 +41,7 @@ default_args = {
 
 with DAG(
     dag_id="gentropy_heritability_estimate",
-    description="Run heritabilbatch_jobsity estimation for harmonised summary statistics using gentropy",
+    description="Run heritability estimation for harmonised summary statistics using gentropy",
     schedule_interval=None,
     start_date=datetime(2023, 1, 1),
     catchup=False,

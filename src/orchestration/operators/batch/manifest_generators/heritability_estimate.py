@@ -102,47 +102,37 @@ class HeritabilityManifestGenerator(ProtoManifestGenerator):
         bucket_name, root_prefix = without_scheme.split("/", 1)
         root_prefix = root_prefix.rstrip("/") + "/"
 
-        blobs = self.gcs_hook.list(
-            bucket_name=bucket_name,
-            prefix=root_prefix,
-        )
+        client = self.gcs_hook.get_conn()
 
-        study_dirs: set[str] = set()
+        # Use delimiter="/" so GCS returns only top-level prefixes (study dirs)
+        # rather than recursively listing every blob — critical at 100k+ studies.
+        input_iter = client.list_blobs(bucket_name, prefix=root_prefix, delimiter="/")
+        list(input_iter)  # consume iterator to populate .prefixes
+        study_dirs = {p[len(root_prefix) :].rstrip("/") for p in (input_iter.prefixes or []) if p != root_prefix}
 
-        for blob in blobs:
-            rel = blob[len(root_prefix) :]
-            if not rel:
-                continue
-
-            parts = rel.split("/")
-            # Expect STUDY_ID/<file>
-            if len(parts) >= 2 and parts[0]:
-                study_dirs.add(parts[0])
+        # List existing outputs in a single API call instead of one per study.
+        output_base = self.output_prefix.gcs_path.rstrip("/") + "/"
+        out_without_scheme = output_base[len("gs://") :]
+        out_bucket, out_prefix = out_without_scheme.split("/", 1)
+        out_iter = client.list_blobs(out_bucket, prefix=out_prefix, delimiter="/")
+        list(out_iter)
+        existing_outputs = {p[len(out_prefix) :].rstrip("/") for p in (out_iter.prefixes or [])}
 
         vars_list: list[dict[str, str]] = []
 
         for study_dir in sorted(study_dirs):
-            input_path = f"{dataset_root}/{study_dir}"
-            output_path = f"{self.output_prefix.gcs_path.rstrip('/')}/{study_dir}"
-
-            output_gcs = GCSPath(output_path)
-            try:
-                exists = output_gcs.exists()
-            except Exception:
-                exists = False
-
-            if exists:
+            if study_dir in existing_outputs:
                 continue
 
             vars_list.append({
-                "INPUT_PARTITION": input_path,
-                "OUTPUT_PARTITION": output_path,
+                "INPUT_PARTITION": f"{dataset_root}/{study_dir}",
+                "OUTPUT_PARTITION": f"{self.output_prefix.gcs_path.rstrip('/')}/{study_dir}",
             })
 
         print(f"dataset_root={dataset_root}")
         print(f"root_prefix={root_prefix}")
-        print(f"n_blobs={len(blobs)}")
         print(f"n_study_dirs={len(study_dirs)}")
+        print(f"n_existing_outputs={len(existing_outputs)}")
         print(f"study_dirs_sample={sorted(study_dirs)[:10]}")
         print(f"n_vars_list={len(vars_list)}")
 

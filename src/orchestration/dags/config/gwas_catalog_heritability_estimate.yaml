@@ -2,19 +2,20 @@
 environment_specs:
   - name: Test
     vars:
-      sumstats_path: gs://genetics-portal-dev-analysis/xg1/LDSC_pyspark/sumstats_subset
-      ldscore_base_path: gs://genetics-portal-dev-analysis/xg1/LDSC_pyspark/inputs/gnomad/ldscores/full
-      study_index_path: gs://open-targets-data-releases/25.12/output/study
-      outputs_dir: gs://genetics-portal-dev-analysis/xg1/LDSC_pyspark/output
-      gentropy_image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/opentargets/gentropy:3.3.0-dev.5
+      sumstats_path: gs://gwas_catalog_inputs/harmonised_summary_statistics
+      ldscore_base_path: gs://genetics-portal-dev-analysis/xg1/LDSC_pyspark/inputs/custom_panel
+      #study_index_path: gs://open-targets-data-releases/25.12/output/study
+      study_index_path: gs://gwas_catalog_sumstats_susie/study_index/
+      outputs_dir: gs://genetics-portal-dev-analysis/xg1/LDSC_pyspark/outputs/gentropy_all_sumstats_2606
+      gentropy_image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/opentargets/gentropy:3.3.0-dev.14
 
   - name: Prod
     vars:
-      sumstats_path: gs://genetics-portal-dev-analysis/xg1/LDSC_pyspark/sumstats_subset
-      ldscore_base_path: gs://genetics-portal-dev-analysis/xg1/LDSC_pyspark/inputs/gnomad/ldscores/full
-      study_index_path: gs://open-targets-data-releases/25.12/output/study
-      outputs_dir: gs://genetics-portal-dev-analysis/xg1/LDSC_pyspark/output
-      gentropy_image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/opentargets/gentropy:3.3.0-dev.5
+      sumstats_path: gs://gwas_catalog_inputs/harmonised_summary_statistics
+      ldscore_base_path: gs://genetics-portal-dev-analysis/xg1/LDSC_pyspark/inputs/custom_panel
+      study_index_path: gs://gwas_catalog_sumstats_susie/study_index/
+      outputs_dir: gs://genetics-portal-dev-analysis/xg1/LDSC_pyspark/outputs/gentropy_all_sumstats_2606
+      gentropy_image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/opentargets/gentropy:3.3.0-dev.14
 
 env: Test
 
@@ -25,7 +26,7 @@ nodes:
     cluster: false
     google_batch_index_specs:
       manifest_generator_label: heritability-estimate
-      max_task_count: 20
+      max_task_count: 1000
       manifest_generator_specs:
         commands:
           - -c
@@ -47,11 +48,11 @@ nodes:
       entrypoint: /usr/bin/bash
       image: "{gentropy_image}"
       resource_specs:
-        cpu_milli: 8000
-        memory_mib: 64000
+        cpu_milli: 4000
+        memory_mib: 26000
         boot_disk_mib: 16000
       task_specs:
         max_retry_count: 2
         max_run_duration: "1h"
       policy_specs:
-        machine_type: n2d-highmem-8
+        machine_type: n2-highmem-4
