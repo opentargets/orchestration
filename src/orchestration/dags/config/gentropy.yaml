@@ -205,10 +205,11 @@ steps:
       step.hf_hub_repo_id: opentargets/locus_to_gene_{{l2g_training_version}}
       step.hf_model_commit_message: 'chore: update model base model for {{l2g_training_version}} run'
       +step.session.extended_spark_conf: "{spark.kryoserializer.buffer.max:500m, spark.sql.autoBroadcastJoinThreshold:'-1'}"
+      step.filter_dark_matter: true
       # INPUTS
       step.credible_set_path: 'gs://open-targets-data-releases/26.03/output/credible_set'
       step.feature_matrix_path: 'gs://open-targets-pipeline-runs/yt/26.03-test-full-l2g-trainset-1/intermediate/l2g_feature_matrix'
-      step.gold_standard_curation_path: 'gs://open-targets-data-releases/26.03/input/l2g/gold_standard.json'
+      step.gold_standard_curation_path: 'gs://genetics-portal-dev-analysis/yt4/2606_release/2603_training_set_full_fm_single_file.json'
       # OUTPUTS
       step.model_path: '{{release_uri}}/etc/model/locus_to_gene_model/classifier.skops'
       step.hf_credentials_path: "/var/run/secrets/hfhub-key"
