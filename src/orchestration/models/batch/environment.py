@@ -5,16 +5,21 @@ from __future__ import annotations
 from google.cloud import batch_v1
 from pydantic import BaseModel
 
+from orchestration.models.secret import Secrets
+
 
 class EnvironmentSpec(BaseModel):
     """Environment variable(s) specification for a single task.
 
     Attributes:
-        variables (dict[str, str]): Dictionary of environment variable(s) for the task.
+        variables (dict[str, str] | None): Optional dictionary of environment variable(s) for the task.
+        secrets (Secrets | None): Optional secrets to be added to the environment variables.
     """
 
-    variables: dict[str, str]
-    """Dictionary of environment variable(s) for the task."""
+    variables: dict[str, str] | None = None
+    """Optional dictionary of environment variable(s) for the task."""
+    secrets: Secrets | None = None
+    """Optional secrets to be added to the environment variables."""
 
     def build(self) -> batch_v1.Environment:
         """Build an Environment object from the environment variable specifications.
@@ -31,7 +36,12 @@ class EnvironmentSpec(BaseModel):
         >>> env.variables == {"FOO": "bar", "BAZ": "qux"}
         True
         """
-        return batch_v1.Environment(variables=self.variables)
+        c = {}
+        if self.variables:
+            c["variables"] = self.variables
+        if self.secrets:
+            c["secret_variables"] = self.secrets.build()
+        return batch_v1.Environment(c)
 
 
 class EnvironmentRegistrySpec(BaseModel):

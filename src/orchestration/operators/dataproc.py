@@ -8,7 +8,10 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import TYPE_CHECKING, NamedTuple
 
+from airflow.exceptions import AirflowException
+from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.providers.google.cloud.operators.dataproc import (
+    ClusterGenerator,
     DataprocCreateClusterOperator,
     DataprocDeleteClusterOperator,
     DataprocSubmitJobOperator,
@@ -17,21 +20,21 @@ from airflow.providers.google.cloud.operators.dataproc import (
 )
 from airflow.utils.context import Context
 from google.api_core.exceptions import NotFound as GCPNotFound
-from google.cloud.dataproc_v1 import Cluster, JobReference
-from google.cloud.dataproc_v1.types import DiskConfig
+from google.cloud.dataproc_v1 import JobReference
+from google.cloud.dataproc_v1.types import DiskConfig, NodeInitializationAction
 from google.cloud.dataproc_v1.types.jobs import Job, JobPlacement, PySparkJob, SparkJob
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
+from orchestration.models.secret import Secret, SecretInitAction, Secrets
 from orchestration.utils import convert_params_to_hydra_positional_arg, random_id, resource_name
 from orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_REGION, GCP_SERVICE_ACCOUNT, GCP_ZONE
-from orchestration.utils.dataproc import ClusterGenerator
 from orchestration.utils.labels import Labels
 
 if TYPE_CHECKING:
-    from typing import Any
+    from typing import Any, Self
 
 
-class ClusterConfig(BaseModel):
+class CustomClusterConfig(BaseModel):
     """Dataproc cluster configuration class.
 
     Includes defaults tailored to our cluster needs.
@@ -164,6 +167,20 @@ class ClusterConfig(BaseModel):
     service_account_scopes: list[str] | None = None
     """The scopes to use for the cluster."""
 
+    secret_map: dict[str, str] | None = None
+    """The dict of secrets where the `value` is the `secret id` from GoogleSecretManager
+         and the `key` is the environment variable name that the value of the secret
+         will be stored in on the cluster. By default the latest version of the secret will be used."""
+    secret_init_action_uri: str | None = None
+    """The URI of the init action script that will handle the secret injection. Default to None."""
+
+    @model_validator(mode="after")
+    def validate_secret_config(self) -> Self:
+        """If secret_map is set and not empty, secret_init_action_uri must be set."""
+        if self.secret_map and not self.secret_init_action_uri:
+            raise ValueError("secret_init_action_uri must be set if secret_map is set")
+        return self
+
     def model_post_init(self, _: Any) -> None:
         if isinstance(self.autoscaling_policy, str) and "/" not in self.autoscaling_policy:
             zone = self.zone or GCP_ZONE
@@ -185,13 +202,19 @@ class ClusterConfig(BaseModel):
         disk_config.boot_disk_type = self.secondary_worker_disk_type or disk_config.boot_disk_type
         return disk_config
 
-    def create_cluster(self) -> Cluster:
+    def create_cluster(self) -> dict[str, Any]:
         """Create a Dataproc cluster from the configuration.
 
         Returns:
-            Cluster: The Dataproc cluster.
+            ClusterConfig: The Dataproc cluster.
         """
-        exclude_fields = {"secondary_worker_disk_type", "secondary_worker_disk_size", "secondary_worker_machine_type"}
+        exclude_fields = {
+            "secondary_worker_disk_type",
+            "secondary_worker_disk_size",
+            "secondary_worker_machine_type",
+            "secret_map",
+            "secret_init_action_uri",
+        }
         config = ClusterGenerator(**self.model_dump(exclude=exclude_fields)).make()
 
         # Ensure that the c4- machine types have the right disk config
@@ -234,9 +257,9 @@ class ClusterDefinition(NamedTuple):
         return resource_name(self.cluster_type)
 
     @property
-    def cluster_config(self) -> ClusterConfig:
-        """Returns the ClusterConfig object for this cluster definition."""
-        return ClusterConfig(**self.config)
+    def cluster_config(self) -> CustomClusterConfig:
+        """Returns the CustomClusterConfig object for this cluster definition."""
+        return CustomClusterConfig(**self.config)
 
 
 class CreateClusterOperator(DataprocCreateClusterOperator):
@@ -254,7 +277,7 @@ class CreateClusterOperator(DataprocCreateClusterOperator):
         region (str): The region where the cluster will be created. Default is
             `GCP_REGION`. Templated.
         cluster_name (str): The cluster name.
-        cluster_config (ClusterConfig): The cluster configuration.
+        cluster_config (CustomClusterConfig): The cluster configuration.
         labels (Labels): The labels assigned to the cluster. Templated.
         gcp_conn_id (str): The connection ID used when connecting to Google Cloud.
         impersonation_chain: (str | Sequence[str | None]) Optional service
@@ -274,7 +297,7 @@ class CreateClusterOperator(DataprocCreateClusterOperator):
         project_id: str = GCP_PROJECT_PLATFORM,
         region: str = GCP_REGION,
         cluster_name: str,
-        cluster_config: ClusterConfig,
+        cluster_config: CustomClusterConfig,
         labels: Labels | None = None,
         gcp_conn_id: str = "google_cloud_default",
         impersonation_chain: str | Sequence[str] | None = None,
@@ -282,18 +305,21 @@ class CreateClusterOperator(DataprocCreateClusterOperator):
     ) -> None:
         self.project_id = project_id
         self.region = region
-        self.cluster_config = cluster_config
+        self._cluster_config = cluster_config
         self.labels = labels or Labels()
         self.gcp_conn_id = gcp_conn_id
         self.impersonation_chain = impersonation_chain
 
-        cluster = cluster_config.create_cluster()
+        self.cluster_config = cluster_config.create_cluster()
 
         super().__init__(
             cluster_name=cluster_name,
             region=self.region,
             project_id=self.project_id,
-            cluster_config=cluster,
+            # Apparently the actual `self.cluster_config` is
+            # `dataproc_v1.types.cluster.ClusterConfig` and not `dataproc_v1.types.cluster.Cluster`,
+            # but passing both types seem to work fine anyway???
+            cluster_config=self.cluster_config,  # type: ignore
             labels=dict(self.labels),
             use_if_exists=True,
             gcp_conn_id=self.gcp_conn_id,
@@ -307,7 +333,36 @@ class CreateClusterOperator(DataprocCreateClusterOperator):
         labels = Labels({**self.labels})
         labels.add_dag_run_id(context)
         self.labels = dict(labels)
+        secret_action = self._prepare_secret_init_action()
+        self._patch_cluster_init_actions([secret_action] if secret_action else [])
         return super().execute(context)
+
+    def _prepare_secret_init_action(self) -> NodeInitializationAction | None:
+        """Prepare the secret init action if secrets exist."""
+        if not self._cluster_config.secret_map:
+            return None
+        if not self._cluster_config.secret_init_action_uri:
+            raise AirflowException("secret_init_action_uri must be set if secret_map is set")
+        secrets = Secrets(
+            mapping={
+                env_var: Secret(secret_id=secret_name, project_id=self.project_id)
+                for env_var, secret_name in self._cluster_config.secret_map.items()
+            }
+        )
+        init_action = SecretInitAction(
+            secrets=secrets,
+            init_action_uri=self._cluster_config.secret_init_action_uri,
+        )
+        hook = GCSHook(gcp_conn_id=self.gcp_conn_id, impersonation_chain=self.impersonation_chain)
+        return init_action.push_to_gcs(gcs_hook=hook)
+
+    def _patch_cluster_init_actions(self, init_actions: list[NodeInitializationAction] | None) -> None:
+        """Patch in place the cluster init actions."""
+        if not init_actions:
+            return
+        self.log.info(f"Patching cluster init actions with {init_actions}")
+        self.log.debug(f"Current cluster config: {self.cluster_config}")
+        self.cluster_config["initialization_actions"].extend(init_actions)  # type: ignore
 
 
 class SubmitJobOperator(DataprocSubmitJobOperator):

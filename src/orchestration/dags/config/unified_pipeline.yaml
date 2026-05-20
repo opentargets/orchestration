@@ -9,7 +9,7 @@ is_dev: true
 run_name: 'yt/26.03-test-full-l2g-trainset-2'
 
 # Whether this will be a partner preview platform release (PPP)
-is_ppp: true
+is_ppp: false
 
 # Versions for software and data
 pis_version: '26.03.0-dev.11'
