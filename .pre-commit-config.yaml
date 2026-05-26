@@ -36,7 +36,7 @@ repos:
     rev: v1.35.1
     hooks:
       - id: yamllint
-        args: ['-d', '{rules: {line-length: {max: 250}}}']
+        args: ['-d', '{extends: relaxed, rules: {line-length: {max: 120}}}']
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
