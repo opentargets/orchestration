@@ -41,6 +41,7 @@ steps:
       step.target_index_path: '{{release_uri}}/output/target'
       step.disease_index_path: '{{release_uri}}/output/disease'
       step.biosample_index_path: '{{release_uri}}/output/biosample'
+      step.heritability_input_path: '{{release_uri}}/input/heritability_estimate'
       # OUTPUTS
       step.valid_study_index_path: '{{release_uri}}/output/study'
       step.invalid_study_index_path: '{{release_uri}}/excluded/study'
