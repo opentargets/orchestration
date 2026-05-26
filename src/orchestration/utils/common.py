@@ -24,6 +24,6 @@ shared_dag_args: dict[str, Any] = {
 shared_dag_kwargs: dict[str, Any] = {
     "tags": ["genetics_etl", "experimental"],
     "start_date": datetime.now(tz=UTC) - timedelta(days=1),
-    "schedule": "@once",
+    "schedule": None,
     "catchup": False,
 }

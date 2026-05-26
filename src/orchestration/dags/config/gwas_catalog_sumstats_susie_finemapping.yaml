@@ -3,11 +3,11 @@ environment_specs:
   - name: Prod
     vars:
       output_path: gs://gwas_catalog_sumstats_susie
-      GENTROPY_REF: 3.2.0-rc.2
+      GENTROPY_REF: 3.2.0
   - name: Test
     vars:
       output_path: gs://ot_orchestration/test/gwas_catalog_sumstats_susie
-      GENTROPY_REF: 3.2.0-rc.2
+      GENTROPY_REF: 3.2.0
 
 env: Prod
 

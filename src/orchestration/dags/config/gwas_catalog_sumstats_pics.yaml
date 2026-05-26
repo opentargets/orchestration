@@ -4,7 +4,7 @@ environment_specs:
     vars:
       input_path: gs://gwas_catalog_inputs
       output_path: gs://gwas_catalog_sumstats_pics
-      sync_date: '20260119'
+      sync_date: '20260421'
 
 env: Prod
 
@@ -12,7 +12,7 @@ dataproc:
   cluster_name: otg-gwascatalog-sumstats-pics
   autoscaling_policy: otg-preprocess-gwascatalog
   cluster_metadata:
-    GENTROPY_REF: v3.2.0-rc.2
+    GENTROPY_REF: v3.2.0
   num_workers: 5
 
 nodes:

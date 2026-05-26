@@ -4,8 +4,8 @@ environment_specs:
     vars:
       input_path: gs://gwas_catalog_inputs
       output_path: gs://gwas_catalog_sumstats_susie
-      curation_date: '20260130'
-      sync_date: '20260119'
+      curation_date: '20260421'
+      sync_date: '20260421'
 
 env: Prod
 
@@ -13,7 +13,7 @@ dataproc:
   cluster_name: otg-gwas-catalog-sumstat-susie-clumping
   autoscaling_policy: otg-etl
   cluster_metadata:
-    GENTROPY_REF: v3.2.0-rc.2
+    GENTROPY_REF: v3.2.0
 
 nodes:
   - id: gwas_catalog_study_index
