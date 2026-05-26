@@ -672,7 +672,7 @@ steps:
       destination: input/gwas/study/gcss_susie
 
     - name: copy_many GCSS susie credible sets
-      sources: gs://gwas_catalog_sumstats_susie/credible_set_clean/20260130/*.parquet
+      sources: gs://gwas_catalog_sumstats_susie/credible_set_clean/20260519/*.parquet
       destination: input/gwas/credible_set/gcss_susie
 
     - name: copy_many finngen study
