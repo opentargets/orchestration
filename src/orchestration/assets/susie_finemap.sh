@@ -17,7 +17,7 @@ set -euo pipefail
 readonly STUDY_INDEX_PATH="${study_index_path}"
 readonly STUDY_LOCUS_MANIFEST_PATH="${study_locus_manifest_path}"
 #########################################################################################
-gentropy \
+HYDRA_FULL_ERROR=1 gentropy \
     step=susie_finemapping \
     step.study_index_path="${STUDY_INDEX_PATH}" \
     step.study_locus_manifest_path="${STUDY_LOCUS_MANIFEST_PATH}" \
