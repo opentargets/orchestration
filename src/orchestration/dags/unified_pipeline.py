@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, cast
 
 from airflow.providers.google.cloud.operators.compute import ComputeEngineDeleteInstanceOperator
 from airflow.providers.standard.operators.empty import EmptyOperator
 from airflow.sdk import DAG, Param, chain, task_group
+from airflow.sdk.definitions.param import ParamsDict
 from airflow.task.trigger_rule import TriggerRule
 from airflow.utils.edgemodifier import Label
 
@@ -44,14 +44,15 @@ with DAG(
     schedule=None,
     user_defined_filters={"strhash": strhash},
     tags=["unified_pipeline"],
-    params={
+    params=ParamsDict({
         "run_label": Param(
-            default=f"up-{datetime.now().strftime('%Y%m%d-%H%M')}",
+            default=None,
             description="""A label with key 'run' and the contents of this parameter
                            will be added to any infrastructure resources that this
-                           pipeline creates in Google Cloud.""",
+                           pipeline creates in Google Cloud.
+                           Defaults to the DAG run ID if not provided.""",
         ),
-    },
+    }),
 ) as dag:
     logger = logging.getLogger(__name__)
     config = UnifiedPipelineConfig()

@@ -70,5 +70,5 @@ class Labels(UserDict[str, str]):
         dag_run = context.get("dag_run")
         if dag_run:
             default_run_label = dag_run.run_id
-        run_label = context.get("params", {}).get("run_label", default_run_label)
+        run_label = context.get("params", {}).get("run_label") or default_run_label
         self["run"] = run_label
