@@ -28,7 +28,7 @@ following software requirements:
 
 ### Local
 
-Local development sets up an Airflow 3.2 Docker Compose stack with LocalExecutor. `make dev` starts `postgres`, `airflow-init`, `airflow-scheduler`, `airflow-dag-processor`, `airflow-triggerer`, and `airflow-apiserver`. The local Airflow API/UI is exposed on `localhost:8080` by default.
+Local development sets up an Airflow 3.X Docker Compose stack with LocalExecutor. `make dev` starts `postgres`, `airflow-init`, `airflow-scheduler`, `airflow-dag-processor`, `airflow-triggerer`, and `airflow-apiserver`. The local Airflow API/UI is exposed on `localhost:8080` by default.
 
 > [!NOTE]
 > The directory containing the orchestration code is mounted into the Airflow service containers, so you can edit the code locally in your IDE and see the changes reflected in the Airflow UI.

@@ -96,7 +96,7 @@ wait_for_apiserver() {
   done
 }
 
-# run the Airflow 3.2 stack used for remote development
+# run the Airflow stack used for remote development
 su orchestration -c "
   cd /opt/orchestration &&
   AIRFLOW__API__SECRET_KEY=\$(openssl rand -hex 32) \

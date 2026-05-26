@@ -37,7 +37,7 @@ if [ ! -d ".git" ]; then
 fi
 
 # check and deploy the airflow dev machine
-cecho "Ensuring the airflow dev machine and Airflow 3.2 stack are ready..."
+cecho "Ensuring the airflow dev machine and Airflow stack are ready..."
 terraform -chdir=./deployment init
 set +e
 terraform -chdir=./deployment plan -detailed-exitcode -out=plan.out
@@ -70,6 +70,6 @@ gcloud -q compute config-ssh --project="${PROJECT_ID}" > /dev/null 2>&1
 code --folder-uri "vscode-remote://ssh-remote+${AIRFLOW_DEV_MACHINE_NAME}.europe-west1-d.${PROJECT_ID}/opt/orchestration"
 
 # open the browser to the airflow API/UI
-cecho "Opening the Airflow 3.2 API/UI..."
+cecho "Opening the Airflow API/UI..."
 sleep 5
 open_browser "http://localhost:8081"
