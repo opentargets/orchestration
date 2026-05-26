@@ -16,7 +16,7 @@ set -euo pipefail
 readonly L2G_TRAINING_VERSION="${l2g_training_version}"
 readonly FEATURE_MATRIX_PATH="${feature_matrix_path}"
 #########################################################################################
-gentropy \
+HYDRA_FULL_ERROR=1 gentropy \
   step=locus_to_gene \
   step.session.write_mode=overwrite \
   step.session.output_partitions=1 \

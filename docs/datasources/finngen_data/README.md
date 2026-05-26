@@ -57,3 +57,7 @@ The configuration of the dataproc infrastructure and individual step parameters 
 ### 2025-07-24
 
 - [feat: updated finngen studyIndex to contain pubmedId upon ingestion](https://github.com/opentargets/issues/issues/3946)
+
+### 2026-05-20
+
+- [feat: rerun study index generation to include latest EFO changes](https://github.com/opentargets/issues/issues/4344)
