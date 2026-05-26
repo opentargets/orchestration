@@ -12,7 +12,7 @@ run_name: 'sz/26.06.0-dev0'
 is_ppp: false
 
 # Versions for software and data
-pis_version: '26.03.0-dev.11'
+pis_version: '26.03.0-dev.15'
 pts_version: '26.03.0-dev.44'
 etl_version: '26.03.0-dev5'
 gentropy_version: 'v3.3.0-rc.1'
