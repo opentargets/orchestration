@@ -821,12 +821,14 @@ steps:
 
   #: OTAR STEP :####################################################################################
   otar:
-    - name: copy otar meta spreadsheet
-      source: https://docs.google.com/spreadsheets/d/1CV_shXJy1ACM09HZBB_-3Nl6l_dfkrA26elMAF0ttHs/export?format=csv&gid=1179867447
+    - name: spreadsheet_download otar meta spreadsheet
+      sheet_id: 1CV_shXJy1ACM09HZBB_-3Nl6l_dfkrA26elMAF0ttHs
+      gid: '1179867447'
       destination: input/otar/otar_meta.csv
 
-    - name: copy otar project to efo spreadsheet
-      source: https://docs.google.com/spreadsheets/d/1CV_shXJy1ACM09HZBB_-3Nl6l_dfkrA26elMAF0ttHs/export?format=csv&gid=72910172
+    - name: spreadsheet_download otar project to efo spreadsheet
+      sheet_id: 1CV_shXJy1ACM09HZBB_-3Nl6l_dfkrA26elMAF0ttHs
+      gid: '72910172'
       destination: input/otar/otar_project_to_efo.csv
   ##################################################################################################
 
@@ -1057,7 +1059,6 @@ steps:
 
   #: TARGET_PRIORITISATION STEP :###################################################################
   target_prioritisation:
-
     - name: copy uniprot locations
       source: https://rest.uniprot.org/locations/stream?compressed=true&fields=id%2Cname%2Ccategory%2Cgene_ontologies%2Cpart_of%2Cis_a&format=tsv&query=%28%2A%29
       destination: input/target_prioritisation/uniprot_locations.tsv.gz
