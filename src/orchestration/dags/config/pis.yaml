@@ -15,8 +15,108 @@ scratchpad:
   ot_curation: '{{ot_curation}}'
   probes_drugs_version: '{{probes_drugs_version}}'
   gnomad_version: '{{gnomad_version}}'
+  gtex_version: '{{gtex_version}}'
 
 steps:
+  ##################################################################################################
+  #: BASELINE EXPRESSION STEP :#####################################################################
+  baseline_expression_raw:
+    - name: copy GTEx TPM matrix
+      source: https://storage.googleapis.com/adult-gtex/bulk-gex/v${gtex_version}/rna-seq/GTEx_Analysis_v${gtex_version}_RNASeQCv2.4.2_gene_tpm.gct.gz
+      destination: input/baseline_expression/bulkRNAseq/GTEx/gene_tpm.gct.gz
+
+    - name: copy GTEx sample attributes
+      source: https://storage.googleapis.com/adult-gtex/annotations/v${gtex_version}/metadata-files/GTEx_Analysis_v${gtex_version}_Annotations_SampleAttributesDS.txt
+      destination: input/baseline_expression/bulkRNAseq/GTEx/sample_attributes.txt
+
+    - name: copy GTEx subject phenotypes
+      source: https://storage.googleapis.com/adult-gtex/annotations/v${gtex_version}/metadata-files/GTEx_Analysis_v${gtex_version}_Annotations_SubjectPhenotypesDS.txt
+      destination: input/baseline_expression/bulkRNAseq/GTEx/subject_phenotypes.txt
+
+    - name: explode DICE expression data
+      foreach:
+        - B_CELL_NAIVE_TPM.csv
+        - CD4_NAIVE_TPM.csv
+        - CD4_STIM_TPM.csv
+        - CD8_NAIVE_TPM.csv
+        - CD8_STIM_TPM.csv
+        - M2_TPM.csv
+        - MONOCYTES_TPM.csv
+        - NK_TPM.csv
+        - TFH_TPM.csv
+        - TH1_TPM.csv
+        - TH17_TPM.csv
+        - TH2_TPM.csv
+        - THSTAR_TPM.csv
+        - TREG_MEM_TPM.csv
+        - TREG_NAIVE_TPM.csv
+      do:
+        - name: copy DICE ${each}
+          source: https://dice-database.org/download/${each}
+          destination: input/baseline_expression/bulkRNAseq/DICE/${each}
+
+    - name: copy DICE ontology mapping
+      source: gs://ot-team/tobi/baseline_expression/data/DICE/DICE_ontology_mapping.txt
+      destination: input/baseline_expression/bulkRNAseq/DICE/DICE_ontology_mapping.txt
+
+    - name: copy Tabula Sapiens data
+      source: https://datasets.cellxgene.cziscience.com/5a495302-b7cd-4bf9-853e-95627b00bb03.h5ad
+      destination: input/baseline_expression/scRNAseq/CxG-tabula_sapiens.h5ad
+
+    - name: copy PRIDE tissue ontology mapping
+      source: gs://ot-team/tobi/baseline_expression/data/PRIDE/tissue-complete_mapping.tsv
+      destination: input/baseline_expression/MSproteomics/PRIDE/tissue-complete_mapping.tsv
+
+    - name: explode PRIDE proteomics data
+      foreach:
+        - PXD000561
+        - PXD000865
+        - PXD016999
+        - PXD020192
+      do:
+        - name: copy PRIDE ${each} ppb.json
+          source: gs://ot-team/tobi/baseline_expression/data/PRIDE/${each}/${each}_OpenTargets_ppb.json
+          destination: input/baseline_expression/MSproteomics/PRIDE/${each}/${each}_OpenTargets_ppb.json
+        - name: copy PRIDE ${each} ppb.txt
+          source: gs://ot-team/tobi/baseline_expression/data/PRIDE/${each}/${each}_OpenTargets_ppb.txt
+          destination: input/baseline_expression/MSproteomics/PRIDE/${each}/${each}_OpenTargets_ppb.txt
+        - name: copy PRIDE ${each} sdrf.json
+          source: gs://ot-team/tobi/baseline_expression/data/PRIDE/${each}/${each}_OpenTargets_sdrf.json
+          destination: input/baseline_expression/MSproteomics/PRIDE/${each}/${each}_OpenTargets_sdrf.json
+        - name: copy PRIDE ${each} individuals.txt
+          source: gs://ot-team/tobi/baseline_expression/data/PRIDE/${each}/${each}_individuals.txt
+          destination: input/baseline_expression/MSproteomics/PRIDE/${each}/${each}_individuals.txt
+        - name: copy PRIDE ${each} tissues.txt
+          source: gs://ot-team/tobi/baseline_expression/data/PRIDE/${each}/${each}_tissues.txt
+          destination: input/baseline_expression/MSproteomics/PRIDE/${each}/${each}_tissues.txt
+
+  baseline_expression:
+    - name: explode processed baseline expression datasets
+      each_placeholder: dataset
+      foreach:
+        - GTEx/tissue
+        - PRIDE/tissue
+        - tabula_sapiens/celltype
+        - tabula_sapiens/tissue
+        - tabula_sapiens/tissue_celltype
+        - DICE/celltype
+      do:
+        - name: copy_many processed ${dataset} aggregated expression
+          sources: gs://baseline_expression/processed/aggregated/${dataset}/parquet/*
+          destination: intermediate/baseline_expression/aggregated/${dataset}/parquet
+          # - name: copy processed ${dataset} unaggregated expression
+          #   source: gs://baseline_expression/processed/unaggregated/${dataset}/parquet
+          #   destination: intermediate/baseline_expression/unaggregated/${dataset}/parquet
+
+    - name: explode parent mapping
+      foreach:
+        - celltype
+        - tissue
+      do:
+        - name: copy parent mapping for ${each}
+          source: gs://baseline_expression/parent_mappings/${each}-parent_mapping.tsv
+          destination: input/baseline_expression/${each}-parent_mapping.tsv
+
   #: BIOSAMPLE STEP :###############################################################################
   biosample:
     - name: copy cell ontology
@@ -30,13 +130,6 @@ steps:
     - name: copy efo
       source: https://github.com/EBISPOT/efo/releases/download/v${efo_version}/efo.json
       destination: input/biosample/efo.json
-  ##################################################################################################
-
-  #: BASELINE_EXPRESSION_STEP :#####################################################################
-  baseline_expression:
-    - name: copy_many baseline expression
-      sources: gs://ot-team/tobi/baseline_expression/aggregated-new/merged/*.parquet
-      destination: output/baseline_expression
 
   #################################################################################################
 
@@ -491,46 +584,6 @@ steps:
           destination: input/evidence/ot_crispr/data/${match_path}/${match_stem}.${match_ext}
   ##################################################################################################
 
-  #: EXPRESSION STEP :##############################################################################
-  expression:
-    - name: copy expression hierarchy
-      source: https://raw.githubusercontent.com/opentargets/expression_hierarchy/master/process/curation.tsv
-      destination: input/expression/expression_hierarchy_curation.tsv
-
-    - name: copy tissue translation map
-      source: https://raw.githubusercontent.com/opentargets/expression_hierarchy/master/process/map_with_efos.json
-      destination: input/expression/map_with_efos.json
-
-    - name: copy normal tissues
-      source: https://www.proteinatlas.org/download/tsv/normal_ihc_data.tsv.zip
-      destination: input/expression/normal_tissue.tsv.zip
-
-    - name: find_latest baseline expression binned
-      source: gs://atlas_baseline_expression/baseline_expression_binned
-      scratchpad_key: latest_baseline_expression_binned
-    - name: copy baseline expression binned
-      requires:
-        - find_latest baseline expression binned
-      source: ${latest_baseline_expression_binned}
-      destination: input/expression/baseline_expression_binned.tsv
-
-    - name: find_latest baseline expression counts
-      source: gs://atlas_baseline_expression/baseline_expression_counts
-      scratchpad_key: latest_baseline_expression_counts
-    - name: copy baseline expression counts
-      requires:
-        - find_latest baseline expression counts
-      source: ${latest_baseline_expression_counts}
-      destination: input/expression/baseline_expression_counts.tsv
-
-    - name: find_latest baseline expression zscore binned
-      source: gs://atlas_baseline_expression/baseline_expression_zscore_binned
-      scratchpad_key: latest_baseline_expression_zscore_binned
-    - name: copy baseline expression zscore binned
-      requires:
-        - find_latest baseline expression zscore binned
-      source: ${latest_baseline_expression_zscore_binned}
-      destination: input/expression/baseline_expression_zscore_binned.tsv
   ##################################################################################################
 
   #: GO STEP :######################################################################################
@@ -1004,9 +1057,6 @@ steps:
 
   #: TARGET_PRIORITISATION STEP :###################################################################
   target_prioritisation:
-    - name: copy protein atlas
-      source: https://www.proteinatlas.org/download/proteinatlas.json.gz
-      destination: input/target_prioritisation/proteinatlas.json.gz
 
     - name: copy uniprot locations
       source: https://rest.uniprot.org/locations/stream?compressed=true&fields=id%2Cname%2Ccategory%2Cgene_ontologies%2Cpart_of%2Cis_a&format=tsv&query=%28%2A%29

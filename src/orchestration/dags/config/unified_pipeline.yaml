@@ -27,6 +27,7 @@ mondo_version: '2026-02-03'
 ot_curation: '26.03.0'
 probes_drugs_version: '02_2025'
 gnomad_version: '4.1'
+gtex_version: '10'
 
 # Dependency graph
 # ----------------
@@ -74,7 +75,6 @@ steps:
   pis_evidence_intogen:
   pis_evidence_ppp:
     ppp_only: true
-  pis_expression:
   pis_gwas:
   pis_gwas_ppp:
     ppp_only: true
@@ -108,9 +108,6 @@ steps:
     depends_on:
       - pis_ontoma
       - pts_disease
-  pts_expression:
-    depends_on:
-      - pis_expression
   pts_go:
     depends_on:
       - pis_go
@@ -370,6 +367,7 @@ steps:
       - pts_drug_molecule
       - pts_drug_mechanism_of_action
       - pis_target_prioritisation
+      - pts_baseline_expression
   pts_association:
     ppp_only: false
     depends_on:
@@ -455,6 +453,12 @@ steps:
   pts_search_ebi:
     depends_on:
       - pts_association
+
+  pts_baseline_expression:
+    depends_on:
+      - pis_baseline_expression
+      - gentropy_biosample
+      - pts_target
 
   # GENTROPY STEPS
   gentropy_biosample:

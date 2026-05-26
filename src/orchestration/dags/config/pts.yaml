@@ -60,35 +60,196 @@ steps:
   ##################################################################################################
 
   #: EXPRESSION STEP :##############################################################################
-  expression:
-    - name: unzip normal tissue
-      source: input/expression/normal_tissue.tsv.zip
-      inner_file: normal_ihc_data.tsv
-      destination: intermediate/expression/normal_tissue.tsv
-    - name: gzip normal tissue
-      requires:
-        - unzip normal tissue
-      source: intermediate/expression/normal_tissue.tsv
-      destination: intermediate/expression/normal_tissue.tsv.gz
-
-    - name: transform expression tissue
-      source: input/expression/map_with_efos.json
-      destination: intermediate/expression/tissue-translation-map.parquet
-      transformer: expression_tissue
-
-    - name: pyspark expression
-      requires:
-        - transform expression tissue
-        - gzip normal tissue
-      pyspark: expression
+  baseline_expression_dice:
+    - name: pyspark baseline expression harmonise dice
+      pyspark: baseline_expression_harmonise
       source:
-        rna: input/expression/baseline_expression_counts.tsv
-        binned: input/expression/baseline_expression_binned.tsv
-        zscore: input/expression/baseline_expression_zscore_binned.tsv
-        exprhierarchy: input/expression/expression_hierarchy_curation.tsv
-        efomap: intermediate/expression/tissue-translation-map.parquet
-        tissues: intermediate/expression/normal_tissue.tsv.gz
-      destination: output/expression
+        dice_directory: input/baseline_expression/bulkRNAseq/DICE
+        mapping_path: input/baseline_expression/bulkRNAseq/DICE/DICE_ontology_mapping.txt
+      destination:
+        baseline_expression: intermediate/baseline_expression/unaggregated/DICE/celltype
+      settings:
+        harmoniser: dice
+    - name: pyspark baseline expression specificity dice
+      pyspark: baseline_expression_specificity
+      source: intermediate/baseline_expression/unaggregated/DICE/celltype
+      destination: intermediate/baseline_expression/specificity/DICE/celltype
+      settings:
+        specificity_method: cellex
+        biosample: celltype
+      requires:
+        - pyspark baseline expression harmonise dice
+    - name: pyspark baseline expression aggregate dice
+      pyspark: baseline_expression_aggregate
+      source:
+        expression_data: intermediate/baseline_expression/unaggregated/DICE/celltype/parquet
+        celltype_cellex: intermediate/baseline_expression/specificity/DICE/celltype/cellex/esmu.csv.gz
+      destination: intermediate/baseline_expression/aggregated/DICE/celltype/
+      requires:
+        - pyspark baseline expression harmonise dice
+        - pyspark baseline expression specificity dice
+  baseline_expression_cellxgene:
+    - name: pyspark baseline expression harmonise cellxgene
+      pyspark: baseline_expression_harmonise
+      source:
+        h5ad_path: input/baseline_expression/scRNAseq/CxG-tabula_sapiens.h5ad
+      destination:
+        baseline_expression: intermediate/baseline_expression/unaggregated/tabula_sapiens/
+      settings:
+        harmoniser: cellxgene
+        datasource_id: tabula_sapiens
+        datatype_id: scrna-seq
+        min_cells: 5 # Minimum cells a gene must be expressed in to be retained
+        min_genes: 5 # Minimum genes a cell must express to be retained
+        technology: 10X # Technology used to generate the data
+        normalise: true
+        aggregation_min_cells: 5 # Minimum cells required per pseudobulked sample
+        aggregation_method: sum # Options: sum, mean
+        tissue_agg_colname: tissue_ontology_term_id
+        celltype_agg_colname: cell_type_ontology_term_id
+        age_colname: development_stage
+        sex_colname: sex
+        ethnicity_colname: self_reported_ethnicity
+        donor_colname: donor_id
+    - name: pyspark baseline expression specificity celltype
+      pyspark: baseline_expression_specificity
+      source: intermediate/baseline_expression/unaggregated/tabula_sapiens/celltype
+      destination: intermediate/baseline_expression/specificity/tabula_sapiens/celltype
+      settings:
+        specificity_method: cellex
+        biosample: celltype
+      requires:
+        - pyspark baseline expression harmonise cellxgene
+    - name: pyspark baseline expression specificity tissue
+      pyspark: baseline_expression_specificity
+      source: intermediate/baseline_expression/unaggregated/tabula_sapiens/tissue
+      destination: intermediate/baseline_expression/specificity/tabula_sapiens/tissue
+      settings:
+        specificity_method: cellex
+        biosample: tissue
+      requires:
+        - pyspark baseline expression harmonise cellxgene
+    - name: pyspark baseline expression specificity tissue celltype
+      pyspark: baseline_expression_specificity
+      source: intermediate/baseline_expression/unaggregated/tabula_sapiens/tissue_celltype
+      destination: intermediate/baseline_expression/specificity/tabula_sapiens/tissue_celltype
+      settings:
+        specificity_method: cellex
+        biosample: tissuecelltype
+      requires:
+        - pyspark baseline expression harmonise cellxgene
+    - name: pyspark baseline expression aggregate celltype
+      pyspark: baseline_expression_aggregate
+      source:
+        expression_data: intermediate/baseline_expression/unaggregated/tabula_sapiens/celltype/parquet
+        celltype_cellex: intermediate/baseline_expression/specificity/tabula_sapiens/celltype/cellex/esmu.csv.gz
+      destination: intermediate/baseline_expression/aggregated/tabula_sapiens/celltype
+      requires:
+        - pyspark baseline expression harmonise cellxgene
+        - pyspark baseline expression specificity celltype
+    - name: pyspark baseline expression aggregate tissue
+      pyspark: baseline_expression_aggregate
+      source:
+        expression_data: intermediate/baseline_expression/unaggregated/tabula_sapiens/tissue/parquet
+        tissue_cellex: intermediate/baseline_expression/specificity/tabula_sapiens/tissue/cellex/esmu.csv.gz
+      destination: intermediate/baseline_expression/aggregated/tabula_sapiens/tissue
+      requires:
+        - pyspark baseline expression harmonise cellxgene
+        - pyspark baseline expression specificity tissue
+    - name: pyspark baseline expression aggregate tissue celltype
+      pyspark: baseline_expression_aggregate
+      source:
+        expression_data: intermediate/baseline_expression/unaggregated/tabula_sapiens/tissue_celltype/parquet
+        tissue_celltype_cellex: intermediate/baseline_expression/specificity/tabula_sapiens/tissue_celltype/cellex/esmu.csv.gz
+      destination: intermediate/baseline_expression/aggregated/tabula_sapiens/tissue_celltype
+      requires:
+        - pyspark baseline expression harmonise cellxgene
+        - pyspark baseline expression specificity tissue celltype
+
+  baseline_expression_pride:
+    - name: pyspark baseline expression harmonise pride
+      pyspark: baseline_expression_harmonise
+      source:
+        pride_directory: input/baseline_expression/MSproteomics/PRIDE
+        tissue_ontology_mapping_path: input/baseline_expression/MSproteomics/PRIDE/tissue-complete_mapping.tsv
+      destination:
+        baseline_expression: intermediate/baseline_expression/unaggregated/PRIDE/tissue
+      settings:
+        harmoniser: pride
+        pride_codes:
+          - PXD020192
+          - PXD000865
+          - PXD000561
+          - PXD016999
+    - name: pyspark baseline expression aggregate pride
+      pyspark: baseline_expression_aggregate
+      source:
+        expression_data: intermediate/baseline_expression/unaggregated/PRIDE/tissue/parquet
+      destination: intermediate/baseline_expression/aggregated/PRIDE/tissue
+      requires:
+        - pyspark baseline expression harmonise pride
+
+  baseline_expression_gtex:
+    - name: pyspark baseline expression harmonise gtex
+      pyspark: baseline_expression_harmonise
+      source:
+        gtex_source_data_path: input/baseline_expression/bulkRNAseq/GTEx/gene_tpm.gct.gz
+        sample_metadata_path: input/baseline_expression/bulkRNAseq/GTEx/sample_attributes.txt
+        subject_metadata_path: input/baseline_expression/bulkRNAseq/GTEx/subject_phenotypes.txt
+      destination:
+        baseline_expression: intermediate/baseline_expression/unaggregated/GTEx/tissue
+      settings:
+        harmoniser: gtex
+        matrix: true # Generate a matrix as well as a parquet (true or false)
+    - name: pyspark baseline expression specificity gtex
+      pyspark: baseline_expression_specificity
+      source: intermediate/baseline_expression/unaggregated/GTEx/tissue
+      destination: intermediate/baseline_expression/specificity/GTEx/tissue
+      settings:
+        specificity_method: cellex
+        biosample: tissue
+        input_format: true
+        mode: matrix
+        sample_id: OrigSample
+      requires:
+        - pyspark baseline expression harmonise gtex
+    - name: pyspark baseline expression aggregate gtex
+      pyspark: baseline_expression_aggregate
+      source:
+        expression_data: intermediate/baseline_expression/unaggregated/GTEx/tissue/parquet
+        tissue_cellex: intermediate/baseline_expression/specificity/GTEx/tissue/cellex/esmu.csv.gz
+      destination: intermediate/baseline_expression/aggregated/GTEx/tissue
+      requires:
+        - pyspark baseline expression harmonise gtex
+        - pyspark baseline expression specificity gtex
+
+  baseline_expression:
+    - name: explode baseline expression merge and validate by aggregation
+      each_placeholder: aggregation
+      foreach:
+        # - unaggregated
+        - aggregated
+      do:
+        - name: pyspark baseline expression ${aggregation}
+          pyspark: baseline_expression
+          source:
+            baseline_expression: intermediate/baseline_expression
+            target_index: output/target
+            biosample_index: output/biosample
+            tissue_parents: input/baseline_expression/tissue-parent_mapping.tsv
+            celltype_parents: input/baseline_expression/celltype-parent_mapping.tsv
+          destination:
+            valid: output/baseline_expression_${aggregation}
+            failed: excluded/baseline_expression_${aggregation}
+          settings:
+            aggregation: ${aggregation}
+            datasets:
+              - GTEx/tissue
+              - PRIDE/tissue
+              - tabula_sapiens/celltype
+              - tabula_sapiens/tissue
+              - tabula_sapiens/tissue_celltype
+              - DICE/celltype
   ##################################################################################################
 
   #: GO STEP :######################################################################################
@@ -607,7 +768,7 @@ steps:
         mouse_phenotypes: output/mouse_phenotype
         molecule: output/drug_molecule
         mechanism_of_action: output/drug_mechanism_of_action
-        hpa_data: input/target_prioritisation/proteinatlas.json.gz
+        baseline_expression: output/baseline_expression_aggregated
         uniprot_slterms: input/target_prioritisation/uniprot_locations.tsv.gz
         mouse_pheno_scores: input/target_prioritisation/mouse_pheno_scores.csv
       destination: output/target_prioritisation
