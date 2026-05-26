@@ -58,6 +58,8 @@ tunnel: ## Tunnel to the remote development environment
 
 build-dag-svgs: ## Generate visual representations of Airflow DAGs for documentation purposes
 	@uv sync --all-groups
+	@AIRFLOW__CORE__DAGS_FOLDER=src/orchestration/dags uv run airflow db migrate
+	@AIRFLOW__CORE__DAGS_FOLDER=src/orchestration/dags uv run airflow dags reserialize
 	@$(foreach dag, \
 		datasources/gwas_catalog_data/gwas_catalog_sumstats_pics \
 		datasources/gwas_catalog_data/gwas_catalog_sumstats_susie_clumping \
