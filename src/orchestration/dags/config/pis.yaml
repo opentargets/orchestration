@@ -642,6 +642,13 @@ steps:
       destination: input/gwas/credible_set/finngen_ukb_mvp
   ##################################################################################################
 
+  #: HERITABILITY STEP :############################################################################
+  heritability:
+    - name: copy_many gwas ldsc h2 estimates
+      sources: gs://gwas_catalog_sumstats_susie/heritability_estimates/**/*.parquet
+      destination: input/heritability_estimates
+  ##################################################################################################
+
   #: L2G STEP :#####################################################################################
   l2g:
     - name: copy_many l2g gold standard
