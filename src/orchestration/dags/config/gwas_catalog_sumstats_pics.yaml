@@ -37,8 +37,9 @@ nodes:
       step.summary_statistics_input_path: "{input_path}/harmonised_summary_statistics"
       step.study_locus_output_path: "{output_path}/study_locus_window_based_clumped"
       step.session.write_mode: overwrite
+      # yamllint disable rule:line-length
       +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '20m'}"
-
+      # yamllint enable rule:line-length
   - id: ld_based_clumping
     kind: Task
     prerequisites:
@@ -50,8 +51,9 @@ nodes:
       step.clumped_study_locus_output_path: "{output_path}/study_locus_ld_clumped"
       step.study_index_path: "{output_path}/study_index"
       step.session.write_mode: overwrite
+      # yamllint disable rule:line-length
       +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '20m'}"
-
+      # yamllint enable rule:line-length
   - id: pics
     kind: Task
     prerequisites:

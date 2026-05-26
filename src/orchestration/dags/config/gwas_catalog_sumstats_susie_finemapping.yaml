@@ -23,7 +23,8 @@ nodes:
           collected_loci_path: '{output_path}/study_locus_lb_clumped'
           manifest_output_path: '{output_path}/finemapping_manifest.csv'
           output_path: '{output_path}/credible_set_datasets'
-          #!WARNING: DO NOT CHANGE THE DATE for the log_path, as it is used to back reference the already fine-mapped loci.
+          #!WARNING: DO NOT CHANGE THE DATE for the log_path, as it is used
+          # to back reference the already fine-mapped loci.
           log_path: '{output_path}/finemapping_logs/20250204'
 
   - id: finemapping_batch_job

@@ -252,14 +252,6 @@ steps:
               - DICE/celltype
   ##################################################################################################
 
-  #: GO STEP :######################################################################################
-  go:
-    - name: transform go
-      source: input/go/go.obo
-      destination: output/go/go.parquet
-      transformer: go
-  ##################################################################################################
-
   #: MOUSE_PHENOTYPES STEP :########################################################################
   mouse_phenotype:
     - name: pyspark generate from IMPC and validate with target
@@ -929,7 +921,8 @@ steps:
       settings:
         evidence_format: json
         datasource_id: expression_atlas
-        score_expression: 'array_min(array(1.0, pvalue_linear_score(resourceScore) * (abs(log2FoldChangeValue) / 10) * (log2FoldChangePercentileRank / 100)))'
+        score_expression: >-
+          array_min(array(1.0, pvalue_linear_score(resourceScore) * (abs(log2FoldChangeValue) / 10) * (log2FoldChangePercentileRank / 100)))
         unique_fields:
           - targetId
           - targetFromSourceId
@@ -1334,7 +1327,7 @@ steps:
                 )
               )
             )
-          end
+          END
         unique_fields:
           - targetId
           - targetFromSourceId
@@ -1343,7 +1336,33 @@ steps:
           - drugId
           - clinicalReportId
         direction_on_trait_expression: CASE WHEN diseaseId IS NOT NULL THEN 'protect' END
-        direction_on_target_expression: "CASE WHEN actionType IN ( 'RNAI INHIBITOR', 'NEGATIVE MODULATOR', 'NEGATIVE ALLOSTERIC MODULATOR', 'ANTAGONIST', 'ANTISENSE INHIBITOR', 'BLOCKER', 'INHIBITOR', 'DEGRADER', 'INVERSE AGONIST', 'ALLOSTERIC ANTAGONIST', 'DISRUPTING AGENT' 'GENE EDITING NEGATIVE MODULATOR' ) THEN 'LoF' WHEN actionType IN ( 'PARTIAL AGONIST', 'ACTIVATOR', 'POSITIVE ALLOSTERIC MODULATOR', 'POSITIVE MODULATOR', 'AGONIST', 'SEQUESTERING AGENT', 'STABILISER' ) THEN 'GoF' ELSE NULL END"
+        direction_on_target_expression: |
+          CASE
+            WHEN actionType IN (
+              'RNAI INHIBITOR',
+              'NEGATIVE MODULATOR',
+              'NEGATIVE ALLOSTERIC MODULATOR',
+              'ANTAGONIST',
+              'ANTISENSE INHIBITOR',
+              'BLOCKER',
+              'INHIBITOR',
+              'DEGRADER',
+              'INVERSE AGONIST',
+              'ALLOSTERIC ANTAGONIST',
+              'DISRUPTING AGENT',
+              'GENE EDITING NEGATIVE MODULATOR'
+            ) THEN 'LoF'
+            WHEN actionType IN (
+              'PARTIAL AGONIST',
+              'ACTIVATOR',
+              'POSITIVE ALLOSTERIC MODULATOR',
+              'POSITIVE MODULATOR',
+              'AGONIST',
+              'SEQUESTERING AGENT',
+              'STABILISER'
+            ) THEN 'GoF'
+            ELSE NULL
+          END
 
   evidence_postprocess_reactome:
     - name: pyspark evidence_postprocess

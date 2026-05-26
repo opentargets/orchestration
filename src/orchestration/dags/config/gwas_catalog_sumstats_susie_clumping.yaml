@@ -47,5 +47,6 @@ nodes:
       step.remove_mhc: True
       # More memory on driver to speed up the partition discovery
       # Added spark.sql.sources.parallelPartitionDiscovery.parallelism to allow for discovering ~70k processed sumstats
-      +step.session.extended_spark_conf: "{spark.sql.sources.parallelPartitionDiscovery.parallelism: '100000', spark.driver.memory: '10g'}"
+      +step.session.extended_spark_conf: >-
+        {spark.sql.sources.parallelPartitionDiscovery.parallelism: '100000', spark.driver.memory: '10g'}
       step.session.write_mode: overwrite

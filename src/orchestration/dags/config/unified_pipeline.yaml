@@ -108,9 +108,6 @@ steps:
     depends_on:
       - pis_ontoma
       - pts_disease
-  pts_go:
-    depends_on:
-      - pis_go
   pts_mouse_phenotype:
     depends_on:
       - pts_target
