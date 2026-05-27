@@ -722,6 +722,7 @@ steps:
         chembl_drug_warning_references: input/clinical_report/chembl/drug_warning_refs.parquet
         chembl_molecule_dictionary: input/clinical_report/chembl/molecule_dictionary.parquet
         chembl_curation: input/clinical_report/chembl_mapping.parquet
+        trial_extraction_batch_results: input/clinical_report/aact_extraction_batch_results
         ner_cache_path: input/clinical_report/ner_cache.parquet
       destination:
         output: output/clinical_report/clinical_report.parquet
