@@ -108,6 +108,12 @@ steps:
     depends_on:
       - pis_ontoma
       - pts_disease
+  pts_ontoma_literature:
+    depends_on:
+      - pis_ontoma
+      - pts_disease
+      - pts_target
+      - pts_drug_molecule
   pts_mouse_phenotype:
     depends_on:
       - pts_target

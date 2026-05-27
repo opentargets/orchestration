@@ -609,7 +609,7 @@ steps:
       destination: intermediate/evidence/ot_crispr.parquet
   ##################################################################################################
 
-  #: ONTOMA STEP :##################################################################################
+  #: ONTOMA STEPS :##################################################################################
   ontoma:
     - name: pyspark ontoma generate lookup tables
       pyspark: ontoma_lut_generation
@@ -621,6 +621,20 @@ steps:
       destination:
         disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
         disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
+  # This is split so that we don't run into circularity issues
+  # pts_ontoma currently lists pts_target as a dependency, while pts_target indirectly depends back on pts_ontoma through pts_target_safety → pts_pharmacogenetics.
+  ontoma_literature:
+    - name: pyspark literature ontoma lut generation
+      pyspark: literature_ontoma_lut_generation
+      source:
+        disease_index: output/disease/disease.parquet
+        ot_disease_curation: input/ontoma/ot_disease_curation.tsv
+        eva_clinvar: input/ontoma/eva_clinvar.txt
+        clinvar_xrefs: input/ontoma/clinvar_xrefs.txt
+        target_index: output/target
+        drug_index: output/drug_molecule
+      destination:
+        disease_target_drug_label_lut: intermediate/ontoma/disease_target_drug_label_lookup_table.parquet
   ##################################################################################################
 
   #: DRUG_WARNING STEP :############################################################################
