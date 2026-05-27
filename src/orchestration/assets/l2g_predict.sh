@@ -23,7 +23,7 @@ gentropy \
   step.run_mode="predict" \
   step.l2g_threshold=0.05 \
   step.download_from_hub=true \
-  step.explain_predictions=true \
+  step.explain_predictions=false \
   step.hf_hub_repo_id="opentargets/locus_to_gene_${L2G_TRAINING_VERSION}" \
   step.credible_set_path="${INPUT_PARTITION}" \
   step.feature_matrix_path="${FEATURE_MATRIX_PATH}" \

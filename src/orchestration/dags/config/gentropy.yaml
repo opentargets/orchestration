@@ -199,17 +199,36 @@ steps:
       step: locus_to_gene
       step.session.write_mode: overwrite
       step.run_mode: train
-      step.wandb_run_name: '{{l2g_training_version}}'
-      step.cross_validate: false
-      step.train_on_full_dataset: true
-      step.hf_hub_repo_id: opentargets/locus_to_gene_{{l2g_training_version}}
+      # Comment out wandb_run_name to use file-based CV output (cv_results_dir) instead of W&B
+      step.wandb_run_name: null
+      step.cross_validate: true
+      step.train_on_full_dataset: false
+      step.hf_hub_repo_id: null
       step.hf_model_commit_message: 'chore: update model base model for {{l2g_training_version}} run'
       +step.session.extended_spark_conf: "{spark.kryoserializer.buffer.max:500m, spark.sql.autoBroadcastJoinThreshold:'-1'}"
-      step.filter_dark_matter: true
+      step.filter_dark_matter: false
       # INPUTS
+      step.hyperparameter_grid:
+        max_depth:
+          values: [5, 6]
+        scale_pos_weight:
+          values: [0.8, 1.0, 1.2]
+        min_child_weight:
+          values: [10, 15]
+        eta:
+          values: [0.05, 0.1]
+        nearest_fgs:
+          values: [1]
+        not_nearest_fgs:
+          values: [1]
+        nearest_no_fgs:
+          values: [0.9]
+        not_nearest_no_fgs:
+          values: [0.1]
+      step.cv_results_dir: '{{release_uri}}/etc/model/locus_to_gene_model/cv_results'
       step.credible_set_path: 'gs://open-targets-data-releases/26.03/output/credible_set'
       step.feature_matrix_path: 'gs://open-targets-pipeline-runs/yt/26.03-test-full-l2g-trainset-1/intermediate/l2g_feature_matrix'
-      step.gold_standard_curation_path: 'gs://genetics-portal-dev-analysis/yt4/2606_release/2603_training_set_full_fm_single_file.json'
+      step.gold_standard_curation_path: 'gs://genetics-portal-dev-analysis/yt4/2606_release/2603_training_set_full_fm_single_file_no_repl.json'
       # OUTPUTS
       step.model_path: '{{release_uri}}/etc/model/locus_to_gene_model/classifier.skops'
       step.hf_credentials_path: "/var/run/secrets/hfhub-key"

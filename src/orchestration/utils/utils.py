@@ -174,6 +174,27 @@ def chain_dependencies(nodes: list[ConfigNode], tasks_or_task_groups: dict[str, 
                     node.set_upstream(tasks_or_task_groups[dependency])
 
 
+def _to_hydra_value(v: Any) -> str:
+    """Serialise a Python value to Hydra override grammar (no double-quoted keys).
+
+    Hydra uses its own grammar: {key:val,...} for dicts and [v1,v2,...] for lists.
+    Standard JSON double-quoted keys are rejected by the Hydra parser.
+    """
+    if v is None:
+        return "null"
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if isinstance(v, (int, float)):
+        return str(v)
+    if isinstance(v, str):
+        return f"'{v}'"
+    if isinstance(v, list):
+        return "[" + ",".join(_to_hydra_value(i) for i in v) + "]"
+    if isinstance(v, dict):
+        return "{" + ",".join(f"{k}:{_to_hydra_value(val)}" for k, val in v.items()) + "}"
+    return str(v)
+
+
 def convert_params_to_hydra_positional_arg(params: dict[str, Any] | None, dataproc: bool = False) -> list[str]:
     """Convert configuration parameters to form that can be passed to hydra step positional arguments.
 
@@ -196,7 +217,10 @@ def convert_params_to_hydra_positional_arg(params: dict[str, Any] | None, datapr
     incorrect_param_keys = [key for key in params if "step" not in key]
     if incorrect_param_keys:
         raise ValueError(f"Passed incorrect param keys {incorrect_param_keys}")
-    positional_args = [f"{k}={v}" for k, v in params.items()]
+    positional_args = [
+        f"{k}={_to_hydra_value(v) if isinstance(v, (dict, list)) else 'null' if v is None else v}"
+        for k, v in params.items()
+    ]
     if not dataproc:
         return positional_args
     yarn_session_config = "step.session.spark_uri=yarn"
