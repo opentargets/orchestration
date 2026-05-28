@@ -151,7 +151,7 @@ steps:
       - pts_drug_mechanism_of_action
   pts_literature_publication_match:
     depends_on:
-      - pts_ontoma
+      - pts_ontoma_literature
       - pis_literature
   pts_literature_entity_lut:
     depends_on:
