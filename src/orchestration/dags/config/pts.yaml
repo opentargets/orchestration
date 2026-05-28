@@ -224,32 +224,26 @@ steps:
         - pyspark baseline expression specificity gtex
 
   baseline_expression:
-    - name: explode baseline expression merge and validate by aggregation
-      each_placeholder: aggregation
-      foreach:
-        # - unaggregated
-        - aggregated
-      do:
-        - name: pyspark baseline expression ${aggregation}
-          pyspark: baseline_expression
-          source:
-            baseline_expression: intermediate/baseline_expression
-            target_index: output/target
-            biosample_index: output/biosample
-            tissue_parents: input/baseline_expression/tissue-parent_mapping.tsv
-            celltype_parents: input/baseline_expression/celltype-parent_mapping.tsv
-          destination:
-            valid: output/baseline_expression_${aggregation}
-            failed: excluded/baseline_expression_${aggregation}
-          settings:
-            aggregation: ${aggregation}
-            datasets:
-              - GTEx/tissue
-              - PRIDE/tissue
-              - tabula_sapiens/celltype
-              - tabula_sapiens/tissue
-              - tabula_sapiens/tissue_celltype
-              - DICE/celltype
+    - name: pyspark baseline expression aggregated
+      pyspark: baseline_expression
+      source:
+        baseline_expression: intermediate/baseline_expression
+        target_index: output/target
+        biosample_index: output/biosample
+        tissue_parents: input/baseline_expression/tissue-parent_mapping.tsv
+        celltype_parents: input/baseline_expression/celltype-parent_mapping.tsv
+      destination:
+        valid: output/baseline_expression_aggregated
+        failed: excluded/baseline_expression_aggregated
+      settings:
+        aggregation: aggregated
+        datasets:
+          - GTEx/tissue
+          - PRIDE/tissue
+          - tabula_sapiens/celltype
+          - tabula_sapiens/tissue
+          - tabula_sapiens/tissue_celltype
+          - DICE/celltype
   ##################################################################################################
 
   #: MOUSE_PHENOTYPES STEP :########################################################################
