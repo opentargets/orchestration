@@ -149,6 +149,22 @@ steps:
       - pts_ontoma
       - pts_chembl_molecule
       - pts_drug_mechanism_of_action
+  pts_literature_publication_match:
+    depends_on:
+      - pts_ontoma_literature
+      - pis_literature
+  pts_literature_entity_lut:
+    depends_on:
+      - pts_literature_publication_match
+  pts_literature_embedding:
+    depends_on:
+      - pts_literature_publication_match
+  pts_literature_vector:
+    depends_on:
+      - pts_literature_embedding
+  pts_literature_cooccurrence_evidence:
+    depends_on:
+      - pts_literature_publication_match
   # Evidence not processed by PTS
   pts_evidence_postprocess_europepmc:
     depends_on:
