@@ -699,7 +699,7 @@ steps:
   heritability:
     - name: copy_many gwas ldsc h2 estimates
       sources: gs://gwas_catalog_sumstats_susie/heritability_estimates/**/*.parquet
-      destination: input/heritability_estimates
+      destination: input/heritability_estimate
   ##################################################################################################
 
   #: L2G STEP :#####################################################################################
