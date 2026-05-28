@@ -309,6 +309,18 @@ steps:
           source: ${uri}
           destination: intermediate/openfda/${uuid}.parquet
           transformer: openfda
+    - name: pyspark openfda
+      pyspark: openfda
+      source:
+        drug_molecule: output/drug_molecule
+        fda_data: intermediate/openfda
+        blacklisted_events: input/openfda/blacklisted_events.txt
+      destination:
+        fda_unfiltered: intermediate/openfda_adverse_drug_reactions
+        fda_results: output/openfda_significant_adverse_drug_reactions
+      settings:
+        montecarlo_permutations: 500
+        montecarlo_percentile: 0.95
   ##################################################################################################
 
   #: SO STEP :######################################################################################
