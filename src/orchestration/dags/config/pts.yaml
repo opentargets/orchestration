@@ -427,7 +427,7 @@ steps:
         models: input/target/gene-essentiality/depmap/Model.csv
         essential_genes: input/target/gene-essentiality/depmap/CRISPRInferredCommonEssentials.csv
         gene_effects: input/target/gene-essentiality/depmap/CRISPRGeneEffect.csv
-        gene_expression: input/target/gene-essentiality/depmap/OmicsExpressionProteinCodingGenesTPMLogp1.csv
+        gene_expression: input/target/gene-essentiality/depmap/OmicsExpressionTPMLogp1HumanProteinCodingGenes.csv
         mutation_hotspots: input/target/gene-essentiality/depmap/OmicsSomaticMutationsMatrixHotspot.csv
         mutation_damaging: input/target/gene-essentiality/depmap/OmicsSomaticMutationsMatrixDamaging.csv
         depmap_tissue_mapping: input/ot_curation/mappings/biosystem/depmap_uberon_mapping.csv
