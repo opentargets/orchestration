@@ -397,6 +397,7 @@ steps:
         tep: input/target/tep/tep.json.gz
         tractability: input/target/tractability/tractability.tsv
         uniprot: intermediate/target/uniprot/uniprot.parquet
+        uniprot_ssl: input/target/uniprot/uniprot-ssl.tsv.gz
         chembl: input/target/chembl/chembl_target.jsonl
         chemical_probes: intermediate/chemical_probes_evidence.parquet
         gene_essentiality: intermediate/target/gene-essentiality/essentiality.parquet
