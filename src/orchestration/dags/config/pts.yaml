@@ -710,11 +710,6 @@ steps:
       destination:
         output: output/drug_molecule
         excluded: excluded/drug_molecule_failed_report
-      settings:
-        invalid_clinical_report_qc:
-          - PHASE_IV_NOT_APPROVED
-          - UNVALIDATED_INDICATION
-          - INDIRECT_PRIMARY_PURPOSE
   ################################################################################################
 
   #: CLINICAL_REPORT STEP :#######################################################################
@@ -731,7 +726,7 @@ steps:
         aact_conditions: input/clinical_report/aact/conditions.parquet
         aact_study_references: input/clinical_report/aact/study_references.parquet
         aact_designs: input/clinical_report/aact/designs.parquet
-        aact_summaries: input/clinical_report/aact/summaries.parquet
+        aact_summaries: input/clinical_report/aact/brief_summaries.parquet
         chembl_indication: input/clinical_report/chembl/drug_indication.parquet
         chembl_indication_references: input/clinical_report/chembl/drug_indication_refs.parquet
         chembl_drug_warning: input/clinical_report/chembl/drug_warning.parquet
