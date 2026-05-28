@@ -783,7 +783,7 @@ steps:
         mouse_phenotypes: output/mouse_phenotype
         molecule: output/drug_molecule
         mechanism_of_action: output/drug_mechanism_of_action
-        baseline_expression: output/baseline_expression_aggregated
+        baseline_expression: output/baseline_expression/aggregated
         uniprot_slterms: input/target_prioritisation/uniprot_locations.tsv.gz
         mouse_pheno_scores: input/target_prioritisation/mouse_pheno_scores.csv
       destination: output/target_prioritisation
