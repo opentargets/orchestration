@@ -449,6 +449,7 @@ steps:
       - pts_disease
       - pts_go
       - pts_target
+      - pts_reactome
 
   pts_interaction:
     depends_on:
