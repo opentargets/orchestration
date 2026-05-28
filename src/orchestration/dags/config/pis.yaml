@@ -895,18 +895,12 @@ steps:
       source: https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_${gencode_version}/gencode.v${gencode_version}.annotation.gff3.gz
       destination: input/target/gencode/gencode.gff3.gz
 
-    - name: explode download essentiality files
-      foreach:
-        - CRISPRGeneEffect.csv
-        - CRISPRInferredCommonEssentials.csv
-        - Model.csv
-        - OmicsExpressionTPMLogp1HumanProteinCodingGenes.csv
-        - OmicsSomaticMutationsMatrixDamaging.csv
-        - OmicsSomaticMutationsMatrixHotspot.csv
+    - name: explode_glob download essentiality files
+      glob: 'gs://otar000-evidence_input/Essentiality/DepMap/${depmap_version}/*.csv'
       do:
-        - name: copy ${each}
-          source: https://depmap.org/portal/data_page/?tab=allData&releasename=DepMap%20Public%2026Q1&filename=${each}
-          destination: input/target/gene-essentiality/depmap/${each}
+        - name: copy depmap ${match_stem}
+          source: ${uri}
+          destination: input/target/gene-essentiality/depmap/${match_stem}.${match_ext}
 
     - name: copy ot_curation depmap_tissue_mapping
       source: https://raw.githubusercontent.com/opentargets/curation/refs/tags/${ot_curation}/mappings/biosystem/depmap_uberon_mapping.csv
