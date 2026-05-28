@@ -1825,6 +1825,7 @@ steps:
         diseases: output/disease
         targets: output/target
         go: output/go
+        reactome: output/reactome
       destination:
         targets: view/search_facet_target
         diseases: view/search_facet_disease
