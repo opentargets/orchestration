@@ -81,6 +81,7 @@ class UnifiedPipelineConfig:
             template_context={
                 "release_uri": self.dev_uri or self.release_uri,
                 "release_name": up.get("release_name"),
+                "string_version": up.get("string_version"),
             },
         )
         """The internal configuration for PTS steps."""

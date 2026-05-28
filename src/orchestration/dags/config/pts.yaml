@@ -1848,6 +1848,7 @@ steps:
         interactions_unmatched: excluded/interaction
       settings:
         scorethreshold: 0
+        string_version: '{{string_version}}'
   ##################################################################################################
 
   #: RELEASE METRICS STEP :#########################################################################
