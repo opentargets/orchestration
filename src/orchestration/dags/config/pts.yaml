@@ -941,7 +941,15 @@ steps:
         evidence_format: json
         datasource_id: expression_atlas
         score_expression: >-
-          array_min(array(1.0, pvalue_linear_score(resourceScore) * (abs(log2FoldChangeValue) / 10) * (log2FoldChangePercentileRank / 100)))
+          array_min(array(1.0,
+            (CASE
+              WHEN resourceScore IS NULL OR isnan(resourceScore) THEN NULL
+              WHEN resourceScore <= 0 THEN 1.0
+              ELSE LEAST(1.0, GREATEST(0.0,
+                (1.0 - 0.0) * (log10(resourceScore) - log10(1.0)) / (log10(1e-10) - log10(1.0)) + 0.0
+              ))
+            END) * (abs(log2FoldChangeValue) / 10) * (log2FoldChangePercentileRank / 100)
+          ))
         unique_fields:
           - targetId
           - targetFromSourceId
@@ -1518,7 +1526,14 @@ steps:
       settings:
         evidence_format: parquet
         datasource_id: intogen
-        score_expression: pvalue_linear_score(resourceScore, 0.1, 1e-10, 0.25, 1.0)
+        score_expression: >-
+          CASE
+            WHEN resourceScore IS NULL OR isnan(resourceScore) THEN NULL
+            WHEN resourceScore <= 0 THEN 1.0
+            ELSE LEAST(1.0, GREATEST(0.25,
+              (1.0 - 0.25) * (log10(resourceScore) - log10(0.1)) / (log10(1e-10) - log10(0.1)) + 0.25
+            ))
+          END
         unique_fields:
           - targetId
           - targetFromSourceId
@@ -1560,7 +1575,14 @@ steps:
       settings:
         evidence_format: parquet
         datasource_id: gene_burden
-        score_expression: pvalue_linear_score(resourceScore, 1e-7, 1e-17, 0.25, 1.0)
+        score_expression: >-
+          CASE
+            WHEN resourceScore IS NULL OR isnan(resourceScore) THEN NULL
+            WHEN resourceScore <= 0 THEN 1.0
+            ELSE LEAST(1.0, GREATEST(0.25,
+              (1.0 - 0.25) * (log10(resourceScore) - log10(1e-7)) / (log10(1e-17) - log10(1e-7)) + 0.25
+            ))
+          END
         unique_fields:
           - targetId
           - targetFromSourceId
@@ -1592,7 +1614,14 @@ steps:
       settings:
         evidence_format: parquet
         datasource_id: crispr_screen
-        score_expression: pvalue_linear_score(resourceScore, 0.5, 0.005, 0.0, 1.0)
+        score_expression: >-
+          CASE
+            WHEN resourceScore IS NULL OR isnan(resourceScore) THEN NULL
+            WHEN resourceScore <= 0 THEN 1.0
+            ELSE LEAST(1.0, GREATEST(0.0,
+              (1.0 - 0.0) * (log10(resourceScore) - log10(0.5)) / (log10(0.005) - log10(0.5)) + 0.0
+            ))
+          END
         unique_fields:
           - targetId
           - targetFromSourceId
@@ -1741,7 +1770,14 @@ steps:
       settings:
         evidence_format: json
         datasource_id: encore
-        score_expression: pvalue_linear_score(geneticInteractionPValue, 1.0, 0.01, 0.0, 1.0)
+        score_expression: >-
+          CASE
+            WHEN geneticInteractionPValue IS NULL OR isnan(geneticInteractionPValue) THEN NULL
+            WHEN geneticInteractionPValue <= 0 THEN 1.0
+            ELSE LEAST(1.0, GREATEST(0.0,
+              (1.0 - 0.0) * (log10(geneticInteractionPValue) - log10(1.0)) / (log10(0.01) - log10(1.0)) + 0.0
+            ))
+          END
         unique_fields:
           - targetId
           - targetFromSourceId
