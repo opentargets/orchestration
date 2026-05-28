@@ -82,6 +82,7 @@ steps:
   pis_go:
   pis_interaction:
   pis_enhancer_to_gene:
+  pis_heritability:
   pis_l2g:
   pis_literature:
   pis_molqtl:
@@ -501,6 +502,7 @@ steps:
       - pts_pre_target
       - pts_disease
       - gentropy_biosample
+      - pis_heritability
     depends_on_ppp:
       - pis_gwas_ppp
       - pis_molqtl_ppp
