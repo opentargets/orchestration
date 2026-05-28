@@ -128,10 +128,13 @@ steps:
       - gentropy_variant
       - pts_association
       - pts_pharmacogenetics
-  pts_openfda:
+  pts_openfda_input_preparation:
     depends_on:
       - pis_openfda
       - pts_drug_molecule
+  pts_openfda:
+    depends_on:
+      - pts_openfda_input_preparation
   pts_so:
     depends_on:
       - pis_so

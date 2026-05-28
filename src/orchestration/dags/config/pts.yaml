@@ -301,7 +301,7 @@ steps:
   ##################################################################################################
 
   #: OPENFDA STEP :#################################################################################
-  openfda:
+  openfda_input_preparation:
     - name: explode_glob transform openfda drug events
       glob: input/openfda/**/*.zip
       do:
@@ -309,6 +309,8 @@ steps:
           source: ${uri}
           destination: intermediate/openfda/${uuid}.parquet
           transformer: openfda
+
+  openfda:
     - name: pyspark openfda
       pyspark: openfda
       source:
