@@ -262,6 +262,7 @@ steps:
   pts_evidence_postprocess_clinical_precedence:
     depends_on:
       - pts_evidence_clinical_precedence
+      - pts_target
   pts_evidence_cancer_biomarkers:
     depends_on:
       - pis_evidence_cancer_biomarkers
