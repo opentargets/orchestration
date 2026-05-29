@@ -219,6 +219,7 @@ steps:
       step.session.write_mode: overwrite
       +step.session.extended_spark_conf: "{spark.sql.autoBroadcastJoinThreshold:'-1'}"
       step.n_splits: 5
+      step.holdout_only: true # skip CV folds; train once on full training set per config, eval on holdout
       # INPUTS — pre-split parquets produced by l2g_train_test_split
       step.train_feature_matrix_path: '{{release_uri}}/intermediate/l2g_train_split'
       step.test_feature_matrix_path: '{{release_uri}}/intermediate/l2g_test_split'
@@ -229,7 +230,7 @@ steps:
       step.hyperparameter_grid:
         # ── vary ──────────────────────────────────────────────────────────────
         scale_pos_weight:
-          values: [0.8, 1, 5, 10, 20] # 0.8=sceptical of noisy positives; >1=compensate imbalance
+          values: [0.8, 1, 5, 10] # 0.8=sceptical of noisy positives; >1=compensate imbalance
         n_estimators:
           values: [100, 300, 500] # with eta=0.05, 100 trees under-learns; probe capacity
         min_child_weight:
