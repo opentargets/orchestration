@@ -203,7 +203,7 @@ steps:
       # INPUTS
       step.credible_set_path: 'gs://open-targets-data-releases/26.03/output/credible_set'
       step.feature_matrix_path: 'gs://open-targets-pipeline-runs/yt/26.03-test-full-l2g-trainset-1/intermediate/l2g_feature_matrix'
-      step.gold_standard_curation_path: 'gs://genetics-portal-dev-analysis/yt4/2606_release/2603_training_set_full_fm_single_file_no_repl.json'
+      step.gold_standard_curation_path: 'gs://genetics-portal-dev-analysis/yt4/2606_release/2603_training_set_full_fm_single_file.json'
       #'gs://genetics-portal-dev-analysis/yt4/2606_release/2603_training_set_full_fm_single_file_no_repl.json'
       #'gs://open-targets-data-releases/26.03/input/l2g/gold_standard.json'
       #'gs://genetics-portal-dev-analysis/yt4/2606_release/2603_training_set_full_fm_single_file.json'
@@ -224,19 +224,23 @@ steps:
       step.test_feature_matrix_path: '{{release_uri}}/intermediate/l2g_test_split'
       # OUTPUT
       step.cv_results_dir: '{{release_uri}}/intermediate/l2g_cv_results'
-      # Hyperparameter grid: 4 × 3 × 3 × 3 = 108 combinations
+      # Hyperparameter grid: 5 × 3 × 3 × 3 × 2 = 270 combinations
       # Fixed params (single value) keep the grid tractable; see rationale in comments.
       step.hyperparameter_grid:
         # ── vary ──────────────────────────────────────────────────────────────
         scale_pos_weight:
-          values: [1, 5, 10, 20] # neg/pos ratio ~10-20x; test full compensating range
+          values: [0.8, 1, 5, 10, 20] # 0.8=sceptical of noisy positives; >1=compensate imbalance
         n_estimators:
           values: [100, 300, 500] # with eta=0.05, 100 trees under-learns; probe capacity
         min_child_weight:
           values: [1, 3, 10] # include XGBoost default (1); current 10 is restrictive
         max_depth:
           values: [4, 6, 8] # include XGBoost default (6)
+        gamma:
+          values: [0, 0.5] # min split gain; 0=permissive, >0=conservative splits
         # ── fixed ─────────────────────────────────────────────────────────────
+        max_delta_step:
+          values: [1] # stabilises gradient updates for imbalanced data
         eta:
           values: [0.05] # coupled with n_estimators; fix eta, vary trees
         reg_alpha:
