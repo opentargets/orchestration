@@ -233,8 +233,8 @@ steps:
         tissue_parents: input/baseline_expression/tissue-parent_mapping.tsv
         celltype_parents: input/baseline_expression/celltype-parent_mapping.tsv
       destination:
-        valid: output/baseline_expression_aggregated
-        failed: excluded/baseline_expression_aggregated
+        valid: output/baseline_expression/aggregated
+        failed: excluded/baseline_expression/aggregated
       settings:
         aggregation: aggregated
         datasets:
