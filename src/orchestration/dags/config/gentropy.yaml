@@ -194,6 +194,7 @@ steps:
       step.study_index_path: '{{release_uri}}/output/study'
       step.target_index_path: '{{release_uri}}/output/target'
       step.intervals_path: '{{release_uri}}/output/enhancer_to_gene'
+      step.gene_interactions_path: '{{release_uri}}/output/interaction'
       # OUTPUTS
       step.feature_matrix_path: '{{release_uri}}/intermediate/l2g_feature_matrix'
 
