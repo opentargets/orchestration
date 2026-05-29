@@ -233,8 +233,8 @@ steps:
         tissue_parents: input/baseline_expression/tissue-parent_mapping.tsv
         celltype_parents: input/baseline_expression/celltype-parent_mapping.tsv
       destination:
-        valid: output/baseline_expression/aggregated
-        failed: excluded/baseline_expression/aggregated
+        valid: output/baseline_expression_aggregated
+        failed: excluded/baseline_expression_aggregated
       settings:
         aggregation: aggregated
         datasets:
@@ -761,7 +761,7 @@ steps:
         mouse_phenotypes: output/mouse_phenotype
         molecule: output/drug_molecule
         mechanism_of_action: output/drug_mechanism_of_action
-        baseline_expression: output/baseline_expression/aggregated
+        baseline_expression: output/baseline_expression_aggregated
         uniprot_slterms: input/target_prioritisation/uniprot_locations.tsv.gz
         mouse_pheno_scores: input/target_prioritisation/mouse_pheno_scores.csv
       destination: output/target_prioritisation
