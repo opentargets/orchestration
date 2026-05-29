@@ -142,6 +142,10 @@ clusters:
     master_disk_size: 512
     worker_machine_type: n1-highmem-16
     worker_disk_size: 256
+    # num_preemptible_workers > 0 is required for Airflow's ClusterGenerator to
+    # emit a secondary_worker_config block; without it, `preemptibility` is
+    # silently dropped and autoscaled secondaries default to PREEMPTIBLE.
+    num_preemptible_workers: 1
     preemptibility: NON_PREEMPTIBLE
     autoscaling_policy: pts-literature-50-secondary
     idle_delete_ttl: 3600
