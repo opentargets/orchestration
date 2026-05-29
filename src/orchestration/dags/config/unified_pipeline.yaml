@@ -431,9 +431,9 @@ steps:
     depends_on:
       - pts_association
 
-  # pts_release_metrics:
-  #   depends_on:
-  #     - pts_association
+  pts_release_metrics:
+    depends_on:
+      - pts_association
 
   pts_otar:
     ppp_only: true
