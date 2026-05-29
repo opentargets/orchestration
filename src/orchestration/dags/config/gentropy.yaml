@@ -225,33 +225,33 @@ steps:
       step.test_feature_matrix_path: '{{release_uri}}/intermediate/l2g_test_split'
       # OUTPUT
       step.cv_results_dir: '{{release_uri}}/intermediate/l2g_cv_results'
-      # Hyperparameter grid: 5 × 3 × 3 × 3 × 2 = 270 combinations
-      # Fixed params (single value) keep the grid tractable; see rationale in comments.
+      # Hyperparameter grid: 7 × 3 × 3 × 3 × 3 × 2 = 1134 combinations
+      # holdout_only=true means 1 training run per config (not 5), so larger grid is affordable.
       step.hyperparameter_grid:
         # ── vary ──────────────────────────────────────────────────────────────
         scale_pos_weight:
-          values: [0.8, 1, 5, 10] # 0.8=sceptical of noisy positives; >1=compensate imbalance
+          values: [0.5, 0.8, 1, 2, 5, 10, 20] # full range: sceptical of noise → compensate imbalance
+        eta:
+          values: [0.05, 0.1, 0.3] # safe to vary now; pairs with n_estimators to map capacity
         n_estimators:
-          values: [100, 300, 500] # with eta=0.05, 100 trees under-learns; probe capacity
-        min_child_weight:
-          values: [1, 3, 10] # include XGBoost default (1); current 10 is restrictive
+          values: [100, 300, 500] # capacity axis; previous run showed more trees hurt at eta=0.05
         max_depth:
-          values: [4, 6, 8] # include XGBoost default (6)
-        gamma:
-          values: [0, 0.5] # min split gain; 0=permissive, >0=conservative splits
+          values: [3, 5, 7] # tree complexity
+        min_child_weight:
+          values: [1, 3, 10] # split conservatism
+        reg_alpha:
+          values: [0, 1] # probe: does L1 hurt or help? changed 1→0 last run but never tested
         # ── fixed ─────────────────────────────────────────────────────────────
+        gamma:
+          values: [0] # confirmed negligible in previous run (delta AP = 0.001)
         max_delta_step:
           values: [1] # stabilises gradient updates for imbalanced data
-        eta:
-          values: [0.05] # coupled with n_estimators; fix eta, vary trees
-        reg_alpha:
-          values: [0] # L1 on top of L2 double-penalises; removed
         reg_lambda:
-          values: [1.0] # XGBoost default L2; keep stable
+          values: [1.0] # default L2; not worth grid space yet
         subsample:
-          values: [0.8] # low priority vs scale_pos_weight
+          values: [0.8] # low priority
         colsample_bytree:
-          values: [0.8] # low priority vs scale_pos_weight
+          values: [0.8] # low priority
 
   l2g_training:
     params:
