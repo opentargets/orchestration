@@ -1641,7 +1641,7 @@ steps:
         failed_evidence: excluded/evidence/europepmc
         evidence: output/evidence_europepmc
       settings:
-        evidence_format: json
+        evidence_format: parquet
         datasource_id: europepmc
         score_expression: array_min(array(resourceScore / 100.0, 1.0))
         unique_fields:
