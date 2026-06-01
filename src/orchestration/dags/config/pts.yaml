@@ -251,7 +251,7 @@ steps:
     - name: pyspark generate from IMPC and validate with target
       pyspark: mouse_phenotype
       source:
-        target: output/target_137
+        target: output/target
         # IMPC source files
         solr_gene_gene: input/impc/gene_gene.csv
         solr_mouse_model: input/impc/mouse_model.csv
@@ -398,7 +398,7 @@ steps:
         chemical_probes: intermediate/chemical_probes_evidence.parquet
         gene_essentiality: intermediate/target/gene-essentiality/essentiality.parquet
       destination:
-        target: output/target
+        target: output/target_137
         gene_essentiality: output/target_essentiality
   ##################################################################################################
 
