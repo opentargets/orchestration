@@ -108,8 +108,6 @@ steps:
     depends_on:
       - pis_ontoma
       - pts_disease
-      - pts_target
-      - pts_drug_molecule
   pts_mouse_phenotype:
     depends_on:
       - pts_target
@@ -145,26 +143,10 @@ steps:
       - pts_ontoma
       - pts_chembl_molecule
       - pts_drug_mechanism_of_action
-  pts_literature_publication_match:
-    depends_on:
-      - pts_ontoma
-      - pis_literature
-  pts_literature_entity_lut:
-    depends_on:
-      - pts_literature_publication_match
-  pts_literature_embedding:
-    depends_on:
-      - pts_literature_publication_match
-  pts_literature_vector:
-    depends_on:
-      - pts_literature_embedding
-  pts_literature_cooccurrence_evidence:
-    depends_on:
-      - pts_literature_publication_match
   # Evidence not processed by PTS
   pts_evidence_postprocess_europepmc:
     depends_on:
-      - pts_literature_cooccurrence_evidence
+      - etl_literature
       - pis_literature
       - pts_target
       - pts_disease
@@ -451,6 +433,12 @@ steps:
       - pis_interaction
       - pts_target
 
+  etl_literature:
+    num_partitions: 1000
+    depends_on:
+      - pis_literature
+      - pts_drug_molecule
+
   pts_search:
     depends_on:
       - pts_association
@@ -468,12 +456,6 @@ steps:
       - pis_baseline_expression
       - gentropy_biosample
       - pts_target
-  # ETL steps:
-  etl_literature:
-    num_partitions: 1000
-    depends_on:
-      - pis_literature
-      - pts_drug_molecule
 
   # GENTROPY STEPS
   gentropy_biosample:

@@ -162,44 +162,15 @@ clusters:
     init_actions_uris:
       - 'gs://opentargets-pipelines/up/pts/install_dependencies_on_cluster.sh'
 
-  pts_literature:
-    image_version: '2.2'
-    num_masters: 1
-    num_workers: 4
-    master_machine_type: n1-standard-8
-    master_disk_size: 512
-    worker_machine_type: n1-highmem-16
-    worker_disk_size: 256
-    preemptibility: NON_PREEMPTIBLE
-    autoscaling_policy: pts-literature-50-secondary
-    idle_delete_ttl: 3600
-    internal_ip_only: false
-    metadata:
-      PTS_REF: 'v{{pts_version}}'
-    properties:
-      # Cluster-wide knobs (apply to all 6 pts_literature_* steps).
-      # Sized for the autoscaled 4xn1-highmem-16 + up to 50 non-preemptible
-      # secondary cluster (~864 vCPU peak), validated on PTS runs 014-016.
-      'spark:spark.sql.autoBroadcastJoinThreshold': '134217728'
-      'spark:spark.shuffle.io.maxRetries': '10'
-      'spark:spark.shuffle.io.retryWait': '15s'
-      'spark:spark.network.timeout': '300s'
-      'spark:spark.reducer.maxBlocksInFlightPerAddress': '128'
-      'spark:spark.jars.packages': 'com.johnsnowlabs.nlp:spark-nlp_2.12:6.1.3'
-      'spark:spark.sql.adaptive.enabled': 'true'
-      'spark:spark.serializer': 'org.apache.spark.serializer.KryoSerializer'
-    init_actions_uris:
-      - 'gs://opentargets-pipelines/up/pts/install_dependencies_on_cluster.sh'
-
 step_job_properties:
+  etl:
+    'spark.executor.extraJavaOptions': '-Dconfig.file={{config_filename}} -XX:MaxPermSize=512m -XX:+UseCompressedOops'
+    'spark.driver.extraJavaOptions': '-Dconfig.file={{config_filename}} -XX:MaxPermSize=512m -XX:+UseCompressedOops'
+    'spark.sql.shuffle.partitions': '{{num_partitions}}'
+
   gentropy:
     'spark.jars': '/opt/conda/miniconda3/lib/python3.11/site-packages/hail/backend/hail-all-spark.jar'
     'spark.driver.extraClassPath': '/opt/conda/miniconda3/lib/python3.11/site-packages/hail/backend/hail-all-spark.jar'
     'spark.executor.extraClassPath': './hail-all-spark.jar'
     'spark.serializer': 'org.apache.spark.serializer.KryoSerializer'
     'spark.kryo.registrator': 'is.hail.kryo.HailKryoRegistrator'
-
-  etl:
-    'spark.executor.extraJavaOptions': '-Dconfig.file={{config_filename}} -XX:MaxPermSize=512m -XX:+UseCompressedOops'
-    'spark.driver.extraJavaOptions': '-Dconfig.file={{config_filename}} -XX:MaxPermSize=512m -XX:+UseCompressedOops'
-    'spark.sql.shuffle.partitions': '{{num_partitions}}'
