@@ -335,22 +335,6 @@ steps:
       destination: intermediate/target/hpa/subcellular_locations_ssl.parquet
       separator: "\t"
 
-    - name: unzip essentiality matrix
-      source: input/target/project-scores/essentiality_matrices.zip
-      inner_file: EssentialityMatrices/04_binaryDepScores.tsv
-      destination: intermediate/target/project-scores/04_binaryDepScores.tsv
-    - name: csv_to_parquet essentiality matrix
-      requires:
-        - unzip essentiality matrix
-      source: intermediate/target/project-scores/04_binaryDepScores.tsv
-      local_source: True
-      destination: intermediate/target/project-scores/04_binaryDepScores.parquet
-      separator: "\t"
-
-    - name: csv_to_parquet gene identifier
-      source: input/target/project-scores/gene_identifiers_latest.csv.gz
-      destination: intermediate/target/project-scores/gene_identifiers_latest.parquet
-
     - name: download ensembl
       source: input/target/ensembl/homo_sapiens.json
     - name: transform ensembl
@@ -395,8 +379,6 @@ steps:
         hpa: intermediate/target/hpa/subcellular_location.tsv.gz
         hpa_sl: intermediate/target/hpa/subcellular_locations_ssl.parquet
         ncbi: input/target/ncbi/Homo_sapiens.gene_info.gz
-        project_scores_ids: intermediate/target/project-scores/gene_identifiers_latest.parquet
-        project_scores_essentiality_matrix: intermediate/target/project-scores/04_binaryDepScores.parquet
         reactome_etl: output/reactome
         reactome_pathways: input/target/reactome/Ensembl2Reactome.txt
         safety_evidence: intermediate/target/safety.parquet
