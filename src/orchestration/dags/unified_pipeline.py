@@ -48,6 +48,7 @@ with DAG(
     catchup=False,
     schedule=None,
     user_defined_filters={"strhash": strhash},
+    tags=["unified_pipeline"],
     params={
         "run_label": Param(
             default=f"up-{datetime.now().strftime('%Y%m%d-%H%M')}",
