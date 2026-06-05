@@ -7,7 +7,6 @@ dataproc:
       GENTROPY_REF: v2.3.0-rc.5
     init_actions_uris:
       - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'
-    num_workers: 2
     autoscaling_policy: otg-etl
 
 nodes:

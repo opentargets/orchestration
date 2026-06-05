@@ -4,7 +4,7 @@ environment_specs:
     vars:
       input_path: gs://finngen-public-data-r12
       output_path: gs://finngen_data/r12
-      curation_tag: '25.07'
+      curation_tag: '26.05'
 
 env: Prod
 
@@ -14,7 +14,7 @@ dataproc:
     project_id: open-targets-genetics-dev
     autoscaling_policy: finngen-preprocess
     metadata:
-      GENTROPY_REF: v2.4.0-rc.2
+      GENTROPY_REF: v3.2.0
     master_disk_size: 2000
     num_workers: 6
     init_actions_uris:
