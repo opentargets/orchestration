@@ -228,7 +228,7 @@ steps:
           # Job partitioning depends on the number of credible_set parquet files found in the input glob.
           input_glob: '{{release_uri}}/output/credible_set/**.parquet'
           # With output_partitions = 1, each input is mapped to 1 output.
-          output_prefix: '{{release_uri}}/output/l2g_prediction'
+          output_prefix: '{{release_uri}}/intermediate/l2g_prediction'
     google_batch:
       job:
         task_group:
@@ -261,6 +261,10 @@ steps:
             machine_type: n1-standard-2
             provisioning_model: STANDARD
         logs: {}
+      collect:
+        source_prefix: '{{release_uri}}/intermediate/l2g_prediction'
+        destination_prefix: '{{release_uri}}/output/l2g_prediction'
+        file_glob: '**.parquet'
 
   l2g_evidence:
     params:

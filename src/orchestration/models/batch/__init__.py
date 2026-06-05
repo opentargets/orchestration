@@ -1,6 +1,7 @@
 """Models representing Google Batch operator-config mapping."""
 
 from orchestration.models.batch.operator import (
+    BatchCollectSpec,
     BatchIndexOperatorSpec,
     BatchIndexRow,
     BatchJobOperatorSpec,
@@ -8,6 +9,7 @@ from orchestration.models.batch.operator import (
 )
 
 __all__ = [
+    "BatchCollectSpec",
     "BatchIndexOperatorSpec",
     "BatchIndexRow",
     "BatchJobOperatorSpec",
