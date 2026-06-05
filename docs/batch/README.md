@@ -4,15 +4,16 @@ This document explains how to configure and wire a Google Batch job into an Airf
 
 ## Architecture overview
 
-The batch system is built around two Airflow operators that work together:
+The batch system is built around three Airflow operators that work together:
 
 ```
-BatchIndexOperator  ──(list[BatchIndexRow])──►  BatchJobOperator (expanded)
-   (pure-Python task)                              (one GCP Batch job per row)
+BatchIndexOperator  ──(list[BatchIndexRow])──►  BatchJobOperator (expanded)  ──►  BatchCollectOperator
+   (pure-Python task)                              (one GCP Batch job per row)        (optional, flat copy)
 ```
 
 1. **`BatchIndexOperator`** — runs in the Airflow worker. It calls a _manifest generator_ to inspect GCS data and produce a list of `BatchIndexRow` objects, each carrying an `EnvironmentRegistrySpec` (one `EnvironmentSpec` per Batch task). Rows are produced by partitioning the full task list using `max_task_count`.
 2. **`BatchJobOperator`** — wraps `CloudBatchSubmitJobOperator`. One instance is expanded per `BatchIndexRow` via Airflow's [dynamic task mapping](https://airflow.apache.org/docs/apache-airflow/stable/authoring-and-scheduling/dynamic-task-mapping.html). Each invocation submits one GCP Batch job with its slice of per-task environments injected at runtime.
+3. **`BatchCollectOperator`** — optional post-processing step. When PySpark writes output into nested partition subdirectories (e.g. `column=value/part-*.parquet`), this operator flattens them into a single destination prefix with deterministic filenames. If no `collect` config is provided, the task raises `AirflowSkipException` and is a no-op.
 
 ### Model hierarchy
 
@@ -171,6 +172,74 @@ chain(batch_index, batch_job)
 ```
 
 See [gwas_catalog_sumstats_susie_finemapping.py](../../src/orchestration/dags/gwas_catalog_sumstats_susie_finemapping.py) for a full working example.
+
+---
+
+## Step 4 — Collect nested output (optional)
+
+When a batch step writes Parquet (or other files) through PySpark, the output lands in nested partition subdirectories:
+
+```
+gs://bucket/output/
+  credible_set_input_partition_hash=abc123/part-00000.parquet
+  credible_set_input_partition_hash=def456/part-00000.parquet
+  ...
+```
+
+`BatchCollectOperator` flattens these into a single prefix with stable, collision-free filenames:
+
+```
+gs://bucket/output/flat/
+  part-00000-<uuid4>-c000.snappy.parquet
+  part-00001-<uuid4>-c000.snappy.parquet
+  ...
+```
+
+The UUID4 is generated once per Airflow run. Files are sorted before indexing, so the output order is deterministic for a given set of source files.
+
+### Config
+
+Add a `collect` block inside the `google_batch` node:
+
+```yaml
+  - id: my_batch_job
+    kind: Task
+    prerequisites:
+      - generate_my_index
+    google_batch:
+      job:
+        # ... job config as before ...
+      collect:
+        source_prefix: 'gs://bucket/output/nested'
+        destination_prefix: 'gs://bucket/output/flat'
+        file_glob: '**.parquet'   # optional — defaults to **.parquet
+```
+
+`file_glob` must follow the pattern `**.<extension>` where extension is one of: `parquet`, `tsv`, `tsv.gz`, `csv`, `csv.gz`, `json`, `jsonl`.
+
+### Config fields
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `source_prefix` | `gs://…` URI | — | GCS prefix where batch tasks write nested partition subdirectories |
+| `destination_prefix` | `gs://…` URI | — | GCS prefix where flattened files will land |
+| `file_glob` | `**.<ext>` string | `**.parquet` | File extension pattern to collect |
+
+### Wire up the operator
+
+```python
+from orchestration.models.batch import BatchJobOperatorSpec
+from orchestration.operators.batch import BatchCollectOperator
+
+collect_operator = BatchCollectOperator(
+    task_id="collect_my_batch_job",
+    collect_spec=BatchJobOperatorSpec(**job_config["google_batch"]).collect,
+)
+
+chain(batch_index, batch_job, collect_operator)
+```
+
+When `collect` is absent from the YAML, `BatchJobOperatorSpec.collect` is `None` and the task self-skips — so `BatchCollectOperator` can be wired unconditionally for every batch step.
 
 ---
 

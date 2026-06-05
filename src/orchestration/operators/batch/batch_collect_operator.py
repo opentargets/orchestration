@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import uuid
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
+from typing import cast
 
 from airflow.exceptions import AirflowSkipException
 from airflow.models.baseoperator import BaseOperator
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
+from google.cloud.storage import Blob, Bucket
 
 from orchestration.models.batch import BatchCollectSpec
 
@@ -19,13 +21,9 @@ class BatchCollectOperator(BaseOperator):
     into per-partition subdirectories under ``collect_spec.source_prefix``
     (e.g. ``credible_set_input_partition_hash=<hash>/part-*.parquet``).
     This operator lists every file matching ``collect_spec.file_glob`` under
-    that prefix and copies each one to ``collect_spec.collected_output`` using
-    a deterministic ``part-<uuid5>.parquet`` name derived from the full source
-    URI, guaranteeing no collisions across partition subdirectories.
-
-    UUID5 seeding makes the operation idempotent: re-running collect for the
-    same source always produces identical destination filenames, so reruns do
-    not accumulate duplicates.
+    that prefix and copies each one to ``collect_spec.destination_prefix`` with
+    a ``part-<index>-<uuid4>-c000.snappy.<ext>`` name, where the UUID4 is generated
+    once per run and the index reflects sort order across partition subdirectories.
 
     When ``collect_spec`` is ``None`` the task raises ``AirflowSkipException``
     — this lets the operator be wired unconditionally in the DAG for every
@@ -53,44 +51,57 @@ class BatchCollectOperator(BaseOperator):
         """Execute the collect operation."""
         if self.collect_spec is None:
             raise AirflowSkipException("No collect spec configured — skipping.")
-
-        spec = self.collect_spec
-        src_bucket, src_prefix = spec.source_prefix.removeprefix("gs://").split("/", 1)
-        dst_bucket, dst_prefix = spec.collected_output.removeprefix("gs://").split("/", 1)
-        src_prefix = src_prefix.rstrip("/") + "/"
-        dst_prefix = dst_prefix.rstrip("/")
-
         hook = GCSHook(gcp_conn_id=self.gcp_conn_id)
-        files = hook.list(
-            bucket_name=src_bucket,
-            prefix=src_prefix,
+        spec = self.collect_spec
+        files = self._list_files(self.collect_spec, hook)
+        if not files:
+            raise AirflowSkipException(f"No files under {spec.source_prefix!r} matching {spec.file_glob!r} — skipping.")
+
+        self.log.info("Collecting %d file(s) from %s into %s", len(files), spec.source_prefix, spec.destination_prefix)
+        client = hook.get_conn()
+        src_bucket = client.bucket(spec.source_path.bucket)
+        dst_bucket = client.bucket(spec.destination_path.bucket)
+        write_uuid = str(uuid.uuid4())
+        blob_pairs = self._prepare_blob_pairs(
+            files, src_bucket, dst_bucket, spec.destination_path.path, write_uuid, spec.file_extension
+        )
+
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            pending = self._submit_copies(executor, blob_pairs)
+            for future in as_completed(pending):
+                self.log.info("collected %s -> %s", pending[future], future.result())
+
+    @staticmethod
+    def _list_files(spec: BatchCollectSpec, hook: GCSHook) -> list[str]:
+        return hook.list(
+            bucket_name=spec.source_path.bucket,
+            prefix=spec.source_path.path,
             match_glob=spec.file_glob,
         )
 
-        if not files:
-            raise AirflowSkipException(
-                f"No files under {spec.source_prefix!r} matching {spec.file_glob!r} — skipping."
+    @staticmethod
+    def _prepare_blob_pairs(
+        files: list[str],
+        src_bucket: Bucket,
+        dst_bucket: Bucket,
+        dest_path: str,
+        write_uuid: str,
+        extension: str,
+    ) -> list[tuple[Blob, Blob]]:
+        return [
+            (
+                src_bucket.blob(src_name),
+                dst_bucket.blob(f"{dest_path}/part-{part_idx:05d}-{write_uuid}-c000.snappy.{extension}"),
             )
+            for part_idx, src_name in enumerate(sorted(files))
+        ]
 
-        self.log.info(
-            "Collecting %d file(s) from %s into %s",
-            len(files),
-            spec.source_prefix,
-            spec.collected_output,
-        )
-
-        client = hook.get_conn()
-        src_bucket_obj = client.bucket(src_bucket)
-        dst_bucket_obj = client.bucket(dst_bucket)
-
-        def _copy(source_blob_name: str) -> str:
-            full_source_uri = f"gs://{src_bucket}/{source_blob_name}"
-            dest_filename = f"part-{uuid.uuid5(uuid.NAMESPACE_URL, full_source_uri).hex}.parquet"
-            src_blob = src_bucket_obj.blob(source_blob_name)
-            src_bucket_obj.copy_blob(src_blob, dst_bucket_obj, f"{dst_prefix}/{dest_filename}")
-            return dest_filename
-
-        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            futures = {executor.submit(_copy, f): f for f in files}
-            for future in as_completed(futures):
-                self.log.info("collected %s -> %s", futures[future], future.result())
+    @staticmethod
+    def _submit_copies(
+        executor: ThreadPoolExecutor,
+        blob_pairs: list[tuple[Blob, Blob]],
+    ) -> dict[Future[str], str]:
+        copy = lambda src, dst: cast(str, src.bucket.copy_blob(src, dst.bucket, dst.name).name)
+        return {
+            executor.submit(copy, src_blob, dst_blob): cast(str, src_blob.name) for src_blob, dst_blob in blob_pairs
+        }

@@ -528,11 +528,11 @@ with DAG(
                             project_id=GCP_PROJECT_PLATFORM,
                             labels=labels,
                         ).expand(batch_index_row=i.output)
-                        c = BatchCollectOperator(
+                        bc = BatchCollectOperator(
                             task_id=f"collect_{step_name}",
                             collect_spec=batch_job_spec.collect,
                         )
-                        chain(i, b, c)
+                        chain(i, b, bc)
 
                     r = batch_jobs(step_name)
 
