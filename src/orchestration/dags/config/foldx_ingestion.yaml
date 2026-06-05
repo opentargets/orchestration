@@ -1,15 +1,13 @@
 ---
 dataproc:
-  python_main_module: gs://genetics_etl_python_playground/initialisation/cli.py
-  cluster_metadata:
-    GENTROPY_REF: v2.3.0-rc.5
-  cluster_init_script: gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh
-
   cluster_name: foldx-ingestion
-  autoscaling_policy: otg-etl
-  allow_efm: false
-  num_workers: 2
-
+  cluster_config:
+    project_id: open-targets-genetics-dev
+    metadata:
+      GENTROPY_REF: v2.3.0-rc.5
+    init_actions_uris:
+      - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'
+    autoscaling_policy: otg-etl
 nodes:
   - id: foldx_variant_annotation_ingestion
     kind: Task

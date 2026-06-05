@@ -10,10 +10,14 @@ env: Prod
 
 dataproc:
   cluster_name: otg-gwascatalog-sumstats-pics
-  autoscaling_policy: otg-preprocess-gwascatalog
-  cluster_metadata:
-    GENTROPY_REF: v3.2.0
-  num_workers: 5
+  cluster_config:
+    project_id: open-targets-genetics-dev
+    autoscaling_policy: otg-preprocess-gwascatalog
+    metadata:
+      GENTROPY_REF: v3.2.0
+    num_workers: 5
+    init_actions_uris:
+      - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'
 
 nodes:
   - id: gwas_catalog_study_index

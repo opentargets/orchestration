@@ -8,15 +8,16 @@ env: Prod
 
 dataproc:
   cluster_name: otg-finngen-ukb-meta
-  autoscaling_policy: otg-etl
-  allow_efm: false
-  num_workers: 2
-  cluster_metadata:
-    GENTROPY_REF: v2.4.2-internal.7
-  # NOTE: spark requires to set the property spark.jars.packages to use the enhanced bgzip codec
-  # this has to be done before the cluster is created, otherwise the codec is not accessible by workers.
-  use_enhanced_bgzip_codec: true
-
+  cluster_config:
+    project_id: open-targets-genetics-dev
+    autoscaling_policy: otg-etl
+    num_workers: 2
+    metadata:
+      GENTROPY_REF: v2.4.2-internal.7
+    init_actions_uris:
+      - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'
+    properties:
+      "spark:spark.jars.packages": "org.seqdoop:hadoop-bam:7.10.0"
 nodes:
   - id: harmonisation
     prerequisites: []
@@ -46,6 +47,7 @@ nodes:
       # yamllint disable rule:line-length
       +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '7', spark.driver.memory: '25g'}"
       # yamllint enable rule:line-length
+
   - id: window_based_clumping
     prerequisites: [harmonisation]
     params:
@@ -59,6 +61,7 @@ nodes:
       # yamllint disable rule:line-length
       +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
       # yamllint enable rule:line-length
+
   - id: ld_based_clumping
     prerequisites:
       - window_based_clumping
@@ -75,6 +78,7 @@ nodes:
       # yamllint disable rule:line-length
       +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
       # yamllint enable rule:line-length
+
   - id: pics
     prerequisites:
       - ld_based_clumping

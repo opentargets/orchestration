@@ -10,11 +10,15 @@ env: Prod
 
 dataproc:
   cluster_name: otg-ingestion-finngen
-  autoscaling_policy: finngen-preprocess
-  cluster_metadata:
-    GENTROPY_REF: v3.2.0
-  master_disk_size: 2000
-  num_workers: 6
+  cluster_config:
+    project_id: open-targets-genetics-dev
+    autoscaling_policy: finngen-preprocess
+    metadata:
+      GENTROPY_REF: v3.2.0
+    master_disk_size: 2000
+    num_workers: 6
+    init_actions_uris:
+      - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'
 
 nodes:
   - id: finngen_studies
