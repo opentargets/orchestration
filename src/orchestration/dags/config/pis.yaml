@@ -480,7 +480,7 @@ steps:
   #: EVIDENCE_PANEL_APP STEP :######################################################################
   evidence_panel_app:
     - name: copy panel_app
-      source: gs://otar000-evidence_input/GenomicsEngland/data_files/All_genes_20250525_public_v1plus_genes_all_ratings.tsv
+      source: gs://otar000-evidence_input/GenomicsEngland/data_files/All_genes_20260511_public_v1plus_panels-1.tsv
       destination: input/evidence/panelapp/panel_app.tsv
     - name: panel_app fetch
       requires:
