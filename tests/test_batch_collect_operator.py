@@ -34,11 +34,9 @@ def test_list_files_passes_correct_args_to_hook(spec: BatchCollectSpec) -> None:
     )
 
 
-
 def test_prepare_blob_pairs_sorts_files_and_builds_correct_names() -> None:
     src_bucket = MagicMock()
     dst_bucket = MagicMock()
-
     BatchCollectOperator._prepare_blob_pairs(
         ["b.parquet", "a.parquet"], src_bucket, dst_bucket, "dest/path", WRITE_UUID, "parquet"
     )
@@ -56,6 +54,6 @@ def test_submit_copies_maps_futures_to_source_blob_names() -> None:
     blob_pairs = [(src_a, MagicMock()), (src_b, MagicMock())]
 
     with ThreadPoolExecutor(max_workers=2) as executor:
-        pending = BatchCollectOperator._submit_copies(executor, blob_pairs)
+        pending = BatchCollectOperator._submit_copies(executor, blob_pairs)  # type: ignore
 
     assert set(pending.values()) == {"a.parquet", "b.parquet"}
