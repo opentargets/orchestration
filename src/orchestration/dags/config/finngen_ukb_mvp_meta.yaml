@@ -47,7 +47,7 @@ nodes:
       # yamllint disable rule:line-length
       +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '7', spark.driver.memory: '25g'}"
       # yamllint enable rule:line-length
-  
+
   - id: window_based_clumping
     prerequisites: [harmonisation]
     params:
@@ -77,8 +77,8 @@ nodes:
       step.session.write_mode: overwrite
       # yamllint disable rule:line-length
       +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m'}"
-        # yamllint enable rule:line-length
- 
+      # yamllint enable rule:line-length
+
   - id: pics
     prerequisites:
       - ld_based_clumping

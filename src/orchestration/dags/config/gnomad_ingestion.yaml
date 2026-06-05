@@ -7,7 +7,7 @@ dataproc:
     metadata:
       GENTROPY_REF: v3.2.0-rc.2
     init_actions_uris:
-      - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh' 
+      - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'
 
 nodes:
   - id: ld_index
