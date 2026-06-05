@@ -68,13 +68,11 @@ def submit_gentropy_step(
     """Submit a PySpark job from a gentropy step to execute a specific CLI step.
 
     Args:
-        cluster_name (str): Name of the cluster.
-        step_name (str): Name of the gentropy step to run.
-        python_main_module (str): GCS path to the gentropy CLI wrapper script.
-        project_id (str): Project ID. Defaults to GCP_PROJECT_GENETICS.
-        trigger_rule (TriggerRule): Trigger rule for the task. Defaults to TriggerRule.ALL_SUCCESS.
-        params (list[str]): Optional parameters to append to the gentropy step, must be in key:value.
-        labels (Labels): Optional labels to add to the job.
+        cluster_name (str): Name of the cluster to submit the job to.
+        step_name (str): Name of the step to execute, should be in format `step: 'step_name'`.
+        params (dict[str, Any] | None): Parameters to pass to the gentropy step.
+            The keys should be in format `*step*:key`.
+
 
     Returns:
         DataprocSubmitJobOperator: Airflow task to submit a PySpark job to execute a specific CLI step.
@@ -124,8 +122,7 @@ def generate_dataproc_task_chain(
 ) -> list[BaseOperator]:
     """For a list of Dataproc tasks, generate a complete chain of tasks.
 
-    This function adds create_cluster, install_dependencies to the task that does not have any upstream tasks (first one in the DAG)
-    and adds delete_cluster tasks to the task that does not have any downstream tasks (last one in the DAG)
+    This function adds `create_cluster` and `delete_cluster` tasks upstream (create) and downstream (delete)
 
     Args:
         tasks (list[BaseOperator]): List of tasks to execute.
