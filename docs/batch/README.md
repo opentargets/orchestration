@@ -6,7 +6,7 @@ This document explains how to configure and wire a Google Batch job into an Airf
 
 The batch system is built around three Airflow operators that work together:
 
-```
+```text
 BatchIndexOperator  ──(list[BatchIndexRow])──►  BatchJobOperator (expanded)  ──►  BatchCollectOperator
    (pure-Python task)                              (one GCP Batch job per row)        (optional, flat copy)
 ```
@@ -17,7 +17,7 @@ BatchIndexOperator  ──(list[BatchIndexRow])──►  BatchJobOperator (expa
 
 ### Model hierarchy
 
-```
+```text
 BatchJobOperatorSpec
 └── JobSpec
     ├── TaskGroupSpec
@@ -58,7 +58,7 @@ The generator is responsible for:
 Built-in generators and their registry keys:
 
 | Registry key | Generator class | Used by |
-|---|---|---|
+| --- | --- | --- |
 | `finemapping` | `FinemappingManifestGenerator` | SuSiE finemapping DAG |
 | `gentropy_step` | `GentropyStepManifestGenerator` | Unified pipeline |
 | `harmonisation` | `HarmonisationManifestGenerator` | GWAS harmonisation DAG |
@@ -121,7 +121,7 @@ nodes:
 ### Key config fields
 
 | Field | Type | Description |
-|---|---|---|
+| --- | --- | --- |
 | `pointer` | `str` | Registry key for the manifest generator |
 | `max_task_count` | `int` | Maximum tasks per Batch job. Total tasks are split across jobs of this size. `0` means no split. |
 | `parallelism` | `int` | Maximum concurrently running tasks within a single Batch job |
@@ -179,7 +179,7 @@ See [gwas_catalog_sumstats_susie_finemapping.py](../../src/orchestration/dags/gw
 
 When a batch step writes Parquet (or other files) through PySpark, the output lands in nested partition subdirectories:
 
-```
+```text
 gs://bucket/output/
   credible_set_input_partition_hash=abc123/part-00000.parquet
   credible_set_input_partition_hash=def456/part-00000.parquet
@@ -188,14 +188,14 @@ gs://bucket/output/
 
 `BatchCollectOperator` flattens these into a single prefix with stable, collision-free filenames:
 
-```
+```text
 gs://bucket/output/flat/
-  part-00000-<uuid4>-c000.snappy.parquet
-  part-00001-<uuid4>-c000.snappy.parquet
+  part-00000-<uuid5>-c000.snappy.parquet
+  part-00001-<uuid5>-c000.snappy.parquet
   ...
 ```
 
-The UUID4 is generated once per Airflow run. Files are sorted before indexing, so the output order is deterministic for a given set of source files.
+The UUID5 is derived deterministically from each source blob's path, so re-running collect for the same source files always produces identical destination filenames — reruns are safe and do not accumulate duplicates. Files are sorted before indexing so the part index is also stable.
 
 ### Config
 
@@ -247,7 +247,7 @@ When `collect` is absent from the YAML, `BatchJobOperatorSpec.collect` is `None`
 
 `BatchIndexOperator` produces one `BatchIndexRow` per Batch job. The number of rows is determined by:
 
-```
+```text
 n_jobs = ceil(total_tasks / max_task_count)
 ```
 
@@ -262,7 +262,7 @@ GCP Batch limits the number of tasks per job. If in doubt, use `max_task_count: 
 Tasks are retried on the following GCP-reserved exit codes by default:
 
 | Exit code | Meaning |
-|---|---|
+| --- | --- |
 | 50001 | Agent reboot |
 | 50002 | Agent restart |
 | 50003 | Agent restart due to memory pressure |

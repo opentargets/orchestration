@@ -22,8 +22,9 @@ class BatchCollectOperator(BaseOperator):
     (e.g. ``credible_set_input_partition_hash=<hash>/part-*.parquet``).
     This operator lists every file matching ``collect_spec.file_glob`` under
     that prefix and copies each one to ``collect_spec.destination_prefix`` with
-    a ``part-<index>-<uuid4>-c000.snappy.<ext>`` name, where the UUID4 is generated
-    once per run and the index reflects sort order across partition subdirectories.
+    a ``part-<index>-<uuid5>-c000.snappy.<ext>`` name, where the UUID5 is derived
+    deterministically from the source blob path, so re-running collect for the same
+    source files always produces identical destination filenames.
 
     When ``collect_spec`` is ``None`` the task raises ``AirflowSkipException``
     — this lets the operator be wired unconditionally in the DAG for every
@@ -61,9 +62,8 @@ class BatchCollectOperator(BaseOperator):
         client = hook.get_conn()
         src_bucket = client.bucket(spec.source_path.bucket)
         dst_bucket = client.bucket(spec.destination_path.bucket)
-        write_uuid = str(uuid.uuid4())
         blob_pairs = self._prepare_blob_pairs(
-            files, src_bucket, dst_bucket, spec.destination_path.path, write_uuid, spec.file_extension
+            files, src_bucket, dst_bucket, spec.destination_path.path, spec.file_extension
         )
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
@@ -85,13 +85,14 @@ class BatchCollectOperator(BaseOperator):
         src_bucket: Bucket,
         dst_bucket: Bucket,
         dest_path: str,
-        write_uuid: str,
         extension: str,
     ) -> list[tuple[Blob, Blob]]:
         return [
             (
                 src_bucket.blob(src_name),
-                dst_bucket.blob(f"{dest_path}/part-{part_idx:05d}-{write_uuid}-c000.snappy.{extension}"),
+                dst_bucket.blob(
+                    f"{dest_path}/part-{part_idx:05d}-{uuid.uuid5(uuid.NAMESPACE_URL, src_name)}-c000.snappy.{extension}"
+                ),
             )
             for part_idx, src_name in enumerate(sorted(files))
         ]
