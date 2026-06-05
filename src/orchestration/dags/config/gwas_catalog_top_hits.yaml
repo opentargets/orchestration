@@ -4,17 +4,21 @@ environment_specs:
     vars:
       input_path: gs://gwas_catalog_inputs
       output_path: gs://gwas_catalog_top_hits
-      sync_date: '20260421'
+      sync_date: '20260119'
       gnomad_path: gs://gnomad_data_2
 
 env: Prod
 
 dataproc:
   cluster_name: otg-tophit-gwascatalog
-  autoscaling_policy: otg-gwascatalog-tophit
-  cluster_metadata:
-    GENTROPY_REF: v3.2.0
-  num_workers: 2
+  cluster_config:
+    project_id: open-targets-genetics-dev
+    autoscaling_policy: otg-gwascatalog-tophit
+    metadata:
+      GENTROPY_REF: v3.2.0-rc.2
+    num_workers: 2
+    init_actions_uris:
+      - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh' 
 
 nodes:
   - id: gwas_catalog_top_hit_ingestion

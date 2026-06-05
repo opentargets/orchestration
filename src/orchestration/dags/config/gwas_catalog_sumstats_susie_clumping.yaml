@@ -4,17 +4,21 @@ environment_specs:
     vars:
       input_path: gs://gwas_catalog_inputs
       output_path: gs://gwas_catalog_sumstats_susie
-      curation_date: '20260421'
-      sync_date: '20260421'
+      curation_date: '20260130'
+      sync_date: '20260119'
 
 env: Prod
 
 dataproc:
   cluster_name: otg-gwas-catalog-sumstat-susie-clumping
-  autoscaling_policy: otg-etl
-  cluster_metadata:
-    GENTROPY_REF: v3.2.0
-
+  cluster_config:
+    project_id: open-targets-genetics-dev
+    autoscaling_policy: otg-etl
+    metadata:
+      GENTROPY_REF: v3.2.0-rc.2
+    init_actions_uris:
+      - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'
+      
 nodes:
   - id: gwas_catalog_study_index
     prerequisites: []
@@ -47,6 +51,5 @@ nodes:
       step.remove_mhc: True
       # More memory on driver to speed up the partition discovery
       # Added spark.sql.sources.parallelPartitionDiscovery.parallelism to allow for discovering ~70k processed sumstats
-      +step.session.extended_spark_conf: >-
-        {spark.sql.sources.parallelPartitionDiscovery.parallelism: '100000', spark.driver.memory: '10g'}
+      +step.session.extended_spark_conf: "{spark.sql.sources.parallelPartitionDiscovery.parallelism: '100000', spark.driver.memory: '10g'}"
       step.session.write_mode: overwrite
