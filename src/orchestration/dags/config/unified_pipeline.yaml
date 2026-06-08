@@ -421,7 +421,7 @@ steps:
       - pts_evidence_postprocess_validation_lab
 
   pts_association_timeseries_view:
-    ppp_only: true
+    ppp_only: false
     depends_on:
       - pts_association
 
