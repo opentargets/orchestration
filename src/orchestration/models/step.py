@@ -14,7 +14,6 @@ class UnifiedPipelineStage(StrEnum):
 
     PIS = "pis"
     PTS = "pts"
-    ETL = "etl"
     GENTROPY = "gentropy"
 
     @classmethod
