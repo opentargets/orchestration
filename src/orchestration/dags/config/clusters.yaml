@@ -19,23 +19,6 @@ clusters:
     init_actions_uris:
       - 'gs://opentargets-pipelines/up/pts/install_dependencies_on_cluster.sh'
 
-  etl:
-    image_version: '2.2'
-    num_masters: 1
-    num_workers: 2
-    autoscaling_policy: otg-etl-25-secondary
-    worker_machine_type: n1-standard-8
-    worker_disk_size: 512
-
-  etl_literature:
-    image_version: '2.2'
-    num_masters: 1
-    num_workers: 4
-    worker_machine_type: n2d-highmem-64
-    properties:
-      'spark:spark.driver.memory': '478g'
-      'spark:spark.sql.shuffle.partitions': '20'
-
   gentropy:
     image_version: '2.2'
     autoscaling_policy: otg-etl
