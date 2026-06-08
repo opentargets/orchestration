@@ -19,7 +19,7 @@ class UnifiedPipelineConfig:
     """Configuration class for the Unified Pipeline.
 
     This class is used to provide the config for the Unified Pipeline and all the
-    applications run by it: PIS, PTS, ETL and GENTROPY.
+    applications run by it: PIS, PTS, and GENTROPY.
 
     The configuration is loaded, parsed and in the case of the application configs,
     templates are rendered with values from the pipeline configuration.
@@ -50,8 +50,6 @@ class UnifiedPipelineConfig:
         """Whether this is a ppp run or public platform run."""
         self.num_partitions = 20
         """The default number of partitions for steps using spark that do not specify it."""
-
-        data_sources_exclude = "[]" if self.is_ppp else '["ot_crispr", "encore", "ot_crispr_validation"]'
 
         self.pis = AppConfig.from_file(
             file_path=config_path / "pis.yaml",
@@ -89,19 +87,6 @@ class UnifiedPipelineConfig:
         if self.is_ppp:
             self.pts = self.pts.overwrite(config_path / "ppp" / "pts.override.yaml")
         """The internal configuration for PTS steps, with PPP-specific overrides."""
-
-        self.etl = AppConfig.from_file(
-            file_path=config_path / "etl.conf",
-            template_context={
-                "release_uri": self.dev_uri or self.release_uri,
-                "data_sources_exclude": data_sources_exclude,
-            },
-        )
-        """The internal configuration for ETL steps."""
-
-        if self.is_ppp:
-            self.etl = self.etl.overwrite(config_path / "ppp" / "etl.overrides.conf")
-        """The internal configuration for ETL steps, with PPP-specific overrides."""
 
         self.gentropy = AppConfig.from_file(
             file_path=config_path / "gentropy.yaml",
@@ -149,11 +134,6 @@ class UnifiedPipelineConfig:
         """The machine type used to run PTS steps."""
         self.pts_disk_size = 300
         """The disk size for PTS vms, in GB."""
-
-        # ETL-specific settings.
-        etl_version = up.get("etl_version")
-        self.etl_jar_origin_uri = f"gs://opentargets-pipelines/up/etl/etl-{etl_version}.jar"
-        """The URI where the jar used to run ETL is fetched from."""
 
         # GENTROPY-specific settings.
         self.gentropy_main_python_file_uri = "gs://genetics_etl_python_playground/initialisation/cli.py"
@@ -317,24 +297,7 @@ class UnifiedPipelineConfig:
         Returns:
             str: The URI of the configuration file for the step.
         """
-        exts = {  # file extensions for any stage that does not use a yaml config
-            "etl": "conf",
-        }
-        stage, _ = step_name.split("_", 1)
-        ext = exts.get(stage, "yaml")
-        return f"{self.dev_uri or self.release_uri}/etc/config/{step_name}.{ext}"
-
-    def jar_uri(self, step_name: str) -> str:
-        """Return the URI of the jar file used to run ETL.
-
-        Args:
-            step_name (str): The name of the step, in the form `{stage}_{step_name}`.
-
-        Returns:
-            str: The URI of the jar file.
-        """
-        _, step = step_name.split("_", 1)
-        return f"{self.dev_uri or self.release_uri}/etc/bin/etl-{step}.jar"
+        return f"{self.dev_uri or self.release_uri}/etc/config/{step_name}.yaml"
 
     def manifest_uri(self) -> str:
         """Return the URI of the manifest file for the run.

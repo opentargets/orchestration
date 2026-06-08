@@ -23,7 +23,6 @@ from orchestration.operators.batch import BatchIndexOperator, BatchJobOperator
 from orchestration.operators.dataproc import (
     CreateClusterOperator,
     DeleteClusterOperator,
-    ETLJobBuilder,
     GentropyJobBuilder,
     SubmitJobOperator,
 )
@@ -32,8 +31,8 @@ from orchestration.operators.differs.config_differ import ConfigDiffer
 from orchestration.operators.differs.manifest_artifact_differ import ManifestArtifactDiffer
 from orchestration.operators.differs.spark_job_differ import SparkJobDiffer
 from orchestration.operators.gce import ComputeEngineRunContainerizedWorkloadSensor, DeleteInstanceOperator
-from orchestration.operators.gcs import CopyBlobOperator, UploadFileOperator, UploadStringOperator
-from orchestration.utils import resource_name, strhash, to_hocon, to_yaml
+from orchestration.operators.gcs import UploadFileOperator, UploadStringOperator
+from orchestration.utils import resource_name, strhash, to_yaml
 from orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_ZONE, shared_dag_args
 from orchestration.utils.labels import Labels
 
@@ -257,112 +256,6 @@ with DAG(
                 x.set_upstream(step)
 
     pts_stage()
-
-    # ==============================================================================================
-    # ETL stage of the DAG — two paths
-    #
-    # 1.
-    #   d.  Diff           — the state and decide the step needs to run.
-    #   uc. Upload Config  — to GCS.
-    #   uj. Upload JAR     — to GCS.
-    #   c.  Create         — cluster in Dataproc, if it does not exist.
-    #   r.  Run            — the step on the cluster from task `s`.
-    #   e.  End            — the step (does nothing).
-    #
-    # 2.
-    #   d. Diff            — the state and decide the step does not need to run.
-    #   e. End             — the step (does nothing).
-    #
-    # After all steps have run:
-    #   x. Delete          — the cluster, if it was created.
-    # ==============================================================================================
-    def etl_stage() -> None:
-        cluster_name = "etl"
-
-        for step_name in config.steps("etl_"):
-
-            @task_group(group_id=step_name)
-            def etl_step(step_name: str) -> None:
-                config_uri = config.config_uri(step_name)
-                jar_uri = config.jar_uri(step_name)
-                labels = Labels({"tool": "etl"}, is_ppp=config.is_ppp)
-
-                d = DiffOperator(
-                    task_id=f"diff_{step_name}",
-                    step_name=step_name,
-                    config=config,
-                    differs=[
-                        ConfigDiffer(),
-                        SparkJobDiffer(),
-                    ],
-                )
-
-                uc = UploadStringOperator(
-                    task_id=f"upload_config_{step_name}",
-                    contents=to_hocon(config.step_config(step_name)),
-                    dst_uri=config_uri,
-                    overwrite=True,
-                )
-
-                uj = CopyBlobOperator(
-                    task_id="upload_jar",
-                    src_uri=config.etl_jar_origin_uri,
-                    dst_uri=jar_uri,
-                    overwrite=True,
-                )
-
-                cluster_definition = config.step_cluster_definition(step_name)
-                assert cluster_definition is not None
-                cluster_name = resource_name(cluster_definition.cluster_type)
-                num_partitions = str(config.step_definition(step_name).get("num_partitions", config.num_partitions))
-
-                c = CreateClusterOperator(
-                    task_id="cluster_create_etl",
-                    cluster_name=cluster_name,
-                    cluster_config=cluster_definition.cluster_config,
-                    labels=labels,
-                )
-
-                labels["step"] = step_name
-
-                r = SubmitJobOperator(
-                    task_id=f"run_{step_name}",
-                    cluster_name=cluster_name,
-                    step_name=step_name,
-                    spark_job=ETLJobBuilder(
-                        jar_uri=jar_uri,
-                        config_uri=config_uri,
-                        args=[step_name.split("_", 1)[-1]],
-                        properties=config.step_job_properties(step_name),
-                        template_context={
-                            "config_filename": config_uri.rsplit("/")[-1],
-                            "num_partitions": num_partitions,
-                        },
-                    ).build(),
-                    labels=labels,
-                )
-
-                e = EmptyOperator(
-                    task_id=f"end_{step_name}",
-                    trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
-                )
-
-                chain(d, Label("differences found, run step"), uc, uj, c, r, e)
-                chain(d, Label("no differences found, skip step"), e)
-                steps[step_name] = {"start": d, "end": e}
-
-            etl_step(step_name)
-
-        if etl_step_ends := [step["end"] for step_name, step in steps.items() if step_name.startswith("etl_")]:
-            x = DeleteClusterOperator(
-                task_id="cluster_delete_etl",
-                cluster_name=resource_name(cluster_name),
-            )
-
-            for end in etl_step_ends:
-                x.set_upstream(end)
-
-    etl_stage()
 
     # ==============================================================================================
     # GENTROPY stage of the DAG
