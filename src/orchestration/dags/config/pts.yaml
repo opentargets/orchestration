@@ -398,7 +398,7 @@ steps:
         chemical_probes: intermediate/chemical_probes_evidence.parquet
         gene_essentiality: intermediate/target/gene-essentiality/essentiality.parquet
       destination:
-        target: output/target_137
+        target: output/target
         gene_essentiality: output/target_essentiality
   ##################################################################################################
 
