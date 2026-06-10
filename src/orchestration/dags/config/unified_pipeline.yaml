@@ -172,7 +172,7 @@ steps:
   # Evidence not processed by PTS
   pts_evidence_postprocess_europepmc:
     depends_on:
-      - etl_literature
+      - pts_literature_cooccurrence_evidence
       - pis_literature
       - pts_target
       - pts_disease
@@ -460,12 +460,6 @@ steps:
     depends_on:
       - pis_interaction
       - pts_target
-
-  etl_literature:
-    num_partitions: 1000
-    depends_on:
-      - pis_literature
-      - pts_drug_molecule
 
   pts_search:
     depends_on:
