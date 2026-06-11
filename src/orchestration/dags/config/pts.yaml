@@ -612,7 +612,7 @@ steps:
     - name: pyspark ot_crispr
       pyspark: ot_crispr
       source:
-        study_table: input/evidence/ot_crispr/config.tsv
+        study_table: input/evidence/ot_crispr/config.csv
         ot_crispr_data: input/evidence/ot_crispr/data
       destination: intermediate/evidence/ot_crispr.parquet
   ##################################################################################################

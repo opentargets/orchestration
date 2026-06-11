@@ -572,9 +572,10 @@ steps:
       destination: input/evidence/encore.json.gz
 
     # OT_crispr => generate evience.
-    - name: copy ot_crispr config
-      source: gs://otar013-ppp/PPP-evidence-configuration/raw_study_table.tsv
-      destination: input/evidence/ot_crispr/config.tsv
+    - name: spreadsheet_download otar crispr study spreadsheet
+      sheet_id: 1eow_rTizGY_Vda0Q-8sFNWCOyFkKRSUen1Em1ysPSiA
+      gid: '0'
+      destination: input/evidence/ot_crispr/config.csv
 
     - name: explode_glob ot_crispr files
       glob: 'gs://otar013-ppp/ot_crispr/input_data_filtered/**/*'
