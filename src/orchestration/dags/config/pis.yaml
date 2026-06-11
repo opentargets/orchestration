@@ -135,27 +135,12 @@ steps:
 
   #: CLINICAL_REPORT STEP :########################################################################
   clinical_report:
-    # aact_extraction_batch_results is split out and downloaded in the drug step
-    # (it feeds chembl_molecule), so the clinical_report glob is scoped to the
-    # remaining inputs: top-level files + the aact/ and chembl/ subtrees.
-    - name: explode_glob clinical_report files
-      glob: gs://ot-team/irene/clinical_mining/2026-05-27/input/clinical_report/*
+    - name: explode_glob clinical_report
+      glob: gs://ot-team/irene/clinical_mining/2026-05-27/input/clinical_report/**/*
       do:
         - name: copy clinical_report ${match_stem} ${uuid}
           source: ${uri}
-          destination: input/clinical_report/${match_stem}.${match_ext}
-    - name: explode_glob clinical_report aact
-      glob: gs://ot-team/irene/clinical_mining/2026-05-27/input/clinical_report/aact/**/*
-      do:
-        - name: copy clinical_report aact ${match_stem} ${uuid}
-          source: ${uri}
-          destination: input/clinical_report/aact/${match_path}/${match_stem}.${match_ext}
-    - name: explode_glob clinical_report chembl
-      glob: gs://ot-team/irene/clinical_mining/2026-05-27/input/clinical_report/chembl/**/*
-      do:
-        - name: copy clinical_report chembl ${match_stem} ${uuid}
-          source: ${uri}
-          destination: input/clinical_report/chembl/${match_path}/${match_stem}.${match_ext}
+          destination: input/clinical_report/${match_path}/${match_stem}.${match_ext}
   ##################################################################################################
 
   #: DISEASE STEP :#################################################################################
@@ -188,11 +173,11 @@ steps:
       source: https://ftp.ebi.ac.uk/pub/databases/chembl/UniChem/data/wholeSourceMapping/src_id1/src1src2.txt.gz
       destination: input/drug/drugbank.csv.gz
 
-    # AACT clinical-trial batch extraction — consumed by chembl_molecule (and
-    # clinical_report). Downloaded here in the drug step so chembl_molecule's
-    # existing pis_drug dependency covers it; destination path is unchanged.
+    # AACT clinical-trial batch extraction — a standalone source consumed by
+    # chembl_molecule (and clinical_report). Downloaded in the drug step so
+    # chembl_molecule's existing pis_drug dependency covers it.
     - name: explode_glob aact extraction batch results
-      glob: gs://ot-team/irene/clinical_mining/2026-05-27/input/clinical_report/aact_extraction_batch_results/**/*
+      glob: gs://ot-team/irene/clinical_mining/aact_extraction_batch_result/output/**/*
       do:
         - name: copy aact ${match_stem} ${uuid}
           source: ${uri}
