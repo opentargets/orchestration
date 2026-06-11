@@ -671,6 +671,7 @@ steps:
       source:
         chembl_molecule: input/drug/chembl_molecule.jsonl
         drugbank: input/drug/drugbank.csv.gz
+        aact_extraction_batch_results: input/clinical_report/aact_extraction_batch_results
       destination: intermediate/chembl_molecule
   #################################################################################################
 
