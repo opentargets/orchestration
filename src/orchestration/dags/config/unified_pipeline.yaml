@@ -364,7 +364,6 @@ steps:
   pts_chembl_molecule:
     depends_on:
       - pis_drug
-      - pis_clinical_report
   pts_drug_mechanism_of_action:
     depends_on:
       - pis_drug
