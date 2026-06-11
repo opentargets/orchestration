@@ -176,12 +176,9 @@ steps:
     # AACT clinical-trial batch extraction — a standalone source consumed by
     # chembl_molecule (and clinical_report). Downloaded in the drug step so
     # chembl_molecule's existing pis_drug dependency covers it.
-    - name: explode_glob aact extraction batch results
-      glob: gs://ot-team/irene/clinical_mining/aact_extraction_batch_result/output/**/*
-      do:
-        - name: copy aact ${match_stem} ${uuid}
-          source: ${uri}
-          destination: input/clinical_report/aact_extraction_batch_results/${match_path}/${match_stem}.${match_ext}
+    - name: copy_many aact extraction batch results
+      sources: gs://ot-team/irene/clinical_mining/aact_extraction_batch_result/output/*
+      destination: input/clinical_report/aact_extraction_batch_results
 
     - name: elasticsearch chembl drug warning
       url: https://www.ebi.ac.uk/chembl/elk/es
