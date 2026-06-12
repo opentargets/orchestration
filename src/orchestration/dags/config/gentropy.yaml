@@ -38,7 +38,7 @@ steps:
         # molQTL
         - '{{release_uri}}/input/molqtl/study/eqtl_catalogue'
         - '{{release_uri}}/input/molqtl/study/ukb_ppp_eur'
-      step.target_index_path: '{{release_uri}}/output/target'
+      step.target_index_path: '{{release_uri}}/intermediate/target/ensembl'
       step.disease_index_path: '{{release_uri}}/output/disease'
       step.biosample_index_path: '{{release_uri}}/output/biosample'
       step.heritability_input_path: '{{release_uri}}/input/heritability_estimate'
@@ -80,7 +80,7 @@ steps:
         - '{{release_uri}}/input/molqtl/credible_set/eqtl_catalogue'
         - '{{release_uri}}/input/molqtl/credible_set/ukb_ppp_eur'
       step.study_index_path: '{{release_uri}}/output/study'
-      step.target_index_path: '{{release_uri}}/output/target'
+      step.target_index_path: '{{release_uri}}/intermediate/target/ensembl'
       # OUTPUTS
       step.valid_study_locus_path: '{{release_uri}}/output/credible_set'
       step.invalid_study_locus_path: '{{release_uri}}/excluded/credible_set'
