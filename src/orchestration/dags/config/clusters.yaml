@@ -95,35 +95,32 @@ clusters:
   gentropy_colocalisation:
     image_version: '2.2'
     zone: 'europe-west1-b'
-    autoscaling_policy: otg-efm
+    # Fixed non-preemptible primary pool (no autoscaling, no spot secondaries).
+    # Spot-worker churn was the dominant failure source at baseline (3,021
+    # ExecutorLostFailure); a fixed on-demand pool removes preemption entirely.
     num_masters: 3
-    num_workers: 20
+    num_workers: 32
     master_machine_type: n1-highmem-16
-    worker_machine_type: n1-highmem-32
+    # n2d-highmem-32 = 32 vCPU / 256 GB. Packs 8 executors/node at cores=4,
+    # 22g heap + 4g overhead each (8 x 26 = 208 GB), leaving ~48 GB for the OS
+    # and YARN -- packing that n1-highmem-32 (208 GB) cannot fit. Executor sizing
+    # itself comes from the colocalisation step's extended_spark_conf in gentropy.yaml.
+    worker_machine_type: n2d-highmem-32
     worker_disk_type: 'pd-ssd'
     worker_disk_size: 1024
-    secondary_worker_disk_size: 100
-    secondary_worker_disk_type: 'pd-standard'
     internal_ip_only: false
     metadata:
       GENTROPY_REF: 'v{{gentropy_version}}'
     properties:
-      'dataproc:efm.spark.shuffle': 'primary-worker'
-      'spark:spark.shuffle.io.numConnectionsPerPeer': '5'
-      'spark:spark.shuffle.io.maxRetries': '15'
-      'spark:spark.shuffle.io.retryWait': '30s'
-      'spark:spark.shuffle.io.serverThreads': '100'
+      # EFM and the spot-era band-aids (shuffle.io retries, extended network
+      # timeout, speculation) are gone: with no preemption there is no shuffle to
+      # reconstruct and no straggler-from-preemption to speculate around.
       'spark:spark.stage.maxConsecutiveAttempts': '10'
       'spark:spark.sql.adaptive.enabled': 'true'
-      'spark:spark.sql.shuffle.partitions': '2000'
+      'spark:spark.sql.adaptive.skewJoin.enabled': 'true'
+      'spark:spark.sql.shuffle.partitions': '4000'
       'spark:spark.sql.files.maxPartitionBytes': '268435456'
-      'spark:spark.network.timeout': '800s'
-      'spark:spark.task.maxFailures': '15'
-      'yarn:spark.shuffle.io.serverThreads': '100'
-      # Speculative execution -> https://kb.databricks.com/scala/understanding-speculative-execution
-      'spark:spark.speculation': 'true'
-      'spark:spark.speculation.multiplier': '1.5'
-      'spark:spark.speculation.quantile': '0.9'
+      'spark:spark.task.maxFailures': '10'
 
     init_actions_uris:
       - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'
