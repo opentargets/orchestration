@@ -1,7 +1,6 @@
 """Tests for PipelineRunConfig."""
 
 import pytest
-from pydantic import ValidationError
 
 from orchestration.models.run_config import PipelineRunConfig
 
@@ -18,7 +17,7 @@ from orchestration.models.run_config import PipelineRunConfig
 ])
 def test_valid_run_name(run_name: str) -> None:
     """Valid run_name values are accepted by PipelineRunConfig."""
-    cfg = PipelineRunConfig(run_name=run_name)
+    cfg = PipelineRunConfig(run_name)
     assert cfg.run_name == run_name
 
 
@@ -39,9 +38,9 @@ def test_valid_run_name(run_name: str) -> None:
     pytest.param("", id="empty string"),
 ])
 def test_invalid_run_name_format(run_name: str) -> None:
-    """Malformed run_name values raise ValidationError."""
-    with pytest.raises(ValidationError, match="run_name"):
-        PipelineRunConfig(run_name=run_name)
+    """Malformed run_name values raise ValueError."""
+    with pytest.raises(ValueError, match="run_name"):
+        PipelineRunConfig(run_name)
 
 
 @pytest.mark.parametrize("run_name", [
@@ -51,8 +50,8 @@ def test_invalid_run_name_format(run_name: str) -> None:
 ])
 def test_invalid_zero_revision(run_name: str) -> None:
     """Revision zero is rejected even when zero-padded."""
-    with pytest.raises(ValidationError, match="revision"):
-        PipelineRunConfig(run_name=run_name)
+    with pytest.raises(ValueError, match="revision"):
+        PipelineRunConfig(run_name)
 
 
 # ---------------------------------------------------------------------------
@@ -68,7 +67,7 @@ def test_invalid_zero_revision(run_name: str) -> None:
 ])
 def test_is_ppp_derived_correctly(run_name: str, expected: bool) -> None:
     """is_ppp is derived from the flavor portion of run_name."""
-    cfg = PipelineRunConfig(run_name=run_name)
+    cfg = PipelineRunConfig(run_name)
     assert cfg.is_ppp is expected
 
 
@@ -82,23 +81,14 @@ def test_is_ppp_derived_correctly(run_name: str, expected: bool) -> None:
     pytest.param(False, id="legacy false"),
 ])
 def test_legacy_is_dev_input_is_rejected(is_dev: bool) -> None:
-    """Legacy is_dev input is rejected during validation."""
-    with pytest.raises(ValidationError) as excinfo:
-        PipelineRunConfig.model_validate({"run_name": "sz/platform-2605-1", "is_dev": is_dev})
-
-    is_dev_errors = [error for error in excinfo.value.errors() if error.get("loc") == ("is_dev",)]
-
-    assert is_dev_errors
-    assert any(
-        error.get("type") == "extra_forbidden"
-        or any(term in error.get("msg", "").lower() for term in ("unsupported", "forbidden", "not permitted"))
-        for error in is_dev_errors
-    )
+    """Legacy is_dev input is rejected by the lightweight constructor."""
+    with pytest.raises(TypeError, match="is_dev"):
+        PipelineRunConfig("sz/platform-2605-1", is_dev=is_dev)
 
 
 def test_release_uri_uses_pipeline_runs_bucket() -> None:
     """release_uri always points at the pipeline-runs bucket."""
-    cfg = PipelineRunConfig(run_name="sz/platform-2605-1")
+    cfg = PipelineRunConfig("sz/platform-2605-1")
     assert cfg.release_uri == "gs://open-targets-pipeline-runs/sz/platform-2605-1"
 
 
@@ -109,11 +99,11 @@ def test_release_uri_uses_pipeline_runs_bucket() -> None:
 
 def test_release_name_strips_prefix_and_revision() -> None:
     """release_name strips the personal prefix and revision number."""
-    cfg = PipelineRunConfig(run_name="sz/platform-2605-1")
+    cfg = PipelineRunConfig("sz/platform-2605-1")
     assert cfg.release_name == "platform-2605"
 
 
 def test_release_name_ppp() -> None:
     """release_name works correctly for ppp flavor."""
-    cfg = PipelineRunConfig(run_name="abc/ppp-2606-3")
+    cfg = PipelineRunConfig("abc/ppp-2606-3")
     assert cfg.release_name == "ppp-2606"
