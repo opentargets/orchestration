@@ -29,16 +29,21 @@ class UnifiedPipelineConfig:
     """
 
     def __init__(self) -> None:
+        """Construct unified pipeline configuration from a run_name."""
         self.logger = logging.getLogger(__name__)
         config_path = Path(__file__).parent
 
         up = AppConfig.from_file(file_path=config_path / "unified_pipeline.yaml")
+        if "is_dev" in up.config:
+            raise ValueError(
+                "`is_dev` is no longer supported. All unified pipeline runs now write to "
+                "gs://open-targets-pipeline-runs/<run_name>; release promotion is handled "
+                "outside this DAG."
+            )
+
         self._steps = up.get("steps")
 
-        self.run = PipelineRunConfig(
-            run_name=up.get("run_name"),
-            is_dev=up.get("is_dev", True),
-        )
+        self.run = PipelineRunConfig(run_name=up.get("run_name"))
         self.service_account_extra_scopes = ["https://www.googleapis.com/auth/drive"]
         """Extra scopes to be added to the service account in executor machines"""
         """- the drive scope is needed to download Google Drive spreadsheets for the pis_otar step"""
@@ -156,7 +161,7 @@ class UnifiedPipelineConfig:
 
     @property
     def release_uri(self) -> str:
-        """GCS URI for this run's output. Delegates to PipelineRunConfig."""
+        """GCS URI for this run's output in the pipeline-runs bucket."""
         return self.run.release_uri
 
     @property

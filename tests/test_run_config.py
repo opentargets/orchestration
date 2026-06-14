@@ -1,18 +1,9 @@
 """Tests for PipelineRunConfig."""
 
-import datetime
-
 import pytest
 from pydantic import ValidationError
 
 from orchestration.models.run_config import PipelineRunConfig
-
-# Use current month for all tests since date guard was removed.
-
-
-@pytest.fixture
-def current_yymm() -> str:
-    return datetime.datetime.now(datetime.UTC).strftime("%y%m")
 
 
 # ---------------------------------------------------------------------------
@@ -54,6 +45,17 @@ def test_invalid_run_name_format(run_name: str) -> None:
         PipelineRunConfig(run_name=run_name)
 
 
+@pytest.mark.parametrize("run_name", [
+    pytest.param("sz/platform-2605-0", id="zero revision"),
+    pytest.param("sz/platform-2605-00", id="double zero revision"),
+    pytest.param("sz/platform-2605-000", id="triple zero revision"),
+])
+def test_invalid_zero_revision(run_name: str) -> None:
+    """Revision zero is rejected even when zero-padded."""
+    with pytest.raises(ValidationError, match="revision"):
+        PipelineRunConfig(run_name=run_name)
+
+
 # ---------------------------------------------------------------------------
 # is_ppp derivation
 # ---------------------------------------------------------------------------
@@ -76,22 +78,29 @@ def test_is_ppp_derived_correctly(run_name: str, expected: bool) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_release_uri_dev(current_yymm: str) -> None:
-    """release_uri returns the dev bucket path when is_dev=True."""
-    cfg = PipelineRunConfig(run_name=f"sz/platform-{current_yymm}-1", is_dev=True)
-    assert cfg.release_uri == f"gs://open-targets-pipeline-runs/sz/platform-{current_yymm}-1"
+@pytest.mark.parametrize("is_dev", [
+    pytest.param(True, id="legacy true"),
+    pytest.param(False, id="legacy false"),
+])
+def test_legacy_is_dev_input_is_rejected(is_dev: bool) -> None:
+    """Legacy is_dev input is rejected during validation."""
+    with pytest.raises(ValidationError) as excinfo:
+        PipelineRunConfig.model_validate({"run_name": "sz/platform-2605-1", "is_dev": is_dev})
+
+    is_dev_errors = [error for error in excinfo.value.errors() if error.get("loc") == ("is_dev",)]
+
+    assert is_dev_errors
+    assert any(
+        error.get("type") == "extra_forbidden"
+        or any(term in error.get("msg", "").lower() for term in ("unsupported", "forbidden", "not permitted"))
+        for error in is_dev_errors
+    )
 
 
-def test_release_uri_prod(current_yymm: str) -> None:
-    """release_uri returns the release bucket path when is_dev=False."""
-    cfg = PipelineRunConfig(run_name=f"sz/platform-{current_yymm}-1", is_dev=False)
-    assert cfg.release_uri == f"gs://open-targets-pre-data-releases/platform-{current_yymm}"
-
-
-def test_release_uri_default_is_dev(current_yymm: str) -> None:
-    """release_uri defaults to the dev bucket path."""
-    cfg = PipelineRunConfig(run_name=f"sz/platform-{current_yymm}-1")
-    assert cfg.release_uri == f"gs://open-targets-pipeline-runs/sz/platform-{current_yymm}-1"
+def test_release_uri_uses_pipeline_runs_bucket() -> None:
+    """release_uri always points at the pipeline-runs bucket."""
+    cfg = PipelineRunConfig(run_name="sz/platform-2605-1")
+    assert cfg.release_uri == "gs://open-targets-pipeline-runs/sz/platform-2605-1"
 
 
 # ---------------------------------------------------------------------------
@@ -99,13 +108,13 @@ def test_release_uri_default_is_dev(current_yymm: str) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_release_name_strips_prefix_and_revision(current_yymm: str) -> None:
+def test_release_name_strips_prefix_and_revision() -> None:
     """release_name strips the personal prefix and revision number."""
-    cfg = PipelineRunConfig(run_name=f"sz/platform-{current_yymm}-1")
-    assert cfg.release_name == f"platform-{current_yymm}"
+    cfg = PipelineRunConfig(run_name="sz/platform-2605-1")
+    assert cfg.release_name == "platform-2605"
 
 
-def test_release_name_ppp(current_yymm: str) -> None:
+def test_release_name_ppp() -> None:
     """release_name works correctly for ppp flavor."""
-    cfg = PipelineRunConfig(run_name=f"abc/ppp-{current_yymm}-3")
-    assert cfg.release_name == f"ppp-{current_yymm}"
+    cfg = PipelineRunConfig(run_name="abc/ppp-2606-3")
+    assert cfg.release_name == "ppp-2606"

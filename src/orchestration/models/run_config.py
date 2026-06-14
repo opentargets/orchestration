@@ -1,4 +1,4 @@
-"""Pydantic model for pipeline run version configuration."""
+"""Pydantic model for unified pipeline run configuration."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import re
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
-from orchestration.utils.common import GCS_PIPELINE_RUNS_BUCKET, GCS_PRE_DATA_RELEASES_BUCKET
+from orchestration.utils.common import GCS_PIPELINE_RUNS_BUCKET
 
 
 @dataclasses.dataclass(frozen=True)
@@ -30,13 +30,13 @@ class PipelineRunConfig(BaseModel):
       YYMM   — two-digit year + two-digit month (format-only validation)
       N      — revision integer starting from 1
 
+    All unified pipeline runs write under the pipeline-runs bucket.
     is_ppp is derived from the flavor portion of run_name.
     """
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     run_name: str
-    is_dev: bool = True
     _parsed: _ParsedRunName | None = None
 
     @field_validator("run_name")
@@ -56,6 +56,8 @@ class PipelineRunConfig(BaseModel):
         match = _RUN_NAME_RE.fullmatch(self.run_name) or None
         if match is None:  # pragma: no cover -- should never happen post-validator
             raise ValueError(f"run_name '{self.run_name}' failed internal validation")
+        if int(match.group(4)) < 1:
+            raise ValueError("run_name revision must be a positive integer starting from 1")
         self._parsed = _ParsedRunName(
             flavor=match.group(2), yymm=match.group(3))
         return self
@@ -69,16 +71,10 @@ class PipelineRunConfig(BaseModel):
 
     @property
     def release_uri(self) -> str:
-        """GCS URI for this run's output.
-
-        Returns the dev bucket path when is_dev=True, otherwise the production
-        release bucket path using only flavor-YYMM (no prefix or revision).
-        """
+        """GCS URI for this run's output in the pipeline-runs bucket."""
         if self._parsed is None:
             raise RuntimeError("PipelineRunConfig not yet validated")
-        if self.is_dev:
-            return f"{GCS_PIPELINE_RUNS_BUCKET}/{self.run_name}"
-        return f"{GCS_PRE_DATA_RELEASES_BUCKET}/{self._parsed.flavor}-{self._parsed.yymm}"
+        return f"{GCS_PIPELINE_RUNS_BUCKET}/{self.run_name}"
 
     @property
     def release_name(self) -> str:
