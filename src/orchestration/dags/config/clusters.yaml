@@ -118,7 +118,11 @@ clusters:
       'spark:spark.stage.maxConsecutiveAttempts': '10'
       'spark:spark.sql.adaptive.enabled': 'true'
       'spark:spark.sql.adaptive.skewJoin.enabled': 'true'
-      'spark:spark.sql.shuffle.partitions': '4000'
+      # 8000 (not 4000): the fused agg + parquet-write stage is the residual exit-143
+      # OOM source -- 4 tasks/executor each holding multi-GB on-heap agg + off-heap
+      # fetch/write buffers occasionally overran the container. Halving per-task data
+      # (8000 parts) cut those losses ~80% (535 -> 108) at no wall-clock cost.
+      'spark:spark.sql.shuffle.partitions': '8000'
       'spark:spark.sql.files.maxPartitionBytes': '268435456'
       'spark:spark.task.maxFailures': '10'
 
