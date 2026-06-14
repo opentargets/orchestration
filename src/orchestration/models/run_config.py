@@ -12,7 +12,7 @@ _RUN_NAME_RE = re.compile(r"^([a-z][a-z0-9]*)/(platform|ppp)-(\d{4})-(\d+)$")
 class PipelineRunConfig:
     """Validated unified pipeline run configuration."""
 
-    __slots__ = ("run_name", "is_ppp", "release_name", "release_uri")
+    __slots__ = ("is_ppp", "release_name", "release_uri", "run_name")
 
     def __init__(self, run_name: str) -> None:
         match = _RUN_NAME_RE.fullmatch(run_name)
