@@ -5,7 +5,6 @@ from pydantic import ValidationError
 
 from orchestration.models.run_config import PipelineRunConfig
 
-
 # ---------------------------------------------------------------------------
 # Valid run_name cases
 # ---------------------------------------------------------------------------
