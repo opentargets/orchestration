@@ -14,32 +14,35 @@ Every pipeline run is identified by a `run_name` set in `src/orchestration/dags/
 
 | Part | Description | Example |
 |------|-------------|---------|
-| `prefix` | Your personal identifier — lowercase letters only | `sz` |
+| `prefix` | Your personal/team identifier — lowercase letter start, then letters or digits | `sz`, `pt01` |
 | `flavor` | `platform` for a public Platform release, `ppp` for a Partner Preview release | `platform` |
-| `YYMM` | Two-digit year + two-digit month of the release. Must be the current month or later — past dates are rejected to prevent overwriting existing releases. | `2605` |
+| `YYMM` | Two-digit year + two-digit month. Format-only validation (any four digits accepted) | `2605` |
 | `N` | Revision number, starting from 1. Increment if re-running the same release. | `1` |
+| `is_ppp` | Auto-derived from flavor — `true` when flavor is `ppp`, `false` otherwise | derived |
 
 Valid examples: `sz/platform-2605-1`, `abc/ppp-2606-2`
 
+### PPP mode (derived from run_name)
+
+PPP configuration overrides are auto-enabled whenever the `flavor` portion of `run_name` is set to `ppp`:
+
+- `run_name: 'sz/ppp-2605-1'` → PPP mode enabled (`is_ppp = True`)
+- All steps tagged with `ppp_only: true` are included in the DAG.
+- Override configs from `src/orchestration/dags/config/ppp/` are loaded.
+
+For public Platform releases, use `platform` as the flavor:
+
+- `run_name: 'sz/platform-2605-1'` → PPP mode excluded (`is_ppp = False`)
+
 ### `is_dev` flag and `release_uri`
 
-The `is_dev` flag (default: `true`) determines the output bucket:
 
-| `is_dev` | `release_uri` | Use case |
-|----------|---------------|----------|
-| `true` | `gs://open-targets-pipeline-runs/<run_name>` | Development and testing runs — outputs are scoped under your personal prefix |
-| `false` | `gs://open-targets-pre-data-releases/<flavor>-<YYMM>` | Official production releases — personal prefix and revision number are stripped |
 
-For example, with `run_name: sz/platform-2605-1`:
+This document describes the **Unified Pipeline configuration**
 
-- `is_dev: true` → `gs://open-targets-pipeline-runs/sz/platform-2605-1`
-- `is_dev: false` → `gs://open-targets-pre-data-releases/platform-2605`
+## Run version and output location
 
-The `release_uri` is also passed as a template variable to all stage configs (PIS, PTS, ETL, Gentropy), so all intermediate and final outputs are written under the same root path.
 
-> **Note:** A secondary label `release_name` is derived from `run_name` as `<flavor>-<YYMM>` (e.g. `platform-2605`). It is passed to PTS as `ot_release` and to Gentropy as `l2g_training_version`. This label is the same regardless of `is_dev`.
-
----
 
 ## Unified Pipeline configuration
 

@@ -42,8 +42,7 @@ class UnifiedPipelineConfig:
         self.service_account_extra_scopes = ["https://www.googleapis.com/auth/drive"]
         """Extra scopes to be added to the service account in executor machines"""
         """- the drive scope is needed to download Google Drive spreadsheets for the pis_otar step"""
-        self.is_ppp = up.get("is_ppp")
-        """Whether this is a ppp run or public platform run."""
+
         self.num_partitions = 20
         """The default number of partitions for steps using spark that do not specify it."""
 
@@ -159,6 +158,11 @@ class UnifiedPipelineConfig:
     def release_uri(self) -> str:
         """GCS URI for this run's output. Delegates to PipelineRunConfig."""
         return self.run.release_uri
+
+    @property
+    def is_ppp(self) -> bool:
+        """Whether this is a PPP (Partner Preview) run. Derived from the flavor portion of run_name."""
+        return self.run.is_ppp
 
     def pis_env_vars(self, step_name: str) -> dict[str, str]:
         """Return the environment variables for a PIS step."""

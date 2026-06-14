@@ -6,7 +6,7 @@ The unified pipeline DAG is responsible for orchestrating the generation of an O
 ## Guidelines for running a release
 
 1. Create a dedicated feature branch in the `orchestration` repository to capture all run-specific changes.
-2. Update `src/orchestration/dags/config/unified_pipeline.yaml` with the required software and data versions. For Open Targets–managed repositories (PIS, PTS, Gentropy, ETL), ensure a release tag covers the latest changes and reference that tag explicitly in the configuration. Also set `run_name` to identify this run (e.g. `sz/platform-2605-1`) — see [config.md](config.md) for the full format and how it controls the output location.
+2. Update `src/orchestration/dags/config/unified_pipeline.yaml` with the required software and data versions. For Open Targets–managed repositories (PIS, PTS, Gentropy, ETL), ensure a release tag covers the latest changes and reference that tag explicitly in the configuration. Also set `run_name` to identify this run (e.g. `sz/platform-2605-1`; use `ppp` as the flavor for Partner Preview releases, which auto-enables PPP configuration) — see [config.md](config.md) for the full format and how it controls the output location.
 3. Provision a fresh Airflow environment in Google Cloud by running `make cloud-dev`.
 4. Open <http://localhost:8081/dags/unified_pipeline/grid?tab=graph> and trigger the `unified_pipeline` DAG via the **Trigger DAG** button.
 5. Monitor the run and address any task failures. Expect to spend time debugging until the DAG completes successfully.

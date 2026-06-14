@@ -2,57 +2,70 @@
 
 from __future__ import annotations
 
+import dataclasses
 import re
-from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from orchestration.utils.common import GCS_PIPELINE_RUNS_BUCKET, GCS_PRE_DATA_RELEASES_BUCKET
 
-_RUN_NAME_RE = re.compile(r"^([a-z]+)/(platform|ppp)-(\d{4})-(\d+)$")
+
+@dataclasses.dataclass(frozen=True)
+class _ParsedRunName:
+    """Cached parsed result of run_name validation."""
+    flavor: str
+    yymm: str
+
+
+# Regex groups: (1)=prefix, (2)=flavor(platform|ppp), (3)=YYMM, (4)=revision
+_RUN_NAME_RE = re.compile(r"^([a-z][a-z0-9]*)/(platform|ppp)-(\d{4})-(\d+)$")
 
 
 class PipelineRunConfig(BaseModel):
     """Validated pipeline run version.
 
     run_name format: <prefix>/<flavor>-YYMM-N
-      prefix  — lowercase letters only, e.g. 'sz'
-      flavor  — 'platform' or 'ppp'
-      YYMM    — two-digit year + two-digit month, e.g. '2605' for May 2026
-      N       — revision integer, e.g. '1'
+      prefix — lowercase letter start, then letters or digits (e.g. 'sz', 'pt01')
+      flavor — 'platform' for public Platform releases, 'ppp' for Partner Preview
+      YYMM   — two-digit year + two-digit month (format-only validation)
+      N      — revision integer starting from 1
 
-    Examples: 'sz/platform-2605-1', 'abc/ppp-2606-2'
+    is_ppp is derived from the flavor portion of run_name.
     """
 
     model_config = ConfigDict(frozen=True)
 
     run_name: str
     is_dev: bool = True
+    _parsed: _ParsedRunName | None = None
 
     @field_validator("run_name")
     @classmethod
-    def _validate_run_name(cls, v: str) -> str:
-        match = _RUN_NAME_RE.fullmatch(v)
-        if not match:
+    def _validate_run_name_fmt(cls, v: str) -> str:
+        """Validate the format of run_name against the regex."""
+        if _RUN_NAME_RE.fullmatch(v) is None:
             raise ValueError(
                 f"run_name '{v}' must match '<prefix>/(platform|ppp)-YYMM-N' "
                 "(e.g. 'sz/platform-2605-1')"
             )
-        yymm = int(match.group(3))
-        current_yymm = int(datetime.now().strftime("%y%m"))
-        if yymm < current_yymm:
-            raise ValueError(
-                f"run_name date '{match.group(3)}' is in the past "
-                f"(current: {current_yymm:04d}). "
-                "Update run_name to the current or a future YYMM to avoid "
-                "overwriting an existing release."
-            )
-        mm = int(match.group(3)[2:])
-        if not (1 <= mm <= 12):
-            raise ValueError(
-                f"run_name month '{match.group(3)[2:]}' is not a valid calendar month (01-12)"
-            )
         return v
+
+    @model_validator(mode="after")
+    def _parse_and_validate(self) -> PipelineRunConfig:
+        """Parse and cache run_name groups after validation."""
+        match = _RUN_NAME_RE.fullmatch(self.run_name) or None
+        if match is None:  # pragma: no cover -- should never happen post-validator
+            raise ValueError(f"run_name '{self.run_name}' failed internal validation")
+        self._parsed = _ParsedRunName(
+            flavor=match.group(2), yymm=match.group(3))
+        return self
+
+    @property
+    def is_ppp(self) -> bool:
+        """True when run_name flavor is 'ppp' (Partner Preview)."""
+        if self._parsed is None:
+            return False
+        return self._parsed.flavor == "ppp"
 
     @property
     def release_uri(self) -> str:
@@ -61,9 +74,11 @@ class PipelineRunConfig(BaseModel):
         Returns the dev bucket path when is_dev=True, otherwise the production
         release bucket path using only flavor-YYMM (no prefix or revision).
         """
+        if self._parsed is None:
+            raise RuntimeError("PipelineRunConfig not yet validated")
         if self.is_dev:
             return f"{GCS_PIPELINE_RUNS_BUCKET}/{self.run_name}"
-        return f"{GCS_PRE_DATA_RELEASES_BUCKET}/{self.release_name}"
+        return f"{GCS_PRE_DATA_RELEASES_BUCKET}/{self._parsed.flavor}-{self._parsed.yymm}"
 
     @property
     def release_name(self) -> str:
@@ -72,9 +87,6 @@ class PipelineRunConfig(BaseModel):
         Used as ot_release in PTS config and l2g_training_version in Gentropy.
         Personal prefix and revision are stripped.
         """
-        match = _RUN_NAME_RE.fullmatch(self.run_name)
-        if match is None:
-            raise RuntimeError(f"run_name '{self.run_name}' failed internal validation")
-        flavor = match.group(2)
-        yymm = match.group(3)
-        return f"{flavor}-{yymm}"
+        if self._parsed is None:
+            return ""
+        return f"{self._parsed.flavor}-{self._parsed.yymm}"
