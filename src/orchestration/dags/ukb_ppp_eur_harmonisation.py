@@ -21,7 +21,6 @@ with DAG(
         task = submit_gentropy_step(
             cluster_name=config["dataproc"]["cluster_name"],
             step_name=step["id"],
-            python_main_module=config["dataproc"]["python_main_module"],
             params=step["params"],
         )
         tasks[step["id"]] = task

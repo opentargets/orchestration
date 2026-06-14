@@ -27,3 +27,13 @@ BatchIndexOperator -> ManifestGenerator -> BatchIndex -
                                                         \ BatchIndexRow -> BatchJobOperator
 ```
 """
+
+from orchestration.operators.batch.batch_collect_operator import BatchCollectOperator
+from orchestration.operators.batch.batch_index_operator import BatchIndexOperator
+from orchestration.operators.batch.batch_job_operator import BatchJobOperator
+
+__all__ = [
+    "BatchCollectOperator",
+    "BatchIndexOperator",
+    "BatchJobOperator",
+]

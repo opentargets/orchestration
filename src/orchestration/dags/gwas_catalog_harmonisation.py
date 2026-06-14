@@ -8,7 +8,8 @@ from pathlib import Path
 from airflow.models.baseoperator import chain
 from airflow.models.dag import DAG
 
-from orchestration.operators.batch.generic import BatchIndexOperator, BatchJobOperator
+from orchestration.models.batch import BatchIndexOperatorSpec, BatchJobOperatorSpec
+from orchestration.operators.batch import BatchIndexOperator, BatchJobOperator
 from orchestration.types import Environment, EnvironmentSpec
 from orchestration.utils import find_environment_vars, find_node_in_config, read_yaml_config
 from orchestration.utils.common import shared_dag_args, shared_dag_kwargs
@@ -30,16 +31,18 @@ with DAG(
 ) as dag:
     index_config = find_node_in_config(config["nodes"], "generate_sumstat_index")
     harmonisation_config = find_node_in_config(config["nodes"], "gwas_catalog_harmonisation")
+
     if index_config:
         batch_index = BatchIndexOperator(
             task_id=index_config["id"],
-            batch_index_specs=index_config["google_batch_index_specs"],
+            batch_index_specs=BatchIndexOperatorSpec(**index_config["google_batch_index_specs"]),
         )
+
     if harmonisation_config:
         harmonisation_batch_job = BatchJobOperator.partial(
             task_id=harmonisation_config["id"],
             job_name="harmonisation",
-            google_batch=harmonisation_config["google_batch"],
+            batch_job_spec=BatchJobOperatorSpec(**harmonisation_config["google_batch"]),
         ).expand(batch_index_row=batch_index.output)
 
         chain(batch_index, harmonisation_batch_job)

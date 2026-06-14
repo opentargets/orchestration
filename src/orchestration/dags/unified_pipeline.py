@@ -17,9 +17,9 @@ from airflow.utils.edgemodifier import Label
 from airflow.utils.trigger_rule import TriggerRule
 
 from orchestration.dags.config.unified_pipeline import UnifiedPipelineConfig
+from orchestration.models.batch import BatchIndexOperatorSpec, BatchJobOperatorSpec
 from orchestration.models.pts_step import PTSDataprocStep, pts_step_from_config
-from orchestration.operators.batch.generic import BatchIndexOperator, BatchJobOperator
-from orchestration.operators.batch.vep import VepAnnotateOperator
+from orchestration.operators.batch import BatchCollectOperator, BatchIndexOperator, BatchJobOperator
 from orchestration.operators.dataproc import (
     CreateClusterOperator,
     DeleteClusterOperator,
@@ -48,6 +48,7 @@ with DAG(
     catchup=False,
     schedule=None,
     user_defined_filters={"strhash": strhash},
+    tags=["unified_pipeline"],
     params={
         "run_label": Param(
             default=f"up-{datetime.now().strftime('%Y%m%d-%H%M')}",
@@ -510,38 +511,31 @@ with DAG(
                 else:
                     c = EmptyOperator(task_id="skip_cluster")
 
-                    match step_name:
-                        case "gentropy_variant_annotation":
-                            r = VepAnnotateOperator(
-                                job_name=resource_name("variant_annotation"),
-                                task_id=f"run_{step_name}",
-                                config=config.step_specific_config(step_name),
-                                labels=labels,
-                            )
+                    @task_group(group_id=step_name + "_batch_jobs")
+                    def batch_jobs(step_name: str) -> None:
+                        batch_job_spec = BatchJobOperatorSpec(
+                            **config.step_specific_config(step_name).get("google_batch", {})
+                        )
+                        i = BatchIndexOperator(
+                            task_id=f"generate_manifest_{step_name}",
+                            batch_index_specs=BatchIndexOperatorSpec(
+                                **config.step_specific_config(step_name).get("google_batch_index_specs", {})
+                            ),
+                        )
+                        b = BatchJobOperator.partial(
+                            job_name=resource_name(step_name),
+                            task_id=f"run_{step_name}",
+                            batch_job_spec=batch_job_spec,
+                            project_id=GCP_PROJECT_PLATFORM,
+                            labels=labels,
+                        ).expand(batch_index_row=i.output)
+                        bc = BatchCollectOperator(
+                            task_id=f"collect_{step_name}",
+                            collect_spec=batch_job_spec.collect,
+                        )
+                        chain(i, b, bc)
 
-                        case "gentropy_l2g_prediction":
-
-                            @task_group(group_id=step_name + "_batch_jobs")
-                            def l2g_prediction_batch_jobs(step_name: str) -> None:
-                                i = BatchIndexOperator(
-                                    task_id=f"build_{step_name}",
-                                    batch_index_specs=config.step_specific_config(step_name).get(
-                                        "google_batch_index_specs", {}
-                                    ),
-                                )
-                                b = BatchJobOperator.partial(
-                                    job_name=resource_name("l2g_prediction"),
-                                    task_id=f"run_{step_name}",
-                                    google_batch=config.step_specific_config(step_name).get("google_batch", {}),
-                                    project_id=GCP_PROJECT_PLATFORM,
-                                    labels=labels,
-                                ).expand(batch_index_row=i.output)
-                                chain(i, b)
-
-                            r = l2g_prediction_batch_jobs(step_name)
-
-                        case _:
-                            raise ValueError(f"Unknown gentropy step without cluster: {step_name}")
+                    r = batch_jobs(step_name)
 
                 e = EmptyOperator(
                     task_id=f"end_{step_name}",

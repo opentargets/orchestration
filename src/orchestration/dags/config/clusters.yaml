@@ -10,6 +10,7 @@ clusters:
     internal_ip_only: false
     metadata:
       PTS_REF: 'v{{pts_version}}'
+
     properties:
       # Configuration optimized for single node workloads.
       # These yarn settings are set to increase the max allocations per executor for yarn
@@ -80,6 +81,16 @@ clusters:
       'core:fs.gs.requester.pays.project.id': '{{requester_pays_project_id}}'
     init_actions_uris:
       - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'
+    # The `fetch_secrets.sh` is build at runtime and pushed to GCS. It will
+    # store the secret variables into `/var/run/secrets/secret_name.json` files.
+    # The files are accessible via the master node.
+    secret_init_action_uri: 'gs://opentargets-pipelines/up/gentropy/fetch_secrets.sh'
+    # Secrets to be fetched by secret_init_action_uri and made available as files in the cluster.
+    secret_map:
+      # this results in /var/run/secrets/hfhub-key.json with {"HF_TOKEN": "hfhub-key_value"} as content
+      HF_TOKEN: hfhub-key
+      # this results in /var/run/secrets/wandb-key.json with {"WANDB_API_KEY": "wandb-key_value"} as content
+      WANDB_API_KEY: wandb-key
 
   gentropy_colocalisation:
     image_version: '2.2'
@@ -118,59 +129,36 @@ clusters:
       - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'
     idle_delete_ttl: 1800
 
-  pts_association:
+  pts_openfda:
     image_version: '2.2'
     num_masters: 1
     num_workers: 2
-    worker_machine_type: n2d-standard-16
-    master_disk_size: 128
+    autoscaling_policy: otg-etl-25-secondary
+    worker_machine_type: n1-standard-8
+    master_disk_size: 512
     worker_disk_size: 128
     idle_delete_ttl: 3600
     internal_ip_only: false
     metadata:
       PTS_REF: 'v{{pts_version}}'
-      # Each n1-standard-16 worker has ~60 GB RAM and 16 cores.
-      # Reserving 1 core and ~4 GB for YARN/OS overhead leaves ~56 GB and 15 cores per worker.
-      # With 5 cores per executor, that's 3 executors per worker node × 2 workers = 6 max,
-      # but keeping it at 4 initial executors (2 per node) with ~18 GB each leaves comfortable headroom and avoids excessive GC pressure.
+    init_actions_uris:
+      - 'gs://opentargets-pipelines/up/pts/install_dependencies_on_cluster.sh'
+
+  pts_association:
+    image_version: '2.2'
+    num_masters: 1
+    num_workers: 2
+    autoscaling_policy: otg-etl-25-secondary
+    worker_machine_type: n2d-highmem-32
+    master_disk_size: 512
+    worker_disk_size: 256
+    idle_delete_ttl: 3600
+    internal_ip_only: false
+    metadata:
+      PTS_REF: 'v{{pts_version}}'
     properties:
-      # ── Driver Configuration ──
-      'spark:spark.driver.memory': '18g'
-      'spark:spark.driver.memoryOverhead': '2g'
-      'spark:spark.driver.cores': '5'
-
-      # ── Executor Configuration ──
-      'spark:spark.executor.instances': '4'
-      'spark:spark.executor.cores': '5'
-      'spark:spark.executor.memory': '18g'
-      'spark:spark.executor.memoryOverhead': '2g'
-
-      # ── Parallelism & Partitions ──
-      'spark:spark.default.parallelism': '40'
-      # The probable output sizes range between 600MiB to 2GiB so partition should be around max 100 MiB
-      # including the overhead of multiple compressed files.
-      # FIXME: This is a temporary setting to reduce the partition number for the association step.
-      'spark:spark.sql.shuffle.partitions': '25'
-
-      # ── Dynamic Allocation ──
-      'spark:spark.dynamicAllocation.enabled': 'true'
-
-      # ── Memory Management ──
-      'spark:spark.memory.fraction': '0.6'
-      'spark:spark.memory.storageFraction': '0.5'
-
-      # ── Shuffle & Compression ──
-      'spark:spark.shuffle.compress': 'true'
-      'spark:spark.shuffle.spill.compress': 'true'
-      'spark:spark.io.compression.codec': 'snappy'
-
-      # ── Serialization ──
-      'spark:spark.serializer': 'org.apache.spark.serializer.KryoSerializer'
-
-      # ── Adaptive Query Execution (Spark 3.x) ──
-      'spark:spark.sql.adaptive.enabled': 'true'
-      'spark:spark.sql.adaptive.coalescePartitions.enabled': 'true'
-      'spark:spark.sql.adaptive.skewJoin.enabled': 'true'
+      'spark:spark.sql.shuffle.partitions': '2000'
+      'spark:spark.sql.adaptive.advisoryPartitionSizeInBytes': '64MB'
     init_actions_uris:
       - 'gs://opentargets-pipelines/up/pts/install_dependencies_on_cluster.sh'
 
