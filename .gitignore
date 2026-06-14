@@ -22,3 +22,6 @@ plan.out
 
 # airflow logs
 logs
+
+# Superpowers
+docs/superpowers

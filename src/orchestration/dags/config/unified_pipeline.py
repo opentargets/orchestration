@@ -34,13 +34,6 @@ class UnifiedPipelineConfig:
         config_path = Path(__file__).parent
 
         up = AppConfig.from_file(file_path=config_path / "unified_pipeline.yaml")
-        if "is_dev" in up.config:
-            raise ValueError(
-                "`is_dev` is no longer supported. All unified pipeline runs now write to "
-                "gs://open-targets-pipeline-runs/<run_name>; release promotion is handled "
-                "outside this DAG."
-            )
-
         self._steps = up.get("steps")
 
         self.run = PipelineRunConfig(run_name=up.get("run_name"))

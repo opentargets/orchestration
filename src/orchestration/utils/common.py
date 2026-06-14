@@ -15,7 +15,6 @@ GCP_SERVICE_ACCOUNT = "up-airflow-dev@open-targets-eu-dev.iam.gserviceaccount.co
 GCP_REGION = "europe-west1"
 GCP_ZONE = "europe-west1-d"
 GCS_PIPELINE_RUNS_BUCKET = "gs://open-targets-pipeline-runs"
-GCS_PRE_DATA_RELEASES_BUCKET = "gs://open-targets-pre-data-releases"
 
 
 shared_dag_args: dict[str, Any] = {
