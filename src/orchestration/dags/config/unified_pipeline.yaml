@@ -3,28 +3,22 @@
 #
 # Format: <prefix>/<flavor>-<YYMM>-<N>
 #   prefix — your personal/team identifier (lowercase letter start, then letters or digits)
-#   flavor — 'platform' for public Platform releases OR 'ppp' for Partner Preview releases
-#          — required; determines PPP configuration overrides AND production output bucket
+#   flavor — 'platform' for the standard unified-pipeline path or 'ppp' for the Partner Preview path
+#          — determines PPP configuration overrides and the downstream release label
 #          — when set to 'ppp', the pipeline loads PPP overrides (e.g. ppp/*.override.yaml) and
 #            includes steps marked with ppp_only: true in this config
-#   YYMM   — two-digit year + two-digit month (e.g., '2605' for May 2026)
+#   YYMM   — two-digit year + two-digit month (e.g. '2605' for May 2026)
 #          — format-only validation; can be any four digits
-#   N      — revision number, starting from 1; increment when re-running the same release
+#   N      — revision number, starting from 1; increment when re-running the same run definition
 #
-# Examples - Public dev run:         run_name: 'sz/platform-2605-1',    is_dev: true  (is_ppp derived as False)
-#             Public prod release:   run_name: 'sz/platform-2605-1',              is_dev: false (is_ppp derived as False)
-#             PPP dev run:           run_name: 'sz/ppp-2605-1',          is_dev: true  (is_ppp derived as True)
-#             PPP prod release:      run_name: 'sz/ppp-2605-1',                    is_dev: false (is_ppp derived as True)
+# Examples: run_name: 'sz/platform-2605-1'  (is_ppp derived as False)
+#           run_name: 'sz/ppp-2605-1'       (is_ppp derived as True)
 #
-# is_dev: true  → outputs to gs://open-targets-pipeline-runs/<run_name> (default, developer bucket)
-# is_dev: false → outputs to gs://open-targets-pre-data-releases/<flavor>-<YYMM>   (production bucket)
-# is_ppp is derived from the 'flavor' portion of run_name — no separate flag needed.
+# Every unified pipeline execution writes to:
+#   gs://open-targets-pipeline-runs/<run_name>
+#
+# Promotion to a final release location happens after the run and outside this DAG.
 run_name: 'sz/platform-2605-1'
-
-# When true (default), outputs are written to gs://open-targets-pipeline-runs/<run_name>.
-# Set to false only for official production releases — outputs go to
-# gs://open-targets-pre-data-releases/<flavor>-YYMM (personal prefix and revision stripped).
-is_dev: true
 
 # Versions for software and data
 pis_version: '26.03.0-dev.11'

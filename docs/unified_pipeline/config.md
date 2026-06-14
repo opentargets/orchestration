@@ -15,12 +15,18 @@ Every pipeline run is identified by a `run_name` set in `src/orchestration/dags/
 | Part | Description | Example |
 |------|-------------|---------|
 | `prefix` | Your personal/team identifier — lowercase letter start, then letters or digits | `sz`, `pt01` |
-| `flavor` | `platform` for a public Platform release, `ppp` for a Partner Preview release | `platform` |
+| `flavor` | `platform` for the standard run path, `ppp` for the Partner Preview path; also determines downstream labeling | `platform` |
 | `YYMM` | Two-digit year + two-digit month. Format-only validation (any four digits accepted) | `2605` |
-| `N` | Revision number, starting from 1. Increment if re-running the same release. | `1` |
+| `N` | Revision number, starting from 1. Increment if re-running the same run definition. | `1` |
 | `is_ppp` | Auto-derived from flavor — `true` when flavor is `ppp`, `false` otherwise | derived |
 
 Valid examples: `sz/platform-2605-1`, `abc/ppp-2606-2`
+
+### Output location and promotion
+
+Every unified pipeline run writes to `gs://open-targets-pipeline-runs/<run_name>`.
+
+The DAG does not perform a separate production-mode execution. If outputs need to be published to a release location, that promotion happens after the run and outside this configuration.
 
 ### PPP mode (derived from run_name)
 
@@ -30,19 +36,20 @@ PPP configuration overrides are auto-enabled whenever the `flavor` portion of `r
 - All steps tagged with `ppp_only: true` are included in the DAG.
 - Override configs from `src/orchestration/dags/config/ppp/` are loaded.
 
-For public Platform releases, use `platform` as the flavor:
+For the standard unified-pipeline path, use `platform` as the flavor:
 
 - `run_name: 'sz/platform-2605-1'` → PPP mode excluded (`is_ppp = False`)
 
-### `is_dev` flag and `release_uri`
+### `release_name`
 
+`release_name` remains the canonical downstream label derived from `run_name` as `<flavor>-<YYMM>`.
 
+Examples:
 
-This document describes the **Unified Pipeline configuration**
+- `sz/platform-2605-1` → `platform-2605`
+- `sz/ppp-2605-1` → `ppp-2605`
 
-## Run version and output location
-
-
+PTS and Gentropy consume `release_name`, while the full `run_name` continues to identify the concrete pipeline run and its output path.
 
 ## Unified Pipeline configuration
 
