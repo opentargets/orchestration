@@ -95,6 +95,27 @@ clusters:
       - install_gentropy_on_cluster.sh
     init_actions_asset_location: 'gs://genetics_etl_python_playground/initialisation/'
 
+  # Separate cluster for L2G-specific steps. Uses the [l2g] scope from gentropy PR #1233
+  # which installs only the ML/Hail stack needed by L2G, avoiding the full dependency set.
+  gentropy_l2g:
+    image_version: '2.2'
+    autoscaling_policy: otg-etl
+    num_masters: 1
+    num_workers: 2
+    worker_machine_type: 'n1-highmem-16'
+    idle_delete_ttl: 360
+    internal_ip_only: false
+    metadata:
+      GENTROPY_REF: 'v{{gentropy_version}}'
+    properties:
+      'spark:spark.shuffle.service.enabled': 'true'
+      'spark:spark.sql.adaptive.enabled': 'true'
+      'core:fs.gs.requester.pays.mode': 'AUTO'
+      'core:fs.gs.requester.pays.project.id': '{{requester_pays_project_id}}'
+    init_actions_assets:
+      - install_l2g_on_cluster.sh
+    init_actions_asset_location: 'gs://genetics_etl_python_playground/initialisation/'
+
   gentropy_colocalisation:
     image_version: '2.2'
     zone: 'europe-west1-b'
