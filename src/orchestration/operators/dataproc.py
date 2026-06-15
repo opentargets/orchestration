@@ -35,7 +35,7 @@ from orchestration.utils.path import GCSPath
 # Path to local asset files shipped with the package.
 ASSET_PATH = Path(__file__).parent.parent / "assets"
 DEFAULT_ASSET_SYNC_BASE = "gs://opentargets-pipelines/up/"
-"""Default GCS base prefix for syncing init-action assets: gs://opentargets-pipelines/up/{cluster_type}/."""
+# Default GCS base prefix for syncing init-action assets: gs://opentargets-pipelines/up/{cluster_type}/.
 
 if TYPE_CHECKING:
     from typing import Any, Self
