@@ -1,12 +1,12 @@
 ---
-release_name: '26.06.0-dev1'
+release_name: '26.06.0-dev2'
 
 # If `is_dev` is true:
 #   * the bucket used for the run will be `open-targets-pipeline-runs`
 #   * the prefix inside the bucket will be `run_name`
 #         which defaults to a timestamp if not provided.
 is_dev: true
-run_name: 'ds/26.06.0-dev1'
+run_name: 'ds/26.06.0-dev2'
 
 # Whether this will be a partner preview platform release (PPP)
 is_ppp: false
