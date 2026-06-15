@@ -91,6 +91,9 @@ clusters:
       HF_TOKEN: hfhub-key
       # this results in /var/run/secrets/wandb-key.json with {"WANDB_API_KEY": "wandb-key_value"} as content
       WANDB_API_KEY: wandb-key
+    init_actions_assets:
+      - install_gentropy_on_cluster.sh
+    init_actions_asset_location: 'gs://genetics_etl_python_playground/initialisation/'
 
   gentropy_colocalisation:
     image_version: '2.2'
