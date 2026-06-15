@@ -93,6 +93,7 @@ clusters:
       WANDB_API_KEY: wandb-key
     init_actions_assets:
       - install_gentropy_on_cluster.sh
+      - cli.py
     init_actions_asset_location: 'gs://genetics_etl_python_playground/initialisation/'
 
   # Separate cluster for L2G-specific steps. Uses the [l2g] scope from gentropy PR #1233
