@@ -34,7 +34,7 @@ class HeritabilityManifestGeneratorOptions(BaseModel):
     output_prefix: Annotated[
         str,
         StringConstraints(pattern=r"^gs://[a-zA-Z0-9_-]+(/[a-zA-Z0-9_.-]+)*/?$|^$"),
-    ] = ""
+    ]
     """GCS prefix under which per-study heritability outputs will be written.
 
     Defaults to an empty string (which means output goes directly under the bucket root). Must be a
