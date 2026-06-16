@@ -9,9 +9,7 @@ from orchestration.utils import chain_dependencies, find_environment_vars, read_
 from orchestration.utils.common import shared_dag_args, shared_dag_kwargs
 from orchestration.utils.dataproc import generate_dataproc_task_chain, submit_gentropy_step
 
-SOURCE_CONFIG_FILE_PATH = (
-    Path(__file__).parent / Path(__file__).parent / "config" / "gwas_catalog_sumstats_susie_clumping.yaml"
-)
+SOURCE_CONFIG_FILE_PATH = Path(__file__).parent / "config" / "gwas_catalog_sumstats_susie_clumping.yaml"
 config = read_yaml_config(SOURCE_CONFIG_FILE_PATH)
 env_spec: list[EnvironmentSpec] = config["environment_specs"]
 env: Environment = config["env"]

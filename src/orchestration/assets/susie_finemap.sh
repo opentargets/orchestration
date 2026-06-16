@@ -17,7 +17,7 @@ set -euo pipefail
 readonly STUDY_INDEX_PATH="${study_index_path}"
 readonly STUDY_LOCUS_MANIFEST_PATH="${study_locus_manifest_path}"
 #########################################################################################
-gentropy \
+HYDRA_FULL_ERROR=1 gentropy \
     step=susie_finemapping \
     step.study_index_path="${STUDY_INDEX_PATH}" \
     step.study_locus_manifest_path="${STUDY_LOCUS_MANIFEST_PATH}" \
@@ -37,6 +37,8 @@ gentropy \
     step.carma_tau=0.15 \
     step.ld_min_r2=0.8 \
     "+step.session.extended_spark_conf={spark.jars:https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop3-latest.jar}" \
+    "+step.session.extended_spark_conf={spark.hadoop.fs.gs.requester.pays.mode:AUTO}" \
+    "+step.session.extended_spark_conf={spark.hadoop.fs.gs.requester.pays.project.id:open-targets-genetics-dev}" \
     "+step.session.extended_spark_conf={spark.dynamicAllocation.enabled:false}" \
     "+step.session.extended_spark_conf={spark.driver.memory:30g}" \
     "+step.session.extended_spark_conf={spark.kryoserializer.buffer.max:500m}" \

@@ -6,18 +6,19 @@ from airflow.models import DagBag
 def test_no_import_errors(dag_bag: DagBag) -> None:
     """Test for import errors."""
     assert not dag_bag.import_errors, f"DAG import failures. Errors: {dag_bag.import_errors}"
+    assert len(dag_bag.dags) > 0, "No DAGs found. Check the DAG folder path and ensure DAGs are defined correctly."
 
 
 def test_requires_tags(dag_bag: DagBag) -> None:
     """Tags should be defined for each DAG."""
     for dag in dag_bag.dags.values():
-        assert dag.tags
+        assert dag.tags, "DAG should have at least one tag defined."
 
 
 def test_owner_len_greater_than_five(dag_bag: DagBag) -> None:
     """Owner should be defined for each DAG and be longer than 5 characters."""
     for dag in dag_bag.dags.values():
-        assert len(dag.owner) > 5
+        assert len(dag.owner) > 5, "DAG owner should be longer than 5 characters."
 
 
 def test_desc_len_greater_than_fifteen(dag_bag: DagBag) -> None:

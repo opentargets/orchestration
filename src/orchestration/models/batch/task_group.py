@@ -72,5 +72,4 @@ class TaskGroupSpec(BaseModel):
             task_spec=self.task_config.build(),
             task_count_per_node=self.task_count_per_node,
             task_environments=effective_environments.build(),
-            task_count=len(effective_environments.environments),
         )

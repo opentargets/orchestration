@@ -41,6 +41,7 @@ steps:
       step.target_index_path: '{{release_uri}}/output/target'
       step.disease_index_path: '{{release_uri}}/output/disease'
       step.biosample_index_path: '{{release_uri}}/output/biosample'
+      step.heritability_input_path: '{{release_uri}}/input/heritability_estimate'
       # OUTPUTS
       step.valid_study_index_path: '{{release_uri}}/output/study'
       step.invalid_study_index_path: '{{release_uri}}/excluded/study'
@@ -90,7 +91,8 @@ steps:
       step.session.write_mode: overwrite
       step.session.output_partitions: 200
       step.colocalisation_method: coloc_pip_ecaviar
-      +step.session.extended_spark_conf: "{spark.executor.memory: '22g', spark.executor.memoryOverhead: '4g', spark.executor.cores: '4', spark.memory.fraction: '0.8', spark.memory.storageFraction: '0.2'}"
+      +step.session.extended_spark_conf: >-
+        {spark.executor.memory: '22g', spark.executor.memoryOverhead: '4g', spark.executor.cores: '4', spark.memory.fraction: '0.8', spark.memory.storageFraction: '0.2'}
       # INPUTS
       step.credible_set_path: '{{release_uri}}/output/credible_set'
       # OUTPUTS
@@ -134,7 +136,9 @@ steps:
           parallelism: 500 # Max number of VEP tasks run at a time in parallel on all machines.
           task_count_per_node: 2 # Number of tasks running at the same time on a single machine.
           task_environments:
-            environments: [] # Populated at runtime by BatchIndexOperator with dictionaries containing $INPUT_FILE and $OUTPUT_FILE
+            # Populated at runtime by BatchIndexOperator with dictionaries
+            # containing $INPUT_FILE and $OUTPUT_FILE
+            environments: []
           task_config:
             max_retry_count: 2
             max_run_duration: '2h'
@@ -203,7 +207,8 @@ steps:
       step.train_on_full_dataset: true
       step.hf_hub_repo_id: opentargets/locus_to_gene_{{l2g_training_version}}
       step.hf_model_commit_message: 'chore: update model base model for {{l2g_training_version}} run'
-      +step.session.extended_spark_conf: "{spark.kryoserializer.buffer.max:500m, spark.sql.autoBroadcastJoinThreshold:'-1'}"
+      +step.session.extended_spark_conf: >-
+        {spark.kryoserializer.buffer.max:500m, spark.sql.autoBroadcastJoinThreshold:'-1'}
       # INPUTS
       step.credible_set_path: '{{release_uri}}/output/credible_set'
       step.feature_matrix_path: '{{release_uri}}/intermediate/l2g_feature_matrix'
@@ -223,13 +228,15 @@ steps:
           # Job partitioning depends on the number of credible_set parquet files found in the input glob.
           input_glob: '{{release_uri}}/output/credible_set/**.parquet'
           # With output_partitions = 1, each input is mapped to 1 output.
-          output_prefix: '{{release_uri}}/output/l2g_prediction'
+          output_prefix: '{{release_uri}}/intermediate/l2g_prediction'
     google_batch:
       job:
         task_group:
           parallelism: 200
           task_environments:
-            environments: [] # Populated at runtime by BatchIndexOperator with dictionaries containing $INPUT_PARTITION and $OUTPUT_PARTITION
+            # Populated at runtime by BatchIndexOperator with dictionaries
+            # containing $INPUT_PARTITION and $OUTPUT_PARTITION
+            environments: []
           task_config:
             shared_environment:
               secrets:
@@ -254,6 +261,10 @@ steps:
             machine_type: n1-standard-2
             provisioning_model: STANDARD
         logs: {}
+      collect:
+        source_prefix: '{{release_uri}}/intermediate/l2g_prediction'
+        destination_prefix: '{{release_uri}}/output/l2g_prediction'
+        file_glob: '**.parquet'
 
   l2g_evidence:
     params:

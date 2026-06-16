@@ -29,3 +29,7 @@ gs://gnomad_data_2/grch37_to_grch38.over.chain
 ### 2026-01-30
 
 - [fix: regenerated gnomad LDIndex dataset post LD index liftover fix](https://github.com/opentargets/issues/issues/4195)
+
+### 2026-05-20
+
+- [fix: removed non-canonical variants post lift over](https://github.com/opentargets/issues/issues/3622)
