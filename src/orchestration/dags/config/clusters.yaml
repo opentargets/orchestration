@@ -65,7 +65,7 @@ clusters:
     worker_disk_size: 1024
     internal_ip_only: false
     metadata:
-      GENTROPY_REF: 'v{{gentropy_version}}'
+      GENTROPY_REF: 'v3.3.0-dev.56'
     properties:
       # EFM and the spot-era band-aids (shuffle.io retries, extended network
       # timeout, speculation) are gone: with no preemption there is no shuffle to
