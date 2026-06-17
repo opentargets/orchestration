@@ -433,6 +433,7 @@ steps:
   pts_release_metrics:
     depends_on:
       - pts_association
+      - pts_clinical_target
 
   pts_otar:
     ppp_only: true
