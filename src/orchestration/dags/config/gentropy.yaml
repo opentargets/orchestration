@@ -38,7 +38,7 @@ steps:
         # molQTL
         - '{{release_uri}}/input/molqtl/study/eqtl_catalogue'
         - '{{release_uri}}/input/molqtl/study/ukb_ppp_eur'
-      step.target_index_path: '{{release_uri}}/output/target'
+      step.target_index_path: '{{release_uri}}/intermediate/target/ensembl'
       step.disease_index_path: '{{release_uri}}/output/disease'
       step.biosample_index_path: '{{release_uri}}/output/biosample'
       step.heritability_input_path: '{{release_uri}}/input/heritability_estimate'
@@ -194,6 +194,7 @@ steps:
       step.study_index_path: '{{release_uri}}/output/study'
       step.target_index_path: '{{release_uri}}/output/target'
       step.intervals_path: '{{release_uri}}/output/enhancer_to_gene'
+      step.gene_interactions_path: '{{release_uri}}/output/interaction'
       # OUTPUTS
       step.feature_matrix_path: '{{release_uri}}/intermediate/l2g_feature_matrix'
 
@@ -204,7 +205,7 @@ steps:
       step.run_mode: train
       step.wandb_run_name: '{{l2g_training_version}}'
       step.cross_validate: false
-      step.train_on_full_dataset: true
+      step.train_on_full_dataset: false
       step.hf_hub_repo_id: opentargets/locus_to_gene_{{l2g_training_version}}
       step.hf_model_commit_message: 'chore: update model base model for {{l2g_training_version}} run'
       +step.session.extended_spark_conf: >-

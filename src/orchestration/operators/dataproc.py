@@ -509,45 +509,6 @@ class JobBuilder(ABC):
         return result
 
 
-class ETLJobBuilder(JobBuilder):
-    """Class for building ETL jobs."""
-
-    def __init__(
-        self,
-        jar_uri: str,
-        config_uri: str,
-        args: list[str],
-        properties: dict[str, str] | None = None,
-        template_context: dict[str, str] | None = None,
-    ) -> None:
-        self.jar_uri = jar_uri
-        self.config_uri = config_uri
-        self.args = args
-        self.properties = properties or {}
-        self.template_context = template_context or {}
-        self.logger = logging.getLogger(__name__)
-
-    def build(self) -> SparkJob:
-        """Build a SparkJob that runs an ETL step."""
-        rendered_properties = self.render_properties(
-            properties=self.properties,
-            template_context=self.template_context,
-        )
-
-        self.logger.info("spawning etl job")
-        self.logger.info(f"jar_uri: {self.jar_uri}")
-        self.logger.info(f"config_uri: {self.config_uri}")
-        self.logger.info(f"args: {self.args}")
-        self.logger.info(f"properties (already rendered): {rendered_properties}")
-
-        return SparkJob(
-            main_jar_file_uri=self.jar_uri,
-            file_uris=[self.config_uri],
-            args=self.args,
-            properties=rendered_properties,
-        )
-
-
 class GentropyJobBuilder(JobBuilder):
     """Class for building Gentropy jobs."""
 

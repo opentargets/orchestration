@@ -136,7 +136,7 @@ steps:
   #: CLINICAL_REPORT STEP :########################################################################
   clinical_report:
     - name: explode_glob clinical_report
-      glob: gs://ot-team/irene/clinical_mining/2026-03-12/input/clinical_report/**/*
+      glob: gs://ot-team/irene/clinical_mining/2026-05-27/input/clinical_report/**/*
       do:
         - name: copy clinical_report ${match_stem} ${uuid}
           source: ${uri}
@@ -172,6 +172,13 @@ steps:
     - name: copy drugbank annotation
       source: https://ftp.ebi.ac.uk/pub/databases/chembl/UniChem/data/wholeSourceMapping/src_id1/src1src2.txt.gz
       destination: input/drug/drugbank.csv.gz
+
+    # AACT clinical-trial batch extraction — a standalone source consumed by
+    # chembl_molecule (and clinical_report). Downloaded in the drug step so
+    # chembl_molecule's existing pis_drug dependency covers it.
+    - name: copy_many aact extraction batch results
+      sources: gs://ot-team/irene/clinical_mining/aact_extraction_batch_result/output/*
+      destination: input/clinical_report/aact_extraction_batch_results
 
     - name: elasticsearch chembl drug warning
       url: https://www.ebi.ac.uk/chembl/elk/es
@@ -480,7 +487,7 @@ steps:
   #: EVIDENCE_PANEL_APP STEP :######################################################################
   evidence_panel_app:
     - name: copy panel_app
-      source: gs://otar000-evidence_input/GenomicsEngland/data_files/All_genes_20250525_public_v1plus_genes_all_ratings.tsv
+      source: gs://otar000-evidence_input/GenomicsEngland/data_files/All_genes_20260511_public_v1plus_panels-1.tsv
       destination: input/evidence/panelapp/panel_app.tsv
     - name: panel_app fetch
       requires:
@@ -572,9 +579,10 @@ steps:
       destination: input/evidence/encore.json.gz
 
     # OT_crispr => generate evience.
-    - name: copy ot_crispr config
-      source: gs://otar013-ppp/PPP-evidence-configuration/raw_study_table.tsv
-      destination: input/evidence/ot_crispr/config.tsv
+    - name: spreadsheet_download otar crispr study spreadsheet
+      sheet_id: 1eow_rTizGY_Vda0Q-8sFNWCOyFkKRSUen1Em1ysPSiA
+      gid: '0'
+      destination: input/evidence/ot_crispr/config.csv
 
     - name: explode_glob ot_crispr files
       glob: 'gs://otar013-ppp/ot_crispr/input_data_filtered/**/*'
@@ -699,7 +707,7 @@ steps:
   heritability:
     - name: copy_many gwas ldsc h2 estimates
       sources: gs://gwas_catalog_sumstats_susie/heritability_estimates/**/*.parquet
-      destination: input/heritability_estimates
+      destination: input/heritability_estimate
   ##################################################################################################
 
   #: L2G STEP :#####################################################################################
@@ -716,7 +724,7 @@ steps:
       destination: input/literature/PMID_PMCID_DOI.csv.gz
 
     - name: explode_glob literature dating lut
-      glob: gs://otar000-evidence_input/literature_export/2026.03/*.json.gz
+      glob: gs://otar000-evidence_input/literature_export/2026.05/*.json.gz
       do:
         - name: copy literature dating lut ${match_stem}
           source: ${match_prefix}/${match_path}/${match_stem}.${match_ext}

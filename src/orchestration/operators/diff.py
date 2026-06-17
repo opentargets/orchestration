@@ -34,11 +34,11 @@ class DiffOperator(BaseBranchOperator):
         step_name (str): The name of the step to run if needed.
         differs (list[Differ]): A list of Differ instances.
         diff_yes_task (str): The task to branch to if the step should run. The
-            default value is generated from the step name. E.g. for "etl_go",
-            the default value is "etl_stage.etl_go.upload_config_etl_go".
+            default value is generated from the step name. E.g. for "pts_target",
+            the default value is "pts_target.upload_config_pts_target".
         diff_no_task: The task to branch to if the step should not run. The
-            default value is generated from the step name. E.g. for "etl_go",
-            the default value is "etl_stage.etl_go.end_etl_go".
+            default value is generated from the step name. E.g. for "pts_target",
+            the default value is "pts_target.end_pts_target".
         config: The full unified pipeline config used in diff computations.
         gcp_conn_id: The connection ID to use when connecting to Google Cloud.
         impersonation_chain: Optional service account or chain to impersonate.

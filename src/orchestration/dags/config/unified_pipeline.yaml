@@ -1,33 +1,33 @@
 ---
-release_name: '26.06.0-dev0'
+release_name: '26.06.0-dev2'
 
 # If `is_dev` is true:
 #   * the bucket used for the run will be `open-targets-pipeline-runs`
 #   * the prefix inside the bucket will be `run_name`
 #         which defaults to a timestamp if not provided.
 is_dev: true
-run_name: 'sz/26.06.0-dev0'
+run_name: 'ds/26.06.0-dev2'
 
 # Whether this will be a partner preview platform release (PPP)
 is_ppp: false
 
-# Versions for software and data
-pis_version: '26.03.0-dev.15'
-pts_version: '26.03.0-dev.44'
-etl_version: '26.03.0-dev5'
-gentropy_version: 'v3.3.0-rc.1'
+# Versions for software and dgit ata
+pis_version: '26.06.0-dev.2'
+pts_version: '26.06.0-dev.4'
+gentropy_version: '3.3.0-rc.1'
 vep_version: 'release_115.2'
-chembl_version: '36'
-efo_version: '3.87.0'
+chembl_version: '37'
+efo_version: '3.88.0'
 ensembl_version: '115'
 gencode_version: '49'
-depmap_version: '2025Q2'
+depmap_version: '2026Q1'
 hpo_version: '2026-02-16'
-mondo_version: '2026-02-03'
-ot_curation: '26.03.0'
+mondo_version: '2026-05-05'
+ot_curation: '26.05'
 probes_drugs_version: '02_2025'
 gnomad_version: '4.1'
-gtex_version: '10'
+gtex_version: '11'
+string_version: '12.0'
 
 # Dependency graph
 # ----------------
@@ -81,6 +81,7 @@ steps:
   pis_go:
   pis_interaction:
   pis_enhancer_to_gene:
+  pis_heritability:
   pis_l2g:
   pis_literature:
   pis_molqtl:
@@ -108,6 +109,12 @@ steps:
     depends_on:
       - pis_ontoma
       - pts_disease
+  pts_literature_ontoma:
+    depends_on:
+      - pis_ontoma
+      - pts_disease
+      - pts_target
+      - pts_drug_molecule
   pts_mouse_phenotype:
     depends_on:
       - pts_target
@@ -121,10 +128,13 @@ steps:
       - gentropy_variant
       - pts_association
       - pts_pharmacogenetics
-  pts_openfda:
+  pts_openfda_input_preparation:
     depends_on:
       - pis_openfda
       - pts_drug_molecule
+  pts_openfda:
+    depends_on:
+      - pts_openfda_input_preparation
   pts_so:
     depends_on:
       - pis_so
@@ -143,10 +153,26 @@ steps:
       - pts_ontoma
       - pts_chembl_molecule
       - pts_drug_mechanism_of_action
+  pts_literature_publication_match:
+    depends_on:
+      - pts_literature_ontoma
+      - pis_literature
+  pts_literature_entity_lut:
+    depends_on:
+      - pts_literature_publication_match
+  pts_literature_embedding:
+    depends_on:
+      - pts_literature_publication_match
+  pts_literature_vector:
+    depends_on:
+      - pts_literature_embedding
+  pts_literature_cooccurrence_evidence:
+    depends_on:
+      - pts_literature_publication_match
   # Evidence not processed by PTS
   pts_evidence_postprocess_europepmc:
     depends_on:
-      - etl_literature
+      - pts_literature_cooccurrence_evidence
       - pis_literature
       - pts_target
       - pts_disease
@@ -239,6 +265,7 @@ steps:
   pts_evidence_postprocess_clinical_precedence:
     depends_on:
       - pts_evidence_clinical_precedence
+      - pts_target
   pts_evidence_cancer_biomarkers:
     depends_on:
       - pis_evidence_cancer_biomarkers
@@ -394,7 +421,7 @@ steps:
       - pts_evidence_postprocess_validation_lab
 
   pts_association_timeseries_view:
-    ppp_only: true
+    ppp_only: false
     depends_on:
       - pts_association
 
@@ -403,9 +430,10 @@ steps:
     depends_on:
       - pts_association
 
-  # pts_release_metrics:
-  #   depends_on:
-  #     - pts_association
+  pts_release_metrics:
+    depends_on:
+      - pts_association
+      - pts_clinical_target
 
   pts_otar:
     ppp_only: true
@@ -427,17 +455,12 @@ steps:
       - pts_disease
       - pts_go
       - pts_target
+      - pts_reactome
 
   pts_interaction:
     depends_on:
       - pis_interaction
       - pts_target
-
-  etl_literature:
-    num_partitions: 1000
-    depends_on:
-      - pis_literature
-      - pts_drug_molecule
 
   pts_search:
     depends_on:
@@ -473,12 +496,14 @@ steps:
       - pts_pre_target
       - pts_disease
       - gentropy_biosample
+      - pis_heritability
     depends_on_ppp:
       - pis_gwas_ppp
       - pis_molqtl_ppp
   gentropy_credible_set:
     depends_on:
       - gentropy_study
+      - pts_target
   gentropy_colocalisation:
     num_partitions: 200
     depends_on:
@@ -505,6 +530,7 @@ steps:
       - pis_l2g
       - pts_interaction
       - gentropy_l2g_feature_matrix
+      - pts_interaction
   gentropy_l2g_prediction:
     depends_on:
       - gentropy_l2g_training
