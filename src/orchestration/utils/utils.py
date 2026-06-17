@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import random
 import re
+import shlex
 import string
 from pathlib import Path
 from typing import Any
@@ -193,12 +194,21 @@ def convert_params_to_hydra_positional_arg(params: dict[str, Any] | None, datapr
     """
     if not params:
         raise ValueError("Expected at least one parameter with the step: 'step_name'")
+
     incorrect_param_keys = [key for key in params if "step" not in key]
     if incorrect_param_keys:
         raise ValueError(f"Passed incorrect param keys {incorrect_param_keys}")
-    positional_args = [f"{k}={v}" for k, v in params.items()]
+
+    positional_args = []
+    for k, v in params.items():
+        arg = f"{k}={v}"
+        if isinstance(v, str) and v[:1] in "{[":
+            arg = shlex.quote(arg)
+        positional_args.append(arg)
+
     if not dataproc:
         return positional_args
+
     yarn_session_config = "step.session.spark_uri=yarn"
     if yarn_session_config not in positional_args:
         positional_args.append(yarn_session_config)
