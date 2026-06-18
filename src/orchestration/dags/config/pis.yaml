@@ -782,6 +782,14 @@ steps:
     - name: copy_many molqtl eQTL Catalogue GTEx v10 credible sets
       sources: gs://eqtl_catalogue_processed_otar_internal_data/otar2077/GTEx_v10_majiq/gentropy/output/study_locus/*/*.parquet
       destination: input/molqtl/credible_set/GTEx_v10
+    
+    - name: copy_many molqtl deCODE proteomics study
+      sources: gs://decode_data/smp/study
+      destination: input/molqtl/study/deCODE_proteomics
+
+    - name: copy_many molqtl deCODE proteomics credible sets
+      sources: gs://decode_data/smp/credible_set
+      destination: input/molqtl/credible_set/deCODE_proteomics
   ##################################################################################################
 
   #: ONTOMA STEP :##################################################################################
