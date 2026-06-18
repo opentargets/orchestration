@@ -19,20 +19,30 @@ env: Prod
 
 dataproc:
   cluster_name: otg-decode
-  # autoscaling_policy: otg-decode-efm
-  allow_efm: false
-  num_workers: 2 #15
-  worker_machine_type: n2d-standard-16
-  driver_machine_type: n2d-standard-16
-  # secondary_worker_machine_type: n2d-standard-16
-  # secondary_worker_disk_size: 150
-  # worker_disk_size: 2048
-  # worker_disk_type: 'pd-ssd'
-
-  cluster_metadata:
-    GENTROPY_REF: 'v{gentropy_ref}'
+  cluster_config:
+    project_id: open-targets-genetics-dev
+    autoscaling_policy: otg-decode-efm
+    allow_efm: false
+    num_workers: 2
+    worker_machine_type: n2d-standard-16
+    driver_machine_type: n2d-standard-16
+    secondary_worker_machine_type: n2d-standard-16
+    secondary_worker_disk_size: 150
+    worker_disk_size: 2048
+    worker_disk_type: 'pd-ssd'
+    init_actions_uris:
+      - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'
+    secret_init_action_uri: 'gs://opentargets-pipelines/up/gentropy/fetch_secrets.sh'
+    secret_blob_list:
+      - 'decode'
+    metadata:
+      GENTROPY_REF: 'v{gentropy_ref}'
 
 nodes:
+
+  ########################## Molecular complex ingestion ######################
+  # As some of the aptamers link to protein complexes, instead of individual proteins,
+  # we need to bring the full set of proteins and explode them to get all mapped genes
 
   - id: molecular_complex
     kind: Task
@@ -43,30 +53,34 @@ nodes:
       step.experimental_complex_tab_path: 'gs://decode_data/complex_portal/complex_portal_experimental.tsv'
       step.output_path: '{data_bucket}/molecular_complex/'
       step.session.write_mode: overwrite
-  ############################ SMP #############################
-  # - id: smp_manifest_generation
-  #   kind: Task
-  #   prerequisites:
-  #     - molecular_complex
-  #   params:
-  #     step: decode_manifest_generation
-  #     step.s3_config_path: '{input_bucket}/s3_config.yaml'
-  #     step.bucket_listing_path: '{input_bucket}/somascan_smp_index.txt'
-  #     step.output_path: '{data_bucket}/smp/manifest/'
+  ##############################################################################
 
-  # - id: smp_ingestion
-  #   prerequisites:
-  #     - smp_manifest_generation
-  #   params:
-  #     step: decode_summary_statistics_ingestion
-  #     step.manifest_path: '{data_bucket}/smp/manifest/'
-  #     step.output_path: '{input_bucket}/raw_summary_statistics/smp/'
+  ########################### SMP ##############################################
+  # The steps below result in processing of normalised summary statistics (SMP)
+  ##############################################################################
+  - id: smp_manifest_generation
+    kind: Task
+    prerequisites:
+      - molecular_complex
+    params:
+      step: decode_manifest_generation
+      step.s3_config_path: '{input_bucket}/s3_config.yaml'
+      step.bucket_name: "largeplasma-2023"
+      step.output_path: '{data_bucket}/smp/manifest/'
+
+  - id: smp_ingestion
+    prerequisites:
+      - smp_manifest_generation
+    params:
+      step: decode_summary_statistics_ingestion
+      step.manifest_path: '{data_bucket}/smp/manifest/'
+      step.output_path: '{input_bucket}/raw_summary_statistics/smp/'
 
   - id: smp_harmonisation
     prerequisites:
       - molecular_complex
-      # - smp_manifest_generation
-      # - smp_ingestion
+      - smp_manifest_generation
+      - smp_ingestion
     params:
       step: decode_summary_statistics_harmonisation
       step.raw_summary_statistics_path: '{input_bucket}/raw_summary_statistics/smp/'
@@ -106,7 +120,7 @@ nodes:
       step.session.write_mode: overwrite
       step.recursive_file_lookup: false
       step.gwas_significance: 1.8e-9 # See 2023 publication
-      step.distance: 500000
+      step.distance: 1000000
       step.collect_locus: false
       step.collect_locus_distance: 500000
       +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
@@ -131,7 +145,7 @@ nodes:
       step.study_locus_ld_annotated_in: '{data_bucket}/smp/study_locus_ld_clumped/'
       step.picsed_study_locus_out: '{data_bucket}/smp/credible_set/'
       step.session.write_mode: overwrite
-      # +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000'}"
+      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000'}"
 
   - id: smp_pqtl_to_study
     prerequisites:
@@ -142,32 +156,35 @@ nodes:
       step.study_index_path: '{data_bucket}/smp/study/'
       step.target_index_path: gs://open-targets-data-releases/26.03/output/target
       step.session.write_mode: overwrite
+  #############################################################################
 
-  # - id: raw_manifest_generation
-  #   kind: Task
-  #   prerequisites:
-  #     - molecular_complex
-  #   params:
-  #     step: decode_manifest_generation
-  #     step.s3_config_path: '{input_bucket}/s3_config.yaml'
-  #     step.bucket_listing_path: '{input_bucket}/somascan_raw_index.txt'
-  #     step.output_path: '{data_bucket}/raw/manifest'
 
-  # - id: raw_ingestion
-  #   prerequisites:
-  #     - raw_manifest_generation
-  #   params:
-  #     step: decode_summary_statistics_ingestion
-  #     step.manifest_path: '{data_bucket}/raw/manifest/'
-  #     step.output_path: '{data_bucket}/raw_summary_statistics/raw/'
-
-  - id: raw_harmonisation
-    ############################# Raw summary statistics #############################
-
+  ############################## RAW ##########################################
+  # The steps below result in processing of non-normalized summary statistics (RAW)
+  #############################################################################
+  - id: raw_manifest_generation
+    kind: Task
     prerequisites:
       - molecular_complex
-      # - raw_manifest_generation
-      # - raw_ingestion
+    params:
+      step: decode_manifest_generation
+      step.s3_config_path: '{input_bucket}/s3_config.yaml'
+      step.bucket_listing_path: '{input_bucket}/somascan_raw_index.txt'
+      step.output_path: '{data_bucket}/raw/manifest'
+
+  - id: raw_ingestion
+    prerequisites:
+      - raw_manifest_generation
+    params:
+      step: decode_summary_statistics_ingestion
+      step.manifest_path: '{data_bucket}/raw/manifest/'
+      step.output_path: '{data_bucket}/raw_summary_statistics/raw/'
+
+  - id: raw_harmonisation
+    prerequisites:
+      - molecular_complex
+      - raw_manifest_generation
+      - raw_ingestion
     params:
       step: decode_summary_statistics_harmonisation
       step.raw_summary_statistics_path: '{input_bucket}/raw_summary_statistics/raw/'
@@ -207,7 +224,7 @@ nodes:
       step.session.write_mode: overwrite
       step.recursive_file_lookup: false
       step.gwas_significance: 1.8e-9 # See 2023 publication
-      step.distance: 500000
+      step.distance: 1000000
       step.collect_locus: false
       step.collect_locus_distance: 500000
       +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
@@ -232,7 +249,12 @@ nodes:
       step.study_locus_ld_annotated_in: '{data_bucket}/raw/study_locus_ld_clumped/'
       step.picsed_study_locus_out: '{data_bucket}/raw/credible_set/'
       step.session.write_mode: overwrite
-      # +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
+      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
+  ##########################################################################
+
+  ######## Post analysis ###################################################
+  # Joint step to transform pQTL study protein ids and map them to up-to-date target geneIds
+  ##########################################################################
 
   - id: raw_pqtl_to_study
     prerequisites:
