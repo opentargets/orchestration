@@ -569,14 +569,9 @@ steps:
       destination: input/evidence/validation_lab.json.gz
 
     # Encore => Get latest evidence.
-    - name: find_latest encore
-      source: gs://otar013-ppp/encore
-      scratchpad_key: latest_encore
-    - name: copy encore
-      requires:
-        - find_latest encore
-      source: ${latest_encore}
-      destination: input/evidence/encore.json.gz
+    - name: copy_many encore
+      sources: gs://otar013-ppp/encore/encore_2026-06-02/*.parquet
+      destination: input/evidence/encore
 
     # OT_crispr => generate evience.
     - name: spreadsheet_download otar crispr study spreadsheet
