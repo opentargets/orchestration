@@ -784,11 +784,11 @@ steps:
       destination: input/molqtl/credible_set/GTEx_v10
 
     - name: copy_many molqtl deCODE proteomics study
-      sources: gs://decode_data/smp/study
+      sources: gs://decode_data/smp/study/*.parquet
       destination: input/molqtl/study/deCODE_proteomics
 
     - name: copy_many molqtl deCODE proteomics credible sets
-      sources: gs://decode_data/smp/credible_set
+      sources: gs://decode_data/smp/credible_set/*.parquet
       destination: input/molqtl/credible_set/deCODE_proteomics
   ##################################################################################################
 
