@@ -570,7 +570,7 @@ steps:
 
     # Encore => Get latest evidence.
     - name: copy_many encore
-      sources: gs://otar013-ppp/encore/encore_2026-06-02/*.parquet
+      sources: gs://otar013-ppp/encore/encore_2026-06-23/*.parquet
       destination: input/evidence/encore
 
     # OT_crispr => generate evience.
