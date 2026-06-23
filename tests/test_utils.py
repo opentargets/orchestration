@@ -53,6 +53,12 @@ def test_time_to_seconds(input: str, output: int) -> None:
             True,
             id="Running with dataproc=True and yarn present does not duplicate parameter",
         ),
+        pytest.param(
+            {"step": "some_step", "step.filter": "{a: 1}", "step.ids": "[x,y]"},
+            ["step=some_step", "step.filter={a: 1}", "step.ids=[x,y]"],
+            False,
+            id="JSON-like string values are not shell-quoted",
+        ),
     ],
 )
 def test_convert_params_to_hydra_positional_arg(input: dict, output: list[str], is_dataproc_job: bool) -> None:
