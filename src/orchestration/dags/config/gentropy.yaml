@@ -296,6 +296,7 @@ steps:
         - INVALID_CHROMOSOME
         - INVALID_RANGE
         - AMBIGUOUS_INTERVAL_TYPE
+        - TRANS_CHROMOSOMAL_EFFECT
 
       # INPUTS
       step.target_index_path: '{{release_uri}}/output/target'
