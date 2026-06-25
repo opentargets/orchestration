@@ -60,6 +60,7 @@ build-dag-svgs: ## Generate visual representations of Airflow DAGs for documenta
 		datasources/gwas_catalog_data/gwas_catalog_sumstats_susie_clumping \
 		datasources/gwas_catalog_data/gwas_catalog_sumstats_susie_finemapping \
 		datasources/gwas_catalog_data/gwas_catalog_top_hits \
+		datasources/gwas_catalog_data/gwas_catalog_heritability_estimate \
 		datasources/gnomad_data/gnomad_ingestion \
 		datasources/ukb_ppp_eur_data/ukb_ppp_eur_finemapping \
 		datasources/ukb_ppp_eur_data/ukb_ppp_eur_harmonisation \
