@@ -7,6 +7,7 @@ from airflow.models.baseoperator import BaseOperator
 from orchestration.models.batch import BatchIndexOperatorSpec, BatchIndexRow
 from orchestration.operators.batch.manifest_generators import (
     FinemappingManifestGenerator,
+    GeneticCorrelationManifestGenerator,
     GentropyStepManifestGenerator,
     HarmonisationManifestGenerator,
     VepManifestGenerator,
@@ -20,6 +21,7 @@ MANIFEST_GENERATOR_MAP = {
     "finemapping": FinemappingManifestGenerator,
     "harmonisation": HarmonisationManifestGenerator,
     "heritability_estimate": HeritabilityManifestGenerator,
+    "genetic_correlation": GeneticCorrelationManifestGenerator,
 }
 
 
