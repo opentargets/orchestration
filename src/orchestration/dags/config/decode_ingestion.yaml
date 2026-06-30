@@ -21,7 +21,7 @@ dataproc:
   cluster_name: otg-decode
   cluster_config:
     project_id: open-targets-genetics-dev
-    autoscaling_policy: otg-decode-efm
+    autoscaling_policy: otg-etl
     allow_efm: false
     num_workers: 2
     worker_machine_type: n2d-standard-16
@@ -44,117 +44,117 @@ nodes:
   # As some of the aptamers link to protein complexes, instead of individual proteins,
   # we need to bring the full set of proteins and explode them to get all mapped genes
 
-  - id: molecular_complex
-    kind: Task
-    prerequisites: []
-    params:
-      step: molecular_complex_ingestion
-      step.predicted_complex_tab_path: 'gs://decode_data/complex_portal/complex_portal_predicted.tsv'
-      step.experimental_complex_tab_path: 'gs://decode_data/complex_portal/complex_portal_experimental.tsv'
-      step.output_path: '{data_bucket}/molecular_complex/'
-      step.session.write_mode: overwrite
+  # - id: molecular_complex
+  #   kind: Task
+  #   prerequisites: []
+  #   params:
+  #     step: molecular_complex_ingestion
+  #     step.predicted_complex_tab_path: 'gs://decode_data/complex_portal/complex_portal_predicted.tsv'
+  #     step.experimental_complex_tab_path: 'gs://decode_data/complex_portal/complex_portal_experimental.tsv'
+  #     step.output_path: '{data_bucket}/molecular_complex/'
+  #     step.session.write_mode: overwrite
   ##############################################################################
 
   ########################### SMP ##############################################
   # The steps below result in processing of normalised summary statistics (SMP)
   ##############################################################################
-  - id: smp_manifest_generation
-    kind: Task
-    prerequisites:
-      - molecular_complex
-    params:
-      step: decode_manifest_generation
-      step.s3_config_path: '{input_bucket}/s3_config.yaml'
-      step.bucket_name: "largeplasma-2023"
-      step.output_path: '{data_bucket}/smp/manifest/'
+  # - id: smp_manifest_generation
+  #   kind: Task
+  #   prerequisites:
+  #     - molecular_complex
+  #   params:
+  #     step: decode_manifest_generation
+  #     step.s3_config_path: '{input_bucket}/s3_config.yaml'
+  #     step.bucket_name: "largeplasma-2023"
+  #     step.output_path: '{data_bucket}/smp/manifest/'
 
-  - id: smp_ingestion
-    prerequisites:
-      - smp_manifest_generation
-    params:
-      step: decode_summary_statistics_ingestion
-      step.manifest_path: '{data_bucket}/smp/manifest/'
-      step.output_path: '{input_bucket}/raw_summary_statistics/smp/'
+  # - id: smp_ingestion
+  #   prerequisites:
+  #     - smp_manifest_generation
+  #   params:
+  #     step: decode_summary_statistics_ingestion
+  #     step.manifest_path: '{data_bucket}/smp/manifest/'
+  #     step.output_path: '{input_bucket}/raw_summary_statistics/smp/'
 
-  - id: smp_harmonisation
-    prerequisites:
-      - molecular_complex
-      - smp_manifest_generation
-      - smp_ingestion
-    params:
-      step: decode_summary_statistics_harmonisation
-      step.raw_summary_statistics_path: '{input_bucket}/raw_summary_statistics/smp/'
-      step.manifest_path: '{data_bucket}/smp/manifest/'
-      step.aptamer_metadata_path: '{data_bucket}/decode_2023_aptamer_mapping.tsv'
-      step.variant_direction_path: '{gnomad_bucket}/v4.1/variant_direction/'
-      step.molecular_complex_path: '{data_bucket}/molecular_complex/'
-      step.harmonised_summary_statistics_path: '{data_bucket}/smp/harmonised_summary_statistics/'
-      step.protein_qtl_study_index_path: '{data_bucket}/smp/pqtl_study/'
-      step.min_mac_threshold: 50
-      step.min_sample_size_threshold: 30000
-      step.flipping_window_size: 10000000
-      step.session.write_mode: overwrite
-      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
+  # - id: smp_harmonisation
+  #   prerequisites:
+  #     - molecular_complex
+  #     - smp_manifest_generation
+  #     - smp_ingestion
+  #   params:
+  #     step: decode_summary_statistics_harmonisation
+  #     step.raw_summary_statistics_path: '{input_bucket}/raw_summary_statistics/smp/'
+  #     step.manifest_path: '{data_bucket}/smp/manifest/'
+  #     step.aptamer_metadata_path: '{data_bucket}/decode_2023_aptamer_mapping.tsv'
+  #     step.variant_direction_path: '{gnomad_bucket}/v4.1/variant_direction/'
+  #     step.molecular_complex_path: '{data_bucket}/molecular_complex/'
+  #     step.harmonised_summary_statistics_path: '{data_bucket}/smp/harmonised_summary_statistics/'
+  #     step.protein_qtl_study_index_path: '{data_bucket}/smp/pqtl_study/'
+  #     step.min_mac_threshold: 50
+  #     step.min_sample_size_threshold: 30000
+  #     step.flipping_window_size: 10000000
+  #     step.session.write_mode: overwrite
+  #     +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
 
-  - id: smp_qc
-    prerequisites:
-      - smp_harmonisation
-    params:
-      step: decode_summary_statistics_qc
-      step.harmonised_summary_statistics_path: '{data_bucket}/smp/harmonised_summary_statistics/'
-      step.protein_qtl_study_index_path: '{data_bucket}/smp/pqtl_study/'
-      step.qc_summary_statistics_path: '{data_bucket}/smp/harmonised_summary_statistics_qc/'
-      step.protein_qtl_study_index_qc_annotated_path: '{data_bucket}/smp/pqtl_study_qc_annotated/'
-      step.pval_threshold: 5e-8
-      step.session.write_mode: overwrite
-      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
+  # - id: smp_qc
+  #   prerequisites:
+  #     - smp_harmonisation
+  #   params:
+  #     step: decode_summary_statistics_qc
+  #     step.harmonised_summary_statistics_path: '{data_bucket}/smp/harmonised_summary_statistics/'
+  #     step.protein_qtl_study_index_path: '{data_bucket}/smp/pqtl_study/'
+  #     step.qc_summary_statistics_path: '{data_bucket}/smp/harmonised_summary_statistics_qc/'
+  #     step.protein_qtl_study_index_qc_annotated_path: '{data_bucket}/smp/pqtl_study_qc_annotated/'
+  #     step.pval_threshold: 5e-8
+  #     step.session.write_mode: overwrite
+  #     +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
 
-  - id: smp_wbc
-    prerequisites:
-      - smp_harmonisation
-      - smp_qc
-    params:
-      step: window_based_clumping
-      step.summary_statistics_input_path: '{data_bucket}/smp/harmonised_summary_statistics/'
-      step.study_locus_output_path: '{data_bucket}/smp/study_locus_window_based_clumped/'
-      step.session.write_mode: overwrite
-      step.recursive_file_lookup: false
-      step.gwas_significance: 1.8e-9 # See 2023 publication
-      step.distance: 1000000
-      step.collect_locus: false
-      step.collect_locus_distance: 500000
-      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
+  # - id: smp_wbc
+  #   prerequisites: []
+  #     # - smp_harmonisation
+  #     # - smp_qc
+  #   params:
+  #     step: window_based_clumping
+  #     step.summary_statistics_input_path: '{data_bucket}/smp/harmonised_summary_statistics/'
+  #     step.study_locus_output_path: '{data_bucket}/smp/study_locus_window_based_clumped/'
+  #     step.session.write_mode: overwrite
+  #     step.recursive_file_lookup: false
+  #     step.gwas_significance: 1.8e-9 # See 2023 publication
+  #     step.distance: 1000000
+  #     step.collect_locus: false
+  #     step.collect_locus_distance: 500000
+  #     +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
 
-  - id: smp_ldc
-    prerequisites:
-      - smp_wbc
-    params:
-      step: ld_based_clumping
-      step.ld_index_path: '{gnomad_bucket}/v2.1.1/ld_index'
-      step.study_locus_input_path: '{data_bucket}/smp/study_locus_window_based_clumped/'
-      step.study_index_path: '{data_bucket}/smp/pqtl_study_qc_annotated/'
-      step.clumped_study_locus_output_path: '{data_bucket}/smp/study_locus_ld_clumped/'
-      step.session.write_mode: overwrite
-      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
+  # - id: smp_ldc
+  #   prerequisites:
+  #     - smp_wbc
+  #   params:
+  #     step: ld_based_clumping
+  #     step.ld_index_path: '{gnomad_bucket}/v2.1.1/ld_index'
+  #     step.study_locus_input_path: '{data_bucket}/smp/study_locus_window_based_clumped/'
+  #     step.study_index_path: '{data_bucket}/smp/pqtl_study_qc_annotated/'
+  #     step.clumped_study_locus_output_path: '{data_bucket}/smp/study_locus_ld_clumped/'
+  #     step.session.write_mode: overwrite
+  #     +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
 
-  - id: smp_pics
-    prerequisites:
-      - smp_ldc
-    params:
-      step: pics
-      step.study_locus_ld_annotated_in: '{data_bucket}/smp/study_locus_ld_clumped/'
-      step.picsed_study_locus_out: '{data_bucket}/smp/credible_set/'
-      step.session.write_mode: overwrite
-      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000'}"
+  # - id: smp_pics
+  #   prerequisites:
+  #     - smp_ldc
+  #   params:
+  #     step: pics
+  #     step.study_locus_ld_annotated_in: '{data_bucket}/smp/study_locus_ld_clumped/'
+  #     step.picsed_study_locus_out: '{data_bucket}/smp/credible_set/'
+  #     step.session.write_mode: overwrite
+  #     +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000'}"
 
   - id: smp_pqtl_to_study
     prerequisites:
       - smp_pics
     params:
       step: pQTL_study_index_transformation
-      step.protein_study_index_path: '{data_bucket}/smp/pqtl_study/'
+      step.protein_study_index_path: '{data_bucket}/smp/pqtl_study_qc_annotated/'
       step.study_index_path: '{data_bucket}/smp/study/'
-      step.target_index_path: gs://open-targets-data-releases/26.03/output/target
+      step.target_index_path: '{data_bucket}/target'
       step.session.write_mode: overwrite
   #############################################################################
 
@@ -162,43 +162,43 @@ nodes:
   ############################## RAW ##########################################
   # The steps below result in processing of non-normalized summary statistics (RAW)
   #############################################################################
-  - id: raw_manifest_generation
-    kind: Task
-    prerequisites:
-      - molecular_complex
-    params:
-      step: decode_manifest_generation
-      step.s3_config_path: '{input_bucket}/s3_config.yaml'
-      step.bucket_listing_path: '{input_bucket}/somascan_raw_index.txt'
-      step.output_path: '{data_bucket}/raw/manifest'
+  # - id: raw_manifest_generation
+  #   kind: Task
+  #   prerequisites:
+  #     - molecular_complex
+  #   params:
+  #     step: decode_manifest_generation
+  #     step.s3_config_path: '{input_bucket}/s3_config.yaml'
+  #     step.bucket_listing_path: '{input_bucket}/somascan_raw_index.txt'
+  #     step.output_path: '{data_bucket}/raw/manifest'
 
-  - id: raw_ingestion
-    prerequisites:
-      - raw_manifest_generation
-    params:
-      step: decode_summary_statistics_ingestion
-      step.manifest_path: '{data_bucket}/raw/manifest/'
-      step.output_path: '{data_bucket}/raw_summary_statistics/raw/'
+  # - id: raw_ingestion
+  #   prerequisites:
+  #     - raw_manifest_generation
+  #   params:
+  #     step: decode_summary_statistics_ingestion
+  #     step.manifest_path: '{data_bucket}/raw/manifest/'
+  #     step.output_path: '{data_bucket}/raw_summary_statistics/raw/'
 
-  - id: raw_harmonisation
-    prerequisites:
-      - molecular_complex
-      - raw_manifest_generation
-      - raw_ingestion
-    params:
-      step: decode_summary_statistics_harmonisation
-      step.raw_summary_statistics_path: '{input_bucket}/raw_summary_statistics/raw/'
-      step.manifest_path: '{data_bucket}/raw/manifest/'
-      step.aptamer_metadata_path: '{data_bucket}/decode_2023_aptamer_mapping.tsv'
-      step.variant_direction_path: '{gnomad_bucket}/v4.1/variant_direction/'
-      step.molecular_complex_path: '{data_bucket}/molecular_complex/'
-      step.harmonised_summary_statistics_path: '{data_bucket}/raw/harmonised_summary_statistics/'
-      step.protein_qtl_study_index_path: '{data_bucket}/raw/pqtl_study/'
-      step.min_mac_threshold: 50
-      step.min_sample_size_threshold: 30000
-      step.flipping_window_size: 10000000
-      step.session.write_mode: overwrite
-      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
+  # - id: raw_harmonisation
+  #   prerequisites:
+  #     - molecular_complex
+  #     - raw_manifest_generation
+  #     - raw_ingestion
+  #   params:
+  #     step: decode_summary_statistics_harmonisation
+  #     step.raw_summary_statistics_path: '{input_bucket}/raw_summary_statistics/raw/'
+  #     step.manifest_path: '{data_bucket}/raw/manifest/'
+  #     step.aptamer_metadata_path: '{data_bucket}/decode_2023_aptamer_mapping.tsv'
+  #     step.variant_direction_path: '{gnomad_bucket}/v4.1/variant_direction/'
+  #     step.molecular_complex_path: '{data_bucket}/molecular_complex/'
+  #     step.harmonised_summary_statistics_path: '{data_bucket}/raw/harmonised_summary_statistics/'
+  #     step.protein_qtl_study_index_path: '{data_bucket}/raw/pqtl_study/'
+  #     step.min_mac_threshold: 50
+  #     step.min_sample_size_threshold: 30000
+  #     step.flipping_window_size: 10000000
+  #     step.session.write_mode: overwrite
+  #     +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
 
   - id: raw_qc
     prerequisites:
@@ -213,43 +213,43 @@ nodes:
       step.session.write_mode: overwrite
       +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
 
-  - id: raw_wbc
-    prerequisites:
-      - raw_harmonisation
-      - raw_qc
-    params:
-      step: window_based_clumping
-      step.summary_statistics_input_path: '{data_bucket}/raw/harmonised_summary_statistics/'
-      step.study_locus_output_path: '{data_bucket}/raw/study_locus_window_based_clumped/'
-      step.session.write_mode: overwrite
-      step.recursive_file_lookup: false
-      step.gwas_significance: 1.8e-9 # See 2023 publication
-      step.distance: 1000000
-      step.collect_locus: false
-      step.collect_locus_distance: 500000
-      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
+  # - id: raw_wbc
+  #   prerequisites: []
+  #     # - raw_harmonisation
+  #     # - raw_qc
+  #   params:
+  #     step: window_based_clumping
+  #     step.summary_statistics_input_path: '{data_bucket}/raw/harmonised_summary_statistics/'
+  #     step.study_locus_output_path: '{data_bucket}/raw/study_locus_window_based_clumped/'
+  #     step.session.write_mode: overwrite
+  #     step.recursive_file_lookup: false
+  #     step.gwas_significance: 1.8e-9 # See 2023 publication
+  #     step.distance: 1000000
+  #     step.collect_locus: false
+  #     step.collect_locus_distance: 500000
+  #     +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
 
-  - id: raw_ldc
-    prerequisites:
-      - raw_wbc
-    params:
-      step: ld_based_clumping
-      step.ld_index_path: '{gnomad_bucket}/v2.1.1/ld_index'
-      step.study_locus_input_path: '{data_bucket}/raw/study_locus_window_based_clumped/'
-      step.study_index_path: '{data_bucket}/raw/pqtl_study_qc_annotated/'
-      step.clumped_study_locus_output_path: '{data_bucket}/raw/study_locus_ld_clumped/'
-      step.session.write_mode: overwrite
-      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
+  # - id: raw_ldc
+  #   prerequisites:
+  #     - raw_wbc
+  #   params:
+  #     step: ld_based_clumping
+  #     step.ld_index_path: '{gnomad_bucket}/v2.1.1/ld_index'
+  #     step.study_locus_input_path: '{data_bucket}/raw/study_locus_window_based_clumped/'
+  #     step.study_index_path: '{data_bucket}/raw/pqtl_study_qc_annotated/'
+  #     step.clumped_study_locus_output_path: '{data_bucket}/raw/study_locus_ld_clumped/'
+  #     step.session.write_mode: overwrite
+  #     +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
 
-  - id: raw_pics
-    prerequisites:
-      - raw_ldc
-    params:
-      step: pics
-      step.study_locus_ld_annotated_in: '{data_bucket}/raw/study_locus_ld_clumped/'
-      step.picsed_study_locus_out: '{data_bucket}/raw/credible_set/'
-      step.session.write_mode: overwrite
-      +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
+  # - id: raw_pics
+  #   prerequisites:
+  #     - raw_ldc
+  #   params:
+  #     step: pics
+  #     step.study_locus_ld_annotated_in: '{data_bucket}/raw/study_locus_ld_clumped/'
+  #     step.picsed_study_locus_out: '{data_bucket}/raw/credible_set/'
+  #     step.session.write_mode: overwrite
+  #     +step.session.extended_spark_conf: "{spark.executor.memory: '25g', spark.executor.cores: '4', spark.executor.memoryOverhead: '5g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '2000', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer', spark.sql.adaptive.skewJoin.enabled: 'true'}"
   ##########################################################################
 
   ######## Post analysis ###################################################
@@ -261,75 +261,7 @@ nodes:
       - raw_pics
     params:
       step: pQTL_study_index_transformation
-      step.protein_study_index_path: '{data_bucket}/raw/pqtl_study/'
+      step.protein_study_index_path: '{data_bucket}/raw/pqtl_study_qc_annotated/'
       step.study_index_path: '{data_bucket}/raw/study/'
-      step.target_index_path: gs://open-targets-data-releases/26.03/output/target
+      step.target_index_path: '{data_bucket}/target'
       step.session.write_mode: overwrite
-
-  - id: validate_study
-    prerequisites:
-      - smp_pqtl_to_study
-      - raw_pqtl_to_study
-    params:
-      step: study_validation
-      step.session.write_mode: overwrite
-      step.session.output_partitions: 1
-      step.invalid_qc_reasons:
-        - UNRESOLVED_TARGET
-        - UNRESOLVED_DISEASE
-        - UNKNOWN_STUDY_TYPE
-        - DUPLICATED_STUDY
-        - UNKNOWN_BIOSAMPLE
-        - FAILED_MEAN_BETA_CHECK
-        - FAILED_PZ_CHECK
-        - FAILED_GC_LAMBDA_CHECK
-        - NO_OT_CURATION
-        - CASE_CASE_STUDY_DESIGN
-      # INPUTS
-      step.study_index_path:
-        - '{data_bucket}/smp/study/'
-        - '{data_bucket}/raw/study/'
-
-      step.target_index_path: gs://open-targets-data-releases/26.03/output/target
-      step.disease_index_path: gs://open-targets-data-releases/26.03/output/disease
-      step.biosample_index_path: gs://open-targets-data-releases/26.03/output/biosample
-      # OUTPUTS
-      step.valid_study_index_path: '{data_bucket}/output/study'
-      step.invalid_study_index_path: '{data_bucket}/invalid/study'
-
-  - id: validate_credible_set
-    prerequisites:
-      - smp_pics
-      - raw_pics
-      - validate_study
-    params:
-      step: credible_set_validation
-      step.session.write_mode: overwrite
-      step.session.output_partitions: 20
-      step.invalid_qc_reasons:
-        - DUPLICATED_STUDYLOCUS_ID
-        - AMBIGUOUS_STUDY
-        - MISSING_STUDY
-        - NO_GENOMIC_LOCATION_FLAG
-        - COMPOSITE_FLAG
-        - INCONSISTENCY_FLAG
-        - SUBSIGNIFICANT_FLAG
-        - LD_CLUMPED
-        - IN_MHC
-        - REDUNDANT_PICS_TOP_HIT
-        - EXPLAINED_BY_SUSIE
-        - WINDOW_CLUMPED
-        - NON_MAPPED_VARIANT_FLAG
-        - INVALID_VARIANT_IDENTIFIER
-        - INVALID_CHROMOSOME
-        - TOP_HIT_AND_SUMMARY_STATS
-      step.trans_qtl_threshold: 5_000_000
-      # INPUTS
-      step.study_locus_path:
-        - '{data_bucket}/smp/credible_set/'
-        - '{data_bucket}/raw/credible_set/'
-      step.study_index_path: '{data_bucket}/output/study'
-      step.target_index_path: gs://open-targets-data-releases/26.03/output/target
-      # OUTPUTS
-      step.valid_study_locus_path: '{data_bucket}/output/credible_set'
-      step.invalid_study_locus_path: '{data_bucket}/invalid/credible_set'
