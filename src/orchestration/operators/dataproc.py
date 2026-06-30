@@ -8,7 +8,6 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import TYPE_CHECKING, NamedTuple
 
-from airflow.exceptions import AirflowException
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.providers.google.cloud.operators.dataproc import (
     ClusterGenerator,
@@ -347,8 +346,6 @@ class CreateClusterOperator(DataprocCreateClusterOperator):
         has_blobs = bool(self._cluster_config.secret_blob_list)
         if not has_secrets and not has_blobs:
             return None
-        if not self._cluster_config.secret_init_action_uri:
-            raise AirflowException("secret_init_action_uri must be set if secret_map or secret_blob_list is set")
         secrets = (
             Secrets(
                 mapping={
