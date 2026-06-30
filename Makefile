@@ -3,7 +3,7 @@ VERSION := $$(grep '^version' pyproject.toml | sed 's%version = "\(.*\)"%\1%')
 LOCAL_DEV_CREDENTIALS ?= ~/.config/gcloud/adc.json
 
 ### HOUSEKEEPING TARGETS ###
-.PHONY: help sync version clean clean-vm test check cloud-dev tunnel upload-ukb-ppp-bucket-readme upload-eqtl-catalogue-bucket-readme upload-finngen-bucket-readme upload-gwas-catalog-buckets-readme update-bucket-docs build-gentropy-gcs-image setup-harmonisation-test
+.PHONY: help sync version clean clean-vm test check cloud-dev tunnel upload-ukb-ppp-bucket-readme upload-eqtl-catalogue-bucket-readme upload-finngen-bucket-readme upload-gwas-catalog-buckets-readme upload-decode-bucket-readme update-bucket-docs build-gentropy-gcs-image setup-harmonisation-test
 
 help: ## Show the help message
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-36s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -100,4 +100,7 @@ upload-intervals-bucket-readme: ## upload intervals readme to the bucket
 upload-finngen-meta-readme: ## upload finngen-meta readme to the bucket
 	@gcloud storage rsync docs/datasources/finngen_meta_data gs://finngen_ukb_mvp_meta_data/docs
 
-update-bucket-docs: upload-eqtl-catalogue-bucket-readme upload-ukb-ppp-bucket-readme upload-finngen-bucket-readme upload-gwas-catalog-buckets-readme upload-gnomad-bucket-readme upload-intervals-bucket-readme upload-finngen-meta-readme ## upload readmes to the datasource buckets
+upload-decode-bucket-readme: ## upload decode_data readme to the bucket
+	@gcloud storage rsync docs/datasources/decode_data gs://decode_data/docs
+
+update-bucket-docs: upload-eqtl-catalogue-bucket-readme upload-ukb-ppp-bucket-readme upload-finngen-bucket-readme upload-gwas-catalog-buckets-readme upload-gnomad-bucket-readme upload-intervals-bucket-readme upload-finngen-meta-readme upload-decode-bucket-readme ## upload readmes to the datasource buckets
