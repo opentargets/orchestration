@@ -253,7 +253,7 @@ class TestSecretInitActionPushToGcs:
         assert result.executable_file == "gs://my-bucket/init-actions/inject-secrets.sh"
 
 
-def _secret(secret_id: str = "my-secret", project_id: str = "my-proj") -> Secret:
+def _secret(secret_id: str, project_id: str = "my-proj") -> Secret:
     return Secret(secret_id=secret_id, project_id=project_id)
 
 
