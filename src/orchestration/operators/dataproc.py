@@ -25,7 +25,7 @@ from google.cloud.dataproc_v1.types import DiskConfig, NodeInitializationAction
 from google.cloud.dataproc_v1.types.jobs import Job, JobPlacement, PySparkJob, SparkJob
 from pydantic import BaseModel, model_validator
 
-from orchestration.models.secret import Secret, SecretInitAction, Secrets
+from orchestration.models.secret import Secret, SecretBlobs, SecretInitAction, Secrets
 from orchestration.utils import convert_params_to_hydra_positional_arg, random_id, resource_name
 from orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_REGION, GCP_SERVICE_ACCOUNT, GCP_ZONE
 from orchestration.utils.labels import Labels
@@ -171,14 +171,17 @@ class CustomClusterConfig(BaseModel):
     """The dict of secrets where the `value` is the `secret id` from GoogleSecretManager
          and the `key` is the environment variable name that the value of the secret
          will be stored in on the cluster. By default the latest version of the secret will be used."""
+    secret_blob_list: list[str] | None = None
+    """List of secret IDs from GCP Secret Manager whose values are already JSON blobs.
+         Each blob is written verbatim to ``/var/run/secrets/{secret_id}`` on the cluster."""
     secret_init_action_uri: str | None = None
     """The URI of the init action script that will handle the secret injection. Default to None."""
 
     @model_validator(mode="after")
     def validate_secret_config(self) -> Self:
-        """If secret_map is set and not empty, secret_init_action_uri must be set."""
-        if self.secret_map and not self.secret_init_action_uri:
-            raise ValueError("secret_init_action_uri must be set if secret_map is set")
+        """If secret_map or secret_blob_list is set and not empty, secret_init_action_uri must be set."""
+        if (self.secret_map or self.secret_blob_list) and not self.secret_init_action_uri:
+            raise ValueError("secret_init_action_uri must be set if secret_map or secret_blob_list is set")
         return self
 
     def model_post_init(self, _: Any) -> None:
@@ -213,6 +216,7 @@ class CustomClusterConfig(BaseModel):
             "secondary_worker_disk_size",
             "secondary_worker_machine_type",
             "secret_map",
+            "secret_blob_list",
             "secret_init_action_uri",
         }
         config = ClusterGenerator(**self.model_dump(exclude=exclude_fields)).make()
@@ -339,18 +343,35 @@ class CreateClusterOperator(DataprocCreateClusterOperator):
 
     def _prepare_secret_init_action(self) -> NodeInitializationAction | None:
         """Prepare the secret init action if secrets exist."""
-        if not self._cluster_config.secret_map:
+        has_secrets = bool(self._cluster_config.secret_map)
+        has_blobs = bool(self._cluster_config.secret_blob_list)
+        if not has_secrets and not has_blobs:
             return None
         if not self._cluster_config.secret_init_action_uri:
-            raise AirflowException("secret_init_action_uri must be set if secret_map is set")
-        secrets = Secrets(
-            mapping={
-                env_var: Secret(secret_id=secret_name, project_id=self.project_id)
-                for env_var, secret_name in self._cluster_config.secret_map.items()
-            }
+            raise AirflowException("secret_init_action_uri must be set if secret_map or secret_blob_list is set")
+        secrets = (
+            Secrets(
+                mapping={
+                    env_var: Secret(secret_id=secret_name, project_id=self.project_id)
+                    for env_var, secret_name in self._cluster_config.secret_map.items()
+                }
+            )
+            if has_secrets
+            else None
+        )
+        secret_blobs = (
+            SecretBlobs(
+                secrets=[
+                    Secret(secret_id=secret_id, project_id=self.project_id)
+                    for secret_id in self._cluster_config.secret_blob_list
+                ]
+            )
+            if has_blobs
+            else None
         )
         init_action = SecretInitAction(
             secrets=secrets,
+            secret_blobs=secret_blobs,
             init_action_uri=self._cluster_config.secret_init_action_uri,
         )
         hook = GCSHook(gcp_conn_id=self.gcp_conn_id, impersonation_chain=self.impersonation_chain)
