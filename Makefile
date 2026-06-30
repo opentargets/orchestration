@@ -67,6 +67,7 @@ build-dag-svgs: ## Generate visual representations of Airflow DAGs for documenta
 		datasources/finngen_meta_data/finngen_ukb_mvp_meta \
 		datasources/finngen_data/finngen_ingestion \
 		datasources/eqtl_catalogue_data/eqtl_catalogue_ingestion \
+		datasources/decode_data/decode_ingestion \
 		credible_set_qc/credible_set_qc \
 		datasources/lof_annotations/lof_curation_ingestion \
 		datasources/foldx_annotations/foldx_ingestion \
