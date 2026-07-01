@@ -49,6 +49,44 @@ def resource_name(name: str) -> str:
     return f"up-{clean_name(name)}-{{{{ run_id | strhash }}}}"
 
 
+def resolve_jar_staging(
+    spark_jars: str,
+    registry: dict[str, str],
+    managed_prefix: str,
+) -> list[tuple[str, str]]:
+    """Resolve a cluster's ``spark.jars`` into the jars orchestration must stage.
+
+    ``spark.jars`` is Spark's comma-separated list of jar URIs. Each jar that
+    orchestration stages into the pipelines bucket lives under ``managed_prefix``
+    and must have a registered upstream source in ``registry`` (keyed by the
+    staged destination URI). A jar under the managed prefix with no registered
+    source is a misconfiguration and raises. Jars outside the managed prefix are
+    assumed to be provided elsewhere and are ignored.
+
+    Args:
+        spark_jars (str): Rendered ``spark.jars`` value (comma-separated URIs).
+        registry (dict[str, str]): Map of staged destination URI to source URL.
+        managed_prefix (str): GCS prefix under which orchestration stages jars.
+
+    Returns:
+        list[tuple[str, str]]: ``(src_url, dst_uri)`` pairs to stage, in order.
+
+    Raises:
+        ValueError: When a jar under ``managed_prefix`` has no registered source.
+    """
+    pairs: list[tuple[str, str]] = []
+    for uri in (j.strip() for j in spark_jars.split(",") if j.strip()):
+        if uri in registry:
+            pairs.append((registry[uri], uri))
+        elif uri.startswith(managed_prefix):
+            raise ValueError(
+                f"{uri} is under the managed jar prefix {managed_prefix!r} but has "
+                "no registered source in staged_jars; add its upstream URL."
+            )
+        # else: jar outside the managed prefix, provided elsewhere — leave it.
+    return pairs
+
+
 def read_yaml_config(
     config_path: Path | str,
     sentinels: dict[str, str] | None = None,

@@ -144,16 +144,29 @@ class UnifiedPipelineConfig:
         # stages the version-pinned jar from John Snow Labs into the pipelines
         # bucket before cluster creation (idempotent), and the clusters read it
         # from there.
+        self.staged_jar_prefix = "gs://opentargets-pipelines/up/pts/jars/"
+        """GCS prefix under which orchestration stages Spark jars for the clusters.
+
+            Any jar a cluster references under this prefix (via spark.jars) must
+            have a registered upstream source in `staged_jars`, or the DAG fails.
+        """
         spark_nlp_version = up.get("spark_nlp_version")
         self.spark_nlp_jar_url = (
             "https://s3.amazonaws.com/auxdata.johnsnowlabs.com/public/jars/"
             f"spark-nlp-assembly-{spark_nlp_version}.jar"
         )
         """The John Snow Labs source URL for the Spark-NLP fat jar."""
-        self.spark_nlp_jar_uri = (
-            f"gs://opentargets-pipelines/up/pts/jars/spark-nlp-assembly-{spark_nlp_version}.jar"
-        )
+        self.spark_nlp_jar_uri = f"{self.staged_jar_prefix}spark-nlp-assembly-{spark_nlp_version}.jar"
         """The staged (version-pinned) Spark-NLP fat jar in the pipelines bucket."""
+
+        self.staged_jars: dict[str, str] = {
+            self.spark_nlp_jar_uri: self.spark_nlp_jar_url,
+        }
+        """Registry of jars orchestration stages: staged destination URI -> source URL.
+
+            Add an entry here to have a new jar staged automatically for any
+            cluster that references it under `staged_jar_prefix` in spark.jars.
+        """
 
         # GENTROPY-specific settings.
         self.gentropy_main_python_file_uri = "gs://genetics_etl_python_playground/initialisation/cli.py"
