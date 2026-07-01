@@ -224,38 +224,35 @@ steps:
         - pyspark baseline expression specificity gtex
 
   baseline_expression:
-    - name: explode baseline expression merge and validate by aggregation
-      each_placeholder: aggregation
-      foreach:
-        # - unaggregated
-        - aggregated
-      do:
-        - name: pyspark baseline expression ${aggregation}
-          pyspark: baseline_expression
-          source:
-            baseline_expression: intermediate/baseline_expression
-            target_index: output/target
-            biosample_index: output/biosample
-            tissue_parents: input/baseline_expression/tissue-parent_mapping.tsv
-            celltype_parents: input/baseline_expression/celltype-parent_mapping.tsv
-          destination:
-            valid: output/baseline_expression_${aggregation}
-            failed: excluded/baseline_expression_${aggregation}
-          settings:
-            aggregation: ${aggregation}
-            datasets:
-              - GTEx/tissue
-              - PRIDE/tissue
-              - tabula_sapiens/celltype
-              - tabula_sapiens/tissue
-              - tabula_sapiens/tissue_celltype
-              - DICE/celltype
+    - name: pyspark baseline expression aggregated
+      pyspark: baseline_expression
+      source:
+        baseline_expression: intermediate/baseline_expression
+        target_index: output/target
+        biosample_index: output/biosample
+        tissue_parents: input/baseline_expression/tissue-parent_mapping.tsv
+        celltype_parents: input/baseline_expression/celltype-parent_mapping.tsv
+      destination:
+        valid: output/baseline_expression
+        failed: excluded/baseline_expression
+      settings:
+        partition_count: 39
+        aggregation: aggregated
+        datasets:
+          - GTEx/tissue
+          - PRIDE/tissue
+          - tabula_sapiens/celltype
+          - tabula_sapiens/tissue
+          - tabula_sapiens/tissue_celltype
+          - DICE/celltype
   ##################################################################################################
 
   #: MOUSE_PHENOTYPES STEP :########################################################################
   mouse_phenotype:
     - name: pyspark generate from IMPC and validate with target
       pyspark: mouse_phenotype
+      settings:
+        partition_count: 1
       source:
         target: output/target
         # IMPC source files
@@ -301,7 +298,7 @@ steps:
   ##################################################################################################
 
   #: OPENFDA STEP :#################################################################################
-  openfda:
+  openfda_input_preparation:
     - name: explode_glob transform openfda drug events
       glob: input/openfda/**/*.zip
       do:
@@ -309,6 +306,20 @@ steps:
           source: ${uri}
           destination: intermediate/openfda/${uuid}.parquet
           transformer: openfda
+
+  openfda:
+    - name: pyspark openfda
+      pyspark: openfda
+      source:
+        drug_molecule: output/drug_molecule
+        fda_data: intermediate/openfda
+        blacklisted_events: input/openfda/blacklisted_events.txt
+      destination:
+        fda_unfiltered: intermediate/openfda_adverse_drug_reactions
+        fda_results: output/openfda_significant_adverse_drug_reactions
+      settings:
+        montecarlo_permutations: 500
+        montecarlo_percentile: 0.95
   ##################################################################################################
 
   #: SO STEP :######################################################################################
@@ -362,6 +373,10 @@ steps:
   target:
     - name: pyspark target
       pyspark: target
+      settings:
+        partition_count:
+          target: 3
+          gene_essentiality: 4
       source:
         diseases: output/disease
         ensembl: intermediate/target/ensembl/homo_sapiens.parquet
@@ -385,6 +400,7 @@ steps:
         tep: input/target/tep/tep.json.gz
         tractability: input/target/tractability/tractability.tsv
         uniprot: intermediate/target/uniprot/uniprot.parquet
+        uniprot_ssl: input/target/uniprot/uniprot-ssl.tsv.gz
         chembl: input/target/chembl/chembl_target.jsonl
         chemical_probes: intermediate/chemical_probes_evidence.parquet
         gene_essentiality: intermediate/target/gene-essentiality/essentiality.parquet
@@ -414,7 +430,7 @@ steps:
         models: input/target/gene-essentiality/depmap/Model.csv
         essential_genes: input/target/gene-essentiality/depmap/CRISPRInferredCommonEssentials.csv
         gene_effects: input/target/gene-essentiality/depmap/CRISPRGeneEffect.csv
-        gene_expression: input/target/gene-essentiality/depmap/OmicsExpressionProteinCodingGenesTPMLogp1.csv
+        gene_expression: input/target/gene-essentiality/depmap/OmicsExpressionTPMLogp1HumanProteinCodingGenes.csv
         mutation_hotspots: input/target/gene-essentiality/depmap/OmicsSomaticMutationsMatrixHotspot.csv
         mutation_damaging: input/target/gene-essentiality/depmap/OmicsSomaticMutationsMatrixDamaging.csv
         depmap_tissue_mapping: input/ot_curation/mappings/biosystem/depmap_uberon_mapping.csv
@@ -437,6 +453,7 @@ steps:
         associations: output/pharmacogenomics
         phenotypes: intermediate/pharmacogenetics/phenotypes.json
       settings:
+        partition_count: 1
         openai_token_filename: /var/run/secrets/openai_token
       properties:
         'spark.jars.packages': 'com.johnsnowlabs.nlp:spark-nlp_2.12:6.1.3'
@@ -488,7 +505,6 @@ steps:
       settings:
         invalid_clinical_report_qc:
           - PHASE_IV_NOT_APPROVED
-          - UNVALIDATED_INDICATION
           - INDIRECT_PRIMARY_PURPOSE
   ##################################################################################################
 
@@ -604,12 +620,12 @@ steps:
     - name: pyspark ot_crispr
       pyspark: ot_crispr
       source:
-        study_table: input/evidence/ot_crispr/config.tsv
+        study_table: input/evidence/ot_crispr/config.csv
         ot_crispr_data: input/evidence/ot_crispr/data
       destination: intermediate/evidence/ot_crispr.parquet
   ##################################################################################################
 
-  #: ONTOMA STEP :##################################################################################
+  #: ONTOMA STEPS :##################################################################################
   ontoma:
     - name: pyspark ontoma generate lookup tables
       pyspark: ontoma_lut_generation
@@ -621,6 +637,20 @@ steps:
       destination:
         disease_label_lut: intermediate/ontoma/disease_label_lookup_table.parquet
         disease_id_lut: intermediate/ontoma/disease_id_lookup_table.parquet
+  # This is split so that we don't run into circularity issues
+  # pts_ontoma currently lists pts_target as a dependency, while pts_target indirectly depends back on pts_ontoma through pts_target_safety → pts_pharmacogenetics.
+  literature_ontoma:
+    - name: pyspark literature ontoma lut generation
+      pyspark: literature_ontoma_lut_generation
+      source:
+        disease_index: output/disease/disease.parquet
+        ot_disease_curation: input/ontoma/ot_disease_curation.tsv
+        eva_clinvar: input/ontoma/eva_clinvar.txt
+        clinvar_xrefs: input/ontoma/clinvar_xrefs.txt
+        target_index: output/target
+        drug_index: output/drug_molecule
+      destination:
+        disease_target_drug_label_lut: intermediate/ontoma/disease_target_drug_label_lookup_table.parquet
   ##################################################################################################
 
   #: DRUG_WARNING STEP :############################################################################
@@ -649,6 +679,7 @@ steps:
       source:
         chembl_molecule: input/drug/chembl_molecule.jsonl
         drugbank: input/drug/drugbank.csv.gz
+        aact_extraction_batch_results: input/clinical_report/aact_extraction_batch_results
       destination: intermediate/chembl_molecule
   #################################################################################################
 
@@ -656,6 +687,8 @@ steps:
   drug_molecule:
     - name: pyspark drug_molecule
       pyspark: drug_molecule
+      settings:
+        partition_count: 1
       source:
         molecule: intermediate/chembl_molecule
         chemical_probes: intermediate/chemical_probes_evidence.parquet
@@ -665,11 +698,6 @@ steps:
       destination:
         output: output/drug_molecule
         excluded: excluded/drug_molecule_failed_report
-      settings:
-        invalid_clinical_report_qc:
-          - PHASE_IV_NOT_APPROVED
-          - UNVALIDATED_INDICATION
-          - INDIRECT_PRIMARY_PURPOSE
   ################################################################################################
 
   #: CLINICAL_REPORT STEP :#######################################################################
@@ -686,13 +714,14 @@ steps:
         aact_conditions: input/clinical_report/aact/conditions.parquet
         aact_study_references: input/clinical_report/aact/study_references.parquet
         aact_designs: input/clinical_report/aact/designs.parquet
-        aact_summaries: input/clinical_report/aact/summaries.parquet
+        aact_summaries: input/clinical_report/aact/brief_summaries.parquet
         chembl_indication: input/clinical_report/chembl/drug_indication.parquet
         chembl_indication_references: input/clinical_report/chembl/drug_indication_refs.parquet
         chembl_drug_warning: input/clinical_report/chembl/drug_warning.parquet
         chembl_drug_warning_references: input/clinical_report/chembl/drug_warning_refs.parquet
         chembl_molecule_dictionary: input/clinical_report/chembl/molecule_dictionary.parquet
         chembl_curation: input/clinical_report/chembl_mapping.parquet
+        trial_extraction_batch_results: input/clinical_report/aact_extraction_batch_results
         ner_cache_path: input/clinical_report/ner_cache.parquet
       destination:
         output: output/clinical_report/clinical_report.parquet
@@ -712,7 +741,6 @@ steps:
       settings:
         invalid_clinical_report_qc:
           - PHASE_IV_NOT_APPROVED
-          - UNVALIDATED_INDICATION
           - INDIRECT_PRIMARY_PURPOSE
   ################################################################################################
 
@@ -729,7 +757,6 @@ steps:
       settings:
         invalid_clinical_report_qc:
           - PHASE_IV_NOT_APPROVED
-          - UNVALIDATED_INDICATION
           - INDIRECT_PRIMARY_PURPOSE
   ##################################################################################################
 
@@ -742,7 +769,7 @@ steps:
         mouse_phenotypes: output/mouse_phenotype
         molecule: output/drug_molecule
         mechanism_of_action: output/drug_mechanism_of_action
-        baseline_expression: output/baseline_expression_aggregated
+        baseline_expression: output/baseline_expression
         uniprot_slterms: input/target_prioritisation/uniprot_locations.tsv.gz
         mouse_pheno_scores: input/target_prioritisation/mouse_pheno_scores.csv
       destination: output/target_prioritisation
@@ -768,6 +795,13 @@ steps:
       properties:
         spark.driver.memory: '12g'
       settings:
+        partition_count:
+          overall_direct: 14
+          overall_indirect: 39
+          by_datasource_direct: 14
+          by_datasource_indirect: 43
+          by_datatype_direct: 15
+          by_datatype_indirect: 41
         novelty_scale: 2 # 2 for long tailed slow decays
         novelty_shift: 3 # 3 for long tailed slow decays
         novelty_window: 10
@@ -879,6 +913,7 @@ steps:
         failed_evidence: excluded/evidence/gwas_credible_sets
         evidence: output/evidence_gwas_credible_sets
       settings:
+        partition_count: 3
         evidence_format: parquet
         score_expression: resourceScore
         datasource_id: gwas_credible_sets
@@ -901,10 +936,19 @@ steps:
         failed_evidence: excluded/evidence/expression_atlas
         evidence: output/evidence_expression_atlas
       settings:
+        partition_count: 1
         evidence_format: json
         datasource_id: expression_atlas
         score_expression: >-
-          array_min(array(1.0, pvalue_linear_score(resourceScore) * (abs(log2FoldChangeValue) / 10) * (log2FoldChangePercentileRank / 100)))
+          array_min(array(1.0,
+            (CASE
+              WHEN resourceScore IS NULL OR isnan(resourceScore) THEN NULL
+              WHEN resourceScore <= 0 THEN 1.0
+              ELSE LEAST(1.0, GREATEST(0.0,
+                (1.0 - 0.0) * (log10(resourceScore) - log10(1.0)) / (log10(1e-10) - log10(1.0)) + 0.0
+              ))
+            END) * (abs(log2FoldChangeValue) / 10) * (log2FoldChangePercentileRank / 100)
+          ))
         unique_fields:
           - targetId
           - targetFromSourceId
@@ -944,6 +988,7 @@ steps:
         failed_evidence: excluded/evidence/eva
         evidence: output/evidence_eva
       settings:
+        partition_count: 8
         evidence_format: json
         datasource_id: eva
         score_expression: |
@@ -1036,6 +1081,7 @@ steps:
         failed_evidence: excluded/evidence/eva_somatic
         evidence: output/evidence_eva_somatic
       settings:
+        partition_count: 1
         evidence_format: json
         datasource_id: eva_somatic
         score_expression: |
@@ -1128,6 +1174,7 @@ steps:
         failed_evidence: excluded/evidence/uniprot_variants
         evidence: output/evidence_uniprot_variants
       settings:
+        partition_count: 1
         evidence_format: json
         datasource_id: uniprot_variants
         score_expression: |
@@ -1160,6 +1207,7 @@ steps:
         failed_evidence: excluded/evidence/uniprot_literature
         evidence: output/evidence_uniprot_literature
       settings:
+        partition_count: 1
         evidence_format: json
         datasource_id: uniprot_literature
         score_expression: |
@@ -1189,6 +1237,7 @@ steps:
         failed_evidence: excluded/evidence/clingen
         evidence: output/evidence_clingen
       settings:
+        partition_count: 1
         datasource_id: clingen
         evidence_format: parquet
         score_expression: |
@@ -1225,6 +1274,7 @@ steps:
         failed_evidence: excluded/evidence/cancer_biomarkers
         evidence: output/evidence_cancer_biomarkers
       settings:
+        partition_count: 1
         evidence_format: parquet
         datasource_id: cancer_biomarkers
         score_expression: '1.0'
@@ -1255,6 +1305,7 @@ steps:
         spark.executor.memory: 8g
         spark.sql.shuffle.partitions: '800'
       settings:
+        partition_count: 1
         evidence_format: parquet
         datasource_id: clinical_precedence
         score_expression: |
@@ -1358,6 +1409,7 @@ steps:
         failed_evidence: excluded/evidence/reactome
         evidence: output/evidence_reactome
       settings:
+        partition_count: 1
         evidence_format: json
         datasource_id: reactome
         score_expression: '1.0'
@@ -1382,6 +1434,7 @@ steps:
         failed_evidence: excluded/evidence/impc
         evidence: output/evidence_impc
       settings:
+        partition_count: 25
         evidence_format: parquet
         datasource_id: impc
         score_expression: 'resourceScore / 100'
@@ -1409,6 +1462,7 @@ steps:
         failed_evidence: excluded/evidence/orphanet
         evidence: output/evidence_orphanet
       settings:
+        partition_count: 1
         evidence_format: parquet
         datasource_id: orphanet
         score_expression: "element_at(map('Assessed', 1.0, 'Not yet assessed', 0.5), confidence)"
@@ -1438,6 +1492,7 @@ steps:
         failed_evidence: excluded/evidence/gene2phenotype
         evidence: output/evidence_gene2phenotype
       settings:
+        partition_count: 1
         evidence_format: parquet
         datasource_id: gene2phenotype
         score_expression: |
@@ -1479,9 +1534,17 @@ steps:
         failed_evidence: excluded/evidence/intogen
         evidence: output/evidence_intogen
       settings:
+        partition_count: 1
         evidence_format: parquet
         datasource_id: intogen
-        score_expression: pvalue_linear_score(resourceScore, 0.1, 1e-10, 0.25, 1.0)
+        score_expression: >-
+          CASE
+            WHEN resourceScore IS NULL OR isnan(resourceScore) THEN NULL
+            WHEN resourceScore <= 0 THEN 1.0
+            ELSE LEAST(1.0, GREATEST(0.25,
+              (1.0 - 0.25) * (log10(resourceScore) - log10(0.1)) / (log10(1e-10) - log10(0.1)) + 0.25
+            ))
+          END
         unique_fields:
           - targetId
           - targetFromSourceId
@@ -1521,9 +1584,17 @@ steps:
         failed_evidence: excluded/evidence/gene_burden
         evidence: output/evidence_gene_burden
       settings:
+        partition_count: 1
         evidence_format: parquet
         datasource_id: gene_burden
-        score_expression: pvalue_linear_score(resourceScore, 1e-7, 1e-17, 0.25, 1.0)
+        score_expression: >-
+          CASE
+            WHEN resourceScore IS NULL OR isnan(resourceScore) THEN NULL
+            WHEN resourceScore <= 0 THEN 1.0
+            ELSE LEAST(1.0, GREATEST(0.25,
+              (1.0 - 0.25) * (log10(resourceScore) - log10(1e-7)) / (log10(1e-17) - log10(1e-7)) + 0.25
+            ))
+          END
         unique_fields:
           - targetId
           - targetFromSourceId
@@ -1553,9 +1624,17 @@ steps:
         failed_evidence: excluded/evidence/crispr_screen
         evidence: output/evidence_crispr_screen
       settings:
+        partition_count: 1
         evidence_format: parquet
         datasource_id: crispr_screen
-        score_expression: pvalue_linear_score(resourceScore, 0.5, 0.005, 0.0, 1.0)
+        score_expression: >-
+          CASE
+            WHEN resourceScore IS NULL OR isnan(resourceScore) THEN NULL
+            WHEN resourceScore <= 0 THEN 1.0
+            ELSE LEAST(1.0, GREATEST(0.0,
+              (1.0 - 0.0) * (log10(resourceScore) - log10(0.5)) / (log10(0.005) - log10(0.5)) + 0.0
+            ))
+          END
         unique_fields:
           - targetId
           - targetFromSourceId
@@ -1575,7 +1654,8 @@ steps:
         failed_evidence: excluded/evidence/europepmc
         evidence: output/evidence_europepmc
       settings:
-        evidence_format: json
+        partition_count: 125
+        evidence_format: parquet
         datasource_id: europepmc
         score_expression: array_min(array(resourceScore / 100.0, 1.0))
         unique_fields:
@@ -1597,6 +1677,7 @@ steps:
         failed_evidence: excluded/evidence/panel_app
         evidence: output/evidence_genomics_england
       settings:
+        partition_count: 1
         evidence_format: parquet
         datasource_id: genomics_england
         score_expression: |
@@ -1627,6 +1708,7 @@ steps:
         failed_evidence: excluded/evidence/crispr
         evidence: output/evidence_crispr
       settings:
+        partition_count: 1
         evidence_format: parquet
         datasource_id: crispr
         score_expression: linear_rescale(resourceScore, 41.5, 100, 0.415, 1.0)
@@ -1648,6 +1730,7 @@ steps:
         failed_evidence: excluded/evidence/cancer_gene_census
         evidence: output/evidence_cancer_gene_census
       settings:
+        partition_count: 1
         evidence_format: json
         datasource_id: cancer_gene_census
         score_expression: resourceScore
@@ -1676,6 +1759,7 @@ steps:
         failed_evidence: excluded/evidence/ot_crispr
         evidence: output/evidence_ot_crispr
       settings:
+        partition_count: 1
         evidence_format: parquet
         datasource_id: ot_crispr
         score_expression: '1.0'
@@ -1694,7 +1778,7 @@ steps:
     - name: pyspark evidence_postprocess
       pyspark: evidence_postprocess
       source:
-        evidence_path: input/evidence/encore.json.gz
+        evidence_path: input/evidence/encore
         target_path: output/target
         disease_path: output/disease
         publication_date_lut: input/literature/literature_export
@@ -1702,9 +1786,10 @@ steps:
         failed_evidence: excluded/evidence/encore
         evidence: output/evidence_encore
       settings:
-        evidence_format: json
+        partition_count: 1
+        evidence_format: parquet
         datasource_id: encore
-        score_expression: pvalue_linear_score(geneticInteractionPValue, 1.0, 0.01, 0.0, 1.0)
+        score_expression: ABS ( geneticInteractionScore  ) / 16.0
         unique_fields:
           - targetId
           - targetFromSourceId
@@ -1727,6 +1812,7 @@ steps:
         failed_evidence: excluded/evidence/ot_crispr_validation
         evidence: output/evidence_ot_crispr_validation
       settings:
+        partition_count: 1
         evidence_format: json
         datasource_id: ot_crispr_validation
         score_expression: resourceScore
@@ -1797,6 +1883,7 @@ steps:
         diseases: output/disease
         targets: output/target
         go: output/go
+        reactome: output/reactome
       destination:
         targets: view/search_facet_target
         diseases: view/search_facet_disease
@@ -1818,7 +1905,11 @@ steps:
         interactions_evidence: output/interaction_evidence
         interactions_unmatched: excluded/interaction
       settings:
+        partition_count:
+          interactions: 2
+          interactions_evidence: 6
         scorethreshold: 0
+        string_version: '{{string_version}}'
   ##################################################################################################
 
   #: RELEASE METRICS STEP :#########################################################################
@@ -1889,3 +1980,86 @@ steps:
         evidence: view/search_ebi_evidence
       properties:
         spark.driver.memory: 8g
+  ##################################################################################################
+
+  #: LITERATURE STEPS (runs on pts_literature cluster) :############################################
+  literature_publication_match:
+    - name: pyspark literature publication match
+      pyspark: literature_publication_match
+      source:
+        pub_id_lut: input/literature/PMID_PMCID_DOI.csv.gz
+        epmc_publication: gs://otar025-epmc/ml02
+        ontoma_disease_target_drug_label_lut: intermediate/ontoma/disease_target_drug_label_lookup_table.parquet
+      destination:
+        match_valid: intermediate/literature/match
+        match_failed: excluded/literature/match
+      settings:
+        date_prefix: ''
+        repartition: 25000
+        match_valid_coalesce: 600
+        match_failed_coalesce: 530
+      properties:
+        # Per-step overrides for the heavy publication_match step. Held-executor
+        # pin (dynamicAllocation.*) survives the autoscaler downscale issue
+        # observed in PTS run-015. AQE coalesce + skew handling and the EPMC
+        # file partition cap (32MB) were validated on runs 013-016.
+        'spark.sql.shuffle.partitions': '15000'
+        'spark.sql.adaptive.skewJoin.skewedPartitionFactor': '2'
+        'spark.sql.adaptive.skewJoin.skewedPartitionThresholdInBytes': '64MB'
+        'spark.sql.adaptive.advisoryPartitionSizeInBytes': '268435456'
+        'spark.sql.adaptive.coalescePartitions.parallelismFirst': 'false'
+        'spark.sql.files.maxPartitionBytes': '33554432'
+        'spark.dynamicAllocation.executorIdleTimeout': '7200s'
+        'spark.dynamicAllocation.shuffleTracking.enabled': 'true'
+        'spark.dynamicAllocation.shuffleTracking.timeout': '7200s'
+  ##################################################################################################
+
+  literature_entity_lut:
+    - name: pyspark literature entity lut
+      pyspark: literature_entity_lut
+      source:
+        matches: intermediate/literature/match
+      destination:
+        literature_entity_lut: output/literature_entity_lut
+      settings:
+        partition_count: 35
+      properties:
+        'spark.sql.shuffle.partitions': '10000'
+  ##################################################################################################
+
+  literature_embedding:
+    - name: pyspark literature embedding
+      pyspark: literature_embedding
+      source:
+        matches: intermediate/literature/match
+      destination:
+        model: etc/model/w2v_model
+      properties:
+        'spark.sql.shuffle.partitions': '15000'
+  ##################################################################################################
+
+  literature_vector:
+    - name: pyspark literature vector
+      pyspark: literature_vector
+      source:
+        model: etc/model/w2v_model
+      destination:
+        vectors: output/literature_vector
+  ##################################################################################################
+
+  literature_cooccurrence_evidence:
+    - name: pyspark literature cooccurrence evidence
+      pyspark: literature_cooccurrence_evidence
+      source:
+        match: intermediate/literature/match
+      destination:
+        cooccurrence: intermediate/literature/cooccurrence
+        evidence: intermediate/evidence/literature_epmc
+      settings:
+        cooccurrence_coalesce: 40
+        evidence_coalesce: 32
+      properties:
+        'spark.sql.shuffle.partitions': '15000'
+        'spark.sql.adaptive.skewJoin.skewedPartitionFactor': '2'
+        'spark.sql.adaptive.skewJoin.skewedPartitionThresholdInBytes': '64MB'
+  ##################################################################################################

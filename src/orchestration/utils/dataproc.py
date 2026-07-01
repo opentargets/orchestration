@@ -133,10 +133,13 @@ def generate_dataproc_task_chain(
     Returns:
         list[BaseOperator]: list of input tasks with muted chain.
     """
+    kwargs["cluster_config"].setdefault("service_account", None)
+    kwargs["cluster_config"].setdefault("internal_ip_only", False)
+    cc = CustomClusterConfig(**kwargs["cluster_config"])
     if create:
         create_cluster_task = create_cluster(
             cluster_name=kwargs["cluster_name"],
-            cluster_config=CustomClusterConfig(**kwargs["cluster_config"]),
+            cluster_config=cc,
         )
         for task in tasks:
             if not task.get_direct_relatives(upstream=True):
