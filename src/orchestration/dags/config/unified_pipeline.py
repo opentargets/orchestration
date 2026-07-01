@@ -150,17 +150,11 @@ class UnifiedPipelineConfig:
             Any jar a cluster references under this prefix (via spark.jars) must
             have a registered upstream source in `staged_jars`, or the DAG fails.
         """
-        spark_nlp_version = up.get("spark_nlp_version")
-        self.spark_nlp_jar_url = (
-            "https://s3.amazonaws.com/auxdata.johnsnowlabs.com/public/jars/"
-            f"spark-nlp-assembly-{spark_nlp_version}.jar"
-        )
-        """The John Snow Labs source URL for the Spark-NLP fat jar."""
-        self.spark_nlp_jar_uri = f"{self.staged_jar_prefix}spark-nlp-assembly-{spark_nlp_version}.jar"
-        """The staged (version-pinned) Spark-NLP fat jar in the pipelines bucket."""
-
+        spark_nlp_jar = f"spark-nlp-assembly-{up.get('spark_nlp_version')}.jar"
         self.staged_jars: dict[str, str] = {
-            self.spark_nlp_jar_uri: self.spark_nlp_jar_url,
+            f"{self.staged_jar_prefix}{spark_nlp_jar}": (
+                f"https://s3.amazonaws.com/auxdata.johnsnowlabs.com/public/jars/{spark_nlp_jar}"
+            ),
         }
         """Registry of jars orchestration stages: staged destination URI -> source URL.
 
