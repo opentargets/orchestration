@@ -77,12 +77,16 @@ class UploadRemoteFileOperator(BaseOperator):
         project_id: str = GCP_PROJECT_PLATFORM,
         src_url: str,
         dst_uri: str,
+        skip_if_exists: bool = False,
+        timeout: int = 60,
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
         self.project_id = project_id
         self.src_url = src_url
         self.dst_uri = GCSPath(dst_uri)
+        self.skip_if_exists = skip_if_exists
+        self.timeout = timeout
 
         self.bucket_name, self.path = self.dst_uri.split()
 
@@ -90,10 +94,18 @@ class UploadRemoteFileOperator(BaseOperator):
         c = Client(project=self.project_id)
         b = Bucket(client=c, name=self.bucket_name)
 
+        # Idempotent staging: if the destination already exists (e.g. a
+        # version-pinned artifact staged by a previous run), skip the download
+        # entirely. Callers encode the version in the object name so "exists"
+        # means "the right version is already there".
+        if self.skip_if_exists and b.exists() and b.blob(self.path).exists():
+            self.log.info("destination %s already exists, skipping download", self.dst_uri)
+            return
+
         with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
             temp_file = Path(tmp_file.name)
 
-        with requests.get(self.src_url, stream=True, timeout=10) as r:
+        with requests.get(self.src_url, stream=True, timeout=self.timeout) as r:
             r.raise_for_status()
             with open(temp_file, "wb") as f:
                 f.writelines(r.iter_content(chunk_size=8192))

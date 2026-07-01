@@ -31,7 +31,7 @@ from orchestration.operators.differs.config_differ import ConfigDiffer
 from orchestration.operators.differs.manifest_artifact_differ import ManifestArtifactDiffer
 from orchestration.operators.differs.spark_job_differ import SparkJobDiffer
 from orchestration.operators.gce import ComputeEngineRunContainerizedWorkloadSensor, DeleteInstanceOperator
-from orchestration.operators.gcs import UploadFileOperator, UploadStringOperator
+from orchestration.operators.gcs import UploadFileOperator, UploadRemoteFileOperator, UploadStringOperator
 from orchestration.utils import resource_name, strhash, to_yaml
 from orchestration.utils.common import GCP_PROJECT_PLATFORM, GCP_ZONE, shared_dag_args
 from orchestration.utils.labels import Labels
@@ -229,7 +229,24 @@ with DAG(
 
                     steps_in_cluster = pts_clusters.get(cluster_name, [])
                     pts_clusters[cluster_name] = [*steps_in_cluster, step_name]
-                    chain(u, Label("dataproc pts step"), u2, c, r)
+
+                    # Clusters that load Spark-NLP get the version-pinned fat jar
+                    # staged into the pipelines bucket before the cluster is
+                    # created (skipped when it is already there), then read it
+                    # via spark.jars. Detected from the rendered spark.jars value
+                    # so every Spark-NLP cluster (currently `pts` and
+                    # `pts_literature`) is covered automatically.
+                    cluster_props = s.cluster_definition.config.get("properties", {})
+                    if any("spark-nlp-assembly" in str(v) for v in cluster_props.values()):
+                        uj = UploadRemoteFileOperator(
+                            task_id=f"stage_spark_nlp_jar_{step_name}",
+                            src_url=config.spark_nlp_jar_url,
+                            dst_uri=config.spark_nlp_jar_uri,
+                            skip_if_exists=True,
+                        )
+                        chain(u, Label("dataproc pts step"), u2, uj, c, r)
+                    else:
+                        chain(u, Label("dataproc pts step"), u2, c, r)
 
                 e = EmptyOperator(
                     task_id=f"end_{step_name}",

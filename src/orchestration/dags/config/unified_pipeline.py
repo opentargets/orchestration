@@ -109,6 +109,9 @@ class UnifiedPipelineConfig:
                 "pts_version": up.get("pts_version"),
                 "gentropy_version": up.get("gentropy_version"),
                 "requester_pays_project_id": GCP_PROJECT_PLATFORM,
+                # Lets the pts / pts_literature clusters point spark.jars at the
+                # version-pinned Spark-NLP fat jar in the pipelines bucket.
+                "spark_nlp_version": up.get("spark_nlp_version"),
             },
         )
         """The cluster definitions."""
@@ -134,6 +137,23 @@ class UnifiedPipelineConfig:
         """The machine type used to run PTS steps."""
         self.pts_disk_size = 300
         """The disk size for PTS vms, in GB."""
+
+        # Spark-NLP fat jar. Clusters that use OnToma (pts, pts_literature) load
+        # it via spark.jars instead of resolving the package from Maven Central
+        # on every spark-submit (see opentargets/issues#4453). Orchestration
+        # stages the version-pinned jar from John Snow Labs into the pipelines
+        # bucket before cluster creation (idempotent), and the clusters read it
+        # from there.
+        spark_nlp_version = up.get("spark_nlp_version")
+        self.spark_nlp_jar_url = (
+            "https://s3.amazonaws.com/auxdata.johnsnowlabs.com/public/jars/"
+            f"spark-nlp-assembly-{spark_nlp_version}.jar"
+        )
+        """The John Snow Labs source URL for the Spark-NLP fat jar."""
+        self.spark_nlp_jar_uri = (
+            f"gs://opentargets-pipelines/up/pts/jars/spark-nlp-assembly-{spark_nlp_version}.jar"
+        )
+        """The staged (version-pinned) Spark-NLP fat jar in the pipelines bucket."""
 
         # GENTROPY-specific settings.
         self.gentropy_main_python_file_uri = "gs://genetics_etl_python_playground/initialisation/cli.py"
