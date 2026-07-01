@@ -142,6 +142,9 @@ steps:
   pts_pre_target:
     depends_on:
       - pis_target
+  pts_transcript:
+    depends_on:
+      - pts_pre_target
   pts_target_safety:
     depends_on:
       - pts_pharmacogenetics

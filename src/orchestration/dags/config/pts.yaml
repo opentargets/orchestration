@@ -409,6 +409,18 @@ steps:
         gene_essentiality: output/target_essentiality
   ##################################################################################################
 
+  #: TRANSCRIPT STEP :#################################################################################
+  transcript:
+    - name: pyspark transcript
+      pyspark: transcript
+      settings:
+        partition_count: 2
+      source:
+        gene_code: input/target/gencode/gencode.gff3.gz
+        ensembl: intermediate/target/ensembl/homo_sapiens.parquet
+      destination: output/transcript
+  ##################################################################################################
+
   #: TARGET_SAFETY STEP :############### - part of target, pyspark tasks must run standalone for now
   target_safety:
     - name: pyspark safety
