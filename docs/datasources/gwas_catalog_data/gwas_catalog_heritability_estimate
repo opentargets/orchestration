@@ -1,0 +1,6 @@
+digraph gwas_catalog_heritability_estimate {
+	graph [label=gwas_catalog_heritability_estimate labelloc=t rankdir=LR]
+	"heritability_estimate.batch_index" [color="#000000" fillcolor="#ffffff" label="heritability_estimate.batch_index" shape=rectangle style="filled,rounded"]
+	"heritability_estimate.batch_job" [color="#000000" fillcolor="#ffffff" label="heritability_estimate.batch_job" shape=rectangle style="filled,rounded"]
+	"heritability_estimate.batch_index" -> "heritability_estimate.batch_job"
+}

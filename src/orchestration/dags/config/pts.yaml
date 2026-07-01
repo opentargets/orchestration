@@ -1778,7 +1778,7 @@ steps:
     - name: pyspark evidence_postprocess
       pyspark: evidence_postprocess
       source:
-        evidence_path: input/evidence/encore.json.gz
+        evidence_path: input/evidence/encore
         target_path: output/target
         disease_path: output/disease
         publication_date_lut: input/literature/literature_export
@@ -1787,16 +1787,9 @@ steps:
         evidence: output/evidence_encore
       settings:
         partition_count: 1
-        evidence_format: json
+        evidence_format: parquet
         datasource_id: encore
-        score_expression: >-
-          CASE
-            WHEN geneticInteractionPValue IS NULL OR isnan(geneticInteractionPValue) THEN NULL
-            WHEN geneticInteractionPValue <= 0 THEN 1.0
-            ELSE LEAST(1.0, GREATEST(0.0,
-              (1.0 - 0.0) * (log10(geneticInteractionPValue) - log10(1.0)) / (log10(0.01) - log10(1.0)) + 0.0
-            ))
-          END
+        score_expression: ABS ( geneticInteractionScore  ) / 16.0
         unique_fields:
           - targetId
           - targetFromSourceId
