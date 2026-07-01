@@ -28,7 +28,7 @@ probes_drugs_version: '02_2025'
 gnomad_version: '4.1'
 gtex_version: '11'
 string_version: '12.0'
-spark_nlp_version: '6.1.3'
+spark_nlp_version: '6.1.5'
 
 # Dependency graph
 # ----------------
