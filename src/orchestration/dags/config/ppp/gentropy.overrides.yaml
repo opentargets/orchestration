@@ -24,6 +24,7 @@ steps:
         - '{{release_uri}}/input/molqtl/study/eQTLGen/single_cell_eqtl'
         - '{{release_uri}}/input/molqtl/study/eQTLGen/coeqtl'
         - '{{release_uri}}/input/molqtl/study/GTEx_v10'
+        - '{{release_uri}}/input/molqtl/study/deCODE_proteomics'
       step.invalid_qc_reasons:
         - UNRESOLVED_TARGET
         - UNRESOLVED_DISEASE
@@ -60,7 +61,7 @@ steps:
         - '{{release_uri}}/input/molqtl/credible_set/eQTLGen/single_cell_eqtl'
         - '{{release_uri}}/input/molqtl/credible_set/eQTLGen/coeqtl'
         - '{{release_uri}}/input/molqtl/credible_set/GTEx_v10'
-
+        - '{{release_uri}}/input/molqtl/credible_set/deCODE_proteomics'
   variant:
     params:
       step.variant_annotations_path:
