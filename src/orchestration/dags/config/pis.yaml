@@ -569,14 +569,9 @@ steps:
       destination: input/evidence/validation_lab.json.gz
 
     # Encore => Get latest evidence.
-    - name: find_latest encore
-      source: gs://otar013-ppp/encore
-      scratchpad_key: latest_encore
-    - name: copy encore
-      requires:
-        - find_latest encore
-      source: ${latest_encore}
-      destination: input/evidence/encore.json.gz
+    - name: copy_many encore
+      sources: gs://otar013-ppp/encore/encore_2026-06-23/*.parquet
+      destination: input/evidence/encore
 
     # OT_crispr => generate evience.
     - name: spreadsheet_download otar crispr study spreadsheet
@@ -787,6 +782,14 @@ steps:
     - name: copy_many molqtl eQTL Catalogue GTEx v10 credible sets
       sources: gs://eqtl_catalogue_processed_otar_internal_data/otar2077/GTEx_v10_majiq/gentropy/output/study_locus/*/*.parquet
       destination: input/molqtl/credible_set/GTEx_v10
+
+    - name: copy_many molqtl deCODE proteomics study
+      sources: gs://decode_data/smp/study/*.parquet
+      destination: input/molqtl/study/deCODE_proteomics
+
+    - name: copy_many molqtl deCODE proteomics credible sets
+      sources: gs://decode_data/smp/credible_set/*.parquet
+      destination: input/molqtl/credible_set/deCODE_proteomics
   ##################################################################################################
 
   #: ONTOMA STEP :##################################################################################
