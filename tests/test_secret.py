@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 import pytest
 from pydantic import ValidationError
 
-from orchestration.models.secret import Secret, SecretInitAction, Secrets
+from orchestration.models.secret import Secret, SecretBlobs, SecretInitAction, Secrets
 
 
 class TestSecretConstruction:
@@ -251,3 +251,104 @@ class TestSecretInitActionPushToGcs:
         result = init_action.push_to_gcs(gcs_hook=mock_hook)
         assert isinstance(result, NodeInitializationAction)
         assert result.executable_file == "gs://my-bucket/init-actions/inject-secrets.sh"
+
+
+def _secret(secret_id: str, project_id: str = "my-proj") -> Secret:
+    return Secret(secret_id=secret_id, project_id=project_id)
+
+
+class TestSecretBlobs:
+    def test_construction(self) -> None:
+        blobs = SecretBlobs(secrets=[_secret("decode"), _secret("other-blob")])
+        assert len(blobs.secrets) == 2
+
+    def test_empty_list(self) -> None:
+        blobs = SecretBlobs(secrets=[])
+        assert blobs.secrets == []
+
+
+class TestSecretInitActionValidation:
+    def test_neither_secrets_nor_blobs_raises(self) -> None:
+        with pytest.raises(ValueError, match="At least one"):
+            SecretInitAction(init_action_uri="gs://bucket/script.sh")
+
+    def test_secrets_only_is_valid(self) -> None:
+        action = SecretInitAction(
+            secrets=Secrets(mapping={"HF_TOKEN": _secret("hfhub-key")}),
+            init_action_uri="gs://bucket/script.sh",
+        )
+        assert action.secrets is not None
+        assert action.secret_blobs is None
+
+    def test_blobs_only_is_valid(self) -> None:
+        action = SecretInitAction(
+            secret_blobs=SecretBlobs(secrets=[_secret("decode")]),
+            init_action_uri="gs://bucket/script.sh",
+        )
+        assert action.secret_blobs is not None
+        assert action.secrets is None
+
+    def test_secrets_and_blobs_combined_is_valid(self) -> None:
+        action = SecretInitAction(
+            secrets=Secrets(mapping={"HF_TOKEN": _secret("hfhub-key")}),
+            secret_blobs=SecretBlobs(secrets=[_secret("decode")]),
+            init_action_uri="gs://bucket/script.sh",
+        )
+        assert action.secrets is not None
+        assert action.secret_blobs is not None
+
+
+class TestSecretInitActionScriptBlobs:
+    @pytest.fixture
+    def blob_action(self) -> SecretInitAction:
+        return SecretInitAction(
+            secret_blobs=SecretBlobs(
+                secrets=[
+                    Secret(secret_id="decode", project_id="my-proj", version_id="latest"),
+                    Secret(secret_id="other-blob", project_id="my-proj", version_id="2"),
+                ]
+            ),
+            init_action_uri="gs://my-bucket/init-actions/inject-secrets.sh",
+        )
+
+    def test_blob_script_does_not_contain_echo(self, blob_action: SecretInitAction) -> None:
+        # blob fetch must not wrap the value in an echo envelope
+        assert "echo" not in blob_action._to_script_str()
+
+    def test_blob_script_contains_secret_ids(self, blob_action: SecretInitAction) -> None:
+        script = blob_action._to_script_str()
+        assert "--secret=decode" in script
+        assert "--secret=other-blob" in script
+
+    def test_blob_script_uses_correct_version(self, blob_action: SecretInitAction) -> None:
+        script = blob_action._to_script_str()
+        assert "access 2" in script
+
+    def test_blob_script_writes_to_correct_path(self, blob_action: SecretInitAction) -> None:
+        script = blob_action._to_script_str()
+        assert "> /var/run/secrets/decode" in script
+        assert "> /var/run/secrets/other-blob" in script
+
+
+class TestSecretInitActionScriptMixed:
+    @pytest.fixture
+    def mixed_action(self) -> SecretInitAction:
+        return SecretInitAction(
+            secrets=Secrets(mapping={"HF_TOKEN": Secret(secret_id="hfhub-key", project_id="my-proj")}),
+            secret_blobs=SecretBlobs(secrets=[Secret(secret_id="decode", project_id="my-proj")]),
+            init_action_uri="gs://my-bucket/init-actions/inject-secrets.sh",
+        )
+
+    def test_mixed_script_contains_envelope_for_plain_secret(self, mixed_action: SecretInitAction) -> None:
+        script = mixed_action._to_script_str()
+        assert "HF_TOKEN" in script
+        assert "echo" in script
+
+    def test_mixed_script_contains_verbatim_for_blob(self, mixed_action: SecretInitAction) -> None:
+        script = mixed_action._to_script_str()
+        assert "> /var/run/secrets/decode" in script
+
+    def test_mixed_script_both_secret_ids_present(self, mixed_action: SecretInitAction) -> None:
+        script = mixed_action._to_script_str()
+        assert "--secret=hfhub-key" in script
+        assert "--secret=decode" in script
