@@ -27,10 +27,9 @@ dataproc:
     # failure source: executors removed mid-stage during the harmonisation
     # flipping join and the partitioned writes caused ExecutorLostFailure and
     # repeated stage retries. A fixed on-demand pool removes preemption entirely.
-    allow_efm: false
     num_workers: 32
     worker_machine_type: n2d-standard-16
-    driver_machine_type: n2d-standard-16
+    master_machine_type: n2d-standard-16
     # Boot disk sized ~30% above the observed peak (~780 GB per worker) from
     # a full-scale run; prior 2 TB was ~2.5x over-provisioned. HDFS is
     # effectively unused (DFS Used: ~24 KB per worker); this disk is only

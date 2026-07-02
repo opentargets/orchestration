@@ -1,4 +1,4 @@
-"""Airflow DAG to ingest and harmonize FinnGen UKB meta-analysis data."""
+"""Airflow DAG to ingest and harmonize deCODE proteomics summary statistics data."""
 
 from pathlib import Path
 

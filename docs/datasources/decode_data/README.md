@@ -2,15 +2,15 @@
 
 This document was updated on 2026-06-30.
 
-Data source comes from the [deCODE Genetics summary data](https://www.decode.com/summarydata/). The data source is linked to to 2 publications:
+Data source comes from the [deCODE Genetics summary data](https://www.decode.com/summarydata/). The data source is linked to 2 publications:
 
 * Ferkingstad, E. et al. Large-scale integration of the plasma proteome with genetics and disease (2021)
 * Grímur Hjörleifsson Eldjarn, Egil Ferkingstad et al. Large-scale plasma proteomics comparisons through genetics and disease associations (2023)
 
-The data was originally fetched from s3 compatible storage and put under the `gs://decode_inputs` bucket in parquet format. This initial ingestion was run via a notebook, not the dag. The `decode_ingestion` dag now also contains `manifest_generation` and `ingestion` steps that can fetch the data from the s3 compatible storage, but they are **not** wired into the active dag flow.
+The data was originally fetched from s3 compatible storage and put under the `gs://decode_inputs` bucket in parquet format. This initial ingestion was run via a notebook, not the dag. The `decode_ingestion` dag now also contains `ingestion` steps that can fetch the data from the s3 compatible storage, but they are **not** wired into the active dag flow.
 
 > [!CAUTION]
-> The `manifest_generation` and `ingestion` steps are expensive and re-download the full deCODE dataset from s3. The data is already present under `gs://decode_inputs`, so these steps should not be re-run just to verify they work — doing so is costly and wasteful of resources.
+> The `ingestion` steps are expensive and re-download the full deCODE dataset from s3. The data is already present under `gs://decode_inputs`, so these steps should not be re-run just to verify they work — doing so is costly and wasteful of resources.
 
 The data is stored under the following structure:
 
@@ -37,6 +37,7 @@ gs://decode_data/complex_portal/
 gs://decode_data/molecular_complex/
 gs://decode_data/raw/
 gs://decode_data/smp/
+gs://decode_data/target/
 ```
 
 * The `2021-pub-aligned` folder contains the conditionally analyzed credible sets from the 2021 publication supplementary tables.
@@ -45,6 +46,7 @@ gs://decode_data/smp/
 * The `complex_portal` folder contain the [Complex Portal](https://www.ebi.ac.uk/complexportal/home) data that allows to resolve some of the aptamer IDs due to their specificity to protein complexes.
 * The `molecular_complex` folder contains transformed [MolecularComplex dataset](https://github.com/opentargets/gentropy/blob/v3.3.0-rc.1/src/gentropy/dataset/molecular_complex.py) derived from Complex Portal data.
 * The `raw` and `smp` folders contain the results from running the `decode_ingestion` airflow dag.
+* The `target` folder contains the [Target dataset](https://opentargets.org/gentropy/python_api/datasets/target_index/) used from 26.06 Open-targets release. This dataset is used only in the `pqtl_to_study` step that maps the protein ids and protein complex ids to the up-to-date target gene ids. This step shall be migrated to the Unified Pipeline.
 
 ```{bash}
 gs://decode_data/{raw,smp}/credible_set/
@@ -63,7 +65,7 @@ The output datasets are:
 * [x] [`CredibleSets`](https://opentargets.github.io/gentropy/python_api/datasets/study_locus/) stored under `gs://decode_data/{raw,smp}/credible_set/`
 * [x] [`SummaryStatistics`](https://opentargets.github.io/gentropy/python_api/datasets/summary_statistics/) stored under `gs://decode_data/{raw,smp}/harmonised_summary_statistics/`
 * [x] [`SummaryStatisticsQC`](https://opentargets.github.io/gentropy/python_api/datasets/summary_statistics_qc/) stored under `gs://decode_data/{raw,smp}/harmonised_summary_statistics_qc/`
-* [x] [`pQTLStudyIndex](https://github.com/opentargets/gentropy/blob/98d1f8a41515eb67a17ed2f86df345910aa2d54b/src/gentropy/dataset/study_index.py#L898) stored under `gs://decode_data/{raw,smp}/pqtl_study/`
+* [x] [`pQTLStudyIndex`](https://github.com/opentargets/gentropy/blob/98d1f8a41515eb67a17ed2f86df345910aa2d54b/src/gentropy/dataset/study_index.py#L898) stored under `gs://decode_data/{raw,smp}/pqtl_study/`
 * [x] [`deCODEManifest`](https://github.com/opentargets/gentropy/blob/98d1f8a41515eb67a17ed2f86df345910aa2d54b/src/gentropy/datasource/decode/manifest.py#L20) stored under `gs://decode_data/{raw,smp}/manifest/`, includes the information about the raw summary statistics files.
 * [x] [`pQTLStudyIndexQCAnnotated`](https://github.com/opentargets/gentropy/blob/98d1f8a41515eb67a17ed2f86df345910aa2d54b/src/gentropy/dataset/study_index.py#L898) stored under `gs://decode_data/{raw,smp}/pqtl_study_qc_annotated/`. This dataset is the same as `pqtl_study` but with additional QC annotations.
 * [x] [`StudyIndex`](https://opentargets.github.io/gentropy/python_api/datasets/study_index/) stored under `gs://decode_data/{raw,smp}/study/`
@@ -100,9 +102,9 @@ The deCODE summary statistics live in an S3-compatible bucket that requires cred
 
 ```json
 {
-  "bucket_name": "largeplasma-2023",
+  "bucket_name": "<bucket-name>",
   "s3_host_url": "<s3-host>",
-  "s3_host_port": 443,
+  "s3_host_port": "<s3-port>",
   "access_key_id": "<access-key-id>",
   "secret_access_key": "<secret-access-key>"
 }
@@ -125,7 +127,7 @@ The pipeline runs both datasets through an identical processing structure (diffe
 
 ### Significance threshold (`gwas_significance = 1.8e-9`)
 
-Window-based clumping uses `1.8e-9` rather than the genome-wide default of `5e-8`. This is the study-wide significance threshold reported in the 2023 deCODE publication, and we adopt it verbatim to stay consistent with the source study.
+Window-based clumping uses `1.8e-9` rather than the genome-wide default of `5e-8`. This is the study-wide significance threshold reported in the deCODE publications mentioned above, and we adopt it verbatim to stay consistent with the source study.
 
 ### MAC and sample-size filters (`min_mac_threshold = 50`, `min_sample_size_threshold = 30000`)
 
@@ -149,7 +151,7 @@ This is acceptable because the deCODE study is well powered — it includes rare
 
 ### Window-based clumping keeps leads only (`collect_locus = false`)
 
-Window-based clumping retains only the lead variants and does not collect the surrounding locus. The locus expansion is performed later by PICS (using reference LD as described above), so collecting it during clumping would be redundant.
+Window-based clumping retains only the lead variants and does not collect the surrounding locus. The locus expansion is performed later by PICS (using reference LD as described above), so collecting it during clumping would be redundant. We use the same window size as the deCODE publication (±1Mb) to stay consistent with the source study.
 
 ## Changelog
 
