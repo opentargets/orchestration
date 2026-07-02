@@ -69,7 +69,7 @@ nodes:
     params:
       step: molecular_complex_ingestion
       # Input
-      
+
       step.predicted_complex_tab_path: 'https://ftp.ebi.ac.uk/pub/databases/intact/complex/{molecular_complex_version}/complextab/9606_predicted.tsv'
       step.experimental_complex_tab_path: 'https://ftp.ebi.ac.uk/pub/databases/intact/complex/{molecular_complex_version}/complextab/9606.tsv'
       # Output
@@ -84,7 +84,7 @@ nodes:
   - id: smp_manifest_generation
     kind: Task
     prerequisites: []
-      # - molecular_complex
+    # - molecular_complex
     params:
       step: decode_manifest_generation
       # Input
@@ -219,7 +219,7 @@ nodes:
     params:
       step: pQTL_study_index_transformation
       # Input
-      step.protein_study_index_path: '{data_bucket}/smp/pqtl_study_qc_annotated/'      
+      step.protein_study_index_path: '{data_bucket}/smp/pqtl_study_qc_annotated/'
       step.target_index_path: '{data_bucket}/target/'
       # Output
       step.study_index_path: '{data_bucket}/smp/study/'
