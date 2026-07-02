@@ -11,7 +11,7 @@ environment_specs:
       ldscore_base_path: gs://genetics-portal-dev-analysis/xg1/LDSC_pyspark/inputs/custom_panel
       study_index_path: gs://gwas_catalog_sumstats_susie/study_index/
       outputs_dir: gs://genetics-portal-dev-analysis/xg1/LDSC_pyspark/outputs/gentropy_all_sumstats_2606
-      gentropy_image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/opentargets/gentropy:3.3.0-dev.14
+      gentropy_image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/opentargets/gentropy:3.3.0-dev.64
 
   - name: Prod
     vars:
@@ -19,7 +19,7 @@ environment_specs:
       ldscore_base_path: gs://genetics-portal-dev-analysis/xg1/LDSC_pyspark/inputs/custom_panel
       study_index_path: gs://gwas_catalog_sumstats_susie/study_index/
       outputs_dir: gs://genetics-portal-dev-analysis/xg1/LDSC_pyspark/outputs/gentropy_all_sumstats_2606
-      gentropy_image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/opentargets/gentropy:3.3.0-dev.14
+      gentropy_image: europe-west1-docker.pkg.dev/open-targets-genetics-dev/opentargets/gentropy:3.3.0-dev.64
 
 env: Test
 
