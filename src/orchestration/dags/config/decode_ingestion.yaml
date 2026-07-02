@@ -5,7 +5,7 @@ environment_specs:
       data_bucket: gs://decode_data
       input_bucket: gs://decode_inputs
       gnomad_bucket: gs://gnomad_data_2
-      gentropy_ref: '3.3.0-dev.10'
+      gentropy_ref: '3.3.0-dev.63'
       molecular_complex_version: '2026-01-09'
   - name: Test
     vars:
@@ -13,7 +13,8 @@ environment_specs:
       input_bucket: gs://ot_orchestration/test/decode_inputs
       gnomad_bucket: gs://gnomad_data_2
       date: '20250129'
-      gentropy_ref: '3.3.0-dev.10'
+      gentropy_ref: '3.3.0-dev.63'
+      molecular_complex_version: '2026-01-09'
 
 env: Prod
 
@@ -27,10 +28,14 @@ dataproc:
     # flipping join and the partitioned writes caused ExecutorLostFailure and
     # repeated stage retries. A fixed on-demand pool removes preemption entirely.
     allow_efm: false
-    num_workers: 8
+    num_workers: 32
     worker_machine_type: n2d-standard-16
     driver_machine_type: n2d-standard-16
-    worker_disk_size: 2048
+    # Boot disk sized ~30% above the observed peak (~780 GB per worker) from
+    # a full-scale run; prior 2 TB was ~2.5x over-provisioned. HDFS is
+    # effectively unused (DFS Used: ~24 KB per worker); this disk is only
+    # for Spark shuffle spill under /hadoop/spark/tmp and YARN local dirs.
+    worker_disk_size: 1024
     worker_disk_type: 'pd-ssd'
     init_actions_uris:
       - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'
@@ -64,8 +69,9 @@ nodes:
     params:
       step: molecular_complex_ingestion
       # Input
-      step.predicted_complex_tab_path: 'gs://decode_data/complex_portal/complex_portal_predicted.tsv'
-      step.experimental_complex_tab_path: 'gs://decode_data/complex_portal/complex_portal_experimental.tsv'
+      
+      step.predicted_complex_tab_path: 'https://ftp.ebi.ac.uk/pub/databases/intact/complex/{molecular_complex_version}/complextab/9606_predicted.tsv'
+      step.experimental_complex_tab_path: 'https://ftp.ebi.ac.uk/pub/databases/intact/complex/{molecular_complex_version}/complextab/9606.tsv'
       # Output
       step.output_path: '{data_bucket}/molecular_complex/'
       # Session
@@ -77,13 +83,13 @@ nodes:
   ##############################################################################
   - id: smp_manifest_generation
     kind: Task
-    prerequisites:
-      - molecular_complex
+    prerequisites: []
+      # - molecular_complex
     params:
       step: decode_manifest_generation
       # Input
-      step.bucket_name: 'largeplasma-2023'
-      step.prefix: "Proteomics/"
+      step.bucket_name: 'largescaleplasma-2023'
+      step.prefix: "final_somascan_smp/"
       # Output
       step.output_path: '{data_bucket}/smp/manifest/'
       # Session
@@ -91,24 +97,24 @@ nodes:
       step.session.s3_configuration_path: '/var/run/secrets/decode'
       step.session.add_s3_connector: true
 
-  - id: smp_ingestion
-    prerequisites:
-      - smp_manifest_generation
-    params:
-      step: decode_summary_statistics_ingestion
-      # Input
-      step.manifest_path: '{data_bucket}/smp/manifest/'
-      # Output
-      step.raw_summary_statistics_path: '{input_bucket}/raw_summary_statistics/smp/'
-      # Session
-      step.session.s3_configuration_path: '/var/run/secrets/decode'
-      step.session.add_s3_connector: true
+  # - id: smp_ingestion
+  #   prerequisites:
+  #     - smp_manifest_generation
+  #   params:
+  #     step: decode_summary_statistics_ingestion
+  #     # Input
+  #     step.manifest_path: '{data_bucket}/smp/manifest/'
+  #     # Output
+  #     step.raw_summary_statistics_path: '{input_bucket}/raw_summary_statistics/smp/'
+  #     # Session
+  #     step.session.s3_configuration_path: '/var/run/secrets/decode'
+  #     step.session.add_s3_connector: true
 
   - id: smp_harmonisation
     prerequisites:
       - molecular_complex
       - smp_manifest_generation
-      - smp_ingestion
+      # - smp_ingestion
     params:
       step: decode_summary_statistics_harmonisation
       # Input
@@ -131,9 +137,16 @@ nodes:
       step.verify_atgc: true
       # Session
       step.session.write_mode: overwrite
-      +step.session.extended_spark_conf: "{spark.executor.memory: '18g', spark.executor.cores: '7', spark.executor.memoryOverhead: '3g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '16000', spark.sql.files.maxPartitionBytes: '256m', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer'}"
+      # spark.sql.shuffle.partitions is a ceiling; AQE coalesces down based on
+      # advisoryPartitionSizeInBytes. Sized (16000) for full-scale production —
+      # at 4000, per-task in-memory partition (~3.5 GB) exceeded the ~2.5 GB
+      # heap-per-task and triggered container-level OOM/eviction on the
+      # partitionBy("studyId") write. 16000 brings per-task to ~850 MB with
+      # comfortable headroom. AQE keys redeclared so step's extended_spark_conf
+      # does not shadow cluster-level AQE defaults.
+      +step.session.extended_spark_conf: "{spark.executor.memory: '18g', spark.executor.cores: '7', spark.executor.memoryOverhead: '3g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '16000', spark.sql.files.maxPartitionBytes: '256m', spark.sql.adaptive.enabled: 'true', spark.sql.adaptive.coalescePartitions.enabled: 'true', spark.sql.adaptive.advisoryPartitionSizeInBytes: '128m', spark.sql.adaptive.coalescePartitions.minPartitionSize: '32m', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer'}"
 
-  
+
   - id: smp_qc
     prerequisites:
       - smp_harmonisation
@@ -149,7 +162,7 @@ nodes:
       step.pval_threshold: 5e-8
       # Session
       step.session.write_mode: overwrite
-      +step.session.extended_spark_conf: "{spark.executor.memory: '18g', spark.executor.cores: '7', spark.executor.memoryOverhead: '3g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '16000', spark.sql.files.maxPartitionBytes: '256m', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer'}"
+      +step.session.extended_spark_conf: "{spark.executor.memory: '18g', spark.executor.cores: '7', spark.executor.memoryOverhead: '3g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '16000', spark.sql.files.maxPartitionBytes: '256m', spark.sql.adaptive.enabled: 'true', spark.sql.adaptive.coalescePartitions.enabled: 'true', spark.sql.adaptive.advisoryPartitionSizeInBytes: '128m', spark.sql.adaptive.coalescePartitions.minPartitionSize: '32m', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer'}"
 
 
   - id: smp_wbc
@@ -212,12 +225,12 @@ nodes:
       step.study_index_path: '{data_bucket}/smp/study/'
       # Session
       step.session.write_mode: overwrite
-  #############################################################################
+  # #############################################################################
 
 
-  ############################## RAW ##########################################
-  # The steps below result in processing of non-normalized summary statistics (RAW)
-  #############################################################################
+  # ############################## RAW ##########################################
+  # # The steps below result in processing of non-normalized summary statistics (RAW)
+  # #############################################################################
   - id: raw_manifest_generation
     kind: Task
     prerequisites:
@@ -225,8 +238,8 @@ nodes:
     params:
       step: decode_manifest_generation
       # Input
-      step.bucket_name: 'largeplasma-2023'
-      step.prefix: "Proteomics/"
+      step.bucket_name: 'largescaleplasma-2023'
+      step.prefix: "final_somascan_raw/"
       # Output
       step.output_path: '{data_bucket}/raw/manifest/'
       # Session
@@ -235,25 +248,25 @@ nodes:
       step.session.add_s3_connector: true
 
 
-  - id: raw_ingestion
-    prerequisites:
-      - raw_manifest_generation
-    params:
-      step: decode_summary_statistics_ingestion
-      # Input
-      step.manifest_path: '{data_bucket}/raw/manifest/'
-      # Output
-      step.raw_summary_statistics_path: '{data_bucket}/raw_summary_statistics/raw/'
-      # Session
-      step.session.write_mode: overwrite
-      step.session.s3_configuration_path: '/var/run/secrets/decode'
-      step.session.add_s3_connector: true
+  # - id: raw_ingestion
+  #   prerequisites:
+  #     - raw_manifest_generation
+  #   params:
+  #     step: decode_summary_statistics_ingestion
+  #     # Input
+  #     step.manifest_path: '{data_bucket}/raw/manifest/'
+  #     # Output
+  #     step.raw_summary_statistics_path: '{data_bucket}/raw_summary_statistics/raw/'
+  #     # Session
+  #     step.session.write_mode: overwrite
+  #     step.session.s3_configuration_path: '/var/run/secrets/decode'
+  #     step.session.add_s3_connector: true
 
   - id: raw_harmonisation
     prerequisites:
       - molecular_complex
       - raw_manifest_generation
-      - raw_ingestion
+      # - raw_ingestion
     params:
       step: decode_summary_statistics_harmonisation
       # Input
@@ -276,7 +289,10 @@ nodes:
       step.verify_atgc: true
       # Session
       step.session.write_mode: overwrite
-      +step.session.extended_spark_conf: "{spark.executor.memory: '18g', spark.executor.cores: '7', spark.executor.memoryOverhead: '3g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '16000', spark.sql.files.maxPartitionBytes: '256m', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer'}"
+      # Same tuning as smp_harmonisation: shuffle.partitions=16000 sized for
+      # full-scale, plus explicit step-level AQE so cluster-level defaults
+      # aren't shadowed by this session's extended_spark_conf.
+      +step.session.extended_spark_conf: "{spark.executor.memory: '18g', spark.executor.cores: '7', spark.executor.memoryOverhead: '3g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '16000', spark.sql.files.maxPartitionBytes: '256m', spark.sql.adaptive.enabled: 'true', spark.sql.adaptive.coalescePartitions.enabled: 'true', spark.sql.adaptive.advisoryPartitionSizeInBytes: '128m', spark.sql.adaptive.coalescePartitions.minPartitionSize: '32m', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer'}"
 
   - id: raw_qc
     prerequisites:
@@ -293,7 +309,8 @@ nodes:
       step.pval_threshold: 5e-8
       # Session
       step.session.write_mode: overwrite
-      +step.session.extended_spark_conf: "{spark.executor.memory: '18g', spark.executor.cores: '7', spark.executor.memoryOverhead: '3g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '16000', spark.sql.files.maxPartitionBytes: '256m', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer'}"
+      # Same tuning as raw_harmonisation / smp_qc.
+      +step.session.extended_spark_conf: "{spark.executor.memory: '18g', spark.executor.cores: '7', spark.executor.memoryOverhead: '3g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '16000', spark.sql.files.maxPartitionBytes: '256m', spark.sql.adaptive.enabled: 'true', spark.sql.adaptive.coalescePartitions.enabled: 'true', spark.sql.adaptive.advisoryPartitionSizeInBytes: '128m', spark.sql.adaptive.coalescePartitions.minPartitionSize: '32m', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer'}"
 
   - id: raw_wbc
     prerequisites:
