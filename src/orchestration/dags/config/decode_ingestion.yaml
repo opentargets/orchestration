@@ -5,7 +5,7 @@ environment_specs:
       data_bucket: gs://decode_data
       input_bucket: gs://decode_inputs
       gnomad_bucket: gs://gnomad_data_2
-      gentropy_ref: '3.3.0-dev.63'
+      gentropy_ref: '3.3.0-dev.66'
       molecular_complex_version: '2026-01-09'
   - name: Test
     vars:
@@ -13,7 +13,7 @@ environment_specs:
       input_bucket: gs://ot_orchestration/test/decode_inputs
       gnomad_bucket: gs://gnomad_data_2
       date: '20250129'
-      gentropy_ref: '3.3.0-dev.63'
+      gentropy_ref: '3.3.0-dev.66'
       molecular_complex_version: '2026-01-09'
 
 env: Prod
@@ -22,20 +22,23 @@ dataproc:
   cluster_name: otg-decode
   cluster_config:
     project_id: open-targets-genetics-dev
-    # Fixed non-preemptible primary pool (no autoscaling, no spot secondaries).
-    # Autoscaling churn and preemptible secondary workers were the dominant
-    # failure source: executors removed mid-stage during the harmonisation
-    # flipping join and the partitioned writes caused ExecutorLostFailure and
-    # repeated stage retries. A fixed on-demand pool removes preemption entirely.
-    num_workers: 32
-    worker_machine_type: n2d-standard-16
-    master_machine_type: n2d-standard-16
-    # Boot disk sized ~30% above the observed peak (~780 GB per worker) from
-    # a full-scale run; prior 2 TB was ~2.5x over-provisioned. HDFS is
-    # effectively unused (DFS Used: ~24 KB per worker); this disk is only
-    # for Spark shuffle spill under /hadoop/spark/tmp and YARN local dirs.
-    worker_disk_size: 1024
+    # Enhanced Flexibility Mode: shuffle files pinned to a fixed primary pool
+    # via the `dataproc:efm.spark.shuffle=primary-worker` property (set below).
+    # Secondary workers stay pure-compute and can autoscale/decommission freely
+    # without shuffle loss. Uses the existing otg-decode-efm policy (min=max=15
+    # primary, 0-50 secondary). Primary disk sized against the 2026-07-02
+    # stalled-run peak (~10.5 TB stage 23, ~15 TB concurrent across stage
+    # transitions): 15 x 2048 GB = 30 TB gross, ~27 TB usable at 90% health
+    # threshold, target peak utilisation ~50%.
+    autoscaling_policy: otg-decode-efm
+    worker_machine_type: n2-standard-16
+    master_machine_type: n2-standard-16
+    worker_disk_size: 2048
     worker_disk_type: 'pd-ssd'
+    secondary_worker_machine_type: n2-standard-16
+    # Secondaries hold no shuffle under EFM; a small disk is sufficient for OS
+    # and container working directories.
+    secondary_worker_disk_size: 100
     init_actions_uris:
       - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'
     secret_init_action_uri: 'gs://opentargets-pipelines/up/gentropy/fetch_secrets.sh'
@@ -44,8 +47,15 @@ dataproc:
     metadata:
       GENTROPY_REF: 'v{gentropy_ref}'
     properties:
-      # With no preemption there is no shuffle to reconstruct; these only guard
-      # against transient task/stage failures rather than spot reclamation.
+      # Enhanced Flexibility Mode: shuffle files stored on primary workers only.
+      # Secondaries can autoscale to 0 without taking shuffle data with them,
+      # fixing the "executor removed mid-stage" failure mode without giving
+      # up autoscaling.
+      # https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/flex
+      'dataproc:efm.spark.shuffle': 'primary-worker'
+      # Docs recommend bumping from the default 1 on larger machine types to
+      # improve shuffle-fetch parallelism under EFM.
+      'spark:spark.shuffle.io.numConnectionsPerPeer': '5'
       'spark:spark.task.maxFailures': '10'
       'spark:spark.stage.maxConsecutiveAttempts': '10'
       'spark:spark.sql.adaptive.enabled': 'true'
@@ -136,14 +146,6 @@ nodes:
       step.verify_atgc: true
       # Session
       step.session.write_mode: overwrite
-      # spark.sql.shuffle.partitions is a ceiling; AQE coalesces down based on
-      # advisoryPartitionSizeInBytes. Sized (16000) for full-scale production —
-      # at 4000, per-task in-memory partition (~3.5 GB) exceeded the ~2.5 GB
-      # heap-per-task and triggered container-level OOM/eviction on the
-      # partitionBy("studyId") write. 16000 brings per-task to ~850 MB with
-      # comfortable headroom. AQE keys redeclared so step's extended_spark_conf
-      # does not shadow cluster-level AQE defaults.
-      +step.session.extended_spark_conf: "{spark.executor.memory: '18g', spark.executor.cores: '7', spark.executor.memoryOverhead: '3g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '16000', spark.sql.files.maxPartitionBytes: '256m', spark.sql.adaptive.enabled: 'true', spark.sql.adaptive.coalescePartitions.enabled: 'true', spark.sql.adaptive.advisoryPartitionSizeInBytes: '128m', spark.sql.adaptive.coalescePartitions.minPartitionSize: '32m', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer'}"
 
 
   - id: smp_qc
@@ -161,7 +163,6 @@ nodes:
       step.pval_threshold: 5e-8
       # Session
       step.session.write_mode: overwrite
-      +step.session.extended_spark_conf: "{spark.executor.memory: '18g', spark.executor.cores: '7', spark.executor.memoryOverhead: '3g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '16000', spark.sql.files.maxPartitionBytes: '256m', spark.sql.adaptive.enabled: 'true', spark.sql.adaptive.coalescePartitions.enabled: 'true', spark.sql.adaptive.advisoryPartitionSizeInBytes: '128m', spark.sql.adaptive.coalescePartitions.minPartitionSize: '32m', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer'}"
 
 
   - id: smp_wbc
@@ -182,7 +183,6 @@ nodes:
       step.collect_locus_distance: 500000
       # Session
       step.session.write_mode: overwrite
-      +step.session.extended_spark_conf: "{spark.executor.memory: '18g', spark.executor.cores: '7', spark.executor.memoryOverhead: '3g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '16000', spark.sql.files.maxPartitionBytes: '256m', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer'}"
 
   - id: smp_ldc
     prerequisites:
@@ -197,7 +197,6 @@ nodes:
       step.clumped_study_locus_output_path: '{data_bucket}/smp/study_locus_ld_clumped/'
       # Session
       step.session.write_mode: overwrite
-      +step.session.extended_spark_conf: "{spark.executor.memory: '18g', spark.executor.cores: '7', spark.executor.memoryOverhead: '3g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '200', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer'}"
 
   - id: smp_pics
     prerequisites:
@@ -210,7 +209,6 @@ nodes:
       step.picsed_study_locus_out: '{data_bucket}/smp/credible_set/'
       # Session
       step.session.write_mode: overwrite
-      +step.session.extended_spark_conf: "{spark.executor.memory: '18g', spark.executor.cores: '7', spark.executor.memoryOverhead: '3g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '200', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer'}"
 
   - id: smp_pqtl_to_study
     prerequisites:
@@ -288,10 +286,6 @@ nodes:
       step.verify_atgc: true
       # Session
       step.session.write_mode: overwrite
-      # Same tuning as smp_harmonisation: shuffle.partitions=16000 sized for
-      # full-scale, plus explicit step-level AQE so cluster-level defaults
-      # aren't shadowed by this session's extended_spark_conf.
-      +step.session.extended_spark_conf: "{spark.executor.memory: '18g', spark.executor.cores: '7', spark.executor.memoryOverhead: '3g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '16000', spark.sql.files.maxPartitionBytes: '256m', spark.sql.adaptive.enabled: 'true', spark.sql.adaptive.coalescePartitions.enabled: 'true', spark.sql.adaptive.advisoryPartitionSizeInBytes: '128m', spark.sql.adaptive.coalescePartitions.minPartitionSize: '32m', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer'}"
 
   - id: raw_qc
     prerequisites:
@@ -308,8 +302,6 @@ nodes:
       step.pval_threshold: 5e-8
       # Session
       step.session.write_mode: overwrite
-      # Same tuning as raw_harmonisation / smp_qc.
-      +step.session.extended_spark_conf: "{spark.executor.memory: '18g', spark.executor.cores: '7', spark.executor.memoryOverhead: '3g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '16000', spark.sql.files.maxPartitionBytes: '256m', spark.sql.adaptive.enabled: 'true', spark.sql.adaptive.coalescePartitions.enabled: 'true', spark.sql.adaptive.advisoryPartitionSizeInBytes: '128m', spark.sql.adaptive.coalescePartitions.minPartitionSize: '32m', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer'}"
 
   - id: raw_wbc
     prerequisites:
@@ -329,7 +321,6 @@ nodes:
       step.collect_locus_distance: 500000
       # Session
       step.session.write_mode: overwrite
-      +step.session.extended_spark_conf: "{spark.executor.memory: '18g', spark.executor.cores: '7', spark.executor.memoryOverhead: '3g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '16000', spark.sql.files.maxPartitionBytes: '256m', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer'}"
 
   - id: raw_ldc
     prerequisites:
@@ -344,7 +335,6 @@ nodes:
       step.clumped_study_locus_output_path: '{data_bucket}/raw/study_locus_ld_clumped/'
       # Session
       step.session.write_mode: overwrite
-      +step.session.extended_spark_conf: "{spark.executor.memory: '18g', spark.executor.cores: '7', spark.executor.memoryOverhead: '3g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '200', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer'}"
 
   - id: raw_pics
     prerequisites:
@@ -357,7 +347,6 @@ nodes:
       step.picsed_study_locus_out: '{data_bucket}/raw/credible_set/'
       # Session
       step.session.write_mode: overwrite
-      +step.session.extended_spark_conf: "{spark.executor.memory: '18g', spark.executor.cores: '7', spark.executor.memoryOverhead: '3g', spark.shuffle.mapOutput.minSizeForBroadcast: '10m', spark.sql.shuffle.partitions: '200', spark.memory.storageFraction: '0.6', spark.memory.fraction: '0.8', spark.serializer: 'org.apache.spark.serializer.KryoSerializer'}"
 
   - id: raw_pqtl_to_study
     prerequisites:
