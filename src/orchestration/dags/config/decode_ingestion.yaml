@@ -39,7 +39,7 @@ dataproc:
     secondary_worker_machine_type: n2-standard-16
     # Secondaries hold no shuffle under EFM; a small disk is sufficient for OS
     # and container working directories.
-    secondary_worker_disk_size: 100
+    secondary_worker_disk_size: 512
     init_actions_uris:
       - 'gs://genetics_etl_python_playground/initialisation/install_dependencies_on_cluster.sh'
     secret_init_action_uri: 'gs://opentargets-pipelines/up/gentropy/fetch_secrets.sh'
@@ -68,7 +68,7 @@ dataproc:
       # EFM docs recommendation: 1 GB input partition size for Spark SQL,
       # reduces task launch overhead when reading large parquet inputs.
       'spark:spark.sql.files.maxPartitionBytes': '1g'
-      'spark:spark.task.maxFailures': '10'
+      'spark:spark.task.maxFailures': '20'
       'spark:spark.stage.maxConsecutiveAttempts': '10'
       'spark:spark.sql.adaptive.enabled': 'true'
       'spark:spark.sql.adaptive.skewJoin.enabled': 'true'
