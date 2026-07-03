@@ -5,15 +5,14 @@ environment_specs:
       data_bucket: gs://decode_data
       input_bucket: gs://decode_inputs
       gnomad_bucket: gs://gnomad_data_2
-      gentropy_ref: '3.3.0-dev.66'
+      gentropy_ref: '3.3.0-dev.67'
       molecular_complex_version: '2026-01-09'
   - name: Test
     vars:
       data_bucket: gs://ot_orchestration/test/decode_data
       input_bucket: gs://ot_orchestration/test/decode_inputs
       gnomad_bucket: gs://gnomad_data_2
-      date: '20250129'
-      gentropy_ref: '3.3.0-dev.66'
+      gentropy_ref: '3.3.0-dev.67'
       molecular_complex_version: '2026-01-09'
 
 env: Prod
@@ -33,6 +32,8 @@ dataproc:
     autoscaling_policy: otg-decode-efm
     worker_machine_type: n2-standard-16
     master_machine_type: n2-standard-16
+    num_workers: 15
+    num_masters: 1
     worker_disk_size: 2048
     worker_disk_type: 'pd-ssd'
     secondary_worker_machine_type: n2-standard-16
@@ -274,6 +275,7 @@ nodes:
     prerequisites:
       - molecular_complex
       - raw_manifest_generation
+      - smp_harmonisation
       # - raw_ingestion
     params:
       step: decode_summary_statistics_harmonisation
