@@ -434,6 +434,18 @@ steps:
       destination: output/safety_liability
   ##################################################################################################
 
+  #: TARGET_TRACTABILITY STEP :#########################################################################
+  target_tractability:
+    - name: pyspark target_tractability
+      pyspark: target_tractability
+      settings:
+        partition_count: 2
+      source:
+        tractability: input/target/tractability/tractability.tsv
+        target: output/target
+      destination: output/target_tractability
+  ##################################################################################################
+
   #: TARGET_SAFETY STEP :############### - part of target, pyspark tasks must run standalone for now
   target_safety:
     - name: pyspark safety

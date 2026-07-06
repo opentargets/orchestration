@@ -150,6 +150,9 @@ steps:
       - pts_target_safety
       - pts_target
       - pts_disease
+  pts_target_tractability:
+    depends_on:
+      - pts_target
   pts_target_safety:
     depends_on:
       - pts_pharmacogenetics
