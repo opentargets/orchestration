@@ -273,11 +273,14 @@ steps:
   chemical_probes:
     - name: pyspark chemical probes
       pyspark: chemical_probes
+      settings:
+        partition_count: 2
       source:
         probes_excel: input/target/chemicalprobes/probes.xlsx
         drugs_csv: input/target/chemicalprobes/probes_links.csv
         chembl_molecule: intermediate/chembl_molecule
-      destination: intermediate/chemical_probes_evidence.parquet
+        target: output/target
+      destination: output/chemical_probes
   ##################################################################################################
 
   #: CODING VARIANT STEP :##########################################################################
@@ -402,7 +405,6 @@ steps:
         uniprot: intermediate/target/uniprot/uniprot.parquet
         uniprot_ssl: input/target/uniprot/uniprot-ssl.tsv.gz
         chembl: input/target/chembl/chembl_target.jsonl
-        chemical_probes: intermediate/chemical_probes_evidence.parquet
         gene_essentiality: intermediate/target/gene-essentiality/essentiality.parquet
       destination:
         target: output/target
@@ -728,7 +730,7 @@ steps:
         partition_count: 1
       source:
         molecule: intermediate/chembl_molecule
-        chemical_probes: intermediate/chemical_probes_evidence.parquet
+        chemical_probes: output/chemical_probes
         mechanism_of_action: output/drug_mechanism_of_action
         clinical_report: output/clinical_report
         disease: output/disease

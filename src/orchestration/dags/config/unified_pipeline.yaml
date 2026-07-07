@@ -124,6 +124,7 @@ steps:
     depends_on:
       - pis_target
       - pts_chembl_molecule
+      - pts_target
   pts_coding_variant:
     depends_on:
       - gentropy_variant
