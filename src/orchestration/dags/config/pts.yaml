@@ -381,7 +381,6 @@ steps:
           target: 3
           gene_essentiality: 4
       source:
-        diseases: output/disease
         ensembl: intermediate/target/ensembl/homo_sapiens.parquet
         gene_code: input/target/gencode/gencode.gff3.gz
         genetic_constraints: input/target/gnomad/gnomad_constraint_metrics.tsv
@@ -399,9 +398,7 @@ steps:
         ncbi: input/target/ncbi/Homo_sapiens.gene_info.gz
         reactome_etl: output/reactome
         reactome_pathways: input/target/reactome/Ensembl2Reactome.txt
-        safety_evidence: intermediate/target/safety.parquet
         tep: input/target/tep/tep.json.gz
-        tractability: input/target/tractability/tractability.tsv
         uniprot: intermediate/target/uniprot/uniprot.parquet
         uniprot_ssl: input/target/uniprot/uniprot-ssl.tsv.gz
         chembl: input/target/chembl/chembl_target.jsonl

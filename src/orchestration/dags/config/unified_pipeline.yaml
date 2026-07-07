@@ -459,9 +459,7 @@ steps:
     depends_on:
       - pts_pre_target
       - pts_reactome
-      - pts_target_safety
       - pts_target_gene_essentiality
-      - pts_disease
 
   pts_search_facet:
     depends_on:
